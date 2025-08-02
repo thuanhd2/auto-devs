@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { useKeyboardNavigation } from '@/hooks/use-keyboard-navigation'
+import type { Task, TaskStatus } from '@/types/task'
 import {
   DndContext,
   DragEndEvent,
@@ -11,11 +11,11 @@ import {
   useSensors,
 } from '@dnd-kit/core'
 import { arrayMove } from '@dnd-kit/sortable'
+import { KANBAN_COLUMNS, canTransitionTo } from '@/lib/kanban'
+import { useKeyboardNavigation } from '@/hooks/use-keyboard-navigation'
+import { useUpdateTask, useOptimisticTaskUpdate } from '@/hooks/use-tasks'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { KanbanColumn } from './kanban-column'
-import { KANBAN_COLUMNS, canTransitionTo } from '@/lib/kanban'
-import { useUpdateTask, useOptimisticTaskUpdate } from '@/hooks/use-tasks'
-import type { Task, TaskStatus } from '@/types/task'
 
 interface KanbanBoardProps {
   tasks: Task[]
@@ -41,7 +41,20 @@ export function KanbanBoard({
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null)
   const updateTaskMutation = useUpdateTask()
   const optimisticUpdate = useOptimisticTaskUpdate()
-  
+
+  // Filter and group tasks by status
+  const filteredTasks = useMemo(() => {
+    return tasks.filter((task) => {
+      if (!searchQuery) return true
+
+      const query = searchQuery.toLowerCase()
+      return (
+        task.title.toLowerCase().includes(query) ||
+        task.description.toLowerCase().includes(query)
+      )
+    })
+  }, [tasks, searchQuery])
+
   const { selectedTaskId, selectedColumnId } = useKeyboardNavigation({
     tasks: filteredTasks,
     onEditTask,
@@ -57,19 +70,6 @@ export function KanbanBoard({
     })
   )
 
-  // Filter and group tasks by status
-  const filteredTasks = useMemo(() => {
-    return tasks.filter(task => {
-      if (!searchQuery) return true
-      
-      const query = searchQuery.toLowerCase()
-      return (
-        task.title.toLowerCase().includes(query) ||
-        task.description.toLowerCase().includes(query)
-      )
-    })
-  }, [tasks, searchQuery])
-
   const tasksByStatus = useMemo(() => {
     const grouped: Record<TaskStatus, Task[]> = {
       TODO: [],
@@ -81,7 +81,7 @@ export function KanbanBoard({
       CANCELLED: [],
     }
 
-    filteredTasks.forEach(task => {
+    filteredTasks.forEach((task) => {
       grouped[task.status].push(task)
     })
 
@@ -94,14 +94,14 @@ export function KanbanBoard({
 
   const handleDragOver = (event: DragOverEvent) => {
     const { active, over } = event
-    
+
     if (!over) return
 
     const activeTaskId = active.id as string
     const overColumnId = over.id as TaskStatus
 
     // Find the active task
-    const activeTask = tasks.find(task => task.id === activeTaskId)
+    const activeTask = tasks.find((task) => task.id === activeTaskId)
     if (!activeTask) return
 
     // Check if we're moving to a different column
@@ -126,7 +126,7 @@ export function KanbanBoard({
     const overColumnId = over.id as TaskStatus
 
     // Find the active task
-    const activeTask = tasks.find(task => task.id === activeTaskId)
+    const activeTask = tasks.find((task) => task.id === activeTaskId)
     if (!activeTask) return
 
     // If status changed, update via API
@@ -153,13 +153,13 @@ export function KanbanBoard({
       onDragEnd={handleDragEnd}
       onDragCancel={handleDragCancel}
     >
-      <div className="h-full">
-        <ScrollArea className="h-full">
-          <div className="flex gap-6 p-6 min-w-max">
+      <div className='h-full w-full overflow-hidden'>
+        <ScrollArea className='h-full w-full' orientation='horizontal'>
+          <div className='flex gap-6 p-6' style={{ minWidth: 'max-content' }}>
             {KANBAN_COLUMNS.map((column) => (
               <div
                 key={column.id}
-                className="w-80 bg-gray-50 rounded-lg border shadow-sm flex-shrink-0"
+                className='w-80 flex-shrink-0 rounded-lg border bg-gray-50 shadow-sm'
               >
                 <KanbanColumn
                   column={column}
