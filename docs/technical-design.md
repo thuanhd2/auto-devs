@@ -1,7 +1,9 @@
 # Tổng quan hệ thống
 
 ## Mục tiêu và yêu cầu
+
 Hệ thống tự động hóa task cho developer được thiết kế để:
+
 - Tự động hóa quy trình phát triển phần mềm thông qua AI hỗ trợ lập kế hoạch và thực hiện task
 - Giảm thiểu công sức thủ công trong việc lập kế hoạch và thực hiện task
 - Cải thiện tính nhất quán trong quy trình phát triển
@@ -9,7 +11,9 @@ Hệ thống tự động hóa task cho developer được thiết kế để:
 - Tích hợp mượt mà với các công cụ phát triển hiện có
 
 ## Phạm vi
+
 **Trong phạm vi:**
+
 - Quản lý vòng đời task với chuyển đổi trạng thái tự động (TODO → PLANNING → PLAN_REVIEWING → IMPLEMENTING → CODE_REVIEWING → DONE)
 - Khả năng lập kế hoạch task bằng AI
 - Tích hợp với hệ thống quản lý phiên bản (Git branching và worktree)
@@ -18,19 +22,23 @@ Hệ thống tự động hóa task cho developer được thiết kế để:
 - Tạo và quản lý Pull Request tự động
 
 **Ngoài phạm vi:**
+
 - Quản lý triển khai code và production
 - Tính năng cộng tác nhóm ngoài quản lý task
 - Tích hợp với công cụ quản lý dự án bên ngoài (phiên bản đầu)
 - Báo cáo và phân tích nâng cao
 
 ## Giả định và ràng buộc
+
 **Giả định:**
+
 - Developer có kiến thức cơ bản về Git và quy trình phát triển phần mềm
 - Hệ thống được sử dụng trong môi trường phát triển, không phải production
 - AI CLI tools (claude-code, etc.) đã được cài đặt và cấu hình sẵn
 - Repository có quyền truy cập và authentication phù hợp
 
 **Ràng buộc:**
+
 - Hệ thống chỉ hỗ trợ Git repositories
 - MVP chỉ hỗ trợ Claude Code CLI trong giai đoạn đầu
 - Tối đa 100 task đồng thời mỗi dự án
@@ -40,6 +48,7 @@ Hệ thống tự động hóa task cho developer được thiết kế để:
 # Công nghệ sử dụng
 
 ## Backend
+
 - **Language & Framework**: Go với Gin framework
   - Code architecture: Clean Architecture pattern với layers (handler, usecase, repository)
   - Dependency injection với Wire
@@ -48,15 +57,17 @@ Hệ thống tự động hóa task cho developer được thiết kế để:
 - **Real-time**: WebSocket cho live updates của task status
 
 ## Frontend
+
 - **Framework**: React.js với TypeScript
   - State management: Redux Toolkit + RTK Query
   - Code architecture: Feature-based folder structure
-  - Component library: Material-UI hoặc Ant Design
+  - Component library: shadcn/ui
   - Routing: React Router
 - **Build tool**: Vite cho fast development và optimized builds
 - **Testing**: Jest + React Testing Library
 
 ## Database & Storage
+
 - **Primary Database**: PostgreSQL
   - Database migration: golang-migrate
   - Connection pooling: pgxpool
@@ -64,18 +75,20 @@ Hệ thống tự động hóa task cho developer được thiết kế để:
 - **File Storage**: Local filesystem cho worktree và temporary files
 
 ## DevOps & Infrastructure
+
 - **Logging**: Logrus với structured logging (JSON format)
-- **Testing**: 
+- **Testing**:
   - Backend: Testify + GoMock
   - Frontend: Jest + React Testing Library
   - Integration tests: Testcontainers
 - **CI/CD**: GitHub Actions cho automated testing, building và deployment
-- **Monitoring**: 
+- **Monitoring**:
   - Metrics: Prometheus với custom metrics
   - Visualization: Grafana dashboards
   - Health monitoring: Built-in health check endpoints
 
 ## External Integrations
+
 - **AI CLI Tools**: Claude Code CLI (MVP), extensible architecture cho future CLIs
 - **Git Integration**: Git CLI cho worktree và branch management
 - **Process Management**: OS process spawning và monitoring
@@ -138,11 +151,13 @@ Hệ thống tự động hóa task cho developer được thiết kế để:
 ## Các thành phần chính
 
 ### Frontend Layer
+
 - **Web Browser**: React SPA với TypeScript
 - **State Management**: Redux Toolkit cho global state
 - **Real-time Updates**: WebSocket connection cho live task updates
 
 ### Backend Services Layer
+
 - **API Gateway**: Gin-based REST API server
 - **WebSocket Server**: Real-time communication với frontend
 - **Core Management Service**: Unified service quản lý cả tasks và projects
@@ -153,23 +168,27 @@ Hệ thống tự động hóa task cho developer được thiết kế để:
 - **Git Integration**: Quản lý Git operations
 
 ### Data Layer
+
 - **PostgreSQL**: Primary data storage
 - **Redis**: Caching và session management
 - **File System**: Temporary files và Git worktrees
 
 ### External Systems
+
 - **AI CLI Tools**: Claude Code CLI và future AI agents
 - **Git Repository**: Remote Git repositories (GitHub, GitLab)
 
 ## Luồng dữ liệu chính
 
 ### Task Execution Flow
+
 1. **Task Creation**: User tạo task qua Web UI → API Gateway → Core Management Service → Database
 2. **Planning Phase**: Core Management Service → AI Agent Controller → Spawn Claude CLI → Monitor progress
 3. **Implementation Phase**: AI Agent Controller → Git Integration → Create worktree/branch → Execute CLI
 4. **Completion**: Git Integration → Create PR → Core Management Service updates task status → Notify user qua WebSocket
 
 ### Real-time Updates Flow
+
 1. **Status Change**: Backend service cập nhật task status
 2. **Event Publishing**: Publish event qua internal event bus
 3. **WebSocket Broadcast**: WebSocket server broadcast update đến connected clients
@@ -178,17 +197,20 @@ Hệ thống tự động hóa task cho developer được thiết kế để:
 ## Giao tiếp giữa các service
 
 ### Internal Communication
+
 - **HTTP REST**: Communication giữa frontend và backend
 - **WebSocket**: Real-time updates từ backend đến frontend
 - **Process IPC**: Communication với spawned CLI processes
 - **Database**: Shared data storage giữa các services
 
 ### External Communication
+
 - **Git CLI**: Command-line interface với Git operations
 - **AI CLI**: Spawned processes với AI coding agents
 - **Git Remote**: HTTP/HTTPS với remote repositories
 
 ### Message Formats
+
 - **REST API**: JSON với OpenAPI specification
 - **WebSocket**: JSON với predefined event types
 - **Database**: Structured data với foreign key relationships
@@ -199,6 +221,7 @@ Hệ thống tự động hóa task cho developer được thiết kế để:
 ## Database Schema
 
 ### Projects Table
+
 ```sql
 CREATE TABLE projects (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -216,6 +239,7 @@ CREATE INDEX idx_projects_created_at ON projects(created_at);
 ```
 
 ### Tasks Table
+
 ```sql
 CREATE TABLE tasks (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -229,7 +253,7 @@ CREATE TABLE tasks (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     completed_at TIMESTAMP WITH TIME ZONE,
-    
+
     CONSTRAINT valid_status CHECK (status IN ('TODO', 'PLANNING', 'PLAN_REVIEWING', 'IMPLEMENTING', 'CODE_REVIEWING', 'DONE', 'CANCELLED'))
 );
 
@@ -240,6 +264,7 @@ CREATE INDEX idx_tasks_project_status ON tasks(project_id, status);
 ```
 
 ### Executions Table
+
 ```sql
 CREATE TABLE executions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -256,7 +281,7 @@ CREATE TABLE executions (
     completed_at TIMESTAMP WITH TIME ZONE,
     exit_code INTEGER,
     logs TEXT,
-    
+
     CONSTRAINT valid_execution_status CHECK (status IN ('queued', 'running', 'completed', 'failed', 'cancelled'))
 );
 
@@ -266,6 +291,7 @@ CREATE INDEX idx_executions_started_at ON executions(started_at);
 ```
 
 ### Processes Table
+
 ```sql
 CREATE TABLE processes (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -279,7 +305,7 @@ CREATE TABLE processes (
     exit_code INTEGER,
     stdout_log TEXT,
     stderr_log TEXT,
-    
+
     CONSTRAINT valid_process_type CHECK (process_type IN ('setup', 'cli_agent', 'monitor', 'cleanup')),
     CONSTRAINT valid_process_status CHECK (status IN ('starting', 'running', 'completed', 'failed', 'killed'))
 );
@@ -294,7 +320,9 @@ CREATE INDEX idx_processes_status ON processes(status);
 ### Projects API
 
 #### GET /api/v1/projects
+
 **Response:**
+
 ```json
 {
   "projects": [
@@ -313,7 +341,9 @@ CREATE INDEX idx_processes_status ON processes(status);
 ```
 
 #### POST /api/v1/projects
+
 **Request:**
+
 ```json
 {
   "name": "string",
@@ -331,18 +361,21 @@ CREATE INDEX idx_processes_status ON processes(status);
 ### Tasks API
 
 #### GET /api/v1/projects/{project_id}/tasks
+
 **Query Parameters:**
+
 - status: filter by task status
 - limit: number of results (default: 50)
 - offset: pagination offset
 
 **Response:**
+
 ```json
 {
   "tasks": [
     {
       "id": "uuid",
-      "project_id": "uuid", 
+      "project_id": "uuid",
       "title": "string",
       "description": "string",
       "status": "TODO",
@@ -359,7 +392,9 @@ CREATE INDEX idx_processes_status ON processes(status);
 ```
 
 #### POST /api/v1/projects/{project_id}/tasks
+
 **Request:**
+
 ```json
 {
   "title": "string",
@@ -368,7 +403,9 @@ CREATE INDEX idx_processes_status ON processes(status);
 ```
 
 #### POST /api/v1/tasks/{task_id}/start-planning
+
 **Response:**
+
 ```json
 {
   "message": "Planning started",
@@ -377,7 +414,9 @@ CREATE INDEX idx_processes_status ON processes(status);
 ```
 
 #### POST /api/v1/tasks/{task_id}/approve-plan
+
 **Request:**
+
 ```json
 {
   "approved": true,
@@ -386,7 +425,9 @@ CREATE INDEX idx_processes_status ON processes(status);
 ```
 
 #### POST /api/v1/tasks/{task_id}/start-implementation
+
 **Response:**
+
 ```json
 {
   "message": "Implementation started",
@@ -395,8 +436,10 @@ CREATE INDEX idx_processes_status ON processes(status);
 ```
 
 #### POST /api/v1/tasks/{task_id}/stop-execution
+
 **Description**: Dừng execution đang chạy của task
 **Response:**
+
 ```json
 {
   "message": "Execution stopped",
@@ -406,8 +449,10 @@ CREATE INDEX idx_processes_status ON processes(status);
 ```
 
 #### POST /api/v1/executions/{execution_id}/kill
+
 **Description**: Kill process của execution cụ thể
 **Response:**
+
 ```json
 {
   "message": "Execution killed",
@@ -425,6 +470,7 @@ CREATE INDEX idx_processes_status ON processes(status);
 ### WebSocket Events
 
 #### Task Status Updates
+
 ```json
 {
   "type": "task_status_updated",
@@ -438,6 +484,7 @@ CREATE INDEX idx_processes_status ON processes(status);
 ```
 
 #### Execution Progress
+
 ```json
 {
   "type": "execution_progress",
@@ -452,6 +499,7 @@ CREATE INDEX idx_processes_status ON processes(status);
 ```
 
 #### Execution Stopped
+
 ```json
 {
   "type": "execution_stopped",
@@ -465,6 +513,7 @@ CREATE INDEX idx_processes_status ON processes(status);
 ```
 
 #### Process Killed
+
 ```json
 {
   "type": "process_killed",
@@ -482,6 +531,7 @@ CREATE INDEX idx_processes_status ON processes(status);
 ## Algorithms và Logic phức tạp
 
 ### Task State Machine
+
 ```go
 type TaskStatus string
 
@@ -505,7 +555,7 @@ func (t *Task) CanTransitionTo(newStatus TaskStatus) bool {
         StatusDone:          {},
         StatusCancelled:     {},
     }
-    
+
     validTransitions := transitions[t.Status]
     for _, validStatus := range validTransitions {
         if validStatus == newStatus {
@@ -517,6 +567,7 @@ func (t *Task) CanTransitionTo(newStatus TaskStatus) bool {
 ```
 
 ### AI CLI Process Management
+
 ```go
 type ProcessManager struct {
     executions map[string]*Execution
@@ -526,27 +577,27 @@ type ProcessManager struct {
 func (pm *ProcessManager) SpawnCLIAgent(exec *Execution) error {
     // 1. Setup working directory
     workDir := pm.createWorktree(exec.TaskID)
-    
+
     // 2. Prepare CLI command
     cmd := exec.BuildCommand(workDir)
-    
+
     // 3. Start process
     process := exec.Command("claude-code", cmd.Args...)
     process.Dir = workDir
     process.Env = cmd.Environment
-    
+
     if err := process.Start(); err != nil {
         return err
     }
-    
+
     // 4. Start monitoring goroutine
     go pm.monitorProcess(exec, process)
-    
+
     // 5. Update execution record
     exec.CliProcessPID = process.Process.Pid
     exec.Status = "running"
     exec.StartedAt = time.Now()
-    
+
     return pm.repository.UpdateExecution(exec)
 }
 
@@ -554,23 +605,23 @@ func (pm *ProcessManager) monitorProcess(exec *Execution, process *exec.Cmd) {
     // Monitor stdout/stderr
     stdout, _ := process.StdoutPipe()
     stderr, _ := process.StderrPipe()
-    
+
     go pm.logOutput(exec.ID, "stdout", stdout)
     go pm.logOutput(exec.ID, "stderr", stderr)
-    
+
     // Wait for completion
     err := process.Wait()
-    
+
     // Update execution status
     exec.CompletedAt = time.Now()
     exec.ExitCode = process.ProcessState.ExitCode()
-    
+
     if err != nil {
         exec.Status = "failed"
     } else {
         exec.Status = "completed"
     }
-    
+
     pm.repository.UpdateExecution(exec)
     pm.publishExecutionEvent(exec)
 }
@@ -578,20 +629,20 @@ func (pm *ProcessManager) monitorProcess(exec *Execution, process *exec.Cmd) {
 func (pm *ProcessManager) KillExecution(executionID string) error {
     pm.mutex.Lock()
     defer pm.mutex.Unlock()
-    
+
     exec, exists := pm.executions[executionID]
     if !exists {
         return fmt.Errorf("execution not found: %s", executionID)
     }
-    
+
     // Get all processes for this execution
     processes, err := pm.repository.GetProcessesByExecution(executionID)
     if err != nil {
         return fmt.Errorf("failed to get processes: %w", err)
     }
-    
+
     killedProcesses := []ProcessInfo{}
-    
+
     // Kill all running processes
     for _, proc := range processes {
         if proc.Status == "running" && proc.PID != 0 {
@@ -599,41 +650,41 @@ func (pm *ProcessManager) KillExecution(executionID string) error {
                 log.Errorf("Failed to kill process %d: %v", proc.PID, err)
                 continue
             }
-            
+
             // Update process status to killed
             proc.Status = "killed"
             proc.CompletedAt = time.Now()
             proc.ExitCode = -1 // Killed signal
-            
+
             if err := pm.repository.UpdateProcess(&proc); err != nil {
                 log.Errorf("Failed to update process status: %v", err)
             }
-            
+
             killedProcesses = append(killedProcesses, ProcessInfo{
                 ProcessID:   proc.ID,
                 PID:        proc.PID,
                 ProcessType: proc.ProcessType,
             })
-            
+
             // Publish process killed event
             pm.publishProcessKilledEvent(exec.TaskID, executionID, &proc)
         }
     }
-    
+
     // Update execution status
     exec.Status = "cancelled"
     exec.CompletedAt = time.Now()
-    
+
     if err := pm.repository.UpdateExecution(exec); err != nil {
         return fmt.Errorf("failed to update execution: %w", err)
     }
-    
+
     // Publish execution stopped event
     pm.publishExecutionStoppedEvent(exec)
-    
+
     // Remove from active executions
     delete(pm.executions, executionID)
-    
+
     return nil
 }
 
@@ -642,23 +693,23 @@ func (pm *ProcessManager) killProcess(pid int) error {
     if err != nil {
         return fmt.Errorf("process not found: %w", err)
     }
-    
+
     // Try graceful termination first (SIGTERM)
     if err := process.Signal(syscall.SIGTERM); err != nil {
         // If graceful termination fails, force kill (SIGKILL)
         return process.Kill()
     }
-    
+
     // Wait a bit for graceful shutdown
     timer := time.NewTimer(5 * time.Second)
     defer timer.Stop()
-    
+
     done := make(chan error, 1)
     go func() {
         _, err := process.Wait()
         done <- err
     }()
-    
+
     select {
     case <-timer.C:
         // Timeout, force kill
@@ -699,27 +750,28 @@ func (pm *ProcessManager) publishProcessKilledEvent(taskID, executionID string, 
 ```
 
 ### Git Worktree Management
+
 ```go
 func (gm *GitManager) CreateWorktree(taskID, projectRepo, branchName string) (string, error) {
     workDir := filepath.Join(gm.baseDir, "worktrees", taskID)
-    
+
     // Create worktree
     cmd := exec.Command("git", "worktree", "add", workDir, "-b", branchName)
     cmd.Dir = projectRepo
-    
+
     if err := cmd.Run(); err != nil {
         return "", fmt.Errorf("failed to create worktree: %w", err)
     }
-    
+
     return workDir, nil
 }
 
 func (gm *GitManager) CleanupWorktree(taskID string) error {
     workDir := filepath.Join(gm.baseDir, "worktrees", taskID)
-    
+
     // Remove worktree
     cmd := exec.Command("git", "worktree", "remove", workDir, "--force")
-    
+
     return cmd.Run()
 }
 ```
@@ -727,6 +779,7 @@ func (gm *GitManager) CleanupWorktree(taskID string) error {
 ## Data Models
 
 ### Core Entities
+
 ```go
 type Project struct {
     ID            string                 `json:"id" db:"id"`
@@ -801,3 +854,4 @@ type ProcessKilledData struct {
     ProcessType string    `json:"process_type"`
     KilledAt    time.Time `json:"killed_at"`
 }
+```
