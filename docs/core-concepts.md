@@ -61,46 +61,68 @@ Hệ thống tự động hóa task cho developer bao gồm các khái niệm c�
 
 ### 2.1 Process - Quy Trình Xử Lý
 
-**Planning Process (Quy trình lập kế hoạch):**
-1. Phân tích yêu cầu task
-2. Khảo sát codebase hiện tại
-3. Xác định scope thay đổi
-4. Lập danh sách các bước thực hiện
-5. Ước lượng thời gian và độ phức tạp
+**System Role (Vai trò hệ thống):**
+- Hệ thống chỉ orchestrate và observe, không implement AI logic
+- Tất cả AI capabilities được delegate cho external CLI tools
+- System chịu trách nhiệm về lifecycle management và monitoring
 
-**Implementation Process (Quy trình thực hiện):**
-1. Checkout và setup worktree
-2. Thực hiện code changes theo plan
-3. Chạy tests và linting
-4. Commit changes với message có ý nghĩa
-5. Tạo Pull Request với mô tả chi tiết
+**Task Execution Orchestration (Điều phối thực thi task):**
+1. **Setup Phase**: 
+   - Tạo worktree và setup environment
+   - Chạy pre-run scripts nếu có
+   - Chuẩn bị working directory
+2. **CLI Spawn Phase**:
+   - Spawn AI CLI process với appropriate command
+   - Spawn monitor process để track progress
+   - Setup logging và communication channels
+3. **Monitoring Phase**:
+   - Theo dõi process status và health
+   - Parse logs để extract progress information
+   - Update task status dựa trên CLI output
+4. **Completion Phase**:
+   - Detect khi CLI đã hoàn thành task
+   - Collect results và artifacts
+   - Cleanup processes và temporary resources
+
+**Status Observation (Quan sát trạng thái):**
+- Monitor CLI process PID và exit codes
+- Parse stdout/stderr để determine progress
+- Detect error patterns trong CLI output
+- Track file system changes để confirm completion
 
 **Error Handling (Xử lý lỗi):**
-- Retry mechanism cho các lỗi tạm thời
-- Fallback strategy khi AI không thể hoàn thành
-- Logging chi tiết cho debugging
-- Notification cho developer khi cần can thiệp
+- Retry mechanism khi CLI process fails unexpectedly
+- Graceful shutdown cho hanging processes
+- Detailed logging cho debugging CLI issues
+- Notification system cho developer intervention
 
 ### 2.2 AI Coding Agent - Tác Nhân AI Lập Trình
 
-**Capabilities (Khả năng):**
-- Code generation và modification
-- Test writing và execution
-- Code review và optimization
-- Documentation generation
-- Bug fixing và refactoring
+**Architecture (Kiến trúc):**
+- Tất cả AI coding agent đều là CLI tools (command-line interface)
+- Các CLI được hỗ trợ: claude-code, google-gemini-cli, qwen-coder, v.v.
+- Hệ thống không implement logic AI, chỉ orchestrate và observe các CLI
+
+**Process Execution (Thực thi process):**
+- Khi AI Executor cần execute task, spawn 2 processes:
+  1. Process khởi động AI CLI agent
+  2. Process follow-up để monitor status và progress
+- System theo dõi trạng thái CLI để xác định:
+  - Task đã hoàn thành hay chưa
+  - Có lỗi xảy ra hay không
+  - Progress hiện tại của task
+
+**CLI Integration Strategy (Chiến lược tích hợp CLI):**
+- Plugin-based architecture để dễ dàng thêm CLI agent mới
+- MVP milestone: chỉ hỗ trợ Claude Code CLI
+- Extensible design cho future CLI integrations
+- Standardized interface để communicate với các CLI khác nhau
 
 **Configuration (Cấu hình):**
-- Model selection (GPT-4, Claude, v.v.)
-- Temperature và creativity settings
-- Context window management
-- Custom prompts cho từng loại task
-
-**Integration (Tích hợp):**
-- IDE/Editor plugins
-- CI/CD pipeline hooks
-- Code review tools
-- Project management systems
+- CLI selection per project
+- Command-line arguments cho từng CLI
+- Environment variables setup
+- Working directory management
 
 ## 3. System Architecture - Kiến Trúc Hệ Thống
 
@@ -147,6 +169,51 @@ Hệ thống tự động hóa task cho developer bao gồm các khái niệm c�
 - updated_at: datetime
 ```
 
+**Execution Model:**
+```
+- id: string
+- task_id: string
+- ai_cli_type: string (claude-code, gemini-cli, qwen-coder)
+- status: enum (queued, running, completed, failed, cancelled)
+- cli_process_pid: integer
+- monitor_process_pid: integer
+- working_directory: string
+- cli_command: string
+- cli_args: json
+- environment_vars: json
+- started_at: datetime
+- completed_at: datetime
+- exit_code: integer
+- logs: text
+```
+
+**Process Model:**
+```
+- id: string
+- execution_id: string
+- process_type: enum (setup, cli_agent, monitor, cleanup)
+- pid: integer
+- command: string
+- status: enum (starting, running, completed, failed, killed)
+- started_at: datetime
+- completed_at: datetime
+- exit_code: integer
+- stdout_log: text
+- stderr_log: text
+```
+
+**PreRunScript Model:**
+```
+- id: string
+- project_id: string
+- name: string
+- script_content: text
+- script_type: enum (bash, python, node)
+- execution_order: integer
+- is_active: boolean
+- created_at: datetime
+```
+
 ## 4. Implementation Guidelines - Hướng Dẫn Triển Khai
 
 ### 4.1 Database Design
@@ -156,8 +223,8 @@ Hệ thống tự động hóa task cho developer bao gồm các khái niệm c�
 
 ### 4.2 API Design
 - RESTful endpoints cho CRUD operations
-- GraphQL cho complex queries
 - WebSocket cho real-time notifications
+- JSON response format cho tất cả endpoints
 
 ### 4.3 Security
 - Authentication với JWT tokens
