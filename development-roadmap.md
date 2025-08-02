@@ -26,7 +26,7 @@ Xây dựng hệ thống quản lý task cơ bản với giao diện web, cho ph
   - Cấu hình dependency injection với Wire
 
 - [ ] **Database Setup**
-  - PostgreSQL container setup
+  - Setup .env.example chứa database connection đến postgresdb local 
   - Database migration system với golang-migrate
   - Schema cho `projects` và `tasks` tables
   - Basic CRUD repositories
