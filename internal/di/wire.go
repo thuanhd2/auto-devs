@@ -5,6 +5,8 @@ package di
 
 import (
 	"github.com/auto-devs/auto-devs/config"
+	"github.com/auto-devs/auto-devs/internal/repository"
+	"github.com/auto-devs/auto-devs/internal/repository/postgres"
 	"github.com/auto-devs/auto-devs/pkg/database"
 	"github.com/google/wire"
 )
@@ -12,8 +14,10 @@ import (
 // ProviderSet is the Wire provider set for the entire application
 var ProviderSet = wire.NewSet(
 	config.Load,
-	ProvideDatabase,
-	// Add repository providers here when database is implemented
+	ProvideGormDB,
+	// Repository providers
+	postgres.NewProjectRepository,
+	postgres.NewTaskRepository,
 	// Add usecase providers here
 	// Add handler providers here
 )
@@ -29,29 +33,29 @@ func InitializeApp() (*App, error) {
 
 // App represents the initialized application with all dependencies
 type App struct {
-	Config *config.Config
-	DB     *database.DB
+	Config      *config.Config
+	GormDB      *database.GormDB
+	ProjectRepo repository.ProjectRepository
+	TaskRepo    repository.TaskRepository
 	// Add other dependencies here as needed
 }
 
 // NewApp creates a new App instance
-func NewApp(cfg *config.Config, db *database.DB) *App {
+func NewApp(
+	cfg *config.Config,
+	gormDB *database.GormDB,
+	projectRepo repository.ProjectRepository,
+	taskRepo repository.TaskRepository,
+) *App {
 	return &App{
-		Config: cfg,
-		DB:     db,
+		Config:      cfg,
+		GormDB:      gormDB,
+		ProjectRepo: projectRepo,
+		TaskRepo:    taskRepo,
 	}
 }
 
-// ProvideDatabase provides a database connection
-func ProvideDatabase(cfg *config.Config) (*database.DB, error) {
-	dbConfig := database.Config{
-		Host:     cfg.Database.Host,
-		Port:     cfg.Database.Port,
-		Username: cfg.Database.Username,
-		Password: cfg.Database.Password,
-		DBName:   cfg.Database.Name,
-		SSLMode:  cfg.Database.SSLMode,
-	}
-
-	return database.NewConnection(dbConfig)
+// ProvideGormDB provides a GORM database connection
+func ProvideGormDB(cfg *config.Config) (*database.GormDB, error) {
+	return database.NewGormDB(cfg)
 }
