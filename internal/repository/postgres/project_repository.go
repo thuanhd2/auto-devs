@@ -70,13 +70,20 @@ func (r *projectRepository) GetAll(ctx context.Context) ([]*entity.Project, erro
 
 // Update updates an existing project
 func (r *projectRepository) Update(ctx context.Context, project *entity.Project) error {
-	result := r.db.WithContext(ctx).Save(project)
+	// First check if project exists
+	var existingProject entity.Project
+	result := r.db.WithContext(ctx).First(&existingProject, "id = ?", project.ID)
 	if result.Error != nil {
-		return fmt.Errorf("failed to update project: %w", result.Error)
+		if result.Error == gorm.ErrRecordNotFound {
+			return fmt.Errorf("project not found with id %s", project.ID)
+		}
+		return fmt.Errorf("failed to check project existence: %w", result.Error)
 	}
 
-	if result.RowsAffected == 0 {
-		return fmt.Errorf("project not found with id %s", project.ID)
+	// Update the project
+	result = r.db.WithContext(ctx).Save(project)
+	if result.Error != nil {
+		return fmt.Errorf("failed to update project: %w", result.Error)
 	}
 
 	return nil

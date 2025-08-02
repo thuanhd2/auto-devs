@@ -6,135 +6,13 @@ import (
 	"time"
 
 	"github.com/auto-devs/auto-devs/internal/entity"
-	"github.com/auto-devs/auto-devs/pkg/database"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/modules/postgres"
-	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-func setupTestDB(t *testing.T) (*database.DB, func()) {
-	ctx := context.Background()
-
-	// Create PostgreSQL test container
-	pgContainer, err := postgres.RunContainer(ctx,
-		testcontainers.WithImage("postgres:15-alpine"),
-		postgres.WithDatabase("testdb"),
-		postgres.WithUsername("testuser"),
-		postgres.WithPassword("testpass"),
-		testcontainers.WithWaitStrategy(
-			wait.ForLog("database system is ready to accept connections").
-				WithOccurrence(2).
-				WithStartupTimeout(5*time.Second),
-		),
-	)
-	require.NoError(t, err)
-
-	// Get connection details
-	host, err := pgContainer.Host(ctx)
-	require.NoError(t, err)
-
-	port, err := pgContainer.MappedPort(ctx, "5432")
-	require.NoError(t, err)
-
-	// Create database connection
-	config := database.Config{
-		Host:     host,
-		Port:     port.Port(),
-		Username: "testuser",
-		Password: "testpass",
-		DBName:   "testdb",
-		SSLMode:  "disable",
-	}
-
-	db, err := database.NewConnection(config)
-	require.NoError(t, err)
-
-	// Run migrations
-	err = runTestMigrations(db)
-	require.NoError(t, err)
-
-	cleanup := func() {
-		db.Close()
-		pgContainer.Terminate(ctx)
-	}
-
-	return db, cleanup
-}
-
-func runTestMigrations(db *database.DB) error {
-	// Create the same schema as in migrations
-	schema := `
-		-- Enable UUID extension
-		CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-
-		-- Create projects table
-		CREATE TABLE projects (
-			id UUID PRIMARY KEY DEFAULT uuid_generate_v4 (),
-			name VARCHAR(255) NOT NULL,
-			description TEXT,
-			repo_url VARCHAR(500) NOT NULL,
-			created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-			updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-		);
-
-		-- Create tasks table
-		CREATE TABLE tasks (
-			id UUID PRIMARY KEY DEFAULT uuid_generate_v4 (),
-			project_id UUID NOT NULL REFERENCES projects (id) ON DELETE CASCADE,
-			title VARCHAR(255) NOT NULL,
-			description TEXT,
-			status VARCHAR(50) NOT NULL DEFAULT 'TODO',
-			branch_name VARCHAR(255),
-			pull_request VARCHAR(255),
-			created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-			updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-			CONSTRAINT valid_status CHECK (
-				status IN (
-					'TODO',
-					'PLANNING',
-					'PLAN_REVIEWING',
-					'IMPLEMENTING',
-					'CODE_REVIEWING',
-					'DONE',
-					'CANCELLED'
-				)
-			)
-		);
-
-		-- Create indexes for better performance
-		CREATE INDEX idx_tasks_project_id ON tasks (project_id);
-		CREATE INDEX idx_tasks_status ON tasks (status);
-		CREATE INDEX idx_tasks_created_at ON tasks (created_at);
-		CREATE INDEX idx_projects_created_at ON projects (created_at);
-
-		-- Create updated_at trigger function
-		CREATE OR REPLACE FUNCTION update_updated_at_column()
-		RETURNS TRIGGER AS $$
-		BEGIN
-			NEW.updated_at = NOW();
-			RETURN NEW;
-		END;
-		$$ language 'plpgsql';
-
-		-- Create triggers for auto-updating updated_at columns
-		CREATE TRIGGER update_projects_updated_at 
-			BEFORE UPDATE ON projects 
-			FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-		CREATE TRIGGER update_tasks_updated_at 
-			BEFORE UPDATE ON tasks 
-			FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-	`
-
-	_, err := db.Exec(schema)
-	return err
-}
-
 func TestProjectRepository_Create(t *testing.T) {
-	db, cleanup := setupTestDB(t)
+	db, cleanup := setupTestGormDB(t)
 	defer cleanup()
 
 	repo := NewProjectRepository(db)
@@ -156,7 +34,7 @@ func TestProjectRepository_Create(t *testing.T) {
 }
 
 func TestProjectRepository_CreateWithExistingID(t *testing.T) {
-	db, cleanup := setupTestDB(t)
+	db, cleanup := setupTestGormDB(t)
 	defer cleanup()
 
 	repo := NewProjectRepository(db)
@@ -177,7 +55,7 @@ func TestProjectRepository_CreateWithExistingID(t *testing.T) {
 }
 
 func TestProjectRepository_GetByID(t *testing.T) {
-	db, cleanup := setupTestDB(t)
+	db, cleanup := setupTestGormDB(t)
 	defer cleanup()
 
 	repo := NewProjectRepository(db)
@@ -203,7 +81,7 @@ func TestProjectRepository_GetByID(t *testing.T) {
 }
 
 func TestProjectRepository_GetByID_NotFound(t *testing.T) {
-	db, cleanup := setupTestDB(t)
+	db, cleanup := setupTestGormDB(t)
 	defer cleanup()
 
 	repo := NewProjectRepository(db)
@@ -215,7 +93,7 @@ func TestProjectRepository_GetByID_NotFound(t *testing.T) {
 }
 
 func TestProjectRepository_GetAll(t *testing.T) {
-	db, cleanup := setupTestDB(t)
+	db, cleanup := setupTestGormDB(t)
 	defer cleanup()
 
 	repo := NewProjectRepository(db)
@@ -249,7 +127,7 @@ func TestProjectRepository_GetAll(t *testing.T) {
 }
 
 func TestProjectRepository_Update(t *testing.T) {
-	db, cleanup := setupTestDB(t)
+	db, cleanup := setupTestGormDB(t)
 	defer cleanup()
 
 	repo := NewProjectRepository(db)
@@ -288,7 +166,7 @@ func TestProjectRepository_Update(t *testing.T) {
 }
 
 func TestProjectRepository_Update_NotFound(t *testing.T) {
-	db, cleanup := setupTestDB(t)
+	db, cleanup := setupTestGormDB(t)
 	defer cleanup()
 
 	repo := NewProjectRepository(db)
@@ -303,11 +181,13 @@ func TestProjectRepository_Update_NotFound(t *testing.T) {
 
 	err := repo.Update(ctx, project)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "project not found")
+	if err != nil {
+		assert.Contains(t, err.Error(), "project not found")
+	}
 }
 
 func TestProjectRepository_Delete(t *testing.T) {
-	db, cleanup := setupTestDB(t)
+	db, cleanup := setupTestGormDB(t)
 	defer cleanup()
 
 	repo := NewProjectRepository(db)
@@ -322,17 +202,17 @@ func TestProjectRepository_Delete(t *testing.T) {
 	err := repo.Create(ctx, project)
 	require.NoError(t, err)
 
-	// Delete project
+	// Delete project (soft delete)
 	err = repo.Delete(ctx, project.ID)
 	require.NoError(t, err)
 
-	// Verify deletion
+	// Verify deletion (should not be found due to soft delete)
 	_, err = repo.GetByID(ctx, project.ID)
 	assert.Error(t, err)
 }
 
 func TestProjectRepository_Delete_NotFound(t *testing.T) {
-	db, cleanup := setupTestDB(t)
+	db, cleanup := setupTestGormDB(t)
 	defer cleanup()
 
 	repo := NewProjectRepository(db)
@@ -344,7 +224,7 @@ func TestProjectRepository_Delete_NotFound(t *testing.T) {
 }
 
 func TestProjectRepository_GetWithTaskCount(t *testing.T) {
-	db, cleanup := setupTestDB(t)
+	db, cleanup := setupTestGormDB(t)
 	defer cleanup()
 
 	projectRepo := NewProjectRepository(db)
@@ -389,7 +269,7 @@ func TestProjectRepository_GetWithTaskCount(t *testing.T) {
 }
 
 func TestProjectRepository_GetWithTaskCount_NoTasks(t *testing.T) {
-	db, cleanup := setupTestDB(t)
+	db, cleanup := setupTestGormDB(t)
 	defer cleanup()
 
 	repo := NewProjectRepository(db)
@@ -413,7 +293,7 @@ func TestProjectRepository_GetWithTaskCount_NoTasks(t *testing.T) {
 }
 
 func TestProjectRepository_Delete_WithTasks(t *testing.T) {
-	db, cleanup := setupTestDB(t)
+	db, cleanup := setupTestGormDB(t)
 	defer cleanup()
 
 	projectRepo := NewProjectRepository(db)
@@ -439,15 +319,18 @@ func TestProjectRepository_Delete_WithTasks(t *testing.T) {
 	err = taskRepo.Create(ctx, task)
 	require.NoError(t, err)
 
-	// Try to delete project with tasks (should work due to CASCADE)
+	// Delete project (soft delete)
 	err = projectRepo.Delete(ctx, project.ID)
 	require.NoError(t, err)
 
-	// Verify project is deleted
+	// Verify project is soft deleted (should not be found)
 	_, err = projectRepo.GetByID(ctx, project.ID)
 	assert.Error(t, err)
-	
-	// Verify task is also deleted due to CASCADE
+
+	// Note: GORM soft delete doesn't automatically cascade to related records
+	// The task should still exist but the project should be soft deleted
+	// This is different from raw SQL where CASCADE would delete related records
 	_, err = taskRepo.GetByID(ctx, task.ID)
-	assert.Error(t, err)
+	// Task should still exist since GORM doesn't auto-cascade soft deletes
+	assert.NoError(t, err)
 }

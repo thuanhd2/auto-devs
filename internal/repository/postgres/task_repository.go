@@ -75,13 +75,20 @@ func (r *taskRepository) GetByProjectID(ctx context.Context, projectID uuid.UUID
 
 // Update updates an existing task
 func (r *taskRepository) Update(ctx context.Context, task *entity.Task) error {
-	result := r.db.WithContext(ctx).Save(task)
+	// First check if task exists
+	var existingTask entity.Task
+	result := r.db.WithContext(ctx).First(&existingTask, "id = ?", task.ID)
 	if result.Error != nil {
-		return fmt.Errorf("failed to update task: %w", result.Error)
+		if result.Error == gorm.ErrRecordNotFound {
+			return fmt.Errorf("task not found with id %s", task.ID)
+		}
+		return fmt.Errorf("failed to check task existence: %w", result.Error)
 	}
 
-	if result.RowsAffected == 0 {
-		return fmt.Errorf("task not found with id %s", task.ID)
+	// Update the task
+	result = r.db.WithContext(ctx).Save(task)
+	if result.Error != nil {
+		return fmt.Errorf("failed to update task: %w", result.Error)
 	}
 
 	return nil

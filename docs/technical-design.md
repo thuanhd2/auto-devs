@@ -75,6 +75,7 @@ Clone from https://github.com/satnaing/shadcn-admin
 - **Primary Database**: PostgreSQL
   - Database migration: golang-migrate
   - Connection pooling: pgxpool
+  - ORM: GORM với PostgreSQL driver
 - **Cache**: Redis cho session management và temporary data
 - **File Storage**: Local filesystem cho worktree và temporary files
 
