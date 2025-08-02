@@ -97,6 +97,7 @@ Hệ thống phải tuân theo các quy tắc chuyển đổi trạng thái sau:
 - Người dùng phải có thể phê duyệt kế hoạch để tiến hành implementation
 - Người dùng phải có thể từ chối kế hoạch và cung cấp phản hồi để lập lại
 - Người dùng phải có thể chỉnh sửa kế hoạch trước khi phê duyệt
+- Người dùng phải có thể comment trên kế hoạch để AI có thể sửa lại cho đúng ý
 
 ### 3.4. Quản lý Implementation
 
