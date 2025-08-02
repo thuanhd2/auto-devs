@@ -1,79 +1,149 @@
-# Shadcn Admin Dashboard
+# Auto-Devs Frontend
 
-Admin Dashboard UI crafted with Shadcn and Vite. Built with responsiveness and accessibility in mind.
-
-![alt text](public/images/shadcn-admin.png)
-
-I've been creating dashboard UIs at work and for my personal projects. I always wanted to make a reusable collection of dashboard UI for future projects; and here it is now. While I've created a few custom components, some of the code is directly adapted from ShadcnUI examples.
-
-> This is not a starter project (template) though. I'll probably make one in the future.
+Frontend application for Auto-Devs - an AI-powered developer task automation system. Built with React, TypeScript, and ShadcnUI.
 
 ## Features
 
-- Light/dark mode
-- Responsive
-- Accessible
-- With built-in Sidebar component
-- Global Search Command
-- 10+ pages
-- Extra custom components
+- Light/dark mode toggle
+- Responsive design
+- Accessible UI components
+- Built-in sidebar navigation
+- Project management interface
+- Settings management
+- Modern React architecture with TypeScript
 
 ## Tech Stack
 
-**UI:** [ShadcnUI](https://ui.shadcn.com) (TailwindCSS + RadixUI)
+**UI Framework:** React 19 with TypeScript
+
+**UI Components:** [ShadcnUI](https://ui.shadcn.com) (TailwindCSS + RadixUI)
 
 **Build Tool:** [Vite](https://vitejs.dev/)
 
 **Routing:** [TanStack Router](https://tanstack.com/router/latest)
 
+**State Management:** [Zustand](https://github.com/pmndrs/zustand)
+
+**Data Fetching:** [TanStack Query](https://tanstack.com/query/latest)
+
+**HTTP Client:** [Axios](https://axios-http.com/)
+
+**Styling:** [TailwindCSS](https://tailwindcss.com/)
+
 **Type Checking:** [TypeScript](https://www.typescriptlang.org/)
 
-**Linting/Formatting:** [Eslint](https://eslint.org/) & [Prettier](https://prettier.io/)
+**Linting/Formatting:** [ESLint](https://eslint.org/) & [Prettier](https://prettier.io/)
 
-**Icons:** [Tabler Icons](https://tabler.io/icons)
+**Icons:** [Tabler Icons](https://tabler.io/icons) & [Lucide React](https://lucide.dev/)
 
-**Auth (partial):** [Clerk](https://go.clerk.com/GttUAaK)
+## Getting Started
 
-## Run Locally
+### Prerequisites
 
-Clone the project
+- Node.js 22.12.0 or higher
+- npm or pnpm package manager
 
+### Installation
+
+1. Clone the repository and navigate to the frontend directory:
 ```bash
-  git clone https://github.com/satnaing/shadcn-admin.git
+cd frontend
 ```
 
-Go to the project directory
-
+2. Install dependencies:
 ```bash
-  cd shadcn-admin
+npm install
+# or
+pnpm install
 ```
 
-Install dependencies
-
+3. Create environment configuration:
 ```bash
-  pnpm install
+cp .env.example .env.local
 ```
 
-Start the server
-
+4. Update the environment variables in `.env.local`:
 ```bash
-  pnpm run dev
+# API Configuration
+VITE_API_BASE_URL=http://localhost:8080/api/v1
+VITE_WS_BASE_URL=ws://localhost:8080/ws
+
+# Development
+VITE_DEV_MODE=true
 ```
 
-## Sponsoring this project ❤️
+### Development
 
-If you find this project helpful or use this in your own work, consider [sponsoring me](https://github.com/sponsors/satnaing) to support development and maintenance. You can [buy me a coffee](https://buymeacoffee.com/satnaing) as well. Don’t worry, every penny helps. Thank you! 🙏
+Start the development server:
+```bash
+npm run dev
+```
 
-For questions or sponsorship inquiries, feel free to reach out at [contact@satnaing.dev](mailto:contact@satnaing.dev).
+The application will be available at `http://localhost:5173`
 
-### Current Sponsor
+### Build
 
-- [Clerk](https://go.clerk.com/GttUAaK) - for backing the implementation of Clerk in this project
+Build for production:
+```bash
+npm run build
+```
 
-## Author
+Preview the production build:
+```bash
+npm run preview
+```
 
-Crafted with 🤍 by [@satnaing](https://github.com/satnaing)
+### Code Quality
+
+Run linting:
+```bash
+npm run lint
+```
+
+Format code:
+```bash
+npm run format
+```
+
+Check formatting:
+```bash
+npm run format:check
+```
+
+## Project Structure
+
+```
+src/
+├── components/         # Reusable UI components
+│   ├── ui/            # ShadcnUI components
+│   └── layout/        # Layout components
+├── config/            # Configuration files
+├── context/           # React context providers
+├── features/          # Feature-specific components
+├── hooks/             # Custom React hooks
+├── lib/               # Utility libraries
+├── routes/            # Route components (TanStack Router)
+├── stores/            # Zustand stores
+└── utils/             # Utility functions
+```
+
+## API Integration
+
+The frontend communicates with the Auto-Devs backend API:
+
+- **Base URL:** Configured via `VITE_API_BASE_URL`
+- **WebSocket:** Real-time updates via `VITE_WS_BASE_URL`
+- **Endpoints:** Projects, tasks, and execution management
+
+## Available Scripts
+
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
+- `npm run preview` - Preview production build
+- `npm run lint` - Run ESLint
+- `npm run format` - Format code with Prettier
+- `npm run format:check` - Check code formatting
 
 ## License
 
-Licensed under the [MIT License](https://choosealicense.com/licenses/mit/)
+This project is part of the Auto-Devs system. See the main project repository for licensing information.
