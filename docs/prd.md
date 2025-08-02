@@ -109,7 +109,7 @@ Hệ thống phải tuân theo các quy tắc chuyển đổi trạng thái sau:
   - Xử lý sửa lỗi cơ bản và debugging
 
 **FR-010: Quản lý Branch & Worktree**
-- Mỗi task phải được implement trên Git branch riêng biệt
+- Mỗi task phải được implement trên Git branch và Git Worktree riêng biệt
 - Tên branch phải tuân theo quy tắc đặt tên có thể cấu hình
 - Hệ thống phải tự động xử lý việc tạo và quản lý branch
 
