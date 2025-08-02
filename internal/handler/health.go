@@ -9,10 +9,10 @@ import (
 )
 
 type HealthResponse struct {
-	Status    string            `json:"status"`
-	Timestamp time.Time         `json:"timestamp"`
-	Version   string            `json:"version"`
-	Database  DatabaseHealth    `json:"database"`
+	Status    string         `json:"status"`
+	Timestamp time.Time      `json:"timestamp"`
+	Version   string         `json:"version"`
+	Database  DatabaseHealth `json:"database"`
 }
 
 type DatabaseHealth struct {
@@ -20,23 +20,29 @@ type DatabaseHealth struct {
 	Error  string `json:"error,omitempty"`
 }
 
-func SetupHealthRoutes(router *gin.Engine, db *database.DB) {
+func SetupHealthRoutes(router *gin.Engine, db *database.GormDB) {
 	v1 := router.Group("/api/v1")
 	{
 		v1.GET("/health", healthCheck(db))
 	}
 }
 
-func healthCheck(db *database.DB) gin.HandlerFunc {
+func healthCheck(db *database.GormDB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		dbHealth := DatabaseHealth{
 			Status: "ok",
 		}
 
-		// Check database connectivity
-		if err := db.HealthCheck(); err != nil {
+		// Check database connectivity using GORM
+		sqlDB, err := db.DB.DB()
+		if err != nil {
 			dbHealth.Status = "error"
 			dbHealth.Error = err.Error()
+		} else {
+			if err := sqlDB.Ping(); err != nil {
+				dbHealth.Status = "error"
+				dbHealth.Error = err.Error()
+			}
 		}
 
 		overallStatus := "ok"

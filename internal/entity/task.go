@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 type TaskStatus string
@@ -19,13 +20,17 @@ const (
 )
 
 type Task struct {
-	ID          uuid.UUID  `json:"id" db:"id"`
-	ProjectID   uuid.UUID  `json:"project_id" db:"project_id"`
-	Title       string     `json:"title" db:"title"`
-	Description string     `json:"description" db:"description"`
-	Status      TaskStatus `json:"status" db:"status"`
-	BranchName  *string    `json:"branch_name,omitempty" db:"branch_name"`
-	PullRequest *string    `json:"pull_request,omitempty" db:"pull_request"`
-	CreatedAt   time.Time  `json:"created_at" db:"created_at"`
-	UpdatedAt   time.Time  `json:"updated_at" db:"updated_at"`
+	ID          uuid.UUID      `json:"id" gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
+	ProjectID   uuid.UUID      `json:"project_id" gorm:"type:uuid;not null" validate:"required"`
+	Title       string         `json:"title" gorm:"size:255;not null" validate:"required,min=1,max=255"`
+	Description string         `json:"description" gorm:"size:1000" validate:"max=1000"`
+	Status      TaskStatus     `json:"status" gorm:"size:50;not null;default:'TODO'" validate:"required,oneof=TODO PLANNING PLAN_REVIEWING IMPLEMENTING CODE_REVIEWING DONE CANCELLED"`
+	BranchName  *string        `json:"branch_name,omitempty" gorm:"size:255"`
+	PullRequest *string        `json:"pull_request,omitempty" gorm:"size:255"`
+	CreatedAt   time.Time      `json:"created_at" gorm:"autoCreateTime"`
+	UpdatedAt   time.Time      `json:"updated_at" gorm:"autoUpdateTime"`
+	DeletedAt   gorm.DeletedAt `json:"deleted_at,omitempty" gorm:"index"`
+
+	// Relationships
+	Project Project `json:"project,omitempty" gorm:"foreignKey:ProjectID"`
 }

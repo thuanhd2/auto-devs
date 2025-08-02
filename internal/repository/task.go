@@ -14,4 +14,5 @@ type TaskRepository interface {
 	Update(ctx context.Context, task *entity.Task) error
 	Delete(ctx context.Context, id uuid.UUID) error
 	UpdateStatus(ctx context.Context, id uuid.UUID, status entity.TaskStatus) error
+	GetByStatus(ctx context.Context, status entity.TaskStatus) ([]*entity.Task, error)
 }
