@@ -18,13 +18,12 @@ type ServerConfig struct {
 }
 
 type DatabaseConfig struct {
-	Host        string
-	Port        string
-	Username    string
-	Password    string
-	Name        string
-	SSLMode     string
-	TablePrefix string
+	Host     string
+	Port     string
+	Username string
+	Password string
+	Name     string
+	SSLMode  string
 }
 
 func Load() *Config {
@@ -39,13 +38,12 @@ func Load() *Config {
 			Host: getEnv("SERVER_HOST", "localhost"),
 		},
 		Database: DatabaseConfig{
-			Host:        getEnv("DB_HOST", "localhost"),
-			Port:        getEnv("DB_PORT", "5432"),
-			Username:    getEnv("DB_USERNAME", "postgres"),
-			Password:    getEnv("DB_PASSWORD", ""),
-			Name:        getEnv("DB_NAME", "autodevs"),
-			SSLMode:     getEnv("DB_SSLMODE", "disable"),
-			TablePrefix: getEnv("DB_TABLE_PREFIX", "dax_"),
+			Host:     getEnv("DB_HOST", "localhost"),
+			Port:     getEnv("DB_PORT", "5432"),
+			Username: getEnv("DB_USERNAME", "postgres"),
+			Password: getEnv("DB_PASSWORD", ""),
+			Name:     getEnv("DB_NAME", "autodevs"),
+			SSLMode:  getEnv("DB_SSLMODE", "disable"),
 		},
 	}
 }
