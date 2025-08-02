@@ -46,11 +46,13 @@ Frontend application for Auto-Devs - an AI-powered developer task automation sys
 ### Installation
 
 1. Clone the repository and navigate to the frontend directory:
+
 ```bash
 cd frontend
 ```
 
 2. Install dependencies:
+
 ```bash
 npm install
 # or
@@ -58,15 +60,17 @@ pnpm install
 ```
 
 3. Create environment configuration:
+
 ```bash
 cp .env.example .env.local
 ```
 
 4. Update the environment variables in `.env.local`:
+
 ```bash
 # API Configuration
-VITE_API_BASE_URL=http://localhost:8080/api/v1
-VITE_WS_BASE_URL=ws://localhost:8080/ws
+VITE_API_BASE_URL=http://localhost:8098/api/v1
+VITE_WS_BASE_URL=ws://localhost:8098/ws
 
 # Development
 VITE_DEV_MODE=true
@@ -75,6 +79,7 @@ VITE_DEV_MODE=true
 ### Development
 
 Start the development server:
+
 ```bash
 npm run dev
 ```
@@ -84,11 +89,13 @@ The application will be available at `http://localhost:5173`
 ### Build
 
 Build for production:
+
 ```bash
 npm run build
 ```
 
 Preview the production build:
+
 ```bash
 npm run preview
 ```
@@ -96,16 +103,19 @@ npm run preview
 ### Code Quality
 
 Run linting:
+
 ```bash
 npm run lint
 ```
 
 Format code:
+
 ```bash
 npm run format
 ```
 
 Check formatting:
+
 ```bash
 npm run format:check
 ```
