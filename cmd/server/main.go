@@ -31,8 +31,8 @@ func main() {
 	// Setup Gin router
 	router := gin.Default()
 
-	// Setup health check endpoint
-	handler.SetupHealthRoutes(router, app.GormDB)
+	// Setup all routes with middleware
+	handler.SetupRoutes(router, app.ProjectUsecase, app.TaskUsecase, app.GormDB)
 
 	// Start server
 	port := app.Config.Server.Port
