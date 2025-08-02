@@ -103,7 +103,7 @@ Hệ thống phải tuân theo các quy tắc chuyển đổi trạng thái sau:
 
 **FR-009: Implementation Tự động**
 - Khi được phê duyệt, hệ thống phải:
-  - Tạo Git branch mới cho task
+  - Tạo gitworktree mới cho task và git branch mới cho task
   - Tuân theo kế hoạch implementation
   - Tạo các thay đổi code theo kế hoạch
   - Xử lý sửa lỗi cơ bản và debugging
