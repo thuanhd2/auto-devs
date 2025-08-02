@@ -1,7 +1,7 @@
 {
-  "name": "shadcn-admin",
-  "private": false,
-  "version": "1.4.2",
+  "name": "auto-devs-frontend",
+  "private": true,
+  "version": "0.1.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -13,7 +13,7 @@
     "knip": "knip"
   },
   "dependencies": {
-    "@clerk/clerk-react": "^5.35.3",
+
     "@hookform/resolvers": "^5.1.1",
     "@radix-ui/react-alert-dialog": "^1.1.14",
     "@radix-ui/react-avatar": "^1.1.10",
