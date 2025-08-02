@@ -1,17 +1,18 @@
 import { createFileRoute } from '@tanstack/react-router'
-import ComingSoon from '@/components/coming-soon'
+import { ProjectBoard } from '@/components/kanban/project-board'
 
 export const Route = createFileRoute('/_authenticated/projects/')({
   component: ProjectsPage,
 })
 
 function ProjectsPage() {
+  // For now, we'll use a hardcoded project ID
+  // In a real app, this would come from route params or user selection
+  const projectId = 'demo-project-id'
+
   return (
-    <div className='space-y-4'>
-      <div className='flex items-center justify-between'>
-        <h1 className='text-3xl font-bold tracking-tight'>Projects</h1>
-      </div>
-      <ComingSoon />
+    <div className="h-full">
+      <ProjectBoard projectId={projectId} />
     </div>
   )
 }
