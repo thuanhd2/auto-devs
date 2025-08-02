@@ -111,7 +111,7 @@ Hệ thống phải tuân theo các quy tắc chuyển đổi trạng thái sau:
 **FR-010: Quản lý Branch & Worktree**
 - Mỗi task phải được implement trên Git branch và Git Worktree riêng biệt
 - Tên branch phải tuân theo quy tắc đặt tên có thể cấu hình
-- Hệ thống phải tự động xử lý việc tạo và quản lý branch
+- Hệ thống phải tự động xử lý việc tạo và quản lý branch, worktree
 
 **FR-011: Giám sát Implementation**
 - Người dùng phải có thể giám sát tiến độ implementation
