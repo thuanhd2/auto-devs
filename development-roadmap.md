@@ -22,7 +22,7 @@ Xây dựng hệ thống quản lý task cơ bản với giao diện web, cho ph
 #### Backend Foundation
 - [ ] **Project Setup**
   - Khởi tạo Go project với Gin framework
-  - Setup Clean Architecture structure (handler, usecase, repository)
+  - Setup Clean Architecture structure (handler, usecase, repository) bằng cách clone template tại https://github.com/bxcodec/go-clean-arch 
   - Cấu hình dependency injection với Wire
   - Docker và docker-compose setup
 
