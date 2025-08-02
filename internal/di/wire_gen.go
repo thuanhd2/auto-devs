@@ -8,6 +8,7 @@ package di
 
 import (
 	"github.com/auto-devs/auto-devs/config"
+	"github.com/auto-devs/auto-devs/pkg/database"
 	"github.com/google/wire"
 )
 
@@ -16,23 +17,43 @@ import (
 // InitializeApp builds the entire dependency tree
 func InitializeApp() (*App, error) {
 	configConfig := config.Load()
-	app := NewApp(configConfig)
+	db, err := ProvideDatabase(configConfig)
+	if err != nil {
+		return nil, err
+	}
+	app := NewApp(configConfig, db)
 	return app, nil
 }
 
 // wire.go:
 
 // ProviderSet is the Wire provider set for the entire application
-var ProviderSet = wire.NewSet(config.Load)
+var ProviderSet = wire.NewSet(config.Load, ProvideDatabase)
 
 // App represents the initialized application with all dependencies
 type App struct {
 	Config *config.Config
+	DB     *database.DB
 }
 
 // NewApp creates a new App instance
-func NewApp(cfg *config.Config) *App {
+func NewApp(cfg *config.Config, db *database.DB) *App {
 	return &App{
 		Config: cfg,
+		DB:     db,
 	}
+}
+
+// ProvideDatabase provides a database connection
+func ProvideDatabase(cfg *config.Config) (*database.DB, error) {
+	dbConfig := database.Config{
+		Host:     cfg.Database.Host,
+		Port:     cfg.Database.Port,
+		Username: cfg.Database.Username,
+		Password: cfg.Database.Password,
+		DBName:   cfg.Database.Name,
+		SSLMode:  cfg.Database.SSLMode,
+	}
+
+	return database.NewConnection(dbConfig)
 }
