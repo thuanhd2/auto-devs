@@ -39,16 +39,9 @@ Xây dựng hệ thống quản lý task cơ bản với giao diện web, cho ph
   - Health check endpoints
 
 #### Frontend Foundation  
-- [ ] **React Setup**
-  - React + TypeScript project với Vite
-  - Redux Toolkit + RTK Query setup
-  - React Router cấu hình
-  - shadcn/ui component library integration
-
-- [ ] **Basic UI Components**
-  - Layout components (Header, Sidebar, Main)
-  - Form components với validation
-  - Loading states và error boundaries
+- [ ] **Clone admin template**
+  - clone https://github.com/satnaing/shadcn-admin
+  - xóa đi các route đến các page không dùng đến (code vẫn giữ nguyên để refer về sau, chỉ xóa route cho đỡ rối thôi)
 
 ### Release 1.2: Project Management (Tuần 2-3)
 
