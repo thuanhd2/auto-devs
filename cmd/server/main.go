@@ -2,7 +2,6 @@ package main
 
 import (
 	"log"
-	"os"
 
 	"github.com/auto-devs/auto-devs/internal/di"
 	"github.com/auto-devs/auto-devs/internal/handler"
@@ -23,7 +22,7 @@ func main() {
 	handler.SetupHealthRoutes(router)
 
 	// Start server
-	port := os.Getenv("PORT")
+	port := app.Config.Server.Port
 	if port == "" {
 		port = app.Config.Server.Port
 	}
