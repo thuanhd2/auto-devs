@@ -100,15 +100,15 @@ Hệ thống tự động hóa task cho developer được thiết kế để:
 │  │ (Gin REST)  │  │             │  │  - Process Manager      │  │
 │  └─────────────┘  └─────────────┘  │  - CLI Orchestrator     │  │
 │                                    │  - Status Monitor       │  │
-│  ┌─────────────┐  ┌─────────────┐  └─────────────────────────┘  │
-│  │   Task      │  │   Project   │                               │
-│  │  Manager    │  │   Manager   │  ┌─────────────────────────┐  │
-│  │             │  │             │  │   Git Integration       │  │
-│  └─────────────┘  └─────────────┘  │                         │  │
-│                                    │  - Worktree Manager     │  │
-│                                    │  - Branch Operations    │  │
-│                                    │  - PR Management        │  │
-│                                    └─────────────────────────┘  │
+│  ┌─────────────────────────────┐    └─────────────────────────┘  │
+│  │   Core Management Service   │                                 │
+│  │                             │    ┌─────────────────────────┐  │
+│  │  - Task Manager             │    │   Git Integration       │  │
+│  │  - Project Manager          │    │                         │  │
+│  │  - State Machine            │    │  - Worktree Manager     │  │
+│  └─────────────────────────────┘    │  - Branch Operations    │  │
+│                                     │  - PR Management        │  │
+│                                     └─────────────────────────┘  │
 └─────────────────────────────────────────────────────────────────┘
                                 │
                     ┌───────────┼───────────┐
@@ -145,8 +145,10 @@ Hệ thống tự động hóa task cho developer được thiết kế để:
 ### Backend Services Layer
 - **API Gateway**: Gin-based REST API server
 - **WebSocket Server**: Real-time communication với frontend
-- **Task Manager**: Quản lý lifecycle và state của tasks
-- **Project Manager**: Quản lý projects và configurations
+- **Core Management Service**: Unified service quản lý cả tasks và projects
+  - Task Manager: Quản lý lifecycle và state của tasks
+  - Project Manager: Quản lý projects và configurations
+  - State Machine: Xử lý task state transitions
 - **AI Agent Controller**: Orchestrate AI CLI processes
 - **Git Integration**: Quản lý Git operations
 
@@ -162,10 +164,10 @@ Hệ thống tự động hóa task cho developer được thiết kế để:
 ## Luồng dữ liệu chính
 
 ### Task Execution Flow
-1. **Task Creation**: User tạo task qua Web UI → API Gateway → Task Manager → Database
-2. **Planning Phase**: Task Manager → AI Agent Controller → Spawn Claude CLI → Monitor progress
+1. **Task Creation**: User tạo task qua Web UI → API Gateway → Core Management Service → Database
+2. **Planning Phase**: Core Management Service → AI Agent Controller → Spawn Claude CLI → Monitor progress
 3. **Implementation Phase**: AI Agent Controller → Git Integration → Create worktree/branch → Execute CLI
-4. **Completion**: Git Integration → Create PR → Update task status → Notify user qua WebSocket
+4. **Completion**: Git Integration → Create PR → Core Management Service updates task status → Notify user qua WebSocket
 
 ### Real-time Updates Flow
 1. **Status Change**: Backend service cập nhật task status
@@ -392,6 +394,34 @@ CREATE INDEX idx_processes_status ON processes(status);
 }
 ```
 
+#### POST /api/v1/tasks/{task_id}/stop-execution
+**Description**: Dừng execution đang chạy của task
+**Response:**
+```json
+{
+  "message": "Execution stopped",
+  "execution_id": "uuid",
+  "stopped_at": "2024-01-01T00:00:00Z"
+}
+```
+
+#### POST /api/v1/executions/{execution_id}/kill
+**Description**: Kill process của execution cụ thể
+**Response:**
+```json
+{
+  "message": "Execution killed",
+  "execution_id": "uuid",
+  "killed_processes": [
+    {
+      "process_id": "uuid",
+      "pid": 12345,
+      "process_type": "cli_agent"
+    }
+  ]
+}
+```
+
 ### WebSocket Events
 
 #### Task Status Updates
@@ -417,6 +447,34 @@ CREATE INDEX idx_processes_status ON processes(status);
     "progress": 0.6,
     "current_step": "Implementing feature X",
     "timestamp": "2024-01-01T00:00:00Z"
+  }
+}
+```
+
+#### Execution Stopped
+```json
+{
+  "type": "execution_stopped",
+  "data": {
+    "execution_id": "uuid",
+    "task_id": "uuid",
+    "reason": "user_requested",
+    "stopped_at": "2024-01-01T00:00:00Z"
+  }
+}
+```
+
+#### Process Killed
+```json
+{
+  "type": "process_killed",
+  "data": {
+    "execution_id": "uuid",
+    "task_id": "uuid",
+    "process_id": "uuid",
+    "pid": 12345,
+    "process_type": "cli_agent",
+    "killed_at": "2024-01-01T00:00:00Z"
   }
 }
 ```
@@ -516,6 +574,128 @@ func (pm *ProcessManager) monitorProcess(exec *Execution, process *exec.Cmd) {
     pm.repository.UpdateExecution(exec)
     pm.publishExecutionEvent(exec)
 }
+
+func (pm *ProcessManager) KillExecution(executionID string) error {
+    pm.mutex.Lock()
+    defer pm.mutex.Unlock()
+    
+    exec, exists := pm.executions[executionID]
+    if !exists {
+        return fmt.Errorf("execution not found: %s", executionID)
+    }
+    
+    // Get all processes for this execution
+    processes, err := pm.repository.GetProcessesByExecution(executionID)
+    if err != nil {
+        return fmt.Errorf("failed to get processes: %w", err)
+    }
+    
+    killedProcesses := []ProcessInfo{}
+    
+    // Kill all running processes
+    for _, proc := range processes {
+        if proc.Status == "running" && proc.PID != 0 {
+            if err := pm.killProcess(proc.PID); err != nil {
+                log.Errorf("Failed to kill process %d: %v", proc.PID, err)
+                continue
+            }
+            
+            // Update process status to killed
+            proc.Status = "killed"
+            proc.CompletedAt = time.Now()
+            proc.ExitCode = -1 // Killed signal
+            
+            if err := pm.repository.UpdateProcess(&proc); err != nil {
+                log.Errorf("Failed to update process status: %v", err)
+            }
+            
+            killedProcesses = append(killedProcesses, ProcessInfo{
+                ProcessID:   proc.ID,
+                PID:        proc.PID,
+                ProcessType: proc.ProcessType,
+            })
+            
+            // Publish process killed event
+            pm.publishProcessKilledEvent(exec.TaskID, executionID, &proc)
+        }
+    }
+    
+    // Update execution status
+    exec.Status = "cancelled"
+    exec.CompletedAt = time.Now()
+    
+    if err := pm.repository.UpdateExecution(exec); err != nil {
+        return fmt.Errorf("failed to update execution: %w", err)
+    }
+    
+    // Publish execution stopped event
+    pm.publishExecutionStoppedEvent(exec)
+    
+    // Remove from active executions
+    delete(pm.executions, executionID)
+    
+    return nil
+}
+
+func (pm *ProcessManager) killProcess(pid int) error {
+    process, err := os.FindProcess(pid)
+    if err != nil {
+        return fmt.Errorf("process not found: %w", err)
+    }
+    
+    // Try graceful termination first (SIGTERM)
+    if err := process.Signal(syscall.SIGTERM); err != nil {
+        // If graceful termination fails, force kill (SIGKILL)
+        return process.Kill()
+    }
+    
+    // Wait a bit for graceful shutdown
+    timer := time.NewTimer(5 * time.Second)
+    defer timer.Stop()
+    
+    done := make(chan error, 1)
+    go func() {
+        _, err := process.Wait()
+        done <- err
+    }()
+    
+    select {
+    case <-timer.C:
+        // Timeout, force kill
+        return process.Kill()
+    case err := <-done:
+        // Process terminated gracefully
+        return err
+    }
+}
+
+func (pm *ProcessManager) publishExecutionStoppedEvent(exec *Execution) {
+    event := ExecutionStoppedEvent{
+        Type: "execution_stopped",
+        Data: ExecutionStoppedData{
+            ExecutionID: exec.ID,
+            TaskID:     exec.TaskID,
+            Reason:     "user_requested",
+            StoppedAt:  time.Now(),
+        },
+    }
+    pm.eventPublisher.Publish("task.execution.stopped", event)
+}
+
+func (pm *ProcessManager) publishProcessKilledEvent(taskID, executionID string, proc *Process) {
+    event := ProcessKilledEvent{
+        Type: "process_killed",
+        Data: ProcessKilledData{
+            ExecutionID: executionID,
+            TaskID:     taskID,
+            ProcessID:  proc.ID,
+            PID:        proc.PID,
+            ProcessType: proc.ProcessType,
+            KilledAt:   time.Now(),
+        },
+    }
+    pm.eventPublisher.Publish("task.process.killed", event)
+}
 ```
 
 ### Git Worktree Management
@@ -588,4 +768,36 @@ type Execution struct {
     CompletedAt      *time.Time             `json:"completed_at" db:"completed_at"`
     ExitCode         int                    `json:"exit_code" db:"exit_code"`
     Logs             string                 `json:"logs" db:"logs"`
+}
+
+type ProcessInfo struct {
+    ProcessID   string `json:"process_id"`
+    PID         int    `json:"pid"`
+    ProcessType string `json:"process_type"`
+}
+
+type ExecutionStoppedEvent struct {
+    Type string                `json:"type"`
+    Data ExecutionStoppedData  `json:"data"`
+}
+
+type ExecutionStoppedData struct {
+    ExecutionID string    `json:"execution_id"`
+    TaskID      string    `json:"task_id"`
+    Reason      string    `json:"reason"`
+    StoppedAt   time.Time `json:"stopped_at"`
+}
+
+type ProcessKilledEvent struct {
+    Type string             `json:"type"`
+    Data ProcessKilledData  `json:"data"`
+}
+
+type ProcessKilledData struct {
+    ExecutionID string    `json:"execution_id"`
+    TaskID      string    `json:"task_id"`
+    ProcessID   string    `json:"process_id"`
+    PID         int       `json:"pid"`
+    ProcessType string    `json:"process_type"`
+    KilledAt    time.Time `json:"killed_at"`
 }
