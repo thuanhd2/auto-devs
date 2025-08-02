@@ -58,11 +58,15 @@ Hệ thống tự động hóa task cho developer được thiết kế để:
 
 ## Frontend
 
+Clone from https://github.com/satnaing/shadcn-admin
+
 - **Framework**: React.js với TypeScript
-  - State management: Redux Toolkit + RTK Query
-  - Code architecture: Feature-based folder structure
-  - Component library: shadcn/ui
-  - Routing: React Router
+- **UI**: ShadcnUI (TailwindCSS + RadixUI)
+- **Build Tool**: Vite
+- **Routing**: TanStack Router
+- **Type Checking**: TypeScript
+- **Linting/Formatting**: Eslint & Prettier
+- **Icons**: Tabler Icons
 - **Build tool**: Vite cho fast development và optimized builds
 - **Testing**: Jest + React Testing Library
 
