@@ -88,13 +88,19 @@ run: ## Run the application
 .PHONY: test
 test: ## Run tests
 	@echo "Running tests..."
-	@go test ./...
+	@go test ./... -v
 
 .PHONY: clean
 clean: ## Clean build artifacts
 	@echo "Cleaning build artifacts..."
 	@rm -rf bin/
 	@echo "Clean completed"
+
+.PHONY: wire
+wire: ## Generate Wire dependency injection code
+	@echo "Generating Wire dependency injection code..."
+	@go generate ./internal/di
+	@echo "Wire code generated successfully!"
 
 .PHONY: deps
 deps: ## Download dependencies

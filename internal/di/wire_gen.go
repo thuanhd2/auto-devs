@@ -26,16 +26,19 @@ func InitializeApp() (*App, error) {
 	}
 	projectRepository := postgres.NewProjectRepository(gormDB)
 	taskRepository := postgres.NewTaskRepository(gormDB)
-	projectUsecase := ProvideProjectUsecase(projectRepository)
+	auditRepository := postgres.NewAuditRepository(gormDB)
+	auditService := ProvideAuditService(auditRepository)
+	projectUsecase := ProvideProjectUsecase(projectRepository, auditService)
 	taskUsecase := ProvideTaskUsecase(taskRepository)
-	app := NewApp(configConfig, gormDB, projectRepository, taskRepository, projectUsecase, taskUsecase)
+	app := NewApp(configConfig, gormDB, projectRepository, taskRepository, auditRepository, auditService, projectUsecase, taskUsecase)
 	return app, nil
 }
 
 // wire.go:
 
 // ProviderSet is the Wire provider set for the entire application
-var ProviderSet = wire.NewSet(config.Load, ProvideGormDB, postgres.NewProjectRepository, postgres.NewTaskRepository, ProvideProjectUsecase,
+var ProviderSet = wire.NewSet(config.Load, ProvideGormDB, postgres.NewProjectRepository, postgres.NewTaskRepository, postgres.NewAuditRepository, ProvideAuditService,
+	ProvideProjectUsecase,
 	ProvideTaskUsecase,
 )
 
@@ -45,6 +48,8 @@ type App struct {
 	GormDB         *database.GormDB
 	ProjectRepo    repository.ProjectRepository
 	TaskRepo       repository.TaskRepository
+	AuditRepo      repository.AuditRepository
+	AuditService   usecase.AuditService
 	ProjectUsecase usecase.ProjectUsecase
 	TaskUsecase    usecase.TaskUsecase
 }
@@ -55,6 +60,8 @@ func NewApp(
 	gormDB *database.GormDB,
 	projectRepo repository.ProjectRepository,
 	taskRepo repository.TaskRepository,
+	auditRepo repository.AuditRepository,
+	auditService usecase.AuditService,
 	projectUsecase usecase.ProjectUsecase,
 	taskUsecase usecase.TaskUsecase,
 ) *App {
@@ -63,6 +70,8 @@ func NewApp(
 		GormDB:         gormDB,
 		ProjectRepo:    projectRepo,
 		TaskRepo:       taskRepo,
+		AuditRepo:      auditRepo,
+		AuditService:   auditService,
 		ProjectUsecase: projectUsecase,
 		TaskUsecase:    taskUsecase,
 	}
@@ -73,9 +82,14 @@ func ProvideGormDB(cfg *config.Config) (*database.GormDB, error) {
 	return database.NewGormDB(cfg)
 }
 
+// ProvideAuditService provides an AuditService instance
+func ProvideAuditService(auditRepo repository.AuditRepository) usecase.AuditService {
+	return usecase.NewAuditService(auditRepo)
+}
+
 // ProvideProjectUsecase provides a ProjectUsecase instance
-func ProvideProjectUsecase(projectRepo repository.ProjectRepository) usecase.ProjectUsecase {
-	return usecase.NewProjectUsecase(projectRepo)
+func ProvideProjectUsecase(projectRepo repository.ProjectRepository, auditService usecase.AuditService) usecase.ProjectUsecase {
+	return usecase.NewProjectUsecase(projectRepo, auditService)
 }
 
 // ProvideTaskUsecase provides a TaskUsecase instance

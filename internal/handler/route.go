@@ -43,6 +43,11 @@ func SetupRoutes(router *gin.Engine, projectUsecase usecase.ProjectUsecase, task
 			projects.PUT("/:id", projectHandler.UpdateProject)
 			projects.DELETE("/:id", projectHandler.DeleteProject)
 			projects.GET("/:id/tasks", projectHandler.GetProjectWithTasks)
+			projects.GET("/:id/statistics", projectHandler.GetProjectStatistics)
+			projects.POST("/:id/archive", projectHandler.ArchiveProject)
+			projects.POST("/:id/restore", projectHandler.RestoreProject)
+			projects.GET("/:id/settings", projectHandler.GetProjectSettings)
+			projects.PUT("/:id/settings", projectHandler.UpdateProjectSettings)
 		}
 
 		// Task routes
