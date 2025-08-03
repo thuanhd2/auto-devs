@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import type { Task, TaskStatus } from '@/types/task'
 import {
   DndContext,
@@ -16,6 +16,8 @@ import { useKeyboardNavigation } from '@/hooks/use-keyboard-navigation'
 import { useUpdateTask, useOptimisticTaskUpdate } from '@/hooks/use-tasks'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { KanbanColumn } from './kanban-column'
+import { useWebSocketProject, useWebSocketContext } from '@/context/websocket-context'
+import { taskOptimisticUpdates } from '@/services/optimisticUpdates'
 
 interface KanbanBoardProps {
   tasks: Task[]
@@ -39,12 +41,29 @@ export function KanbanBoard({
   searchQuery = '',
 }: KanbanBoardProps) {
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null)
+  const [localTasks, setLocalTasks] = useState<Task[]>(tasks)
   const updateTaskMutation = useUpdateTask()
   const optimisticUpdate = useOptimisticTaskUpdate()
+  
+  // WebSocket integration
+  const { setCurrentProjectId } = useWebSocketProject(projectId)
+  const { isConnected } = useWebSocketContext()
+
+  // Keep local tasks in sync with props
+  useEffect(() => {
+    setLocalTasks(tasks)
+  }, [tasks])
+
+  // Set current project for WebSocket subscriptions
+  useEffect(() => {
+    if (projectId) {
+      setCurrentProjectId(projectId)
+    }
+  }, [projectId, setCurrentProjectId])
 
   // Filter and group tasks by status
   const filteredTasks = useMemo(() => {
-    return tasks.filter((task) => {
+    return localTasks.filter((task) => {
       if (!searchQuery) return true
 
       const query = searchQuery.toLowerCase()
@@ -53,7 +72,7 @@ export function KanbanBoard({
         task.description.toLowerCase().includes(query)
       )
     })
-  }, [tasks, searchQuery])
+  }, [localTasks, searchQuery])
 
   const { selectedTaskId, selectedColumnId } = useKeyboardNavigation({
     tasks: filteredTasks,
@@ -111,8 +130,18 @@ export function KanbanBoard({
         return // Invalid transition, don't allow drop
       }
 
-      // Apply optimistic update
-      optimisticUpdate(projectId, activeTaskId, overColumnId)
+      // Apply optimistic update using WebSocket service
+      const activeTask = localTasks.find(t => t.id === activeTaskId)
+      if (activeTask) {
+        taskOptimisticUpdates.updateTaskStatus(
+          activeTaskId,
+          overColumnId,
+          activeTask,
+          (updatedTask) => {
+            setLocalTasks(prev => prev.map(t => t.id === activeTaskId ? updatedTask : t))
+          }
+        )
+      }
     }
   }
 
