@@ -14,16 +14,16 @@ import (
 const (
 	// Time allowed to write a message to the peer
 	writeWait = 10 * time.Second
-	
+
 	// Time allowed to read the next pong message from the peer
 	pongWait = 60 * time.Second
-	
+
 	// Send pings to peer with this period (must be less than pongWait)
 	pingPeriod = (pongWait * 9) / 10
-	
+
 	// Maximum message size allowed from peer
 	maxMessageSize = 512
-	
+
 	// Buffer size for the message channel
 	messageBufferSize = 256
 )
@@ -41,38 +41,42 @@ var upgrader = websocket.Upgrader{
 type Connection struct {
 	// The WebSocket connection
 	conn *websocket.Conn
-	
+
 	// Connection ID
 	ID string
-	
+
 	// User ID (from authentication)
 	UserID string
-	
+
 	// Project IDs this connection is subscribed to
 	ProjectIDs map[uuid.UUID]bool
-	
+
 	// Send channel for outbound messages
 	send chan []byte
-	
+
 	// Hub reference
 	hub *Hub
-	
+
 	// Connection metadata
 	ConnectedAt time.Time
 	LastPong    time.Time
-	
+
 	// Mutex for thread-safe operations
 	mu sync.RWMutex
-	
+
 	// Context for graceful shutdown
 	ctx    context.Context
 	cancel context.CancelFunc
+
+	// Flag to prevent multiple closes
+	closed  bool
+	closeMu sync.Mutex
 }
 
 // NewConnection creates a new WebSocket connection
 func NewConnection(conn *websocket.Conn, hub *Hub) *Connection {
 	ctx, cancel := context.WithCancel(context.Background())
-	
+
 	return &Connection{
 		conn:        conn,
 		ID:          uuid.New().String(),
@@ -94,18 +98,36 @@ func (c *Connection) Start() {
 
 // Close closes the connection and cleans up resources
 func (c *Connection) Close() {
+	c.closeMu.Lock()
+	defer c.closeMu.Unlock()
+
+	// Check if already closed
+	if c.closed {
+		return
+	}
+
+	c.closed = true
 	c.cancel()
 	close(c.send)
-	c.conn.Close()
+
+	// Only close conn if it's not nil
+	if c.conn != nil {
+		c.conn.Close()
+	}
 }
 
 // SendMessage sends a message to the connection
 func (c *Connection) SendMessage(message *Message) error {
+	// Check if connection is closed
+	if c.IsClosed() {
+		return ErrConnectionClosed
+	}
+
 	data, err := message.ToBytes()
 	if err != nil {
 		return err
 	}
-	
+
 	select {
 	case c.send <- data:
 		return nil
@@ -117,6 +139,11 @@ func (c *Connection) SendMessage(message *Message) error {
 
 // SendBytes sends raw bytes to the connection
 func (c *Connection) SendBytes(data []byte) error {
+	// Check if connection is closed
+	if c.IsClosed() {
+		return ErrConnectionClosed
+	}
+
 	select {
 	case c.send <- data:
 		return nil
@@ -150,7 +177,7 @@ func (c *Connection) IsSubscribedToProject(projectID uuid.UUID) bool {
 func (c *Connection) GetSubscribedProjects() []uuid.UUID {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
-	
+
 	projects := make([]uuid.UUID, 0, len(c.ProjectIDs))
 	for projectID := range c.ProjectIDs {
 		projects = append(projects, projectID)
@@ -172,13 +199,37 @@ func (c *Connection) GetUserID() string {
 	return c.UserID
 }
 
+// IsClosed returns true if the connection is closed
+func (c *Connection) IsClosed() bool {
+	c.closeMu.Lock()
+	defer c.closeMu.Unlock()
+	return c.closed
+}
+
+// SafeClose safely closes the connection if it's not already closed
+func (c *Connection) SafeClose() {
+	c.closeMu.Lock()
+	defer c.closeMu.Unlock()
+
+	if !c.closed {
+		c.closed = true
+		c.cancel()
+		close(c.send)
+
+		// Only close conn if it's not nil
+		if c.conn != nil {
+			c.conn.Close()
+		}
+	}
+}
+
 // readPump pumps messages from the WebSocket connection to the hub
 func (c *Connection) readPump() {
 	defer func() {
 		c.hub.Unregister(c)
-		c.Close()
+		c.SafeClose()
 	}()
-	
+
 	c.conn.SetReadLimit(maxMessageSize)
 	c.conn.SetReadDeadline(time.Now().Add(pongWait))
 	c.conn.SetPongHandler(func(string) error {
@@ -186,7 +237,7 @@ func (c *Connection) readPump() {
 		c.conn.SetReadDeadline(time.Now().Add(pongWait))
 		return nil
 	})
-	
+
 	for {
 		select {
 		case <-c.ctx.Done():
@@ -199,7 +250,7 @@ func (c *Connection) readPump() {
 				}
 				return
 			}
-			
+
 			// Parse and handle the message
 			c.handleIncomingMessage(messageBytes)
 		}
@@ -211,9 +262,9 @@ func (c *Connection) writePump() {
 	ticker := time.NewTicker(pingPeriod)
 	defer func() {
 		ticker.Stop()
-		c.Close()
+		c.SafeClose()
 	}()
-	
+
 	for {
 		select {
 		case <-c.ctx.Done():
@@ -225,24 +276,24 @@ func (c *Connection) writePump() {
 				c.conn.WriteMessage(websocket.CloseMessage, []byte{})
 				return
 			}
-			
+
 			w, err := c.conn.NextWriter(websocket.TextMessage)
 			if err != nil {
 				return
 			}
 			w.Write(message)
-			
+
 			// Add queued messages to the current WebSocket message
 			n := len(c.send)
 			for i := 0; i < n; i++ {
 				w.Write([]byte{'\n'})
 				w.Write(<-c.send)
 			}
-			
+
 			if err := w.Close(); err != nil {
 				return
 			}
-			
+
 		case <-ticker.C:
 			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
 			if err := c.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
@@ -260,7 +311,7 @@ func (c *Connection) handleIncomingMessage(messageBytes []byte) {
 		c.sendError("invalid_message", "Failed to parse message")
 		return
 	}
-	
+
 	switch message.Type {
 	case Ping:
 		c.handlePing()
@@ -285,12 +336,12 @@ func (c *Connection) handleAuth(message *Message) {
 		c.sendError("invalid_auth", "Invalid authentication data")
 		return
 	}
-	
+
 	// TODO: Implement proper token validation
 	// For now, we'll accept any non-empty token
 	if authData.Token != "" {
 		c.SetUserID(authData.UserID)
-		
+
 		successMessage, _ := NewMessage(AuthSuccess, AuthData{
 			UserID:  authData.UserID,
 			Message: "Authentication successful",
@@ -322,13 +373,14 @@ func (c *Connection) IsHealthy() bool {
 func (c *Connection) GetConnectionInfo() map[string]interface{} {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
-	
+
 	return map[string]interface{}{
-		"id":           c.ID,
-		"user_id":      c.UserID,
-		"connected_at": c.ConnectedAt,
-		"last_pong":    c.LastPong,
-		"is_healthy":   c.IsHealthy(),
+		"id":            c.ID,
+		"user_id":       c.UserID,
+		"connected_at":  c.ConnectedAt,
+		"last_pong":     c.LastPong,
+		"is_healthy":    c.IsHealthy(),
+		"is_closed":     c.IsClosed(),
 		"project_count": len(c.ProjectIDs),
 	}
 }

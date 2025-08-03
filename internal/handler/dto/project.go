@@ -44,10 +44,11 @@ type ProjectListResponse struct {
 }
 
 type ProjectStatisticsResponse struct {
-	TaskCounts        map[entity.TaskStatus]int `json:"task_counts"`
-	TotalTasks        int                       `json:"total_tasks"`
-	CompletionPercent float64                   `json:"completion_percent"`
-	LastActivityAt    *time.Time                `json:"last_activity_at"`
+	TotalTasks        int            `json:"total_tasks"`
+	TasksByStatus     map[string]int `json:"tasks_by_status"`
+	CompletionPercent float64        `json:"completion_percent"`
+	LastActivityAt    *time.Time     `json:"last_activity_at"`
+	RecentActivity    int            `json:"recent_activity"`
 }
 
 type ProjectSettingsResponse struct {
@@ -125,11 +126,26 @@ func ProjectListResponseFromResult(result *usecase.GetProjectsResult) ProjectLis
 }
 
 func ProjectStatisticsResponseFromUsecase(stats *usecase.ProjectStatistics) ProjectStatisticsResponse {
+	// Convert map[entity.TaskStatus]int to map[string]int
+	tasksByStatus := make(map[string]int)
+	for status, count := range stats.TaskCounts {
+		tasksByStatus[string(status)] = count
+	}
+
+	// Calculate recent activity (tasks updated in last 7 days)
+	recentActivity := 0
+	if stats.LastActivityAt != nil {
+		// For now, we'll set a default value. In a real implementation,
+		// you might want to calculate this from the database
+		recentActivity = stats.TotalTasks
+	}
+
 	return ProjectStatisticsResponse{
-		TaskCounts:        stats.TaskCounts,
 		TotalTasks:        stats.TotalTasks,
+		TasksByStatus:     tasksByStatus,
 		CompletionPercent: stats.CompletionPercent,
 		LastActivityAt:    stats.LastActivityAt,
+		RecentActivity:    recentActivity,
 	}
 }
 

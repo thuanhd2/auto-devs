@@ -12,31 +12,31 @@ import (
 type Hub struct {
 	// Registered connections
 	connections map[*Connection]bool
-	
+
 	// Connections grouped by project ID for efficient broadcasting
 	projectConnections map[uuid.UUID]map[*Connection]bool
-	
+
 	// Connections grouped by user ID
 	userConnections map[string]map[*Connection]bool
-	
+
 	// Inbound messages from the connections
 	broadcast chan *BroadcastMessage
-	
+
 	// Register requests from the connections
 	register chan *Connection
-	
+
 	// Unregister requests from connections
 	unregister chan *Connection
-	
+
 	// Message processors
 	processors map[MessageType]MessageProcessor
-	
+
 	// Metrics
 	metrics *HubMetrics
-	
+
 	// Mutex for thread-safe operations
 	mu sync.RWMutex
-	
+
 	// Cleanup ticker
 	cleanupTicker *time.Ticker
 }
@@ -56,14 +56,14 @@ type MessageProcessor interface {
 
 // HubMetrics tracks hub statistics
 type HubMetrics struct {
-	TotalConnections    int64
-	ActiveConnections   int64
-	MessagesSent        int64
-	MessagesReceived    int64
-	BroadcastsSent      int64
-	ConnectionsCreated  int64
-	ConnectionsClosed   int64
-	mu                  sync.RWMutex
+	TotalConnections   int64
+	ActiveConnections  int64
+	MessagesSent       int64
+	MessagesReceived   int64
+	BroadcastsSent     int64
+	ConnectionsCreated int64
+	ConnectionsClosed  int64
+	mu                 sync.RWMutex
 }
 
 // NewHub creates a new Hub
@@ -79,25 +79,25 @@ func NewHub() *Hub {
 		metrics:            &HubMetrics{},
 		cleanupTicker:      time.NewTicker(30 * time.Second),
 	}
-	
+
 	return hub
 }
 
 // Run starts the hub's main loop
 func (h *Hub) Run() {
 	defer h.cleanupTicker.Stop()
-	
+
 	for {
 		select {
 		case conn := <-h.register:
 			h.registerConnection(conn)
-			
+
 		case conn := <-h.unregister:
 			h.unregisterConnection(conn)
-			
+
 		case broadcastMsg := <-h.broadcast:
 			h.broadcastMessage(broadcastMsg)
-			
+
 		case <-h.cleanupTicker.C:
 			h.cleanupUnhealthyConnections()
 		}
@@ -122,7 +122,7 @@ func (h *Hub) Broadcast(message *Message, projectID *uuid.UUID, userID *string, 
 		UserID:      userID,
 		ExcludeConn: excludeConn,
 	}
-	
+
 	select {
 	case h.broadcast <- broadcastMsg:
 		h.metrics.incrementBroadcastsSent()
@@ -149,7 +149,7 @@ func (h *Hub) BroadcastToAll(message *Message, excludeConn *Connection) {
 // ProcessMessage processes an incoming message from a connection
 func (h *Hub) ProcessMessage(conn *Connection, message *Message) {
 	h.metrics.incrementMessagesReceived()
-	
+
 	processor, exists := h.processors[message.Type]
 	if exists {
 		if err := processor.ProcessMessage(conn, message); err != nil {
@@ -171,11 +171,11 @@ func (h *Hub) RegisterProcessor(msgType MessageType, processor MessageProcessor)
 func (h *Hub) registerConnection(conn *Connection) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
-	
+
 	h.connections[conn] = true
 	h.metrics.incrementConnectionsCreated()
 	h.metrics.incrementActiveConnections()
-	
+
 	log.Printf("Connection registered: %s", conn.ID)
 }
 
@@ -183,10 +183,15 @@ func (h *Hub) registerConnection(conn *Connection) {
 func (h *Hub) unregisterConnection(conn *Connection) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
-	
+
+	// Check if connection is already closed
+	if conn.IsClosed() {
+		return
+	}
+
 	if _, ok := h.connections[conn]; ok {
 		delete(h.connections, conn)
-		
+
 		// Remove from project connections
 		for projectID := range conn.ProjectIDs {
 			if projectConns, exists := h.projectConnections[projectID]; exists {
@@ -196,7 +201,7 @@ func (h *Hub) unregisterConnection(conn *Connection) {
 				}
 			}
 		}
-		
+
 		// Remove from user connections
 		userID := conn.GetUserID()
 		if userID != "" {
@@ -207,10 +212,10 @@ func (h *Hub) unregisterConnection(conn *Connection) {
 				}
 			}
 		}
-		
+
 		h.metrics.decrementActiveConnections()
 		h.metrics.incrementConnectionsClosed()
-		
+
 		log.Printf("Connection unregistered: %s", conn.ID)
 	}
 }
@@ -219,9 +224,9 @@ func (h *Hub) unregisterConnection(conn *Connection) {
 func (h *Hub) broadcastMessage(broadcastMsg *BroadcastMessage) {
 	h.mu.RLock()
 	defer h.mu.RUnlock()
-	
+
 	var targetConnections []*Connection
-	
+
 	switch {
 	case broadcastMsg.ProjectID != nil:
 		// Broadcast to project subscribers
@@ -232,7 +237,7 @@ func (h *Hub) broadcastMessage(broadcastMsg *BroadcastMessage) {
 				}
 			}
 		}
-		
+
 	case broadcastMsg.UserID != nil:
 		// Broadcast to specific user
 		if userConns, exists := h.userConnections[*broadcastMsg.UserID]; exists {
@@ -242,7 +247,7 @@ func (h *Hub) broadcastMessage(broadcastMsg *BroadcastMessage) {
 				}
 			}
 		}
-		
+
 	default:
 		// Broadcast to all connections
 		for conn := range h.connections {
@@ -251,9 +256,14 @@ func (h *Hub) broadcastMessage(broadcastMsg *BroadcastMessage) {
 			}
 		}
 	}
-	
+
 	// Send message to target connections
 	for _, conn := range targetConnections {
+		// Check if connection is closed before sending
+		if conn.IsClosed() {
+			continue
+		}
+
 		if err := conn.SendMessage(broadcastMsg.Message); err != nil {
 			log.Printf("Error sending message to connection %s: %v", conn.ID, err)
 			// Don't unregister here as it could cause deadlock
@@ -268,16 +278,16 @@ func (h *Hub) broadcastMessage(broadcastMsg *BroadcastMessage) {
 func (h *Hub) SubscribeConnectionToProject(conn *Connection, projectID uuid.UUID) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
-	
+
 	// Add to connection's project list
 	conn.SubscribeToProject(projectID)
-	
+
 	// Add to hub's project connections map
 	if h.projectConnections[projectID] == nil {
 		h.projectConnections[projectID] = make(map[*Connection]bool)
 	}
 	h.projectConnections[projectID][conn] = true
-	
+
 	log.Printf("Connection %s subscribed to project %s", conn.ID, projectID)
 }
 
@@ -285,10 +295,10 @@ func (h *Hub) SubscribeConnectionToProject(conn *Connection, projectID uuid.UUID
 func (h *Hub) UnsubscribeConnectionFromProject(conn *Connection, projectID uuid.UUID) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
-	
+
 	// Remove from connection's project list
 	conn.UnsubscribeFromProject(projectID)
-	
+
 	// Remove from hub's project connections map
 	if projectConns, exists := h.projectConnections[projectID]; exists {
 		delete(projectConns, conn)
@@ -296,7 +306,7 @@ func (h *Hub) UnsubscribeConnectionFromProject(conn *Connection, projectID uuid.
 			delete(h.projectConnections, projectID)
 		}
 	}
-	
+
 	log.Printf("Connection %s unsubscribed from project %s", conn.ID, projectID)
 }
 
@@ -304,7 +314,7 @@ func (h *Hub) UnsubscribeConnectionFromProject(conn *Connection, projectID uuid.
 func (h *Hub) AssociateConnectionWithUser(conn *Connection, userID string) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
-	
+
 	// Remove from old user association if exists
 	oldUserID := conn.GetUserID()
 	if oldUserID != "" && oldUserID != userID {
@@ -315,16 +325,16 @@ func (h *Hub) AssociateConnectionWithUser(conn *Connection, userID string) {
 			}
 		}
 	}
-	
+
 	// Set new user ID
 	conn.SetUserID(userID)
-	
+
 	// Add to new user association
 	if h.userConnections[userID] == nil {
 		h.userConnections[userID] = make(map[*Connection]bool)
 	}
 	h.userConnections[userID][conn] = true
-	
+
 	log.Printf("Connection %s associated with user %s", conn.ID, userID)
 }
 
@@ -338,7 +348,7 @@ func (h *Hub) cleanupUnhealthyConnections() {
 		}
 	}
 	h.mu.RUnlock()
-	
+
 	for _, conn := range unhealthyConnections {
 		log.Printf("Cleaning up unhealthy connection: %s", conn.ID)
 		h.Unregister(conn)
@@ -356,7 +366,7 @@ func (h *Hub) GetMetrics() HubMetrics {
 func (h *Hub) GetConnectionsInfo() []map[string]interface{} {
 	h.mu.RLock()
 	defer h.mu.RUnlock()
-	
+
 	var info []map[string]interface{}
 	for conn := range h.connections {
 		info = append(info, conn.GetConnectionInfo())
@@ -368,7 +378,7 @@ func (h *Hub) GetConnectionsInfo() []map[string]interface{} {
 func (h *Hub) GetProjectConnectionCount(projectID uuid.UUID) int {
 	h.mu.RLock()
 	defer h.mu.RUnlock()
-	
+
 	if projectConns, exists := h.projectConnections[projectID]; exists {
 		return len(projectConns)
 	}
@@ -379,11 +389,31 @@ func (h *Hub) GetProjectConnectionCount(projectID uuid.UUID) int {
 func (h *Hub) GetUserConnectionCount(userID string) int {
 	h.mu.RLock()
 	defer h.mu.RUnlock()
-	
+
 	if userConns, exists := h.userConnections[userID]; exists {
 		return len(userConns)
 	}
 	return 0
+}
+
+// Shutdown gracefully shuts down the hub and closes all connections
+func (h *Hub) Shutdown() {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+
+	log.Printf("Shutting down hub, closing %d connections", len(h.connections))
+
+	// Close all connections safely
+	for conn := range h.connections {
+		conn.SafeClose()
+	}
+
+	// Clear all maps
+	h.connections = make(map[*Connection]bool)
+	h.projectConnections = make(map[uuid.UUID]map[*Connection]bool)
+	h.userConnections = make(map[string]map[*Connection]bool)
+
+	log.Printf("Hub shutdown complete")
 }
 
 // Metrics methods

@@ -34,13 +34,13 @@ func (p *TaskEventProcessor) handleTaskEvent(conn *Connection, message *Message)
 	if err := message.ParseData(&taskData); err != nil {
 		return err
 	}
-	
+
 	// Broadcast to all connections subscribed to the project
 	p.hub.BroadcastToProject(message, taskData.ProjectID, conn)
-	
-	log.Printf("Task event broadcasted: %s for task %s in project %s", 
+
+	log.Printf("Task event broadcasted: %s for task %s in project %s",
 		message.Type, taskData.TaskID, taskData.ProjectID)
-	
+
 	return nil
 }
 
@@ -51,12 +51,12 @@ func (p *TaskEventProcessor) BroadcastTaskCreated(task interface{}, projectID uu
 		ProjectID: projectID,
 		Task:      task,
 	}
-	
+
 	message, err := NewMessage(TaskCreated, data)
 	if err != nil {
 		return err
 	}
-	
+
 	p.hub.BroadcastToProject(message, projectID, excludeConn)
 	return nil
 }
@@ -69,12 +69,12 @@ func (p *TaskEventProcessor) BroadcastTaskUpdated(taskID, projectID uuid.UUID, c
 		Changes:   changes,
 		Task:      task,
 	}
-	
+
 	message, err := NewMessage(TaskUpdated, data)
 	if err != nil {
 		return err
 	}
-	
+
 	p.hub.BroadcastToProject(message, projectID, excludeConn)
 	return nil
 }
@@ -85,12 +85,12 @@ func (p *TaskEventProcessor) BroadcastTaskDeleted(taskID, projectID uuid.UUID, e
 		TaskID:    taskID,
 		ProjectID: projectID,
 	}
-	
+
 	message, err := NewMessage(TaskDeleted, data)
 	if err != nil {
 		return err
 	}
-	
+
 	p.hub.BroadcastToProject(message, projectID, excludeConn)
 	return nil
 }
@@ -123,13 +123,13 @@ func (p *ProjectEventProcessor) handleProjectEvent(conn *Connection, message *Me
 	if err := message.ParseData(&projectData); err != nil {
 		return err
 	}
-	
+
 	// Broadcast to all connections subscribed to the project
 	p.hub.BroadcastToProject(message, projectData.ProjectID, conn)
-	
-	log.Printf("Project event broadcasted: %s for project %s", 
+
+	log.Printf("Project event broadcasted: %s for project %s",
 		message.Type, projectData.ProjectID)
-	
+
 	return nil
 }
 
@@ -140,12 +140,12 @@ func (p *ProjectEventProcessor) BroadcastProjectUpdated(projectID uuid.UUID, cha
 		Changes:   changes,
 		Project:   project,
 	}
-	
+
 	message, err := NewMessage(ProjectUpdated, data)
 	if err != nil {
 		return err
 	}
-	
+
 	p.hub.BroadcastToProject(message, projectID, excludeConn)
 	return nil
 }
@@ -178,13 +178,13 @@ func (p *StatusEventProcessor) handleStatusEvent(conn *Connection, message *Mess
 	if err := message.ParseData(&statusData); err != nil {
 		return err
 	}
-	
+
 	// Broadcast to all connections subscribed to the project
 	p.hub.BroadcastToProject(message, statusData.ProjectID, conn)
-	
-	log.Printf("Status change broadcasted: %s changed from %s to %s in project %s", 
+
+	log.Printf("Status change broadcasted: %s changed from %s to %s in project %s",
 		statusData.EntityType, statusData.OldStatus, statusData.NewStatus, statusData.ProjectID)
-	
+
 	return nil
 }
 
@@ -197,12 +197,12 @@ func (p *StatusEventProcessor) BroadcastStatusChanged(entityID, projectID uuid.U
 		NewStatus:  newStatus,
 		ProjectID:  projectID,
 	}
-	
+
 	message, err := NewMessage(StatusChanged, data)
 	if err != nil {
 		return err
 	}
-	
+
 	p.hub.BroadcastToProject(message, projectID, excludeConn)
 	return nil
 }
@@ -235,13 +235,13 @@ func (p *UserPresenceProcessor) handlePresenceEvent(conn *Connection, message *M
 	if err := message.ParseData(&presenceData); err != nil {
 		return err
 	}
-	
+
 	// Broadcast to all connections subscribed to the project
 	p.hub.BroadcastToProject(message, presenceData.ProjectID, conn)
-	
-	log.Printf("User presence broadcasted: %s %s project %s", 
+
+	log.Printf("User presence broadcasted: %s %s project %s",
 		presenceData.UserID, presenceData.Action, presenceData.ProjectID)
-	
+
 	return nil
 }
 
@@ -252,12 +252,12 @@ func (p *UserPresenceProcessor) BroadcastUserJoined(userID string, projectID uui
 		ProjectID: projectID,
 		Action:    "joined",
 	}
-	
+
 	message, err := NewMessage(UserJoined, data)
 	if err != nil {
 		return err
 	}
-	
+
 	p.hub.BroadcastToProject(message, projectID, excludeConn)
 	return nil
 }
@@ -269,12 +269,12 @@ func (p *UserPresenceProcessor) BroadcastUserLeft(userID string, projectID uuid.
 		ProjectID: projectID,
 		Action:    "left",
 	}
-	
+
 	message, err := NewMessage(UserLeft, data)
 	if err != nil {
 		return err
 	}
-	
+
 	p.hub.BroadcastToProject(message, projectID, excludeConn)
 	return nil
 }
@@ -293,7 +293,7 @@ func NewSubscriptionProcessor(hub *Hub) *SubscriptionProcessor {
 
 // SubscriptionMessage represents a subscription request
 type SubscriptionMessage struct {
-	Action    string    `json:"action"`    // "subscribe" or "unsubscribe"
+	Action    string    `json:"action"` // "subscribe" or "unsubscribe"
 	ProjectID uuid.UUID `json:"project_id"`
 }
 
@@ -303,63 +303,63 @@ func (p *SubscriptionProcessor) ProcessMessage(conn *Connection, message *Messag
 	if err := message.ParseData(&subMsg); err != nil {
 		return err
 	}
-	
+
 	switch subMsg.Action {
 	case "subscribe":
 		p.hub.SubscribeConnectionToProject(conn, subMsg.ProjectID)
-		
+
 		// Send user joined notification
 		if userID := conn.GetUserID(); userID != "" {
 			presenceProcessor := NewUserPresenceProcessor(p.hub)
 			presenceProcessor.BroadcastUserJoined(userID, subMsg.ProjectID, conn)
 		}
-		
+
 	case "unsubscribe":
 		p.hub.UnsubscribeConnectionFromProject(conn, subMsg.ProjectID)
-		
+
 		// Send user left notification
 		if userID := conn.GetUserID(); userID != "" {
 			presenceProcessor := NewUserPresenceProcessor(p.hub)
 			presenceProcessor.BroadcastUserLeft(userID, subMsg.ProjectID, conn)
 		}
-		
+
 	default:
 		return ErrProcessingFailed
 	}
-	
+
 	return nil
 }
 
 // GetEventProcessors returns all configured event processors
 func GetEventProcessors(hub *Hub) map[MessageType]MessageProcessor {
 	processors := make(map[MessageType]MessageProcessor)
-	
+
 	// Task event processor
 	taskProcessor := NewTaskEventProcessor(hub)
 	processors[TaskCreated] = taskProcessor
 	processors[TaskUpdated] = taskProcessor
 	processors[TaskDeleted] = taskProcessor
-	
+
 	// Project event processor
 	projectProcessor := NewProjectEventProcessor(hub)
 	processors[ProjectUpdated] = projectProcessor
-	
+
 	// Status event processor
 	statusProcessor := NewStatusEventProcessor(hub)
 	processors[StatusChanged] = statusProcessor
-	
+
 	// User presence processor
 	presenceProcessor := NewUserPresenceProcessor(hub)
 	processors[UserJoined] = presenceProcessor
 	processors[UserLeft] = presenceProcessor
-	
+
 	// Auth processor
 	authService := NewMockAuthService()
 	authProcessor := NewAuthProcessor(authService, hub)
 	processors[AuthRequired] = authProcessor
-	
+
 	// Subscription processor (handled in connection's handleIncomingMessage method)
 	// subscriptionProcessor := NewSubscriptionProcessor(hub)
-	
+
 	return processors
 }
