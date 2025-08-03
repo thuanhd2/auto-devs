@@ -3,6 +3,7 @@ package handler
 import (
 	"github.com/auto-devs/auto-devs/docs"
 	"github.com/auto-devs/auto-devs/internal/usecase"
+	"github.com/auto-devs/auto-devs/internal/websocket"
 	"github.com/auto-devs/auto-devs/pkg/database"
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
@@ -10,10 +11,11 @@ import (
 )
 
 // SetupRoutes configures all API routes and middleware
-func SetupRoutes(router *gin.Engine, projectUsecase usecase.ProjectUsecase, taskUsecase usecase.TaskUsecase, db *database.GormDB) {
+func SetupRoutes(router *gin.Engine, projectUsecase usecase.ProjectUsecase, taskUsecase usecase.TaskUsecase, db *database.GormDB, wsService *websocket.Service) {
 	// Initialize handlers
-	projectHandler := NewProjectHandler(projectUsecase)
-	taskHandler := NewTaskHandler(taskUsecase)
+	projectHandler := NewProjectHandlerWithWebSocket(projectUsecase, wsService)
+	taskHandler := NewTaskHandlerWithWebSocket(taskUsecase, wsService)
+	wsHandler := wsService.GetHandler()
 
 	// Global middleware
 	router.Use(SecurityHeadersMiddleware())
@@ -30,6 +32,9 @@ func SetupRoutes(router *gin.Engine, projectUsecase usecase.ProjectUsecase, task
 
 	// Health check endpoint (no versioning for health)
 	SetupHealthRoutes(router, db)
+
+	// WebSocket endpoints
+	SetupWebSocketRoutes(router, wsHandler, wsService)
 
 	// API v1 routes
 	v1 := router.Group("/api/v1")
