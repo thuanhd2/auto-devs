@@ -1,4 +1,5 @@
 # Development Roadmap
+
 ## Công cụ Tự động hóa Task cho Developer
 
 ### Tổng quan
@@ -6,27 +7,32 @@
 Roadmap phát triển này được thiết kế theo nguyên tắc phát triển và release từng phần, cho phép user sử dụng từng module khi hoàn thành thay vì đợi toàn bộ project. Quá trình phát triển được chia thành 3 phase chính:
 
 1. **Phase 1: Task Management System** - Hệ thống quản lý task cơ bản
-2. **Phase 2: Git Worktree Integration** - Tích hợp Git branching và worktree  
+2. **Phase 2: Git Worktree Integration** - Tích hợp Git branching và worktree
 3. **Phase 3: AI Executor** - Tự động hóa planning và implementation bằng AI
 
 ---
 
 ## Phase 1: Task Management System
-*Timeline: 4-6 tuần*
+
+_Timeline: 4-6 tuần_
 
 ### Mục tiêu Phase 1
+
 Xây dựng hệ thống quản lý task cơ bản với giao diện web, cho phép user tạo projects, quản lý tasks và theo dõi trạng thái. Phase này hoàn toàn manual, chưa có AI automation.
 
 ### Release 1.1: Core Infrastructure (Tuần 1-2)
 
 #### Backend Foundation
+
 - [ ] **Project Setup**
+
   - Khởi tạo Go project với Gin framework
-  - Setup Clean Architecture structure (handler, usecase, repository) bằng cách clone template tại https://github.com/bxcodec/go-clean-arch 
+  - Setup Clean Architecture structure (handler, usecase, repository) bằng cách clone template tại https://github.com/bxcodec/go-clean-arch
   - Cấu hình dependency injection với Wire
 
 - [ ] **Database Setup**
-  - Setup .env.example chứa database connection đến postgresdb local 
+
+  - Setup .env.example chứa database connection đến postgresdb local
   - Database migration system với golang-migrate
   - Schema cho `projects` và `tasks` tables
   - Basic CRUD repositories
@@ -38,7 +44,8 @@ Xây dựng hệ thống quản lý task cơ bản với giao diện web, cho ph
   - OpenAPI/Swagger documentation
   - Health check endpoints
 
-#### Frontend Foundation  
+#### Frontend Foundation
+
 - [ ] **Clone admin template**
   - clone https://github.com/satnaing/shadcn-admin
   - xóa đi các route đến các page không dùng đến (code vẫn giữ nguyên để refer về sau, chỉ xóa route cho đỡ rối thôi)
@@ -46,13 +53,16 @@ Xây dựng hệ thống quản lý task cơ bản với giao diện web, cho ph
 ### Release 1.2: Project Management (Tuần 2-3)
 
 #### Features
+
 - [ ] **Project CRUD Operations**
+
   - Tạo project mới với tên, mô tả, repository URL
   - Liệt kê tất cả projects
   - Chỉnh sửa project settings
   - Xóa project (với confirmation)
 
 - [ ] **Project Dashboard**
+
   - Project selection interface
   - Project overview page với task statistics
   - Basic project settings page
@@ -65,13 +75,16 @@ Xây dựng hệ thống quản lý task cơ bản với giao diện web, cho ph
 ### Release 1.3: Task Management (Tuần 3-4)
 
 #### Features
+
 - [ ] **Task CRUD Operations**
+
   - Tạo task mới với title, description
   - Task list view theo project
   - Task detail view
   - Task status manual updates
 
 - [ ] **Task Status System**
+
   - Implement task status enum: TODO, PLANNING, PLAN_REVIEWING, IMPLEMENTING, CODE_REVIEWING, DONE, CANCELLED
   - Status transition validation
   - Manual status updates (cho testing)
@@ -84,7 +97,9 @@ Xây dựng hệ thống quản lý task cơ bản với giao diện web, cho ph
 ### Release 1.4: Real-time Updates (Tuần 4-5)
 
 #### Features
+
 - [ ] **WebSocket Integration**
+
   - WebSocket server implementation
   - Real-time task status updates
   - Frontend WebSocket client
@@ -99,7 +114,9 @@ Xây dựng hệ thống quản lý task cơ bản với giao diện web, cho ph
 ### Release 1.5: Testing & Polish (Tuần 5-6)
 
 #### Quality Assurance
+
 - [ ] **Testing**
+
   - Unit tests cho backend services
   - Integration tests với Testcontainers
   - Frontend component tests với Jest + RTL
@@ -112,6 +129,7 @@ Xây dựng hệ thống quản lý task cơ bản với giao diện web, cho ph
   - CI/CD pipeline với GitHub Actions
 
 #### Performance & Security
+
 - [ ] **Optimizations**
   - Database indexing optimization
   - API response caching
@@ -120,16 +138,20 @@ Xây dựng hệ thống quản lý task cơ bản với giao diện web, cho ph
 
 ---
 
-## Phase 2: Git Worktree Integration  
-*Timeline: 3-4 tuần*
+## Phase 2: Git Worktree Integration
+
+_Timeline: 3-4 tuần_
 
 ### Mục tiêu Phase 2
+
 Tích hợp Git operations để mỗi task có thể work trên branch riêng biệt với Git worktree. Phase này cho phép manual task implementation nhưng có isolated workspace.
 
 ### Release 2.1: Git Infrastructure (Tuần 1-2)
 
 #### Backend Git Integration
+
 - [ ] **Git Manager Service**
+
   - Git CLI wrapper implementation
   - Git repository validation và authentication
   - Branch naming conventions config
@@ -142,6 +164,7 @@ Tích hợp Git operations để mỗi task có thể work trên branch riêng b
   - Branch naming rules
 
 #### Database Schema Updates
+
 - [ ] **New Tables**
   - `worktrees` table cho tracking active worktrees
   - Update `tasks` table với `branch_name`, `worktree_path`
@@ -150,7 +173,9 @@ Tích hợp Git operations để mỗi task có thể work trên branch riêng b
 ### Release 2.2: Worktree Management (Tuần 2-3)
 
 #### Features
+
 - [ ] **Worktree Operations**
+
   - Create worktree khi task chuyển sang IMPLEMENTING
   - Branch creation với naming convention
   - Worktree cleanup khi task complete/cancel
@@ -163,6 +188,7 @@ Tích hợp Git operations để mỗi task có thể work trên branch riêng b
   - Worktree health monitoring
 
 #### UI Enhancements
+
 - [ ] **Git Status Display**
   - Branch information trong task cards
   - Worktree status indicators
@@ -172,7 +198,9 @@ Tích hợp Git operations để mỗi task có thể work trên branch riêng b
 ### Release 2.3: Manual Implementation Support (Tuần 3-4)
 
 #### Features
+
 - [ ] **Implementation Workflow**
+
   - "Start Implementation" button tạo worktree + branch
   - Open worktree directory instruction
   - Manual work tracking
@@ -185,6 +213,7 @@ Tích hợp Git operations để mỗi task có thể work trên branch riêng b
   - Commit preparation guidance
 
 #### Quality & Documentation
+
 - [ ] **Testing & Docs**
   - Git integration testing
   - Worktree management tests
@@ -194,35 +223,67 @@ Tích hợp Git operations để mỗi task có thể work trên branch riêng b
 ---
 
 ## Phase 3: AI Executor
-*Timeline: 6-8 tuần*
+
+_Timeline: 6-8 tuần_
 
 ### Mục tiêu Phase 3
+
 Hoàn chỉnh automation với AI CLI integration để tự động planning và implementation tasks.
 
-### Release 3.1: AI Planning (Tuần 1-3)
+### Release 3.1: AI Execution Infrastructure (Tuần 1-2)
 
 #### AI Integration Infrastructure
+
 - [ ] **AI CLI Manager**
   - Claude Code CLI integration
   - Process spawning và monitoring
   - CLI command composition
   - Environment setup
 
-- [ ] **Planning System**
-  - AI planning service implementation
-  - Task analysis algorithms
-  - Plan generation và storage
-  - Planning progress tracking
-
 #### Database Schema Final
+
 - [ ] **Execution Tracking**
   - `executions` table implementation
   - `processes` table cho process monitoring
   - Execution logs và status tracking
   - AI output capture và storage
 
+#### Core Execution Features
+
+- [ ] **Process Management**
+
+  - Execution process spawning
+  - Process monitoring và health checks
+  - Process termination capabilities
+  - Resource usage tracking
+
+- [ ] **Real-time Execution Tracking**
+
+  - Live execution progress updates
+  - Process output streaming
+  - Error detection và notification
+  - Performance metrics collection
+
+- [ ] **Control Features**
+  - Pause/resume execution
+  - Cancel execution với cleanup
+  - Process kill functionality
+  - Execution retry mechanisms
+
+### Release 3.2: AI Planning (Tuần 2-4)
+
+#### Planning System
+
+- [ ] **AI Planning Service**
+  - Task analysis algorithms
+  - Plan generation và storage
+  - Planning progress tracking
+  - Integration với AI execution infrastructure
+
 #### Features
+
 - [ ] **Automated Planning**
+
   - "Start Planning" triggers AI analysis
   - Task status: TODO → PLANNING → PLAN_REVIEWING
   - AI-generated implementation plan
@@ -235,38 +296,37 @@ Hoàn chỉnh automation với AI CLI integration để tự động planning v�
   - Plan editing capabilities
   - Comment system cho plan feedback
 
-### Release 3.2: AI Implementation (Tuần 3-5)
+### Release 3.3: AI Implementation (Tuần 4-6)
 
 #### Features
+
 - [ ] **Automated Implementation**
+
   - Plan approval triggers implementation
   - Worktree + branch creation
   - AI CLI execution trong isolated environment
   - Real-time progress monitoring
 
-- [ ] **Process Management**
-  - Execution process spawning
-  - Process monitoring và health checks
-  - Process termination capabilities
-  - Resource usage tracking
+- [ ] **Implementation Workflow**
+  - "Start Implementation" button tạo worktree + branch
+  - AI execution với Claude Code CLI
+  - Manual work tracking integration
+  - "Complete Implementation" action
 
 #### Advanced Monitoring
-- [ ] **Real-time Execution Tracking**
-  - Live execution progress updates
-  - Process output streaming
+
+- [ ] **Implementation Tracking**
+  - Live implementation progress updates
+  - Code generation monitoring
   - Error detection và notification
-  - Performance metrics collection
+  - Implementation quality metrics
 
-- [ ] **Control Features**
-  - Pause/resume execution
-  - Cancel execution với cleanup
-  - Process kill functionality
-  - Execution retry mechanisms
-
-### Release 3.3: Pull Request Integration (Tuần 5-6)
+### Release 3.4: GitHub Pull Request Integration (Tuần 6-8)
 
 #### Features
+
 - [ ] **PR Automation**
+
   - Automatic PR creation khi implementation complete
   - PR description generation từ task info
   - Task linking trong PR
@@ -278,17 +338,10 @@ Hoàn chỉnh automation với AI CLI integration để tự động planning v�
   - Automatic status update: CODE_REVIEWING → DONE
   - Post-merge cleanup
 
-#### Git Provider Integration
-- [ ] **GitHub/GitLab Integration**
-  - API authentication setup
-  - PR creation via API
-  - Webhook setup cho merge detection
-  - Repository permissions management
+#### Advanced Features & Polish
 
-### Release 3.4: Advanced Features & Polish (Tuần 6-8)
-
-#### Advanced Features
 - [ ] **Smart Retry Logic**
+
   - Automatic retry cho failed executions
   - Incremental planning updates
   - Failure analysis và suggestions
@@ -301,7 +354,9 @@ Hoàn chỉnh automation với AI CLI integration để tự động planning v�
   - Cache optimization
 
 #### Quality & Documentation
+
 - [ ] **Comprehensive Testing**
+
   - End-to-end automation testing
   - AI integration testing
   - Performance testing
@@ -320,18 +375,21 @@ Hoàn chỉnh automation với AI CLI integration để tự động planning v�
 ### Development Approach
 
 #### Phase 1 Focus
+
 - **Core Business Logic**: Task và project management
 - **User Experience**: Web interface cho basic workflow
 - **Foundation**: Database, API, real-time updates
 - **Deliverable**: Functional task management system
 
-#### Phase 2 Focus  
+#### Phase 2 Focus
+
 - **Git Integration**: Worktree và branch management
 - **Workflow Enhancement**: Isolated development environments
 - **Infrastructure**: File system integration
 - **Deliverable**: Manual implementation với Git isolation
 
 #### Phase 3 Focus
+
 - **AI Automation**: Complete task automation
 - **Process Management**: AI CLI orchestration
 - **Advanced Workflow**: PR automation và monitoring
@@ -340,6 +398,7 @@ Hoàn chỉnh automation với AI CLI integration để tự động planning v�
 ### Technology Stack Consistency
 
 Toàn bộ 3 phases sử dụng tech stack nhất quán:
+
 - **Backend**: Go + Gin + PostgreSQL + Redis
 - **Frontend**: React + TypeScript + Redux Toolkit
 - **Infrastructure**: Docker + GitHub Actions
@@ -348,25 +407,29 @@ Toàn bộ 3 phases sử dụng tech stack nhất quán:
 ### Release Strategy
 
 #### Independent Releases
+
 - Mỗi release có thể deploy và sử dụng độc lập
 - Backward compatibility được maintain
 - Database migrations support incremental updates
 - Feature flags cho phép enable/disable new features
 
 #### User Adoption Path
+
 1. **Phase 1**: Users có thể manage tasks manually
-2. **Phase 2**: Users có thể work trong isolated Git environments  
+2. **Phase 2**: Users có thể work trong isolated Git environments
 3. **Phase 3**: Users có thể fully automate development workflow
 
 ### Testing Strategy
 
 #### Continuous Quality
+
 - Unit tests từ Phase 1
 - Integration tests cho mỗi major feature
 - End-to-end tests cho complete workflows
 - Performance testing từ Phase 2
 
 #### AI Testing Specific
+
 - Mocked AI responses cho deterministic testing
 - AI integration testing với real CLI
 - Process management testing
@@ -377,11 +440,13 @@ Toàn bộ 3 phases sử dụng tech stack nhất quán:
 ## Risk Mitigation
 
 ### Technical Risks
+
 - **AI Quality Issues**: Phase 1 & 2 có thể hoạt động independent
 - **Git Integration Complexity**: Isolated testing với multiple repo configurations
 - **Process Management**: Comprehensive monitoring và cleanup procedures
 
 ### Business Risks
+
 - **User Adoption**: Incremental value delivery qua từng phase
 - **Complexity Management**: Progressive feature introduction
 - **Performance**: Early optimization và monitoring
@@ -389,20 +454,23 @@ Toàn bộ 3 phases sử dụng tech stack nhất quán:
 ### Success Metrics Per Phase
 
 #### Phase 1 Metrics
+
 - Task creation và management success rate: >95%
 - UI responsiveness: <2s response time
 - User onboarding time: <10 minutes
 
-#### Phase 2 Metrics  
+#### Phase 2 Metrics
+
 - Git operation success rate: >90%
 - Worktree creation/cleanup success: >95%
 - Branch management accuracy: 100%
 
 #### Phase 3 Metrics
+
 - Planning success rate: >85%
 - Implementation success rate: >80%
 - End-to-end automation success: >75%
 
 ---
 
-*Roadmap này được thiết kế để deliver value sớm và thường xuyên, cho phép user sử dụng system ngay từ Phase 1 và progressively adopt advanced features ở các phase sau.*
+_Roadmap này được thiết kế để deliver value sớm và thường xuyên, cho phép user sử dụng system ngay từ Phase 1 và progressively adopt advanced features ở các phase sau._
