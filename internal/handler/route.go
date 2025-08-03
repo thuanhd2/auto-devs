@@ -60,11 +60,19 @@ func SetupRoutes(router *gin.Engine, projectUsecase usecase.ProjectUsecase, task
 		{
 			tasks.POST("", taskHandler.CreateTask)
 			tasks.GET("", taskHandler.ListTasks)
+			tasks.GET("/filter", taskHandler.GetTasksWithFilters)
+			tasks.PATCH("/bulk-status", taskHandler.BulkUpdateTaskStatus)
 			tasks.GET("/:id", taskHandler.GetTask)
 			tasks.PUT("/:id", taskHandler.UpdateTask)
 			tasks.DELETE("/:id", taskHandler.DeleteTask)
 			tasks.PATCH("/:id/status", taskHandler.UpdateTaskStatus)
+			tasks.PATCH("/:id/status-with-history", taskHandler.UpdateTaskStatusWithHistory)
+			tasks.GET("/:id/status-history", taskHandler.GetTaskStatusHistory)
+			tasks.GET("/:id/validate-transition", taskHandler.ValidateTaskStatusTransition)
 			tasks.GET("/:id/project", taskHandler.GetTaskWithProject)
 		}
+
+		// Project-specific task routes for analytics
+		projects.GET("/:project_id/status-analytics", taskHandler.GetProjectStatusAnalytics)
 	}
 }

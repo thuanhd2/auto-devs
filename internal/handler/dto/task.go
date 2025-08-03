@@ -25,6 +25,31 @@ type TaskStatusUpdateRequest struct {
 	Status entity.TaskStatus `json:"status" binding:"required,oneof=TODO PLANNING PLAN_REVIEWING IMPLEMENTING CODE_REVIEWING DONE CANCELLED" example:"TODO"`
 }
 
+type TaskStatusUpdateWithHistoryRequest struct {
+	Status    entity.TaskStatus `json:"status" binding:"required,oneof=TODO PLANNING PLAN_REVIEWING IMPLEMENTING CODE_REVIEWING DONE CANCELLED" example:"TODO"`
+	ChangedBy *string           `json:"changed_by,omitempty" example:"user123"`
+	Reason    *string           `json:"reason,omitempty" example:"Requirements changed"`
+}
+
+type BulkStatusUpdateRequest struct {
+	TaskIDs   []uuid.UUID       `json:"task_ids" binding:"required" example:"[\"123e4567-e89b-12d3-a456-426614174000\"]"`
+	Status    entity.TaskStatus `json:"status" binding:"required,oneof=TODO PLANNING PLAN_REVIEWING IMPLEMENTING CODE_REVIEWING DONE CANCELLED" example:"TODO"`
+	ChangedBy *string           `json:"changed_by,omitempty" example:"user123"`
+}
+
+type TaskAdvancedFilterQuery struct {
+	ProjectID     *string                `form:"project_id" example:"123e4567-e89b-12d3-a456-426614174000"`
+	Status        *string                `form:"status" example:"TODO"`
+	Statuses      []string               `form:"statuses" example:"TODO,PLANNING"`
+	CreatedAfter  *time.Time            `form:"created_after" example:"2024-01-01T00:00:00Z"`
+	CreatedBefore *time.Time            `form:"created_before" example:"2024-12-31T23:59:59Z"`
+	SearchTerm    *string               `form:"search" example:"authentication"`
+	Limit         *int                  `form:"limit" example:"10"`
+	Offset        *int                  `form:"offset" example:"0"`
+	OrderBy       *string               `form:"order_by" example:"created_at"`
+	OrderDir      *string               `form:"order_dir" example:"desc"`
+}
+
 // Task response DTOs
 type TaskResponse struct {
 	ID          uuid.UUID         `json:"id" example:"123e4567-e89b-12d3-a456-426614174000"`
@@ -52,6 +77,39 @@ type TasksByStatusResponse struct {
 	Status entity.TaskStatus `json:"status"`
 	Tasks  []TaskResponse    `json:"tasks"`
 	Count  int               `json:"count"`
+}
+
+type TaskStatusHistoryResponse struct {
+	ID         uuid.UUID          `json:"id" example:"123e4567-e89b-12d3-a456-426614174000"`
+	TaskID     uuid.UUID          `json:"task_id" example:"123e4567-e89b-12d3-a456-426614174000"`
+	FromStatus *entity.TaskStatus `json:"from_status,omitempty" example:"TODO"`
+	ToStatus   entity.TaskStatus  `json:"to_status" example:"PLANNING"`
+	ChangedBy  *string            `json:"changed_by,omitempty" example:"user123"`
+	Reason     *string            `json:"reason,omitempty" example:"Requirements changed"`
+	CreatedAt  time.Time          `json:"created_at" example:"2024-01-15T10:30:00Z"`
+}
+
+type TaskStatusAnalyticsResponse struct {
+	ProjectID              uuid.UUID                          `json:"project_id" example:"123e4567-e89b-12d3-a456-426614174000"`
+	StatusDistribution     []TaskStatusStatsResponse          `json:"status_distribution"`
+	AverageTimeInStatus    map[entity.TaskStatus]float64      `json:"average_time_in_status" example:"{\"TODO\": 24.5, \"PLANNING\": 48.2}"`
+	TransitionCount        map[string]int                     `json:"transition_count" example:"{\"TODO->PLANNING\": 15, \"PLANNING->IMPLEMENTING\": 12}"`
+	TotalTasks             int                                `json:"total_tasks" example:"50"`
+	CompletedTasks         int                                `json:"completed_tasks" example:"20"`
+	CompletionRate         float64                            `json:"completion_rate" example:"40.0"`
+	GeneratedAt            time.Time                          `json:"generated_at" example:"2024-01-15T10:30:00Z"`
+}
+
+type TaskStatusStatsResponse struct {
+	Status entity.TaskStatus `json:"status" example:"TODO"`
+	Count  int               `json:"count" example:"10"`
+}
+
+type TaskStatusValidationResponse struct {
+	Valid         bool                      `json:"valid" example:"true"`
+	CurrentStatus entity.TaskStatus         `json:"current_status" example:"TODO"`
+	TargetStatus  entity.TaskStatus         `json:"target_status" example:"PLANNING"`
+	Message       string                    `json:"message,omitempty" example:"Transition is valid"`
 }
 
 // Helper functions to convert between entity and DTO
@@ -86,5 +144,47 @@ func TaskListResponseFromEntities(tasks []*entity.Task) TaskListResponse {
 	return TaskListResponse{
 		Tasks: responses,
 		Total: len(tasks),
+	}
+}
+
+func TaskStatusHistoryResponseFromEntity(history *entity.TaskStatusHistory) TaskStatusHistoryResponse {
+	return TaskStatusHistoryResponse{
+		ID:         history.ID,
+		TaskID:     history.TaskID,
+		FromStatus: history.FromStatus,
+		ToStatus:   history.ToStatus,
+		ChangedBy:  history.ChangedBy,
+		Reason:     history.Reason,
+		CreatedAt:  history.CreatedAt,
+	}
+}
+
+func TaskStatusHistoryListFromEntities(histories []*entity.TaskStatusHistory) []TaskStatusHistoryResponse {
+	responses := make([]TaskStatusHistoryResponse, len(histories))
+	for i, history := range histories {
+		responses[i] = TaskStatusHistoryResponseFromEntity(history)
+	}
+	return responses
+}
+
+func TaskStatusAnalyticsResponseFromEntity(analytics *entity.TaskStatusAnalytics) TaskStatusAnalyticsResponse {
+	// Convert status distribution
+	statusDist := make([]TaskStatusStatsResponse, len(analytics.StatusDistribution))
+	for i, stat := range analytics.StatusDistribution {
+		statusDist[i] = TaskStatusStatsResponse{
+			Status: stat.Status,
+			Count:  stat.Count,
+		}
+	}
+
+	return TaskStatusAnalyticsResponse{
+		ProjectID:              analytics.ProjectID,
+		StatusDistribution:     statusDist,
+		AverageTimeInStatus:    analytics.AverageTimeInStatus,
+		TransitionCount:        analytics.TransitionCount,
+		TotalTasks:             analytics.TotalTasks,
+		CompletedTasks:         analytics.CompletedTasks,
+		CompletionRate:         analytics.CompletionRate,
+		GeneratedAt:            analytics.GeneratedAt,
 	}
 }
