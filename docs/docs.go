@@ -240,6 +240,302 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/projects/{id}/archive": {
+            "post": {
+                "description": "Archive a project (soft delete)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "projects"
+                ],
+                "summary": "Archive a project",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Project ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/projects/{id}/restore": {
+            "post": {
+                "description": "Restore an archived project (undelete)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "projects"
+                ],
+                "summary": "Restore an archived project",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Project ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/projects/{id}/settings": {
+            "get": {
+                "description": "Get configuration settings for a project",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "projects"
+                ],
+                "summary": "Get project settings",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Project ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ProjectSettingsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "Update configuration settings for a project",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "projects"
+                ],
+                "summary": "Update project settings",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Project ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Project settings data",
+                        "name": "settings",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.ProjectSettingsUpdateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ProjectSettingsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/projects/{id}/statistics": {
+            "get": {
+                "description": "Get task statistics and completion data for a project",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "projects"
+                ],
+                "summary": "Get project statistics",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Project ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ProjectStatisticsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/projects/{id}/status-analytics": {
+            "get": {
+                "description": "Get comprehensive status analytics for a project",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "tasks",
+                    "analytics"
+                ],
+                "summary": "Get project status analytics",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Project ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.TaskStatusAnalyticsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/projects/{id}/tasks": {
             "get": {
                 "description": "Get a single project by its ID including all associated tasks",
@@ -425,6 +721,149 @@ const docTemplate = `{
                         "description": "Created",
                         "schema": {
                             "$ref": "#/definitions/dto.TaskResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/tasks/bulk-status": {
+            "patch": {
+                "description": "Update status for multiple tasks at once",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "tasks"
+                ],
+                "summary": "Bulk update task statuses",
+                "parameters": [
+                    {
+                        "description": "Bulk status update data",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.BulkStatusUpdateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/tasks/filter": {
+            "get": {
+                "description": "Get tasks with comprehensive filtering and sorting options",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "tasks"
+                ],
+                "summary": "Get tasks with advanced filtering",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Filter by project ID",
+                        "name": "project_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by single status",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "description": "Filter by multiple statuses",
+                        "name": "statuses",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by creation date (after)",
+                        "name": "created_after",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by creation date (before)",
+                        "name": "created_before",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Search in title and description",
+                        "name": "search",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Limit number of results",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Offset for pagination",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Field to order by",
+                        "name": "order_by",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Order direction (asc/desc)",
+                        "name": "order_dir",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.TaskListResponse"
                         }
                     },
                     "400": {
@@ -702,9 +1141,217 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/api/v1/tasks/{id}/status-history": {
+            "get": {
+                "description": "Get the status change history for a specific task",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "tasks"
+                ],
+                "summary": "Get task status history",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Task ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/dto.TaskStatusHistoryResponse"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/tasks/{id}/status-with-history": {
+            "patch": {
+                "description": "Update the status of a task with validation and history tracking",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "tasks"
+                ],
+                "summary": "Update task status with history tracking",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Task ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Task status update with history data",
+                        "name": "status",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.TaskStatusUpdateWithHistoryRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.TaskResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/tasks/{id}/validate-transition": {
+            "get": {
+                "description": "Check if a status transition is valid for a task",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "tasks"
+                ],
+                "summary": "Validate task status transition",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Task ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Target status to validate",
+                        "name": "target_status",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.TaskStatusValidationResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
+        "dto.BulkStatusUpdateRequest": {
+            "type": "object",
+            "required": [
+                "status",
+                "task_ids"
+            ],
+            "properties": {
+                "changed_by": {
+                    "type": "string",
+                    "example": "user123"
+                },
+                "status": {
+                    "enum": [
+                        "TODO",
+                        "PLANNING",
+                        "PLAN_REVIEWING",
+                        "IMPLEMENTING",
+                        "CODE_REVIEWING",
+                        "DONE",
+                        "CANCELLED"
+                    ],
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/entity.TaskStatus"
+                        }
+                    ],
+                    "example": "TODO"
+                },
+                "task_ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "[\"123e4567-e89b-12d3-a456-426614174000\"]"
+                    ]
+                }
+            }
+        },
         "dto.ErrorResponse": {
             "type": "object",
             "properties": {
@@ -756,6 +1403,12 @@ const docTemplate = `{
         "dto.ProjectListResponse": {
             "type": "object",
             "properties": {
+                "page": {
+                    "type": "integer"
+                },
+                "page_size": {
+                    "type": "integer"
+                },
                 "projects": {
                     "type": "array",
                     "items": {
@@ -793,6 +1446,93 @@ const docTemplate = `{
                 "updated_at": {
                     "type": "string",
                     "example": "2024-01-15T10:30:00Z"
+                }
+            }
+        },
+        "dto.ProjectSettingsResponse": {
+            "type": "object",
+            "properties": {
+                "auto_archive_days": {
+                    "type": "integer"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "email_notifications": {
+                    "type": "boolean"
+                },
+                "git_auto_sync": {
+                    "type": "boolean"
+                },
+                "git_branch": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "notifications_enabled": {
+                    "type": "boolean"
+                },
+                "project_id": {
+                    "type": "string"
+                },
+                "slack_webhook_url": {
+                    "type": "string"
+                },
+                "task_prefix": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.ProjectSettingsUpdateRequest": {
+            "type": "object",
+            "properties": {
+                "auto_archive_days": {
+                    "type": "integer"
+                },
+                "email_notifications": {
+                    "type": "boolean"
+                },
+                "git_auto_sync": {
+                    "type": "boolean"
+                },
+                "git_branch": {
+                    "type": "string"
+                },
+                "notifications_enabled": {
+                    "type": "boolean"
+                },
+                "slack_webhook_url": {
+                    "type": "string"
+                },
+                "task_prefix": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.ProjectStatisticsResponse": {
+            "type": "object",
+            "properties": {
+                "completion_percent": {
+                    "type": "number"
+                },
+                "last_activity_at": {
+                    "type": "string"
+                },
+                "recent_activity": {
+                    "type": "integer"
+                },
+                "tasks_by_status": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "integer"
+                    }
+                },
+                "total_tasks": {
+                    "type": "integer"
                 }
             }
         },
@@ -849,6 +1589,16 @@ const docTemplate = `{
                 "updated_at": {
                     "type": "string",
                     "example": "2024-01-15T10:30:00Z"
+                }
+            }
+        },
+        "dto.SuccessResponse": {
+            "type": "object",
+            "properties": {
+                "data": {},
+                "message": {
+                    "type": "string",
+                    "example": "Operation completed successfully"
                 }
             }
         },
@@ -935,6 +1685,107 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.TaskStatusAnalyticsResponse": {
+            "type": "object",
+            "properties": {
+                "average_time_in_status": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "number"
+                    }
+                },
+                "completed_tasks": {
+                    "type": "integer",
+                    "example": 20
+                },
+                "completion_rate": {
+                    "type": "number",
+                    "example": 40
+                },
+                "generated_at": {
+                    "type": "string",
+                    "example": "2024-01-15T10:30:00Z"
+                },
+                "project_id": {
+                    "type": "string",
+                    "example": "123e4567-e89b-12d3-a456-426614174000"
+                },
+                "status_distribution": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.TaskStatusStatsResponse"
+                    }
+                },
+                "total_tasks": {
+                    "type": "integer",
+                    "example": 50
+                },
+                "transition_count": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "integer"
+                    }
+                }
+            }
+        },
+        "dto.TaskStatusHistoryResponse": {
+            "type": "object",
+            "properties": {
+                "changed_by": {
+                    "type": "string",
+                    "example": "user123"
+                },
+                "created_at": {
+                    "type": "string",
+                    "example": "2024-01-15T10:30:00Z"
+                },
+                "from_status": {
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/entity.TaskStatus"
+                        }
+                    ],
+                    "example": "TODO"
+                },
+                "id": {
+                    "type": "string",
+                    "example": "123e4567-e89b-12d3-a456-426614174000"
+                },
+                "reason": {
+                    "type": "string",
+                    "example": "Requirements changed"
+                },
+                "task_id": {
+                    "type": "string",
+                    "example": "123e4567-e89b-12d3-a456-426614174000"
+                },
+                "to_status": {
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/entity.TaskStatus"
+                        }
+                    ],
+                    "example": "PLANNING"
+                }
+            }
+        },
+        "dto.TaskStatusStatsResponse": {
+            "type": "object",
+            "properties": {
+                "count": {
+                    "type": "integer",
+                    "example": 10
+                },
+                "status": {
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/entity.TaskStatus"
+                        }
+                    ],
+                    "example": "TODO"
+                }
+            }
+        },
         "dto.TaskStatusUpdateRequest": {
             "type": "object",
             "required": [
@@ -957,6 +1808,68 @@ const docTemplate = `{
                         }
                     ],
                     "example": "TODO"
+                }
+            }
+        },
+        "dto.TaskStatusUpdateWithHistoryRequest": {
+            "type": "object",
+            "required": [
+                "status"
+            ],
+            "properties": {
+                "changed_by": {
+                    "type": "string",
+                    "example": "user123"
+                },
+                "reason": {
+                    "type": "string",
+                    "example": "Requirements changed"
+                },
+                "status": {
+                    "enum": [
+                        "TODO",
+                        "PLANNING",
+                        "PLAN_REVIEWING",
+                        "IMPLEMENTING",
+                        "CODE_REVIEWING",
+                        "DONE",
+                        "CANCELLED"
+                    ],
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/entity.TaskStatus"
+                        }
+                    ],
+                    "example": "TODO"
+                }
+            }
+        },
+        "dto.TaskStatusValidationResponse": {
+            "type": "object",
+            "properties": {
+                "current_status": {
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/entity.TaskStatus"
+                        }
+                    ],
+                    "example": "TODO"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "Transition is valid"
+                },
+                "target_status": {
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/entity.TaskStatus"
+                        }
+                    ],
+                    "example": "PLANNING"
+                },
+                "valid": {
+                    "type": "boolean",
+                    "example": true
                 }
             }
         },
@@ -1046,13 +1959,13 @@ const docTemplate = `{
                 "CANCELLED"
             ],
             "x-enum-varnames": [
-                "TaskStatusTodo",
-                "TaskStatusPlanning",
-                "TaskStatusPlanReview",
-                "TaskStatusImplementing",
-                "TaskStatusCodeReview",
-                "TaskStatusDone",
-                "TaskStatusCancelled"
+                "TaskStatusTODO",
+                "TaskStatusPLANNING",
+                "TaskStatusPLANREVIEWING",
+                "TaskStatusIMPLEMENTING",
+                "TaskStatusCODEREVIEWING",
+                "TaskStatusDONE",
+                "TaskStatusCANCELLED"
             ]
         }
     }

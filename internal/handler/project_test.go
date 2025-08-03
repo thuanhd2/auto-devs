@@ -286,8 +286,8 @@ func TestProjectHandler_GetProjectStatistics(t *testing.T) {
 	projectID := uuid.New()
 	stats := &usecase.ProjectStatistics{
 		TaskCounts: map[entity.TaskStatus]int{
-			entity.TaskStatusTodo: 3,
-			entity.TaskStatusDone: 2,
+			entity.TaskStatusTODO: 3,
+			entity.TaskStatusDONE: 2,
 		},
 		TotalTasks:        5,
 		CompletionPercent: 40.0,
@@ -306,7 +306,7 @@ func TestProjectHandler_GetProjectStatistics(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, 5, response.TotalTasks)
 	assert.Equal(t, 40.0, response.CompletionPercent)
-	assert.Equal(t, 3, response.TasksByStatus[string(entity.TaskStatusTodo)])
+	assert.Equal(t, 3, response.TasksByStatus[string(entity.TaskStatusTODO)])
 
 	mockUsecase.AssertExpectations(t)
 }
