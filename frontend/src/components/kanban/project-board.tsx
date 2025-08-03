@@ -73,7 +73,6 @@ export function ProjectBoard({ projectId }: ProjectBoardProps) {
           }
           return [...prev, task]
         })
-        toast.success(`New task created: ${task.title}`)
       }
     },
     [projectId]
@@ -83,12 +82,6 @@ export function ProjectBoard({ projectId }: ProjectBoardProps) {
     (task: Task, changes?: any) => {
       if (task.project_id === projectId) {
         setLocalTasks((prev) => prev.map((t) => (t.id === task.id ? task : t)))
-
-        if (changes?.status) {
-          toast.info(`Task "${task.title}" moved to ${changes.status.new}`)
-        } else {
-          toast.info(`Task "${task.title}" updated`)
-        }
       }
     },
     [projectId]
@@ -98,7 +91,6 @@ export function ProjectBoard({ projectId }: ProjectBoardProps) {
     setLocalTasks((prev) => {
       const task = prev.find((t) => t.id === taskId)
       if (task) {
-        toast.info(`Task "${task.title}" deleted`)
         return prev.filter((t) => t.id !== taskId)
       }
       return prev
@@ -163,6 +155,7 @@ export function ProjectBoard({ projectId }: ProjectBoardProps) {
         isCompactView={isCompactView}
         onToggleCompactView={() => setIsCompactView(!isCompactView)}
         isLoading={isLoading}
+        projectId={projectId}
       />
 
       <BoardFilters

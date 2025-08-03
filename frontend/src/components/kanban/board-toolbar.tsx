@@ -1,4 +1,7 @@
 import { useState } from 'react'
+import { Badge } from '@/components/ui/badge'
+import { UserPresence } from '@/components/collaboration/user-presence'
+import { useWebSocketConnection } from '@/context/websocket-context'
 import {
   Plus,
   RefreshCw,
@@ -25,6 +28,7 @@ interface BoardToolbarProps {
   isCompactView?: boolean
   onToggleCompactView?: () => void
   isLoading?: boolean
+  projectId?: string
 }
 
 export function BoardToolbar({
@@ -33,13 +37,32 @@ export function BoardToolbar({
   isCompactView = false,
   onToggleCompactView,
   isLoading = false,
+  projectId,
 }: BoardToolbarProps) {
   const [showHiddenColumns, setShowHiddenColumns] = useState(false)
+  const { isConnected, queuedMessageCount } = useWebSocketConnection()
 
   return (
     <div className="flex items-center justify-between p-4 bg-white border-b">
       <div className="flex items-center gap-3">
         <h1 className="text-2xl font-bold text-gray-900">Task Board</h1>
+        
+        <Separator orientation="vertical" className="h-6" />
+        
+        {/* Connection Status */}
+        <div className="flex items-center gap-2">
+          <div className={`w-2 h-2 rounded-full ${
+            isConnected ? 'bg-green-500' : 'bg-red-500'
+          } animate-pulse`} />
+          <span className="text-sm text-gray-600">
+            {isConnected ? 'Live' : 'Offline'}
+          </span>
+          {queuedMessageCount > 0 && (
+            <Badge variant="outline" className="text-xs">
+              {queuedMessageCount} queued
+            </Badge>
+          )}
+        </div>
         
         <Separator orientation="vertical" className="h-6" />
         
@@ -55,6 +78,14 @@ export function BoardToolbar({
       </div>
 
       <div className="flex items-center gap-2">
+        {/* User Presence */}
+        {projectId && (
+          <>
+            <UserPresence projectId={projectId} showDetails={false} maxAvatars={3} />
+            <Separator orientation="vertical" className="h-6" />
+          </>
+        )}
+
         {/* View Toggle */}
         <div className="flex items-center border rounded-md">
           <Button

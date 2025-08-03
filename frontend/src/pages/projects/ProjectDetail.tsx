@@ -12,6 +12,10 @@ import {
   XCircle,
 } from 'lucide-react'
 import { useProject, useProjectStatistics } from '@/hooks/use-projects'
+import { useTasks } from '@/hooks/use-tasks'
+import { RealTimeNotifications } from '@/components/notifications/real-time-notifications'
+import { UserPresence, UserPresenceCompact } from '@/components/collaboration/user-presence'
+import { RealTimeProjectStats, CompactProjectStats } from '@/components/stats/real-time-project-stats'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -54,6 +58,7 @@ export function ProjectDetail() {
     error: projectError,
   } = useProject(projectId)
   const { data: statistics } = useProjectStatistics(projectId)
+  const { data: tasksResponse } = useTasks(projectId, {})
 
   if (projectError) {
     return (
@@ -99,140 +104,162 @@ export function ProjectDetail() {
     )
   }
 
+  const tasks = tasksResponse?.tasks || []
   const totalTasks = statistics?.total_tasks || 0
   const completedTasks = statistics?.tasks_by_status.DONE || 0
   const progress = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0
 
   return (
-    <div className='h-full space-y-6'>
-      {/* Header */}
-      <div className='flex items-center justify-between'>
-        <div className='flex items-center gap-4'>
-          <Link to='/projects'>
-            <Button variant='ghost' size='icon'>
-              <ArrowLeft className='h-4 w-4' />
-            </Button>
-          </Link>
-          <div>
-            <h1 className='text-3xl font-bold'>{project.name}</h1>
-            <p className='text-muted-foreground'>
-              {project.description || 'No description provided'}
-            </p>
+    <>
+      {/* Real-time notifications */}
+      <RealTimeNotifications 
+        projectId={projectId}
+        enableToastNotifications={true}
+        enableBrowserNotifications={false}
+        enableSound={false}
+      />
+      
+      <div className='h-full space-y-6'>
+        {/* Header */}
+        <div className='flex items-center justify-between'>
+          <div className='flex items-center gap-4'>
+            <Link to='/projects'>
+              <Button variant='ghost' size='icon'>
+                <ArrowLeft className='h-4 w-4' />
+              </Button>
+            </Link>
+            <div>
+              <div className='flex items-center gap-3'>
+                <h1 className='text-3xl font-bold'>{project.name}</h1>
+                <UserPresence projectId={projectId} showDetails={false} maxAvatars={3} />
+              </div>
+              <p className='text-muted-foreground'>
+                {project.description || 'No description provided'}
+              </p>
+            </div>
+          </div>
+          <div className='flex items-center gap-2'>
+            <UserPresenceCompact projectId={projectId} />
+            <Link to='/projects/$projectId/edit' params={{ projectId }}>
+              <Button variant='outline'>
+                <Settings className='mr-2 h-4 w-4' />
+                Settings
+              </Button>
+            </Link>
           </div>
         </div>
-        <Link to='/projects/$projectId/edit' params={{ projectId }}>
-          <Button variant='outline'>
-            <Settings className='mr-2 h-4 w-4' />
-            Settings
-          </Button>
-        </Link>
-      </div>
 
-      <Tabs defaultValue='overview' className='h-full'>
-        <TabsList>
-          <TabsTrigger value='overview'>Overview</TabsTrigger>
-          <TabsTrigger value='tasks'>Tasks</TabsTrigger>
-        </TabsList>
+        <Tabs defaultValue='overview' className='h-full'>
+          <TabsList>
+            <TabsTrigger value='overview'>Overview</TabsTrigger>
+            <TabsTrigger value='tasks'>Tasks</TabsTrigger>
+          </TabsList>
 
-        <TabsContent value='overview' className='space-y-6'>
-          {/* Project Info */}
-          <div className='grid gap-6 md:grid-cols-2'>
-            <Card>
-              <CardHeader>
-                <CardTitle>Project Information</CardTitle>
-              </CardHeader>
-              <CardContent className='space-y-4'>
-                <div className='flex items-center gap-2 text-sm'>
-                  <GitBranch className='text-muted-foreground h-4 w-4' />
-                  <span className='text-muted-foreground'>Repository:</span>
-                  <span className='truncate font-mono'>{project.repo_url}</span>
-                </div>
+          <TabsContent value='overview' className='space-y-6'>
+            {/* Real-time Project Statistics */}
+            <RealTimeProjectStats 
+              projectId={projectId}
+              tasks={tasks}
+              className='mb-6'
+            />
 
-                <div className='flex items-center gap-2 text-sm'>
-                  <Calendar className='text-muted-foreground h-4 w-4' />
-                  <span className='text-muted-foreground'>Created:</span>
-                  <span>
-                    {formatDistanceToNow(new Date(project.created_at), {
-                      addSuffix: true,
-                    })}
-                  </span>
-                </div>
-                <div className='flex items-center gap-2 text-sm'>
-                  <Calendar className='text-muted-foreground h-4 w-4' />
-                  <span className='text-muted-foreground'>Updated:</span>
-                  <span>
-                    {formatDistanceToNow(new Date(project.updated_at), {
-                      addSuffix: true,
-                    })}
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Project Progress</CardTitle>
-                <CardDescription>
-                  {completedTasks} of {totalTasks} tasks completed
-                </CardDescription>
-              </CardHeader>
-              <CardContent className='space-y-4'>
-                <div className='space-y-2'>
-                  <div className='flex justify-between text-sm'>
-                    <span>Completion</span>
-                    <span>{progress.toFixed(1)}%</span>
+            {/* Project Info */}
+            <div className='grid gap-6 md:grid-cols-2'>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Project Information</CardTitle>
+                </CardHeader>
+                <CardContent className='space-y-4'>
+                  <div className='flex items-center gap-2 text-sm'>
+                    <GitBranch className='text-muted-foreground h-4 w-4' />
+                    <span className='text-muted-foreground'>Repository:</span>
+                    <span className='truncate font-mono'>{project.repo_url}</span>
                   </div>
-                  <Progress value={progress} className='h-2' />
-                </div>
-                <div className='text-muted-foreground text-sm'>
-                  Recent activity: {statistics?.recent_activity || 0} tasks
-                  updated recently
-                </div>
-              </CardContent>
-            </Card>
-          </div>
 
-          {/* Task Statistics */}
-          {statistics && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Task Distribution</CardTitle>
-                <CardDescription>Overview of tasks by status</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className='grid gap-4 md:grid-cols-4 lg:grid-cols-7'>
-                  {Object.entries(statistics.tasks_by_status).map(
-                    ([status, count]) => {
-                      const config =
-                        statusConfig[status as keyof typeof statusConfig]
-                      const Icon = config.icon
+                  <div className='flex items-center gap-2 text-sm'>
+                    <Calendar className='text-muted-foreground h-4 w-4' />
+                    <span className='text-muted-foreground'>Created:</span>
+                    <span>
+                      {formatDistanceToNow(new Date(project.created_at), {
+                        addSuffix: true,
+                      })}
+                    </span>
+                  </div>
+                  <div className='flex items-center gap-2 text-sm'>
+                    <Calendar className='text-muted-foreground h-4 w-4' />
+                    <span className='text-muted-foreground'>Updated:</span>
+                    <span>
+                      {formatDistanceToNow(new Date(project.updated_at), {
+                        addSuffix: true,
+                      })}
+                    </span>
+                  </div>
+                </CardContent>
+              </Card>
 
-                      return (
-                        <div key={status} className='space-y-2 text-center'>
-                          <div
-                            className={`mx-auto h-8 w-8 rounded-full ${config.color} flex items-center justify-center`}
-                          >
-                            <Icon className='h-4 w-4 text-white' />
+              <Card>
+                <CardHeader>
+                  <CardTitle>Real-time Activity</CardTitle>
+                  <CardDescription>
+                    Live project activity and collaboration
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className='space-y-4'>
+                  <CompactProjectStats projectId={projectId} tasks={tasks} />
+                  
+                  <div className='pt-2 border-t'>
+                    <UserPresence 
+                      projectId={projectId} 
+                      showDetails={true} 
+                      maxAvatars={5} 
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Fallback to original statistics if real-time data is not available */}
+            {!tasks.length && statistics && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Task Distribution</CardTitle>
+                  <CardDescription>Overview of tasks by status</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className='grid gap-4 md:grid-cols-4 lg:grid-cols-7'>
+                    {Object.entries(statistics.tasks_by_status).map(
+                      ([status, count]) => {
+                        const config =
+                          statusConfig[status as keyof typeof statusConfig]
+                        const Icon = config.icon
+
+                        return (
+                          <div key={status} className='space-y-2 text-center'>
+                            <div
+                              className={`mx-auto h-8 w-8 rounded-full ${config.color} flex items-center justify-center`}
+                            >
+                              <Icon className='h-4 w-4 text-white' />
+                            </div>
+                            <div className='text-2xl font-bold'>{count}</div>
+                            <div className='text-muted-foreground text-xs'>
+                              {config.label}
+                            </div>
                           </div>
-                          <div className='text-2xl font-bold'>{count}</div>
-                          <div className='text-muted-foreground text-xs'>
-                            {config.label}
-                          </div>
-                        </div>
-                      )
-                    }
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-        </TabsContent>
+                        )
+                      }
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
 
-        <TabsContent value='tasks' className='h-full'>
-          <ProjectBoard projectId={projectId} />
-        </TabsContent>
-      </Tabs>
-    </div>
+          <TabsContent value='tasks' className='h-full'>
+            <ProjectBoard projectId={projectId} />
+          </TabsContent>
+        </Tabs>
+      </div>
+    </>
   )
 }
 

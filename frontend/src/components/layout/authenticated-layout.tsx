@@ -7,6 +7,7 @@ import { AppSidebar } from '@/components/layout/app-sidebar'
 import SkipToMain from '@/components/skip-to-main'
 import { WebSocketProvider } from '@/context/websocket-context'
 import { WebSocketDebugPanel } from '@/components/debug/websocket-debug-panel'
+import { RealTimeNotifications } from '@/components/notifications/real-time-notifications'
 
 interface Props {
   children?: React.ReactNode
@@ -63,6 +64,13 @@ export function AuthenticatedLayout({ children }: Props) {
             )}
           >
             {children ? children : <Outlet />}
+          
+          {/* Global Real-time Notifications */}
+          <RealTimeNotifications 
+            enableToastNotifications={true}
+            enableBrowserNotifications={false}
+            enableSound={false}
+          />
           </div>
           {/* WebSocket Debug Panel - only in development */}
           {import.meta.env.DEV && <WebSocketDebugPanel />}
