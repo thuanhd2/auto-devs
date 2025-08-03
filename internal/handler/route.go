@@ -49,6 +49,7 @@ func SetupRoutes(router *gin.Engine, projectUsecase usecase.ProjectUsecase, task
 			projects.DELETE("/:id", projectHandler.DeleteProject)
 			projects.GET("/:id/tasks", projectHandler.GetProjectWithTasks)
 			projects.GET("/:id/statistics", projectHandler.GetProjectStatistics)
+			projects.GET("/:id/status-analytics", taskHandler.GetProjectStatusAnalytics)
 			projects.POST("/:id/archive", projectHandler.ArchiveProject)
 			projects.POST("/:id/restore", projectHandler.RestoreProject)
 			projects.GET("/:id/settings", projectHandler.GetProjectSettings)
@@ -71,8 +72,5 @@ func SetupRoutes(router *gin.Engine, projectUsecase usecase.ProjectUsecase, task
 			tasks.GET("/:id/validate-transition", taskHandler.ValidateTaskStatusTransition)
 			tasks.GET("/:id/project", taskHandler.GetTaskWithProject)
 		}
-
-		// Project-specific task routes for analytics
-		projects.GET("/:project_id/status-analytics", taskHandler.GetProjectStatusAnalytics)
 	}
 }

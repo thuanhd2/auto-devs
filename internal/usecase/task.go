@@ -55,15 +55,15 @@ type BulkUpdateStatusRequest struct {
 }
 
 type GetTasksFilterRequest struct {
-	ProjectID     *uuid.UUID              `json:"project_id,omitempty"`
-	Statuses      []entity.TaskStatus     `json:"statuses,omitempty"`
-	CreatedAfter  *time.Time              `json:"created_after,omitempty"`
-	CreatedBefore *time.Time              `json:"created_before,omitempty"`
-	SearchTerm    *string                 `json:"search_term,omitempty"`
-	Limit         *int                    `json:"limit,omitempty"`
-	Offset        *int                    `json:"offset,omitempty"`
-	OrderBy       *string                 `json:"order_by,omitempty"`
-	OrderDir      *string                 `json:"order_dir,omitempty"`
+	ProjectID     *uuid.UUID          `json:"project_id,omitempty"`
+	Statuses      []entity.TaskStatus `json:"statuses,omitempty"`
+	CreatedAfter  *time.Time          `json:"created_after,omitempty"`
+	CreatedBefore *time.Time          `json:"created_before,omitempty"`
+	SearchTerm    *string             `json:"search_term,omitempty"`
+	Limit         *int                `json:"limit,omitempty"`
+	Offset        *int                `json:"offset,omitempty"`
+	OrderBy       *string             `json:"order_by,omitempty"`
+	OrderDir      *string             `json:"order_dir,omitempty"`
 }
 
 type taskUsecase struct {
@@ -194,7 +194,7 @@ func (u *taskUsecase) UpdateStatusWithHistory(ctx context.Context, req UpdateSta
 			notificationData := entity.TaskStatusChangeNotificationData{
 				TaskID:      req.TaskID,
 				TaskTitle:   updatedTask.Title,
-				FromStatus:  &currentTask.Status,
+				FromStatus:  &updatedTask.Status,
 				ToStatus:    req.Status,
 				ChangedBy:   req.ChangedBy,
 				Reason:      req.Reason,

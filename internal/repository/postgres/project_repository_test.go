@@ -246,13 +246,13 @@ func TestProjectRepository_GetWithTaskCount(t *testing.T) {
 		ProjectID:   project.ID,
 		Title:       "Task 1",
 		Description: "Description 1",
-		Status:      entity.TaskStatusTodo,
+		Status:      entity.TaskStatusTODO,
 	}
 	task2 := &entity.Task{
 		ProjectID:   project.ID,
 		Title:       "Task 2",
 		Description: "Description 2",
-		Status:      entity.TaskStatusDone,
+		Status:      entity.TaskStatusDONE,
 	}
 
 	err = taskRepo.Create(ctx, task1)
@@ -315,7 +315,7 @@ func TestProjectRepository_Delete_WithTasks(t *testing.T) {
 		ProjectID:   project.ID,
 		Title:       "Test Task",
 		Description: "Test Description",
-		Status:      entity.TaskStatusTodo,
+		Status:      entity.TaskStatusTODO,
 	}
 	err = taskRepo.Create(ctx, task)
 	require.NoError(t, err)
@@ -456,10 +456,10 @@ func TestProjectRepository_GetTaskStatistics(t *testing.T) {
 
 	// Create tasks with different statuses
 	tasks := []*entity.Task{
-		{ProjectID: project.ID, Title: "Task 1", Status: entity.TaskStatusTodo},
-		{ProjectID: project.ID, Title: "Task 2", Status: entity.TaskStatusTodo},
-		{ProjectID: project.ID, Title: "Task 3", Status: entity.TaskStatusDone},
-		{ProjectID: project.ID, Title: "Task 4", Status: entity.TaskStatusImplementing},
+		{ProjectID: project.ID, Title: "Task 1", Status: entity.TaskStatusTODO},
+		{ProjectID: project.ID, Title: "Task 2", Status: entity.TaskStatusTODO},
+		{ProjectID: project.ID, Title: "Task 3", Status: entity.TaskStatusDONE},
+		{ProjectID: project.ID, Title: "Task 4", Status: entity.TaskStatusIMPLEMENTING},
 	}
 
 	for _, task := range tasks {
@@ -471,9 +471,9 @@ func TestProjectRepository_GetTaskStatistics(t *testing.T) {
 	stats, err := projectRepo.GetTaskStatistics(ctx, project.ID)
 	require.NoError(t, err)
 
-	assert.Equal(t, 2, stats[entity.TaskStatusTodo])
-	assert.Equal(t, 1, stats[entity.TaskStatusDone])
-	assert.Equal(t, 1, stats[entity.TaskStatusImplementing])
+	assert.Equal(t, 2, stats[entity.TaskStatusTODO])
+	assert.Equal(t, 1, stats[entity.TaskStatusDONE])
+	assert.Equal(t, 1, stats[entity.TaskStatusIMPLEMENTING])
 }
 
 func TestProjectRepository_Archive_Restore(t *testing.T) {
@@ -541,7 +541,7 @@ func TestProjectRepository_GetLastActivityAt(t *testing.T) {
 		task := &entity.Task{
 			ProjectID: project.ID,
 			Title:     "Recent Task",
-			Status:    entity.TaskStatusTodo,
+			Status:    entity.TaskStatusTODO,
 		}
 		err := taskRepo.Create(ctx, task)
 		require.NoError(t, err)

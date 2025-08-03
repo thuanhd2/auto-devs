@@ -29,29 +29,31 @@ func InitializeApp() (*App, error) {
 	auditRepository := postgres.NewAuditRepository(gormDB)
 	auditService := ProvideAuditService(auditRepository)
 	projectUsecase := ProvideProjectUsecase(projectRepository, auditService)
-	taskUsecase := ProvideTaskUsecase(taskRepository)
-	app := NewApp(configConfig, gormDB, projectRepository, taskRepository, auditRepository, auditService, projectUsecase, taskUsecase)
+	notificationUsecase := usecase.NewNotificationUsecase()
+	taskUsecase := ProvideTaskUsecase(taskRepository, projectRepository, notificationUsecase)
+	app := NewApp(configConfig, gormDB, projectRepository, taskRepository, auditRepository, auditService, projectUsecase, taskUsecase, notificationUsecase)
 	return app, nil
 }
 
 // wire.go:
 
 // ProviderSet is the Wire provider set for the entire application
-var ProviderSet = wire.NewSet(config.Load, ProvideGormDB, postgres.NewProjectRepository, postgres.NewTaskRepository, postgres.NewAuditRepository, ProvideAuditService,
+var ProviderSet = wire.NewSet(config.Load, ProvideGormDB, postgres.NewProjectRepository, postgres.NewTaskRepository, postgres.NewAuditRepository, usecase.NewNotificationUsecase, ProvideAuditService,
 	ProvideProjectUsecase,
 	ProvideTaskUsecase,
 )
 
 // App represents the initialized application with all dependencies
 type App struct {
-	Config         *config.Config
-	GormDB         *database.GormDB
-	ProjectRepo    repository.ProjectRepository
-	TaskRepo       repository.TaskRepository
-	AuditRepo      repository.AuditRepository
-	AuditService   usecase.AuditService
-	ProjectUsecase usecase.ProjectUsecase
-	TaskUsecase    usecase.TaskUsecase
+	Config              *config.Config
+	GormDB              *database.GormDB
+	ProjectRepo         repository.ProjectRepository
+	TaskRepo            repository.TaskRepository
+	AuditRepo           repository.AuditRepository
+	AuditService        usecase.AuditService
+	ProjectUsecase      usecase.ProjectUsecase
+	TaskUsecase         usecase.TaskUsecase
+	NotificationUsecase usecase.NotificationUsecase
 }
 
 // NewApp creates a new App instance
@@ -64,16 +66,18 @@ func NewApp(
 	auditService usecase.AuditService,
 	projectUsecase usecase.ProjectUsecase,
 	taskUsecase usecase.TaskUsecase,
+	notificationUsecase usecase.NotificationUsecase,
 ) *App {
 	return &App{
-		Config:         cfg,
-		GormDB:         gormDB,
-		ProjectRepo:    projectRepo,
-		TaskRepo:       taskRepo,
-		AuditRepo:      auditRepo,
-		AuditService:   auditService,
-		ProjectUsecase: projectUsecase,
-		TaskUsecase:    taskUsecase,
+		Config:              cfg,
+		GormDB:              gormDB,
+		ProjectRepo:         projectRepo,
+		TaskRepo:            taskRepo,
+		AuditRepo:           auditRepo,
+		AuditService:        auditService,
+		ProjectUsecase:      projectUsecase,
+		TaskUsecase:         taskUsecase,
+		NotificationUsecase: notificationUsecase,
 	}
 }
 
@@ -93,6 +97,6 @@ func ProvideProjectUsecase(projectRepo repository.ProjectRepository, auditServic
 }
 
 // ProvideTaskUsecase provides a TaskUsecase instance
-func ProvideTaskUsecase(taskRepo repository.TaskRepository) usecase.TaskUsecase {
-	return usecase.NewTaskUsecase(taskRepo)
+func ProvideTaskUsecase(taskRepo repository.TaskRepository, projectRepo repository.ProjectRepository, notificationUsecase usecase.NotificationUsecase) usecase.TaskUsecase {
+	return usecase.NewTaskUsecase(taskRepo, projectRepo, notificationUsecase)
 }

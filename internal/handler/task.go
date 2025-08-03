@@ -437,13 +437,13 @@ func (h *TaskHandler) GetTaskStatusHistory(c *gin.Context) {
 // @Tags tasks,analytics
 // @Accept json
 // @Produce json
-// @Param project_id path string true "Project ID"
+// @Param id path string true "Project ID"
 // @Success 200 {object} dto.TaskStatusAnalyticsResponse
 // @Failure 400 {object} dto.ErrorResponse
 // @Failure 500 {object} dto.ErrorResponse
-// @Router /api/v1/projects/{project_id}/status-analytics [get]
+// @Router /api/v1/projects/{id}/status-analytics [get]
 func (h *TaskHandler) GetProjectStatusAnalytics(c *gin.Context) {
-	projectIDStr := c.Param("project_id")
+	projectIDStr := c.Param("id")
 	projectID, err := uuid.Parse(projectIDStr)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, dto.NewErrorResponse(err, http.StatusBadRequest, "Invalid project ID"))
@@ -572,7 +572,7 @@ func (h *TaskHandler) ValidateTaskStatusTransition(c *gin.Context) {
 
 	// Validate transition
 	err = h.taskUsecase.ValidateStatusTransition(c.Request.Context(), id, targetStatus)
-	
+
 	response := dto.TaskStatusValidationResponse{
 		Valid:         err == nil,
 		CurrentStatus: task.Status,

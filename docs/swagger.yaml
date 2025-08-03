@@ -1,4 +1,31 @@
 definitions:
+  dto.BulkStatusUpdateRequest:
+    properties:
+      changed_by:
+        example: user123
+        type: string
+      status:
+        allOf:
+        - $ref: '#/definitions/entity.TaskStatus'
+        enum:
+        - TODO
+        - PLANNING
+        - PLAN_REVIEWING
+        - IMPLEMENTING
+        - CODE_REVIEWING
+        - DONE
+        - CANCELLED
+        example: TODO
+      task_ids:
+        example:
+        - '["123e4567-e89b-12d3-a456-426614174000"]'
+        items:
+          type: string
+        type: array
+    required:
+    - status
+    - task_ids
+    type: object
   dto.ErrorResponse:
     properties:
       code:
@@ -36,6 +63,10 @@ definitions:
     type: object
   dto.ProjectListResponse:
     properties:
+      page:
+        type: integer
+      page_size:
+        type: integer
       projects:
         items:
           $ref: '#/definitions/dto.ProjectResponse'
@@ -63,6 +94,63 @@ definitions:
       updated_at:
         example: "2024-01-15T10:30:00Z"
         type: string
+    type: object
+  dto.ProjectSettingsResponse:
+    properties:
+      auto_archive_days:
+        type: integer
+      created_at:
+        type: string
+      email_notifications:
+        type: boolean
+      git_auto_sync:
+        type: boolean
+      git_branch:
+        type: string
+      id:
+        type: string
+      notifications_enabled:
+        type: boolean
+      project_id:
+        type: string
+      slack_webhook_url:
+        type: string
+      task_prefix:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  dto.ProjectSettingsUpdateRequest:
+    properties:
+      auto_archive_days:
+        type: integer
+      email_notifications:
+        type: boolean
+      git_auto_sync:
+        type: boolean
+      git_branch:
+        type: string
+      notifications_enabled:
+        type: boolean
+      slack_webhook_url:
+        type: string
+      task_prefix:
+        type: string
+    type: object
+  dto.ProjectStatisticsResponse:
+    properties:
+      completion_percent:
+        type: number
+      last_activity_at:
+        type: string
+      recent_activity:
+        type: integer
+      tasks_by_status:
+        additionalProperties:
+          type: integer
+        type: object
+      total_tasks:
+        type: integer
     type: object
   dto.ProjectUpdateRequest:
     properties:
@@ -103,6 +191,13 @@ definitions:
         type: array
       updated_at:
         example: "2024-01-15T10:30:00Z"
+        type: string
+    type: object
+  dto.SuccessResponse:
+    properties:
+      data: {}
+      message:
+        example: Operation completed successfully
         type: string
     type: object
   dto.TaskCreateRequest:
@@ -163,6 +258,72 @@ definitions:
         example: "2024-01-15T10:30:00Z"
         type: string
     type: object
+  dto.TaskStatusAnalyticsResponse:
+    properties:
+      average_time_in_status:
+        additionalProperties:
+          type: number
+        type: object
+      completed_tasks:
+        example: 20
+        type: integer
+      completion_rate:
+        example: 40
+        type: number
+      generated_at:
+        example: "2024-01-15T10:30:00Z"
+        type: string
+      project_id:
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+      status_distribution:
+        items:
+          $ref: '#/definitions/dto.TaskStatusStatsResponse'
+        type: array
+      total_tasks:
+        example: 50
+        type: integer
+      transition_count:
+        additionalProperties:
+          type: integer
+        type: object
+    type: object
+  dto.TaskStatusHistoryResponse:
+    properties:
+      changed_by:
+        example: user123
+        type: string
+      created_at:
+        example: "2024-01-15T10:30:00Z"
+        type: string
+      from_status:
+        allOf:
+        - $ref: '#/definitions/entity.TaskStatus'
+        example: TODO
+      id:
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+      reason:
+        example: Requirements changed
+        type: string
+      task_id:
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+      to_status:
+        allOf:
+        - $ref: '#/definitions/entity.TaskStatus'
+        example: PLANNING
+    type: object
+  dto.TaskStatusStatsResponse:
+    properties:
+      count:
+        example: 10
+        type: integer
+      status:
+        allOf:
+        - $ref: '#/definitions/entity.TaskStatus'
+        example: TODO
+    type: object
   dto.TaskStatusUpdateRequest:
     properties:
       status:
@@ -179,6 +340,46 @@ definitions:
         example: TODO
     required:
     - status
+    type: object
+  dto.TaskStatusUpdateWithHistoryRequest:
+    properties:
+      changed_by:
+        example: user123
+        type: string
+      reason:
+        example: Requirements changed
+        type: string
+      status:
+        allOf:
+        - $ref: '#/definitions/entity.TaskStatus'
+        enum:
+        - TODO
+        - PLANNING
+        - PLAN_REVIEWING
+        - IMPLEMENTING
+        - CODE_REVIEWING
+        - DONE
+        - CANCELLED
+        example: TODO
+    required:
+    - status
+    type: object
+  dto.TaskStatusValidationResponse:
+    properties:
+      current_status:
+        allOf:
+        - $ref: '#/definitions/entity.TaskStatus'
+        example: TODO
+      message:
+        example: Transition is valid
+        type: string
+      target_status:
+        allOf:
+        - $ref: '#/definitions/entity.TaskStatus'
+        example: PLANNING
+      valid:
+        example: true
+        type: boolean
     type: object
   dto.TaskUpdateRequest:
     properties:
@@ -244,13 +445,13 @@ definitions:
     - CANCELLED
     type: string
     x-enum-varnames:
-    - TaskStatusTodo
-    - TaskStatusPlanning
-    - TaskStatusPlanReview
-    - TaskStatusImplementing
-    - TaskStatusCodeReview
-    - TaskStatusDone
-    - TaskStatusCancelled
+    - TaskStatusTODO
+    - TaskStatusPLANNING
+    - TaskStatusPLANREVIEWING
+    - TaskStatusIMPLEMENTING
+    - TaskStatusCODEREVIEWING
+    - TaskStatusDONE
+    - TaskStatusCANCELLED
 info:
   contact: {}
 paths:
@@ -403,6 +604,202 @@ paths:
       summary: Update a project
       tags:
       - projects
+  /api/v1/projects/{id}/archive:
+    post:
+      consumes:
+      - application/json
+      description: Archive a project (soft delete)
+      parameters:
+      - description: Project ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Archive a project
+      tags:
+      - projects
+  /api/v1/projects/{id}/restore:
+    post:
+      consumes:
+      - application/json
+      description: Restore an archived project (undelete)
+      parameters:
+      - description: Project ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Restore an archived project
+      tags:
+      - projects
+  /api/v1/projects/{id}/settings:
+    get:
+      consumes:
+      - application/json
+      description: Get configuration settings for a project
+      parameters:
+      - description: Project ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.ProjectSettingsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Get project settings
+      tags:
+      - projects
+    put:
+      consumes:
+      - application/json
+      description: Update configuration settings for a project
+      parameters:
+      - description: Project ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Project settings data
+        in: body
+        name: settings
+        required: true
+        schema:
+          $ref: '#/definitions/dto.ProjectSettingsUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.ProjectSettingsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Update project settings
+      tags:
+      - projects
+  /api/v1/projects/{id}/statistics:
+    get:
+      consumes:
+      - application/json
+      description: Get task statistics and completion data for a project
+      parameters:
+      - description: Project ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.ProjectStatisticsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Get project statistics
+      tags:
+      - projects
+  /api/v1/projects/{id}/status-analytics:
+    get:
+      consumes:
+      - application/json
+      description: Get comprehensive status analytics for a project
+      parameters:
+      - description: Project ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.TaskStatusAnalyticsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Get project status analytics
+      tags:
+      - tasks
+      - analytics
   /api/v1/projects/{id}/tasks:
     get:
       consumes:
@@ -710,6 +1107,212 @@ paths:
           schema:
             $ref: '#/definitions/dto.ErrorResponse'
       summary: Update a task status
+      tags:
+      - tasks
+  /api/v1/tasks/{id}/status-history:
+    get:
+      consumes:
+      - application/json
+      description: Get the status change history for a specific task
+      parameters:
+      - description: Task ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.TaskStatusHistoryResponse'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Get task status history
+      tags:
+      - tasks
+  /api/v1/tasks/{id}/status-with-history:
+    patch:
+      consumes:
+      - application/json
+      description: Update the status of a task with validation and history tracking
+      parameters:
+      - description: Task ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Task status update with history data
+        in: body
+        name: status
+        required: true
+        schema:
+          $ref: '#/definitions/dto.TaskStatusUpdateWithHistoryRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.TaskResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Update task status with history tracking
+      tags:
+      - tasks
+  /api/v1/tasks/{id}/validate-transition:
+    get:
+      consumes:
+      - application/json
+      description: Check if a status transition is valid for a task
+      parameters:
+      - description: Task ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Target status to validate
+        in: query
+        name: target_status
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.TaskStatusValidationResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Validate task status transition
+      tags:
+      - tasks
+  /api/v1/tasks/bulk-status:
+    patch:
+      consumes:
+      - application/json
+      description: Update status for multiple tasks at once
+      parameters:
+      - description: Bulk status update data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.BulkStatusUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Bulk update task statuses
+      tags:
+      - tasks
+  /api/v1/tasks/filter:
+    get:
+      consumes:
+      - application/json
+      description: Get tasks with comprehensive filtering and sorting options
+      parameters:
+      - description: Filter by project ID
+        in: query
+        name: project_id
+        type: string
+      - description: Filter by single status
+        in: query
+        name: status
+        type: string
+      - description: Filter by multiple statuses
+        in: query
+        name: statuses
+        type: array
+      - description: Filter by creation date (after)
+        in: query
+        name: created_after
+        type: string
+      - description: Filter by creation date (before)
+        in: query
+        name: created_before
+        type: string
+      - description: Search in title and description
+        in: query
+        name: search
+        type: string
+      - description: Limit number of results
+        in: query
+        name: limit
+        type: integer
+      - description: Offset for pagination
+        in: query
+        name: offset
+        type: integer
+      - description: Field to order by
+        in: query
+        name: order_by
+        type: string
+      - description: Order direction (asc/desc)
+        in: query
+        name: order_dir
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.TaskListResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Get tasks with advanced filtering
       tags:
       - tasks
 swagger: "2.0"

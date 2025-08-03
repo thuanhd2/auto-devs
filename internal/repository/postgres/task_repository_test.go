@@ -38,7 +38,7 @@ func TestTaskRepository_Create(t *testing.T) {
 		ProjectID:   project.ID,
 		Title:       "Test Task",
 		Description: "Test Description",
-		Status:      entity.TaskStatusTodo,
+		Status:      entity.TaskStatusTODO,
 	}
 
 	err := taskRepo.Create(ctx, task)
@@ -48,7 +48,7 @@ func TestTaskRepository_Create(t *testing.T) {
 	assert.NotEqual(t, uuid.Nil, task.ID)
 	assert.NotZero(t, task.CreatedAt)
 	assert.NotZero(t, task.UpdatedAt)
-	assert.Equal(t, entity.TaskStatusTodo, task.Status)
+	assert.Equal(t, entity.TaskStatusTODO, task.Status)
 }
 
 func TestTaskRepository_CreateWithDefaultStatus(t *testing.T) {
@@ -72,7 +72,7 @@ func TestTaskRepository_CreateWithDefaultStatus(t *testing.T) {
 	err := taskRepo.Create(ctx, task)
 	require.NoError(t, err)
 
-	assert.Equal(t, entity.TaskStatusTodo, task.Status)
+	assert.Equal(t, entity.TaskStatusTODO, task.Status)
 }
 
 func TestTaskRepository_CreateWithInvalidProjectID(t *testing.T) {
@@ -86,7 +86,7 @@ func TestTaskRepository_CreateWithInvalidProjectID(t *testing.T) {
 		ProjectID:   uuid.New(), // Non-existent project
 		Title:       "Test Task",
 		Description: "Test Description",
-		Status:      entity.TaskStatusTodo,
+		Status:      entity.TaskStatusTODO,
 	}
 
 	err := taskRepo.Create(ctx, task)
@@ -111,7 +111,7 @@ func TestTaskRepository_GetByID(t *testing.T) {
 		ProjectID:   project.ID,
 		Title:       "Test Task",
 		Description: "Test Description",
-		Status:      entity.TaskStatusTodo,
+		Status:      entity.TaskStatusTODO,
 	}
 	err := taskRepo.Create(ctx, task)
 	require.NoError(t, err)
@@ -155,13 +155,13 @@ func TestTaskRepository_GetByProjectID(t *testing.T) {
 		ProjectID:   project.ID,
 		Title:       "Task 1",
 		Description: "Description 1",
-		Status:      entity.TaskStatusTodo,
+		Status:      entity.TaskStatusTODO,
 	}
 	task2 := &entity.Task{
 		ProjectID:   project.ID,
 		Title:       "Task 2",
 		Description: "Description 2",
-		Status:      entity.TaskStatusDone,
+		Status:      entity.TaskStatusDONE,
 	}
 
 	err := taskRepo.Create(ctx, task1)
@@ -195,7 +195,7 @@ func TestTaskRepository_Update(t *testing.T) {
 		ProjectID:   project.ID,
 		Title:       "Original Title",
 		Description: "Original Description",
-		Status:      entity.TaskStatusTodo,
+		Status:      entity.TaskStatusTODO,
 	}
 	err := taskRepo.Create(ctx, task)
 	require.NoError(t, err)
@@ -206,7 +206,7 @@ func TestTaskRepository_Update(t *testing.T) {
 	time.Sleep(10 * time.Millisecond) // Ensure different timestamp
 	task.Title = "Updated Title"
 	task.Description = "Updated Description"
-	task.Status = entity.TaskStatusImplementing
+	task.Status = entity.TaskStatusIMPLEMENTING
 	branchName := "feature/updated-task"
 	task.BranchName = &branchName
 
@@ -222,7 +222,7 @@ func TestTaskRepository_Update(t *testing.T) {
 
 	assert.Equal(t, "Updated Title", retrieved.Title)
 	assert.Equal(t, "Updated Description", retrieved.Description)
-	assert.Equal(t, entity.TaskStatusImplementing, retrieved.Status)
+	assert.Equal(t, entity.TaskStatusIMPLEMENTING, retrieved.Status)
 	assert.NotNil(t, retrieved.BranchName)
 	assert.Equal(t, "feature/updated-task", *retrieved.BranchName)
 }
@@ -239,7 +239,7 @@ func TestTaskRepository_Update_NotFound(t *testing.T) {
 		ProjectID:   uuid.New(),
 		Title:       "Non-existent",
 		Description: "Description",
-		Status:      entity.TaskStatusTodo,
+		Status:      entity.TaskStatusTODO,
 	}
 
 	err := taskRepo.Update(ctx, task)
@@ -265,7 +265,7 @@ func TestTaskRepository_Delete(t *testing.T) {
 		ProjectID:   project.ID,
 		Title:       "Test Task",
 		Description: "Test Description",
-		Status:      entity.TaskStatusTodo,
+		Status:      entity.TaskStatusTODO,
 	}
 	err := taskRepo.Create(ctx, task)
 	require.NoError(t, err)
@@ -307,7 +307,7 @@ func TestTaskRepository_UpdateStatus(t *testing.T) {
 		ProjectID:   project.ID,
 		Title:       "Test Task",
 		Description: "Test Description",
-		Status:      entity.TaskStatusTodo,
+		Status:      entity.TaskStatusTODO,
 	}
 	err := taskRepo.Create(ctx, task)
 	require.NoError(t, err)
@@ -316,14 +316,14 @@ func TestTaskRepository_UpdateStatus(t *testing.T) {
 	time.Sleep(10 * time.Millisecond) // Ensure different timestamp
 
 	// Update status
-	err = taskRepo.UpdateStatus(ctx, task.ID, entity.TaskStatusImplementing)
+	err = taskRepo.UpdateStatus(ctx, task.ID, entity.TaskStatusIMPLEMENTING)
 	require.NoError(t, err)
 
 	// Verify status update
 	retrieved, err := taskRepo.GetByID(ctx, task.ID)
 	require.NoError(t, err)
 
-	assert.Equal(t, entity.TaskStatusImplementing, retrieved.Status)
+	assert.Equal(t, entity.TaskStatusIMPLEMENTING, retrieved.Status)
 	assert.True(t, retrieved.UpdatedAt.After(originalUpdatedAt))
 }
 
@@ -343,7 +343,7 @@ func TestTaskRepository_UpdateStatus_InvalidStatus(t *testing.T) {
 		ProjectID:   project.ID,
 		Title:       "Test Task",
 		Description: "Test Description",
-		Status:      entity.TaskStatusTodo,
+		Status:      entity.TaskStatusTODO,
 	}
 	err := taskRepo.Create(ctx, task)
 	require.NoError(t, err)
@@ -367,7 +367,7 @@ func TestTaskRepository_UpdateStatus_NotFound(t *testing.T) {
 	taskRepo := NewTaskRepository(db)
 	ctx := context.Background()
 
-	err := taskRepo.UpdateStatus(ctx, uuid.New(), entity.TaskStatusDone)
+	err := taskRepo.UpdateStatus(ctx, uuid.New(), entity.TaskStatusDONE)
 	assert.Error(t, err)
 	if err != nil {
 		assert.Contains(t, err.Error(), "task not found")
@@ -390,19 +390,19 @@ func TestTaskRepository_GetByStatus(t *testing.T) {
 		ProjectID:   project.ID,
 		Title:       "Todo Task",
 		Description: "Description 1",
-		Status:      entity.TaskStatusTodo,
+		Status:      entity.TaskStatusTODO,
 	}
 	task2 := &entity.Task{
 		ProjectID:   project.ID,
 		Title:       "Done Task",
 		Description: "Description 2",
-		Status:      entity.TaskStatusDone,
+		Status:      entity.TaskStatusDONE,
 	}
 	task3 := &entity.Task{
 		ProjectID:   project.ID,
 		Title:       "Another Todo Task",
 		Description: "Description 3",
-		Status:      entity.TaskStatusTodo,
+		Status:      entity.TaskStatusTODO,
 	}
 
 	err := taskRepo.Create(ctx, task1)
@@ -413,7 +413,7 @@ func TestTaskRepository_GetByStatus(t *testing.T) {
 	require.NoError(t, err)
 
 	// Get tasks by status TODO
-	todoTasks, err := taskRepo.GetByStatus(ctx, entity.TaskStatusTodo)
+	todoTasks, err := taskRepo.GetByStatus(ctx, entity.TaskStatusTODO)
 	require.NoError(t, err)
 
 	assert.Len(t, todoTasks, 2)
@@ -422,14 +422,14 @@ func TestTaskRepository_GetByStatus(t *testing.T) {
 	assert.Equal(t, task1.ID, todoTasks[1].ID)
 
 	// Get tasks by status DONE
-	doneTasks, err := taskRepo.GetByStatus(ctx, entity.TaskStatusDone)
+	doneTasks, err := taskRepo.GetByStatus(ctx, entity.TaskStatusDONE)
 	require.NoError(t, err)
 
 	assert.Len(t, doneTasks, 1)
 	assert.Equal(t, task2.ID, doneTasks[0].ID)
 
 	// Get tasks by status that doesn't exist
-	planningTasks, err := taskRepo.GetByStatus(ctx, entity.TaskStatusPlanning)
+	planningTasks, err := taskRepo.GetByStatus(ctx, entity.TaskStatusTODO)
 	require.NoError(t, err)
 	assert.Len(t, planningTasks, 0)
 }
@@ -450,7 +450,7 @@ func TestTaskRepository_WithNullableFields(t *testing.T) {
 		ProjectID:   project.ID,
 		Title:       "Task with Nulls",
 		Description: "Test Description",
-		Status:      entity.TaskStatusTodo,
+		Status:      entity.TaskStatusTODO,
 		BranchName:  nil,
 		PullRequest: nil,
 	}

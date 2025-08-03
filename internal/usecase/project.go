@@ -327,7 +327,7 @@ func (u *projectUsecase) GetStatistics(ctx context.Context, id uuid.UUID) (*Proj
 	doneTasks := 0
 	for status, count := range taskCounts {
 		totalTasks += count
-		if status == entity.TaskStatusDone {
+		if status == entity.TaskStatusDONE {
 			doneTasks = count
 		}
 	}
