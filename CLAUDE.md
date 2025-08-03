@@ -9,12 +9,14 @@ This is the **Auto-Devs** project - an AI-powered developer task automation syst
 ## Architecture
 
 ### Core Components
+
 - **Task Management System**: REST API with WebSocket real-time updates for managing projects and tasks
-- **AI Agent Controller**: Orchestrates external AI CLI tools (Claude Code, Gemini CLI, etc.) for automated planning and implementation  
+- **AI Agent Controller**: Orchestrates external AI CLI tools (Claude Code, Gemini CLI, etc.) for automated planning and implementation
 - **Git Integration**: Manages Git worktrees, branches, and Pull Request automation
 - **Process Management**: Spawns, monitors, and controls AI CLI processes with comprehensive lifecycle management
 
 ### Technology Stack
+
 - **Backend**: Go with Gin framework, Clean Architecture pattern
 - **Frontend**: React + TypeScript + ShadcnUI (cloned from shadcn-admin template)
 - **Database**: PostgreSQL with Redis for caching
@@ -26,17 +28,20 @@ This is the **Auto-Devs** project - an AI-powered developer task automation syst
 The project follows a 3-phase development approach:
 
 ### Phase 1: Task Management System (4-6 weeks)
+
 - Core infrastructure with Go backend and React frontend
 - Project and task CRUD operations
 - Real-time WebSocket updates
 - Manual task workflow without AI automation
 
-### Phase 2: Git Worktree Integration (3-4 weeks)  
+### Phase 2: Git Worktree Integration (3-4 weeks)
+
 - Git CLI integration for branch and worktree management
 - Isolated development environments per task
 - Manual implementation support with Git operations
 
 ### Phase 3: AI Executor (6-8 weeks)
+
 - AI CLI integration for automated planning and implementation
 - Process management for AI agent orchestration
 - Automated Pull Request creation and merge detection
@@ -44,17 +49,21 @@ The project follows a 3-phase development approach:
 ## Key Concepts
 
 ### Task Lifecycle
+
 Tasks follow this state machine:
+
 - `TODO` → `PLANNING` → `PLAN_REVIEWING` → `IMPLEMENTING` → `CODE_REVIEWING` → `DONE`
 - Any state can transition to `CANCELLED`
 
 ### AI Integration Strategy
+
 - System acts as orchestrator, delegating all AI work to external CLI tools
 - Extensible plugin architecture for different AI CLIs
 - MVP focuses on Claude Code CLI integration
 - Process monitoring and lifecycle management for spawned AI processes
 
 ### Git Worktree Management
+
 - Each task gets isolated Git worktree and branch
 - Branch naming: `task-{task_id}-{slug}`
 - Automatic cleanup after task completion
@@ -62,6 +71,7 @@ Tasks follow this state machine:
 ## Database Schema
 
 ### Core Tables
+
 - `projects`: Project configuration and Git repository settings
 - `tasks`: Task details, status, and associated branches/PRs
 - `executions`: AI CLI execution tracking with process management
@@ -70,12 +80,14 @@ Tasks follow this state machine:
 ## Important Files & Directories
 
 ### Documentation
+
 - `docs/prd.md`: Complete Product Requirements Document
 - `docs/technical-design.md`: Detailed technical architecture and API specifications
 - `docs/core-concepts.md`: Core system concepts and implementation guidelines
 - `development-roadmap.md`: 3-phase development plan with detailed tasks
 
 ### Development Guidelines
+
 - Follow Clean Architecture pattern with layers (handler, usecase, repository)
 - Use Wire for dependency injection
 - Implement comprehensive testing (unit, integration, e2e)
@@ -84,17 +96,19 @@ Tasks follow this state machine:
 ## MCP Server Requirements
 
 This project requires these MCP servers:
+
 - **serena**: For task and project management capabilities
 - **github**: For Git repository operations and PR management
 
 ## Development Commands
 
-Since this is currently a documentation-only repository in early planning phase, there are no build/test commands yet. Implementation will begin with Phase 1 backend setup using:
+Implementation will begin with Phase 1 backend setup using:
 
 - Go with Gin framework setup
 - PostgreSQL database with golang-migrate
 - React frontend cloned from shadcn-admin template
 - Docker containerization for development and production
+- Run build: `make build`
 
 ## Notes for Claude Code
 

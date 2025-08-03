@@ -9,15 +9,15 @@ import (
 
 // Service provides WebSocket functionality integration
 type Service struct {
-	handler            *Handler
-	hub                *Hub
-	middlewareManager  *MiddlewareManager
-	offlineManager     *OfflineMessageManager
-	taskProcessor      *TaskEventProcessor
-	projectProcessor   *ProjectEventProcessor
-	statusProcessor    *StatusEventProcessor
-	presenceProcessor  *UserPresenceProcessor
-	authService        AuthService
+	handler           *Handler
+	hub               *Hub
+	middlewareManager *MiddlewareManager
+	offlineManager    *OfflineMessageManager
+	taskProcessor     *TaskEventProcessor
+	projectProcessor  *ProjectEventProcessor
+	statusProcessor   *StatusEventProcessor
+	presenceProcessor *UserPresenceProcessor
+	authService       AuthService
 }
 
 // NewService creates a new WebSocket service
@@ -26,26 +26,26 @@ func NewService() *Service {
 	handler := NewHandler()
 	hub := handler.GetHub()
 	middlewareManager := NewMiddlewareManager()
-	
+
 	// Create persistence for offline messages
 	persistence := NewInMemoryPersistence(1000, 24*time.Hour) // Store up to 1000 messages for 24 hours
 	offlineManager := NewOfflineMessageManager(persistence, hub)
-	
+
 	// Create processors
 	taskProcessor := NewTaskEventProcessor(hub)
 	projectProcessor := NewProjectEventProcessor(hub)
 	statusProcessor := NewStatusEventProcessor(hub)
 	presenceProcessor := NewUserPresenceProcessor(hub)
-	
+
 	// Create auth service
 	authService := NewMockAuthService()
-	
+
 	// Register processors with hub
 	processors := GetEventProcessors(hub)
 	for msgType, processor := range processors {
 		hub.RegisterProcessor(msgType, processor)
 	}
-	
+
 	service := &Service{
 		handler:           handler,
 		hub:               hub,
@@ -57,7 +57,7 @@ func NewService() *Service {
 		presenceProcessor: presenceProcessor,
 		authService:       authService,
 	}
-	
+
 	return service
 }
 
@@ -149,12 +149,12 @@ func (s *Service) GetMetrics() map[string]interface{} {
 	hubMetrics := s.hub.GetMetrics()
 	middlewareStats := s.middlewareManager.GetMiddlewareStats()
 	offlineStats := s.offlineManager.GetStats()
-	
+
 	return map[string]interface{}{
-		"hub":               hubMetrics,
-		"middleware":        middlewareStats,
-		"offline_messages":  offlineStats,
-		"timestamp":         time.Now(),
+		"hub":              hubMetrics,
+		"middleware":       middlewareStats,
+		"offline_messages": offlineStats,
+		"timestamp":        time.Now(),
 	}
 }
 
@@ -170,15 +170,15 @@ func (s *Service) IsHealthy() bool {
 // GetHealthStatus returns detailed health status
 func (s *Service) GetHealthStatus() map[string]interface{} {
 	metrics := s.hub.GetMetrics()
-	
+
 	return map[string]interface{}{
 		"status":             "healthy",
 		"active_connections": metrics.ActiveConnections,
 		"total_connections":  metrics.TotalConnections,
 		"messages_sent":      metrics.MessagesSent,
 		"messages_received":  metrics.MessagesReceived,
-		"uptime":            time.Since(time.Now()).String(), // This would need to track actual start time
-		"timestamp":         time.Now(),
+		"uptime":             time.Since(time.Now()).String(), // This would need to track actual start time
+		"timestamp":          time.Now(),
 	}
 }
 
@@ -190,7 +190,7 @@ func (s *Service) BroadcastMessage(msgType MessageType, data interface{}, projec
 	if err != nil {
 		return err
 	}
-	
+
 	s.hub.Broadcast(message, projectID, userID, nil)
 	return nil
 }
@@ -216,33 +216,33 @@ type ServiceConfig struct {
 	// Rate limiting
 	RequestsPerSecond float64
 	BurstSize         int
-	
+
 	// Error handling
-	MaxErrors     int
+	MaxErrors          int
 	ErrorResetInterval time.Duration
-	
+
 	// Message persistence
-	MaxStoredMessages  int
+	MaxStoredMessages int
 	MessageTTL        time.Duration
-	
+
 	// Connection health
-	PingInterval      time.Duration
-	PongTimeout       time.Duration
-	MaxMessageSize    int64
+	PingInterval   time.Duration
+	PongTimeout    time.Duration
+	MaxMessageSize int64
 }
 
 // DefaultServiceConfig returns default service configuration
 func DefaultServiceConfig() *ServiceConfig {
 	return &ServiceConfig{
 		RequestsPerSecond:  10.0,
-		BurstSize:         20,
-		MaxErrors:         10,
+		BurstSize:          20,
+		MaxErrors:          10,
 		ErrorResetInterval: 5 * time.Minute,
 		MaxStoredMessages:  1000,
-		MessageTTL:        24 * time.Hour,
-		PingInterval:      54 * time.Second,
-		PongTimeout:       60 * time.Second,
-		MaxMessageSize:    512,
+		MessageTTL:         24 * time.Hour,
+		PingInterval:       54 * time.Second,
+		PongTimeout:        60 * time.Second,
+		MaxMessageSize:     512,
 	}
 }
 
@@ -275,7 +275,7 @@ func (s *Service) SendDirectMessage(userID string, msgType MessageType, data int
 	if err != nil {
 		return err
 	}
-	
+
 	s.hub.BroadcastToUser(message, userID, nil)
 	return nil
 }
@@ -286,7 +286,7 @@ func (s *Service) SendProjectMessage(projectID uuid.UUID, msgType MessageType, d
 	if err != nil {
 		return err
 	}
-	
+
 	s.hub.BroadcastToProject(message, projectID, nil)
 	return nil
 }

@@ -10,15 +10,28 @@ import { NavUser } from '@/components/layout/nav-user'
 import { TeamSwitcher } from '@/components/layout/team-switcher'
 import { ProjectSelector } from '@/components/project-selector'
 import { Separator } from '@/components/ui/separator'
+import { ConnectionStatus } from '@/components/ui/connection-status'
+import { useWebSocketConnection } from '@/context/websocket-context'
 import { sidebarData } from './data/sidebar-data'
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const { connectionState, queuedMessageCount, reconnect, clearMessageQueue } = useWebSocketConnection()
+  
   return (
     <Sidebar collapsible='icon' variant='floating' {...props}>
       <SidebarHeader>
         <TeamSwitcher teams={sidebarData.teams} />
         <div className="px-2 py-2">
           <ProjectSelector className="w-full" />
+        </div>
+        <div className="px-2 py-1">
+          <ConnectionStatus 
+            connectionState={connectionState}
+            queuedMessageCount={queuedMessageCount}
+            onReconnect={reconnect}
+            onClearQueue={clearMessageQueue}
+            variant="compact"
+          />
         </div>
         <Separator />
       </SidebarHeader>

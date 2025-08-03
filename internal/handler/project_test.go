@@ -306,7 +306,7 @@ func TestProjectHandler_GetProjectStatistics(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, 5, response.TotalTasks)
 	assert.Equal(t, 40.0, response.CompletionPercent)
-	assert.Equal(t, 3, response.TaskCounts[entity.TaskStatusTodo])
+	assert.Equal(t, 3, response.TasksByStatus[string(entity.TaskStatusTodo)])
 
 	mockUsecase.AssertExpectations(t)
 }

@@ -15,24 +15,27 @@ const (
 	TaskCreated MessageType = "task_created"
 	TaskUpdated MessageType = "task_updated"
 	TaskDeleted MessageType = "task_deleted"
-	
+
 	// Project related messages
 	ProjectUpdated MessageType = "project_updated"
-	
+
 	// Status related messages
 	StatusChanged MessageType = "status_changed"
-	
+
 	// User presence messages
 	UserJoined MessageType = "user_joined"
 	UserLeft   MessageType = "user_left"
-	
+
 	// Connection management messages
 	Ping MessageType = "ping"
 	Pong MessageType = "pong"
-	
+
+	// Subscription messages
+	Subscription MessageType = "subscription"
+
 	// Error messages
 	Error MessageType = "error"
-	
+
 	// Authentication messages
 	AuthRequired MessageType = "auth_required"
 	AuthSuccess  MessageType = "auth_success"
@@ -64,11 +67,11 @@ type ProjectData struct {
 
 // StatusData represents status change message data
 type StatusData struct {
-	EntityID   uuid.UUID   `json:"entity_id"`
-	EntityType string      `json:"entity_type"` // "task" or "project"
-	OldStatus  string      `json:"old_status"`
-	NewStatus  string      `json:"new_status"`
-	ProjectID  uuid.UUID   `json:"project_id"`
+	EntityID   uuid.UUID `json:"entity_id"`
+	EntityType string    `json:"entity_type"` // "task" or "project"
+	OldStatus  string    `json:"old_status"`
+	NewStatus  string    `json:"new_status"`
+	ProjectID  uuid.UUID `json:"project_id"`
 }
 
 // UserPresenceData represents user presence message data
@@ -98,7 +101,7 @@ func NewMessage(msgType MessageType, data interface{}) (*Message, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return &Message{
 		Type:      msgType,
 		Data:      dataBytes,
