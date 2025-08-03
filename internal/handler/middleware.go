@@ -14,7 +14,7 @@ import (
 // CORSMiddleware configures CORS settings
 func CORSMiddleware() gin.HandlerFunc {
 	config := cors.Config{
-		AllowOrigins:     []string{"http://localhost:3000", "http://localhost:5173"}, // React dev servers
+		AllowOrigins:     []string{"http://localhost:3000", "http://localhost:5173", "http://localhost:9000"}, // React dev servers
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization", "X-Requested-With"},
 		ExposeHeaders:    []string{"Content-Length", "X-Total-Count"},
@@ -51,14 +51,14 @@ func ValidationErrorMiddleware() gin.HandlerFunc {
 		// Check if there are any errors from validation
 		if len(c.Errors) > 0 {
 			err := c.Errors.Last()
-			
+
 			// If it's a validation error, format it properly
 			if validationErrors, ok := err.Err.(validator.ValidationErrors); ok {
 				details := make(map[string]string)
 				for _, fieldErr := range validationErrors {
 					details[fieldErr.Field()] = getValidationErrorMessage(fieldErr)
 				}
-				
+
 				c.JSON(http.StatusBadRequest, dto.NewValidationErrorResponse(details))
 				c.Abort()
 				return

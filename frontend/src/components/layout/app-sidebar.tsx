@@ -8,6 +8,8 @@ import {
 import { NavGroup } from '@/components/layout/nav-group'
 import { NavUser } from '@/components/layout/nav-user'
 import { TeamSwitcher } from '@/components/layout/team-switcher'
+import { ProjectSelector } from '@/components/project-selector'
+import { Separator } from '@/components/ui/separator'
 import { sidebarData } from './data/sidebar-data'
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
@@ -15,6 +17,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     <Sidebar collapsible='icon' variant='floating' {...props}>
       <SidebarHeader>
         <TeamSwitcher teams={sidebarData.teams} />
+        <div className="px-2 py-2">
+          <ProjectSelector className="w-full" />
+        </div>
+        <Separator />
       </SidebarHeader>
       <SidebarContent>
         {sidebarData.navGroups.map((props) => (

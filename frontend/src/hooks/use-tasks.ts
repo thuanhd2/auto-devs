@@ -3,7 +3,7 @@ import { toast } from 'sonner'
 import { tasksApi } from '@/lib/api/tasks'
 import type {
   Task,
-  CreateTaskRequest,
+
   UpdateTaskRequest,
   TaskFilters,
 } from '@/types/task'
