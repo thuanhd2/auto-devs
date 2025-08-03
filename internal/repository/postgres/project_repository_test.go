@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/auto-devs/auto-devs/internal/entity"
+	"github.com/auto-devs/auto-devs/internal/repository"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -333,4 +334,228 @@ func TestProjectRepository_Delete_WithTasks(t *testing.T) {
 	_, err = taskRepo.GetByID(ctx, task.ID)
 	// Task should still exist since GORM doesn't auto-cascade soft deletes
 	assert.NoError(t, err)
+}
+
+func TestProjectRepository_GetAllWithParams(t *testing.T) {
+	db, cleanup := setupTestGormDB(t)
+	defer cleanup()
+
+	repo := NewProjectRepository(db)
+	ctx := context.Background()
+
+	// Create test projects
+	projects := []*entity.Project{
+		{Name: "Alpha Project", Description: "First project", RepoURL: "https://github.com/test/alpha.git"},
+		{Name: "Beta Search", Description: "Second project", RepoURL: "https://github.com/test/beta.git"},
+		{Name: "Gamma Project", Description: "Third search term", RepoURL: "https://github.com/test/gamma.git"},
+	}
+
+	for _, p := range projects {
+		err := repo.Create(ctx, p)
+		require.NoError(t, err)
+	}
+
+	t.Run("search functionality", func(t *testing.T) {
+		params := repository.GetProjectsParams{
+			Search:   "search",
+			Page:     1,
+			PageSize: 10,
+		}
+
+		results, total, err := repo.GetAllWithParams(ctx, params)
+		require.NoError(t, err)
+		assert.Equal(t, 2, total)
+		assert.Len(t, results, 2)
+	})
+
+	t.Run("pagination", func(t *testing.T) {
+		params := repository.GetProjectsParams{
+			Page:     1,
+			PageSize: 2,
+		}
+
+		results, total, err := repo.GetAllWithParams(ctx, params)
+		require.NoError(t, err)
+		assert.Equal(t, 3, total)
+		assert.Len(t, results, 2)
+
+		params.Page = 2
+		results, total, err = repo.GetAllWithParams(ctx, params)
+		require.NoError(t, err)
+		assert.Equal(t, 3, total)
+		assert.Len(t, results, 1)
+	})
+
+	t.Run("sorting by name", func(t *testing.T) {
+		params := repository.GetProjectsParams{
+			SortBy:    "name",
+			SortOrder: "asc",
+			Page:      1,
+			PageSize:  10,
+		}
+
+		results, _, err := repo.GetAllWithParams(ctx, params)
+		require.NoError(t, err)
+		assert.Equal(t, "Alpha Project", results[0].Name)
+		assert.Equal(t, "Beta Search", results[1].Name)
+		assert.Equal(t, "Gamma Project", results[2].Name)
+	})
+}
+
+func TestProjectRepository_CheckNameExists(t *testing.T) {
+	db, cleanup := setupTestGormDB(t)
+	defer cleanup()
+
+	repo := NewProjectRepository(db)
+	ctx := context.Background()
+
+	// Create project
+	project := &entity.Project{
+		Name:        "Unique Project",
+		Description: "Test Description",
+		RepoURL:     "https://github.com/test/repo.git",
+	}
+	err := repo.Create(ctx, project)
+	require.NoError(t, err)
+
+	t.Run("existing name", func(t *testing.T) {
+		exists, err := repo.CheckNameExists(ctx, "Unique Project", nil)
+		require.NoError(t, err)
+		assert.True(t, exists)
+	})
+
+	t.Run("non-existing name", func(t *testing.T) {
+		exists, err := repo.CheckNameExists(ctx, "Non-existent Project", nil)
+		require.NoError(t, err)
+		assert.False(t, exists)
+	})
+
+	t.Run("exclude current project", func(t *testing.T) {
+		exists, err := repo.CheckNameExists(ctx, "Unique Project", &project.ID)
+		require.NoError(t, err)
+		assert.False(t, exists)
+	})
+}
+
+func TestProjectRepository_GetTaskStatistics(t *testing.T) {
+	db, cleanup := setupTestGormDB(t)
+	defer cleanup()
+
+	projectRepo := NewProjectRepository(db)
+	taskRepo := NewTaskRepository(db)
+	ctx := context.Background()
+
+	// Create project
+	project := &entity.Project{
+		Name:        "Stats Project",
+		Description: "Test Description",
+		RepoURL:     "https://github.com/test/repo.git",
+	}
+	err := projectRepo.Create(ctx, project)
+	require.NoError(t, err)
+
+	// Create tasks with different statuses
+	tasks := []*entity.Task{
+		{ProjectID: project.ID, Title: "Task 1", Status: entity.TaskStatusTodo},
+		{ProjectID: project.ID, Title: "Task 2", Status: entity.TaskStatusTodo},
+		{ProjectID: project.ID, Title: "Task 3", Status: entity.TaskStatusDone},
+		{ProjectID: project.ID, Title: "Task 4", Status: entity.TaskStatusImplementing},
+	}
+
+	for _, task := range tasks {
+		err := taskRepo.Create(ctx, task)
+		require.NoError(t, err)
+	}
+
+	// Get statistics
+	stats, err := projectRepo.GetTaskStatistics(ctx, project.ID)
+	require.NoError(t, err)
+
+	assert.Equal(t, 2, stats[entity.TaskStatusTodo])
+	assert.Equal(t, 1, stats[entity.TaskStatusDone])
+	assert.Equal(t, 1, stats[entity.TaskStatusImplementing])
+}
+
+func TestProjectRepository_Archive_Restore(t *testing.T) {
+	db, cleanup := setupTestGormDB(t)
+	defer cleanup()
+
+	repo := NewProjectRepository(db)
+	ctx := context.Background()
+
+	// Create project
+	project := &entity.Project{
+		Name:        "Archive Project",
+		Description: "Test Description",
+		RepoURL:     "https://github.com/test/repo.git",
+	}
+	err := repo.Create(ctx, project)
+	require.NoError(t, err)
+
+	// Archive project
+	err = repo.Archive(ctx, project.ID)
+	require.NoError(t, err)
+
+	// Verify it's archived (not found in normal queries)
+	_, err = repo.GetByID(ctx, project.ID)
+	assert.Error(t, err)
+
+	// Restore project
+	err = repo.Restore(ctx, project.ID)
+	require.NoError(t, err)
+
+	// Verify it's restored
+	restored, err := repo.GetByID(ctx, project.ID)
+	require.NoError(t, err)
+	assert.Equal(t, project.ID, restored.ID)
+}
+
+func TestProjectRepository_GetLastActivityAt(t *testing.T) {
+	db, cleanup := setupTestGormDB(t)
+	defer cleanup()
+
+	projectRepo := NewProjectRepository(db)
+	taskRepo := NewTaskRepository(db)
+	ctx := context.Background()
+
+	// Create project
+	project := &entity.Project{
+		Name:        "Activity Project",
+		Description: "Test Description",
+		RepoURL:     "https://github.com/test/repo.git",
+	}
+	err := projectRepo.Create(ctx, project)
+	require.NoError(t, err)
+
+	t.Run("no tasks - returns project updated_at", func(t *testing.T) {
+		lastActivity, err := projectRepo.GetLastActivityAt(ctx, project.ID)
+		require.NoError(t, err)
+		assert.NotNil(t, lastActivity)
+		// Should be approximately the project's updated_at
+		timeDiff := lastActivity.Sub(project.UpdatedAt)
+		assert.Less(t, timeDiff.Milliseconds(), int64(1000)) // Within 1 second
+	})
+
+	t.Run("with tasks - returns latest task updated_at", func(t *testing.T) {
+		// Create task
+		task := &entity.Task{
+			ProjectID: project.ID,
+			Title:     "Recent Task",
+			Status:    entity.TaskStatusTodo,
+		}
+		err := taskRepo.Create(ctx, task)
+		require.NoError(t, err)
+
+		// Update task to have a newer timestamp
+		time.Sleep(10 * time.Millisecond)
+		task.Title = "Updated Task"
+		err = taskRepo.Update(ctx, task)
+		require.NoError(t, err)
+
+		lastActivity, err := projectRepo.GetLastActivityAt(ctx, project.ID)
+		require.NoError(t, err)
+		assert.NotNil(t, lastActivity)
+		// Should be the task's updated_at, which is newer than project's
+		assert.True(t, lastActivity.After(project.UpdatedAt))
+	})
 }

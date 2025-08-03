@@ -3,6 +3,7 @@
 
 .serena
 coverage.*
+bin/
 
 # frontend
 # Logs
