@@ -5,6 +5,7 @@ import (
 
 	"github.com/auto-devs/auto-devs/internal/di"
 	"github.com/auto-devs/auto-devs/internal/handler"
+	"github.com/auto-devs/auto-devs/internal/websocket"
 	"github.com/gin-gonic/gin"
 )
 
@@ -28,11 +29,15 @@ func main() {
 	// 	log.Printf("Warning: Failed to run migrations: %v", err)
 	// }
 
+	// Initialize WebSocket service
+	wsService := websocket.NewService()
+	log.Printf("WebSocket service initialized")
+
 	// Setup Gin router
 	router := gin.Default()
 
 	// Setup all routes with middleware
-	handler.SetupRoutes(router, app.ProjectUsecase, app.TaskUsecase, app.GormDB)
+	handler.SetupRoutes(router, app.ProjectUsecase, app.TaskUsecase, app.GormDB, wsService)
 
 	// Start server
 	port := app.Config.Server.Port
