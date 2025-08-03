@@ -45,12 +45,19 @@ export function KanbanColumn({
   const taskIds = tasks.map(task => task.id)
 
   return (
-    <div className={`flex flex-col h-full ${isSelectedColumn ? 'ring-2 ring-blue-500 ring-opacity-50' : ''}`}>
+    <div 
+      className={`flex flex-col h-full ${isSelectedColumn ? 'ring-2 ring-blue-500 ring-opacity-50' : ''}`}
+      data-column={column.id}
+    >
       {/* Column Header */}
       <div className="flex items-center justify-between p-4 border-b bg-white">
         <div className="flex items-center gap-2">
           <h2 className="font-semibold text-gray-900">{column.title}</h2>
-          <Badge variant="secondary" className="text-xs">
+          <Badge 
+            variant="secondary" 
+            className="text-xs task-count transition-transform duration-200"
+            data-testid={`${column.id}-count`}
+          >
             {tasks.length}
           </Badge>
         </div>
@@ -61,7 +68,7 @@ export function KanbanColumn({
               variant="ghost"
               size="sm"
               onClick={onCreateTask}
-              className="h-7 w-7 p-0"
+              className="h-7 w-7 p-0 hover:scale-105 transition-transform duration-200"
             >
               <Plus className="h-3 w-3" />
             </Button>
@@ -72,7 +79,7 @@ export function KanbanColumn({
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-7 w-7 p-0"
+                className="h-7 w-7 p-0 hover:scale-105 transition-transform duration-200"
               >
                 <MoreHorizontal className="h-3 w-3" />
               </Button>
@@ -91,9 +98,10 @@ export function KanbanColumn({
         ref={setNodeRef}
         className={`
           flex-1 p-4 space-y-3 overflow-y-auto min-h-96
-          ${isOver ? 'bg-blue-50' : ''} 
-          transition-colors duration-200
+          ${isOver ? 'bg-blue-50 border-blue-200' : ''} 
+          transition-all duration-200 ease-out
         `}
+        data-column-content={column.id}
       >
         {tasks.length === 0 ? (
           <EmptyColumn
