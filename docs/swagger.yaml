@@ -1,0 +1,715 @@
+definitions:
+  dto.ErrorResponse:
+    properties:
+      code:
+        example: 400
+        type: integer
+      details:
+        additionalProperties:
+          type: string
+        type: object
+      error:
+        example: Invalid request
+        type: string
+      message:
+        example: The provided data is invalid
+        type: string
+    type: object
+  dto.ProjectCreateRequest:
+    properties:
+      description:
+        example: Project description
+        maxLength: 1000
+        type: string
+      name:
+        example: My Project
+        maxLength: 255
+        minLength: 1
+        type: string
+      repo_url:
+        example: https://github.com/user/repo
+        maxLength: 500
+        type: string
+    required:
+    - name
+    - repo_url
+    type: object
+  dto.ProjectListResponse:
+    properties:
+      projects:
+        items:
+          $ref: '#/definitions/dto.ProjectResponse'
+        type: array
+      total:
+        type: integer
+    type: object
+  dto.ProjectResponse:
+    properties:
+      created_at:
+        example: "2024-01-15T10:30:00Z"
+        type: string
+      description:
+        example: Project description
+        type: string
+      id:
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+      name:
+        example: My Project
+        type: string
+      repo_url:
+        example: https://github.com/user/repo
+        type: string
+      updated_at:
+        example: "2024-01-15T10:30:00Z"
+        type: string
+    type: object
+  dto.ProjectUpdateRequest:
+    properties:
+      description:
+        example: Updated description
+        maxLength: 1000
+        type: string
+      name:
+        example: Updated Project Name
+        maxLength: 255
+        minLength: 1
+        type: string
+      repo_url:
+        example: https://github.com/user/updated-repo
+        maxLength: 500
+        type: string
+    type: object
+  dto.ProjectWithTasksResponse:
+    properties:
+      created_at:
+        example: "2024-01-15T10:30:00Z"
+        type: string
+      description:
+        example: Project description
+        type: string
+      id:
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+      name:
+        example: My Project
+        type: string
+      repo_url:
+        example: https://github.com/user/repo
+        type: string
+      tasks:
+        items:
+          $ref: '#/definitions/dto.TaskResponse'
+        type: array
+      updated_at:
+        example: "2024-01-15T10:30:00Z"
+        type: string
+    type: object
+  dto.TaskCreateRequest:
+    properties:
+      description:
+        example: Add JWT-based authentication system
+        maxLength: 1000
+        type: string
+      project_id:
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+      title:
+        example: Implement user authentication
+        maxLength: 255
+        minLength: 1
+        type: string
+    required:
+    - project_id
+    - title
+    type: object
+  dto.TaskListResponse:
+    properties:
+      tasks:
+        items:
+          $ref: '#/definitions/dto.TaskResponse'
+        type: array
+      total:
+        type: integer
+    type: object
+  dto.TaskResponse:
+    properties:
+      branch_name:
+        example: feature/user-auth
+        type: string
+      created_at:
+        example: "2024-01-15T10:30:00Z"
+        type: string
+      description:
+        example: Add JWT-based authentication system
+        type: string
+      id:
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+      project_id:
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+      pull_request:
+        example: https://github.com/user/repo/pull/123
+        type: string
+      status:
+        allOf:
+        - $ref: '#/definitions/entity.TaskStatus'
+        example: TODO
+      title:
+        example: Implement user authentication
+        type: string
+      updated_at:
+        example: "2024-01-15T10:30:00Z"
+        type: string
+    type: object
+  dto.TaskStatusUpdateRequest:
+    properties:
+      status:
+        allOf:
+        - $ref: '#/definitions/entity.TaskStatus'
+        enum:
+        - TODO
+        - PLANNING
+        - PLAN_REVIEWING
+        - IMPLEMENTING
+        - CODE_REVIEWING
+        - DONE
+        - CANCELLED
+        example: TODO
+    required:
+    - status
+    type: object
+  dto.TaskUpdateRequest:
+    properties:
+      branch_name:
+        example: feature/user-auth
+        maxLength: 255
+        type: string
+      description:
+        example: Updated description
+        maxLength: 1000
+        type: string
+      pull_request:
+        example: https://github.com/user/repo/pull/123
+        maxLength: 255
+        type: string
+      title:
+        example: Updated task title
+        maxLength: 255
+        minLength: 1
+        type: string
+    type: object
+  dto.TaskWithProjectResponse:
+    properties:
+      branch_name:
+        example: feature/user-auth
+        type: string
+      created_at:
+        example: "2024-01-15T10:30:00Z"
+        type: string
+      description:
+        example: Add JWT-based authentication system
+        type: string
+      id:
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+      project:
+        $ref: '#/definitions/dto.ProjectResponse'
+      project_id:
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+      pull_request:
+        example: https://github.com/user/repo/pull/123
+        type: string
+      status:
+        allOf:
+        - $ref: '#/definitions/entity.TaskStatus'
+        example: TODO
+      title:
+        example: Implement user authentication
+        type: string
+      updated_at:
+        example: "2024-01-15T10:30:00Z"
+        type: string
+    type: object
+  entity.TaskStatus:
+    enum:
+    - TODO
+    - PLANNING
+    - PLAN_REVIEWING
+    - IMPLEMENTING
+    - CODE_REVIEWING
+    - DONE
+    - CANCELLED
+    type: string
+    x-enum-varnames:
+    - TaskStatusTodo
+    - TaskStatusPlanning
+    - TaskStatusPlanReview
+    - TaskStatusImplementing
+    - TaskStatusCodeReview
+    - TaskStatusDone
+    - TaskStatusCancelled
+info:
+  contact: {}
+paths:
+  /api/v1/projects:
+    get:
+      consumes:
+      - application/json
+      description: Get a list of all projects
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.ProjectListResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: List all projects
+      tags:
+      - projects
+    post:
+      consumes:
+      - application/json
+      description: Create a new project with the provided details
+      parameters:
+      - description: Project creation data
+        in: body
+        name: project
+        required: true
+        schema:
+          $ref: '#/definitions/dto.ProjectCreateRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.ProjectResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Create a new project
+      tags:
+      - projects
+  /api/v1/projects/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a project by its ID
+      parameters:
+      - description: Project ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Delete a project
+      tags:
+      - projects
+    get:
+      consumes:
+      - application/json
+      description: Get a single project by its ID
+      parameters:
+      - description: Project ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.ProjectResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Get a project by ID
+      tags:
+      - projects
+    put:
+      consumes:
+      - application/json
+      description: Update a project with the provided details
+      parameters:
+      - description: Project ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Project update data
+        in: body
+        name: project
+        required: true
+        schema:
+          $ref: '#/definitions/dto.ProjectUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.ProjectResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Update a project
+      tags:
+      - projects
+  /api/v1/projects/{id}/tasks:
+    get:
+      consumes:
+      - application/json
+      description: Get a single project by its ID including all associated tasks
+      parameters:
+      - description: Project ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.ProjectWithTasksResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Get a project with its tasks
+      tags:
+      - projects
+  /api/v1/projects/{project_id}/tasks:
+    get:
+      consumes:
+      - application/json
+      description: Get all tasks for a specific project
+      parameters:
+      - description: Project ID
+        in: path
+        name: project_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.TaskListResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: List tasks by project
+      tags:
+      - tasks
+  /api/v1/tasks:
+    get:
+      consumes:
+      - application/json
+      description: Get a list of tasks with optional filtering by status, project,
+        or search term
+      parameters:
+      - description: Filter by status
+        enum:
+        - TODO
+        - PLANNING
+        - PLAN_REVIEWING
+        - IMPLEMENTING
+        - CODE_REVIEWING
+        - DONE
+        - CANCELLED
+        in: query
+        name: status
+        type: string
+      - description: Filter by project ID
+        in: query
+        name: project_id
+        type: string
+      - description: Search in title and description
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.TaskListResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: List tasks with filtering
+      tags:
+      - tasks
+    post:
+      consumes:
+      - application/json
+      description: Create a new task with the provided details
+      parameters:
+      - description: Task creation data
+        in: body
+        name: task
+        required: true
+        schema:
+          $ref: '#/definitions/dto.TaskCreateRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.TaskResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Create a new task
+      tags:
+      - tasks
+  /api/v1/tasks/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a task by its ID
+      parameters:
+      - description: Task ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Delete a task
+      tags:
+      - tasks
+    get:
+      consumes:
+      - application/json
+      description: Get a single task by its ID
+      parameters:
+      - description: Task ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.TaskResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Get a task by ID
+      tags:
+      - tasks
+    put:
+      consumes:
+      - application/json
+      description: Update a task with the provided details
+      parameters:
+      - description: Task ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Task update data
+        in: body
+        name: task
+        required: true
+        schema:
+          $ref: '#/definitions/dto.TaskUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.TaskResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Update a task
+      tags:
+      - tasks
+  /api/v1/tasks/{id}/project:
+    get:
+      consumes:
+      - application/json
+      description: Get a single task by its ID including the associated project
+      parameters:
+      - description: Task ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.TaskWithProjectResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Get a task with its project
+      tags:
+      - tasks
+  /api/v1/tasks/{id}/status:
+    patch:
+      consumes:
+      - application/json
+      description: Update the status of a task
+      parameters:
+      - description: Task ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Task status update data
+        in: body
+        name: status
+        required: true
+        schema:
+          $ref: '#/definitions/dto.TaskStatusUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.TaskResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Update a task status
+      tags:
+      - tasks
+swagger: "2.0"

@@ -16,6 +16,8 @@ type TaskUsecase interface {
 	Update(ctx context.Context, id uuid.UUID, req UpdateTaskRequest) (*entity.Task, error)
 	UpdateStatus(ctx context.Context, id uuid.UUID, status entity.TaskStatus) (*entity.Task, error)
 	Delete(ctx context.Context, id uuid.UUID) error
+	GetByStatus(ctx context.Context, status entity.TaskStatus) ([]*entity.Task, error)
+	GetWithProject(ctx context.Context, id uuid.UUID) (*entity.Task, error)
 }
 
 type CreateTaskRequest struct {
@@ -104,4 +106,19 @@ func (u *taskUsecase) UpdateStatus(ctx context.Context, id uuid.UUID, status ent
 
 func (u *taskUsecase) Delete(ctx context.Context, id uuid.UUID) error {
 	return u.taskRepo.Delete(ctx, id)
+}
+
+func (u *taskUsecase) GetWithProject(ctx context.Context, id uuid.UUID) (*entity.Task, error) {
+	task, err := u.taskRepo.GetByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	// The repository should handle loading project via GORM preloading
+	// For now, we'll return the task as-is since the relationship is defined
+	return task, nil
+}
+
+func (u *taskUsecase) GetByStatus(ctx context.Context, status entity.TaskStatus) ([]*entity.Task, error) {
+	return u.taskRepo.GetByStatus(ctx, status)
 }

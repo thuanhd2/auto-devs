@@ -20,6 +20,18 @@ help: ## Show this help message
 	@echo 'Available targets:'
 	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
+.PHONY: swagger
+swagger: ## Generate Swagger documentation
+	@echo "Generating Swagger documentation..."
+	@swag init -g cmd/server/main.go
+	@echo "Swagger documentation generated successfully!"
+
+.PHONY: swagger-serve
+swagger-serve: ## Serve Swagger UI (requires server to be running)
+	@echo "Swagger UI available at:"
+	@echo "  http://localhost:8098/swagger/index.html"
+	@echo "  http://localhost:8098/ (redirects to Swagger UI)"
+
 .PHONY: migrate-up
 migrate-up: ## Run all pending migrations
 	@echo "Running database migrations..."
