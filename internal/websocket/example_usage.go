@@ -181,7 +181,11 @@ func ExampleMessageHandling() {
 	customProcessor := &CustomProcessor{}
 	hub.RegisterProcessor("custom_action", customProcessor)
 
+	// Note: Subscription processor is automatically registered in GetEventProcessors()
+	// and handles "subscription" message type for project subscriptions
+
 	log.Printf("Custom message processor registered")
+	log.Printf("Subscription processor is automatically registered")
 }
 
 // ExampleConnectionManagement demonstrates connection lifecycle management
@@ -330,4 +334,31 @@ func ExampleIntegrationWithHTTPHandlers() {
 	// Simulate the handlers
 	simulateTaskCreation()
 	simulateTaskUpdate()
+}
+
+// ExampleSubscriptionHandling demonstrates subscription message handling
+func ExampleSubscriptionHandling() {
+	wsService := NewService()
+	_ = wsService.GetHub() // Get hub to ensure service is properly initialized
+
+	// Simulate a subscription message from client
+	projectID := uuid.New()
+	subscriptionData := map[string]interface{}{
+		"action":     "subscribe",
+		"project_id": projectID.String(),
+	}
+
+	// Create subscription message
+	message, err := NewMessage(Subscription, subscriptionData)
+	if err != nil {
+		log.Printf("Failed to create subscription message: %v", err)
+		return
+	}
+
+	// Simulate processing the message (in real scenario, this would be done by a connection)
+	log.Printf("Subscription message created: %s", message.Type)
+	log.Printf("Subscription data: %+v", subscriptionData)
+
+	// Note: In real usage, the message would be processed by the hub when received from a connection
+	// hub.ProcessMessage(connection, message)
 }

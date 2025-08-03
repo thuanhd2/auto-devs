@@ -1,15 +1,14 @@
-import React, { 
-  createContext, 
-  useContext, 
-  useCallback, 
-  useEffect, 
-  useRef, 
+import React, {
+  createContext,
+  useContext,
+  useCallback,
+  useEffect,
+  useRef,
   useState,
-  ReactNode 
+  ReactNode,
 } from 'react'
-import { websocketService, WebSocketMessage, ConnectionState } from '@/services/websocketService'
-import { 
-  messageHandlerRegistry, 
+import {
+  messageHandlerRegistry,
   messageAggregator,
   createTaskCreatedHandler,
   createTaskUpdatedHandler,
@@ -19,13 +18,18 @@ import {
   createUserJoinedHandler,
   createUserLeftHandler,
   createErrorHandler,
-  createAuthFailedHandler
+  createAuthFailedHandler,
 } from '@/services/messageHandlers'
-import { 
+import {
   optimisticUpdateManager,
   taskOptimisticUpdates,
-  projectOptimisticUpdates
+  projectOptimisticUpdates,
 } from '@/services/optimisticUpdates'
+import {
+  websocketService,
+  WebSocketMessage,
+  ConnectionState,
+} from '@/services/websocketService'
 
 export interface WebSocketContextValue {
   // Connection state
@@ -43,8 +47,14 @@ export interface WebSocketContextValue {
 
   // Messaging
   send: (message: any) => Promise<void>
-  subscribe: (messageType: string, handler: (message: WebSocketMessage) => void) => void
-  unsubscribe: (messageType: string, handler: (message: WebSocketMessage) => void) => void
+  subscribe: (
+    messageType: string,
+    handler: (message: WebSocketMessage) => void
+  ) => void
+  unsubscribe: (
+    messageType: string,
+    handler: (message: WebSocketMessage) => void
+  ) => void
 
   // Project subscriptions
   subscribeToProject: (projectId: string) => Promise<void>
@@ -68,7 +78,12 @@ export interface WebSocketContextValue {
   onTaskUpdated?: (task: any, changes?: any) => void
   onTaskDeleted?: (taskId: string) => void
   onProjectUpdated?: (project: any, changes?: any) => void
-  onStatusChanged?: (entityType: string, entityId: string, oldStatus: string, newStatus: string) => void
+  onStatusChanged?: (
+    entityType: string,
+    entityId: string,
+    oldStatus: string,
+    newStatus: string
+  ) => void
   onUserJoined?: (userId: string, username: string, projectId: string) => void
   onUserLeft?: (userId: string, username: string, projectId: string) => void
   onConnectionError?: (error: string) => void
@@ -92,7 +107,12 @@ export interface WebSocketProviderProps {
   onTaskUpdated?: (task: any, changes?: any) => void
   onTaskDeleted?: (taskId: string) => void
   onProjectUpdated?: (project: any, changes?: any) => void
-  onStatusChanged?: (entityType: string, entityId: string, oldStatus: string, newStatus: string) => void
+  onStatusChanged?: (
+    entityType: string,
+    entityId: string,
+    oldStatus: string,
+    newStatus: string
+  ) => void
   onUserJoined?: (userId: string, username: string, projectId: string) => void
   onUserLeft?: (userId: string, username: string, projectId: string) => void
   onConnectionError?: (error: string) => void
@@ -120,7 +140,9 @@ export function WebSocketProvider({
   const [queuedMessageCount, setQueuedMessageCount] = useState(0)
   const [optimisticUpdateCount, setOptimisticUpdateCount] = useState(0)
   const [currentProjectId, setCurrentProjectId] = useState<string | null>(null)
-  const [onlineUsers, setOnlineUsers] = useState<Map<string, { username: string; joinedAt: Date }>>(new Map())
+  const [onlineUsers, setOnlineUsers] = useState<
+    Map<string, { username: string; joinedAt: Date }>
+  >(new Map())
   const [messageHistory, setMessageHistory] = useState<WebSocketMessage[]>([])
   const [isDebugMode, setDebugMode] = useState(false)
 
@@ -129,23 +151,29 @@ export function WebSocketProvider({
   const optimisticCheckIntervalRef = useRef<NodeJS.Timeout>()
 
   // Connection state management
-  const handleConnectionStateChange = useCallback((state: ConnectionState) => {
-    setConnectionState(state)
-    
-    if (state.status === 'error' && state.lastError) {
-      onConnectionError?.(state.lastError)
-    }
-  }, [onConnectionError])
+  const handleConnectionStateChange = useCallback(
+    (state: ConnectionState) => {
+      setConnectionState(state)
+
+      if (state.status === 'error' && state.lastError) {
+        onConnectionError?.(state.lastError)
+      }
+    },
+    [onConnectionError]
+  )
 
   // Message history management
-  const addToMessageHistory = useCallback((message: WebSocketMessage) => {
-    if (isDebugMode) {
-      setMessageHistory(prev => {
-        const newHistory = [...prev, message]
-        return newHistory.slice(-maxMessageHistory)
-      })
-    }
-  }, [isDebugMode, maxMessageHistory])
+  const addToMessageHistory = useCallback(
+    (message: WebSocketMessage) => {
+      if (isDebugMode) {
+        setMessageHistory((prev) => {
+          const newHistory = [...prev, message]
+          return newHistory.slice(-maxMessageHistory)
+        })
+      }
+    },
+    [isDebugMode, maxMessageHistory]
+  )
 
   const clearMessageHistory = useCallback(() => {
     setMessageHistory([])
@@ -159,31 +187,32 @@ export function WebSocketProvider({
         type: 'task_created',
         handler: createTaskCreatedHandler((task) => {
           onTaskCreated?.(task)
-        })
+        }),
       },
       {
-        type: 'task_updated', 
+        type: 'task_updated',
         handler: createTaskUpdatedHandler((task, changes) => {
           // Check for optimistic update confirmation
           const pendingUpdates = optimisticUpdateManager.getAllPendingUpdates()
           const matchingUpdate = pendingUpdates.find(
-            update => update.entityType === 'task' && update.entityId === task.id
+            (update) =>
+              update.entityType === 'task' && update.entityId === task.id
           )
-          
+
           if (matchingUpdate) {
             optimisticUpdateManager.confirmUpdate(matchingUpdate.id, task)
           }
-          
+
           onTaskUpdated?.(task, changes)
-        })
+        }),
       },
       {
         type: 'task_deleted',
         handler: createTaskDeletedHandler((taskId) => {
           onTaskDeleted?.(taskId)
-        })
+        }),
       },
-      
+
       // Project handlers
       {
         type: 'project_updated',
@@ -191,23 +220,26 @@ export function WebSocketProvider({
           // Check for optimistic update confirmation
           const pendingUpdates = optimisticUpdateManager.getAllPendingUpdates()
           const matchingUpdate = pendingUpdates.find(
-            update => update.entityType === 'project' && update.entityId === project.id
+            (update) =>
+              update.entityType === 'project' && update.entityId === project.id
           )
-          
+
           if (matchingUpdate) {
             optimisticUpdateManager.confirmUpdate(matchingUpdate.id, project)
           }
-          
+
           onProjectUpdated?.(project, changes)
-        })
+        }),
       },
 
       // Status handlers
       {
         type: 'status_changed',
-        handler: createStatusChangedHandler((entityType, entityId, oldStatus, newStatus) => {
-          onStatusChanged?.(entityType, entityId, oldStatus, newStatus)
-        })
+        handler: createStatusChangedHandler(
+          (entityType, entityId, oldStatus, newStatus) => {
+            onStatusChanged?.(entityType, entityId, oldStatus, newStatus)
+          }
+        ),
       },
 
       // User presence handlers
@@ -215,23 +247,25 @@ export function WebSocketProvider({
         type: 'user_joined',
         handler: createUserJoinedHandler((userId, username, projectId) => {
           if (projectId === currentProjectId) {
-            setOnlineUsers(prev => new Map(prev).set(userId, { username, joinedAt: new Date() }))
+            setOnlineUsers((prev) =>
+              new Map(prev).set(userId, { username, joinedAt: new Date() })
+            )
           }
           onUserJoined?.(userId, username, projectId)
-        })
+        }),
       },
       {
         type: 'user_left',
         handler: createUserLeftHandler((userId, username, projectId) => {
           if (projectId === currentProjectId) {
-            setOnlineUsers(prev => {
+            setOnlineUsers((prev) => {
               const newMap = new Map(prev)
               newMap.delete(userId)
               return newMap
             })
           }
           onUserLeft?.(userId, username, projectId)
-        })
+        }),
       },
 
       // System handlers
@@ -239,20 +273,20 @@ export function WebSocketProvider({
         type: 'error',
         handler: createErrorHandler((error) => {
           onConnectionError?.(error)
-        })
+        }),
       },
       {
         type: 'auth_failed',
         handler: createAuthFailedHandler(() => {
           onAuthRequired?.()
-        })
+        }),
       },
       {
         type: 'auth_required',
         handler: createAuthFailedHandler(() => {
           onAuthRequired?.()
-        })
-      }
+        }),
+      },
     ]
 
     // Register all handlers
@@ -284,7 +318,7 @@ export function WebSocketProvider({
   }, [
     currentProjectId,
     onTaskCreated,
-    onTaskUpdated, 
+    onTaskUpdated,
     onTaskDeleted,
     onProjectUpdated,
     onStatusChanged,
@@ -292,7 +326,7 @@ export function WebSocketProvider({
     onUserLeft,
     onConnectionError,
     onAuthRequired,
-    addToMessageHistory
+    addToMessageHistory,
   ])
 
   // Set up connection state listener
@@ -302,7 +336,9 @@ export function WebSocketProvider({
 
     return () => {
       if (connectionListenerRef.current) {
-        websocketService.unsubscribeFromConnectionState(connectionListenerRef.current)
+        websocketService.unsubscribeFromConnectionState(
+          connectionListenerRef.current
+        )
       }
     }
   }, [handleConnectionStateChange])
@@ -337,26 +373,29 @@ export function WebSocketProvider({
   }, [])
 
   // Project subscription management
-  const handleSetCurrentProjectId = useCallback(async (projectId: string | null) => {
-    if (currentProjectId && currentProjectId !== projectId) {
-      try {
-        await websocketService.unsubscribeFromProject(currentProjectId)
-      } catch (error) {
-        console.error('Failed to unsubscribe from previous project:', error)
+  const handleSetCurrentProjectId = useCallback(
+    async (projectId: string | null) => {
+      if (currentProjectId && currentProjectId !== projectId) {
+        try {
+          await websocketService.unsubscribeFromProject(currentProjectId)
+        } catch (error) {
+          console.error('Failed to unsubscribe from previous project:', error)
+        }
       }
-    }
 
-    setCurrentProjectId(projectId)
-    setOnlineUsers(new Map()) // Clear user list when changing projects
+      setCurrentProjectId(projectId)
+      setOnlineUsers(new Map()) // Clear user list when changing projects
 
-    if (projectId && connectionState.status === 'connected') {
-      try {
-        await websocketService.subscribeToProject(projectId)
-      } catch (error) {
-        console.error('Failed to subscribe to new project:', error)
+      if (projectId && connectionState.status === 'connected') {
+        try {
+          await websocketService.subscribeToProject(projectId)
+        } catch (error) {
+          console.error('Failed to subscribe to new project:', error)
+        }
       }
-    }
-  }, [currentProjectId, connectionState.status])
+    },
+    [currentProjectId, connectionState.status]
+  )
 
   // Auto-subscribe to project when connected
   useEffect(() => {
@@ -383,13 +422,19 @@ export function WebSocketProvider({
     await websocketService.send(message)
   }, [])
 
-  const subscribe = useCallback((messageType: string, handler: (message: WebSocketMessage) => void) => {
-    websocketService.subscribe(messageType, handler)
-  }, [])
+  const subscribe = useCallback(
+    (messageType: string, handler: (message: WebSocketMessage) => void) => {
+      websocketService.subscribe(messageType, handler)
+    },
+    []
+  )
 
-  const unsubscribe = useCallback((messageType: string, handler: (message: WebSocketMessage) => void) => {
-    websocketService.unsubscribe(messageType, handler)
-  }, [])
+  const unsubscribe = useCallback(
+    (messageType: string, handler: (message: WebSocketMessage) => void) => {
+      websocketService.unsubscribe(messageType, handler)
+    },
+    []
+  )
 
   const subscribeToProject = useCallback(async (projectId: string) => {
     await websocketService.subscribeToProject(projectId)
@@ -473,16 +518,18 @@ export function WebSocketProvider({
 export function useWebSocketContext(): WebSocketContextValue {
   const context = useContext(WebSocketContext)
   if (!context) {
-    throw new Error('useWebSocketContext must be used within a WebSocketProvider')
+    throw new Error(
+      'useWebSocketContext must be used within a WebSocketProvider'
+    )
   }
   return context
 }
 
 // Helper hooks for specific use cases
 export function useWebSocketConnection() {
-  const { 
-    isConnected, 
-    isConnecting, 
+  const {
+    isConnected,
+    isConnecting,
     isReconnecting,
     connectionState,
     connect,
@@ -490,7 +537,7 @@ export function useWebSocketConnection() {
     reconnect,
     lastError,
     queuedMessageCount,
-    clearMessageQueue
+    clearMessageQueue,
   } = useWebSocketContext()
 
   return {

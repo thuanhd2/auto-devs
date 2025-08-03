@@ -358,8 +358,9 @@ func GetEventProcessors(hub *Hub) map[MessageType]MessageProcessor {
 	authProcessor := NewAuthProcessor(authService, hub)
 	processors[AuthRequired] = authProcessor
 
-	// Subscription processor (handled in connection's handleIncomingMessage method)
-	// subscriptionProcessor := NewSubscriptionProcessor(hub)
+	// Subscription processor
+	subscriptionProcessor := NewSubscriptionProcessor(hub)
+	processors[Subscription] = subscriptionProcessor
 
 	return processors
 }

@@ -40,6 +40,7 @@ export class OptimisticUpdateManager {
     options: OptimisticUpdateOptions<T> = {}
   ): string {
     const updateId = this.generateUpdateId()
+    console.log('applyUpdate!!!', updateId)
     const timeout = options.timeout || this.defaultTimeout
 
     const update: OptimisticUpdate<T> = {
@@ -65,7 +66,9 @@ export class OptimisticUpdateManager {
 
     this.timeouts.set(updateId, timeoutHandle)
 
-    console.log(`Applied optimistic update ${updateId} for ${entityType}:${entityId}`)
+    console.log(
+      `Applied optimistic update ${updateId} for ${entityType}:${entityId}`
+    )
     return updateId
   }
 
@@ -88,7 +91,10 @@ export class OptimisticUpdateManager {
   }
 
   // Revert an optimistic update
-  revertUpdate(updateId: string, reason: 'manual' | 'conflict' | 'timeout' | 'error' = 'manual'): boolean {
+  revertUpdate(
+    updateId: string,
+    reason: 'manual' | 'conflict' | 'timeout' | 'error' = 'manual'
+  ): boolean {
     const update = this.pendingUpdates.get(updateId)
     if (!update) {
       return false
@@ -115,9 +121,13 @@ export class OptimisticUpdateManager {
   }
 
   // Get all pending updates for an entity
-  getUpdatesForEntity(entityType: string, entityId: string): OptimisticUpdate[] {
+  getUpdatesForEntity(
+    entityType: string,
+    entityId: string
+  ): OptimisticUpdate[] {
     return Array.from(this.pendingUpdates.values()).filter(
-      (update) => update.entityType === entityType && update.entityId === entityId
+      (update) =>
+        update.entityType === entityType && update.entityId === entityId
     )
   }
 
@@ -343,8 +353,12 @@ export class ConflictResolver {
       case 'merge-latest':
         // Merge based on timestamps or other criteria
         const localTime = new Date(localTask.updated_at || localTask.created_at)
-        const serverTime = new Date(serverTask.updated_at || serverTask.created_at)
-        return serverTime > localTime ? serverTask : { ...serverTask, ...localTask }
+        const serverTime = new Date(
+          serverTask.updated_at || serverTask.created_at
+        )
+        return serverTime > localTime
+          ? serverTask
+          : { ...serverTask, ...localTask }
       default:
         return serverTask
     }
@@ -352,7 +366,7 @@ export class ConflictResolver {
 
   static detectConflicts(localData: any, serverData: any): string[] {
     const conflicts: string[] = []
-    
+
     if (!localData || !serverData) {
       return conflicts
     }
@@ -360,7 +374,7 @@ export class ConflictResolver {
     // Check for timestamp conflicts
     const localTime = new Date(localData.updated_at || 0)
     const serverTime = new Date(serverData.updated_at || 0)
-    
+
     if (Math.abs(localTime.getTime() - serverTime.getTime()) > 1000) {
       conflicts.push('timestamp_mismatch')
     }
@@ -379,5 +393,9 @@ export class ConflictResolver {
 
 // Export singleton instances
 export const optimisticUpdateManager = new OptimisticUpdateManager()
-export const taskOptimisticUpdates = new TaskOptimisticUpdates(optimisticUpdateManager)
-export const projectOptimisticUpdates = new ProjectOptimisticUpdates(optimisticUpdateManager)
+export const taskOptimisticUpdates = new TaskOptimisticUpdates(
+  optimisticUpdateManager
+)
+export const projectOptimisticUpdates = new ProjectOptimisticUpdates(
+  optimisticUpdateManager
+)
