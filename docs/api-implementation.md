@@ -11,16 +11,19 @@ The API Core provides RESTful endpoints for managing projects and tasks with com
 ### Layers
 
 1. **DTO Layer** (`internal/handler/dto/`)
+
    - Request/response models for API endpoints
    - Validation tags and example values
    - Conversion helpers between entities and DTOs
 
 2. **Handler Layer** (`internal/handler/`)
+
    - HTTP request handlers for projects and tasks
    - Input validation and error handling
    - Swagger documentation annotations
 
 3. **Usecase Layer** (`internal/usecase/`)
+
    - Business logic implementation
    - Extended interfaces for additional functionality
    - Clean separation between HTTP and business logic
@@ -61,39 +64,47 @@ The API Core provides RESTful endpoints for managing projects and tasks with com
 ## Features Implemented
 
 ### ✅ Request/Response Models
+
 - Comprehensive DTO models with validation
 - Proper JSON tags and examples
 - Conversion helpers between entities and DTOs
 
 ### ✅ Validation Middleware
+
 - Input validation using struct tags
 - User-friendly error messages
 - Validation error details in responses
 
 ### ✅ CORS Configuration
+
 - Frontend development server support
 - Configurable allowed origins, methods, headers
 - Credential support for authenticated requests
 
 ### ✅ Error Handling
+
 - Consistent error response format
 - Proper HTTP status codes
 - Panic recovery middleware
 
 ### ✅ Request Logging
+
 - Structured request/response logging
 - Performance monitoring capabilities
 
 ### ✅ Rate Limiting
+
 - Basic rate limiting (100 req/min)
 - Configurable limits per endpoint
 
 ### ✅ Security Headers
+
 - XSS protection
 - Content-type sniffing prevention
 - Frame options and HSTS
 
 ### ✅ OpenAPI Documentation
+
 - Complete Swagger 3.0 specification
 - Request/response schemas
 - Example values and descriptions
@@ -112,9 +123,20 @@ The server starts on port 8098 by default.
 
 The complete API documentation is available in `docs/swagger.yaml` and can be viewed using any OpenAPI-compatible tool.
 
+**Swagger UI is now available at:**
+
+- http://localhost:8098/swagger/index.html
+- http://localhost:8098/ (redirects to Swagger UI)
+
+**API Documentation Files:**
+
+- http://localhost:8098/swagger.json
+- http://localhost:8098/swagger.yaml
+
 ### Example Requests
 
 #### Create Project
+
 ```bash
 curl -X POST http://localhost:8098/api/v1/projects \
   -H "Content-Type: application/json" \
@@ -126,6 +148,7 @@ curl -X POST http://localhost:8098/api/v1/projects \
 ```
 
 #### Create Task
+
 ```bash
 curl -X POST http://localhost:8098/api/v1/tasks \
   -H "Content-Type: application/json" \
@@ -137,6 +160,7 @@ curl -X POST http://localhost:8098/api/v1/tasks \
 ```
 
 #### Update Task Status
+
 ```bash
 curl -X PATCH http://localhost:8098/api/v1/tasks/{id}/status \
   -H "Content-Type: application/json" \
@@ -153,6 +177,7 @@ curl -X PATCH http://localhost:8098/api/v1/tasks/{id}/status \
 ### CORS Origins
 
 Currently configured for development:
+
 - `http://localhost:3000` (React dev server)
 - `http://localhost:5173` (Vite dev server)
 

@@ -1,9 +1,12 @@
 package handler
 
 import (
+	"github.com/auto-devs/auto-devs/docs"
 	"github.com/auto-devs/auto-devs/internal/usecase"
 	"github.com/auto-devs/auto-devs/pkg/database"
 	"github.com/gin-gonic/gin"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
 // SetupRoutes configures all API routes and middleware
@@ -19,6 +22,11 @@ func SetupRoutes(router *gin.Engine, projectUsecase usecase.ProjectUsecase, task
 	router.Use(ErrorHandlingMiddleware())
 	router.Use(RateLimitMiddleware())
 	router.Use(ValidationErrorMiddleware())
+
+	docs.SwaggerInfo.BasePath = "/api/v1"
+	// Swagger documentation endpoints (must be before other routes)
+	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler, ginSwagger.PersistAuthorization(true)))
+	// SetupSwaggerRoutes(router)
 
 	// Health check endpoint (no versioning for health)
 	SetupHealthRoutes(router, db)

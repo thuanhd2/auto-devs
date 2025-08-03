@@ -1,737 +1,715 @@
-openapi: 3.0.3
+definitions:
+  dto.ErrorResponse:
+    properties:
+      code:
+        example: 400
+        type: integer
+      details:
+        additionalProperties:
+          type: string
+        type: object
+      error:
+        example: Invalid request
+        type: string
+      message:
+        example: The provided data is invalid
+        type: string
+    type: object
+  dto.ProjectCreateRequest:
+    properties:
+      description:
+        example: Project description
+        maxLength: 1000
+        type: string
+      name:
+        example: My Project
+        maxLength: 255
+        minLength: 1
+        type: string
+      repo_url:
+        example: https://github.com/user/repo
+        maxLength: 500
+        type: string
+    required:
+    - name
+    - repo_url
+    type: object
+  dto.ProjectListResponse:
+    properties:
+      projects:
+        items:
+          $ref: '#/definitions/dto.ProjectResponse'
+        type: array
+      total:
+        type: integer
+    type: object
+  dto.ProjectResponse:
+    properties:
+      created_at:
+        example: "2024-01-15T10:30:00Z"
+        type: string
+      description:
+        example: Project description
+        type: string
+      id:
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+      name:
+        example: My Project
+        type: string
+      repo_url:
+        example: https://github.com/user/repo
+        type: string
+      updated_at:
+        example: "2024-01-15T10:30:00Z"
+        type: string
+    type: object
+  dto.ProjectUpdateRequest:
+    properties:
+      description:
+        example: Updated description
+        maxLength: 1000
+        type: string
+      name:
+        example: Updated Project Name
+        maxLength: 255
+        minLength: 1
+        type: string
+      repo_url:
+        example: https://github.com/user/updated-repo
+        maxLength: 500
+        type: string
+    type: object
+  dto.ProjectWithTasksResponse:
+    properties:
+      created_at:
+        example: "2024-01-15T10:30:00Z"
+        type: string
+      description:
+        example: Project description
+        type: string
+      id:
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+      name:
+        example: My Project
+        type: string
+      repo_url:
+        example: https://github.com/user/repo
+        type: string
+      tasks:
+        items:
+          $ref: '#/definitions/dto.TaskResponse'
+        type: array
+      updated_at:
+        example: "2024-01-15T10:30:00Z"
+        type: string
+    type: object
+  dto.TaskCreateRequest:
+    properties:
+      description:
+        example: Add JWT-based authentication system
+        maxLength: 1000
+        type: string
+      project_id:
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+      title:
+        example: Implement user authentication
+        maxLength: 255
+        minLength: 1
+        type: string
+    required:
+    - project_id
+    - title
+    type: object
+  dto.TaskListResponse:
+    properties:
+      tasks:
+        items:
+          $ref: '#/definitions/dto.TaskResponse'
+        type: array
+      total:
+        type: integer
+    type: object
+  dto.TaskResponse:
+    properties:
+      branch_name:
+        example: feature/user-auth
+        type: string
+      created_at:
+        example: "2024-01-15T10:30:00Z"
+        type: string
+      description:
+        example: Add JWT-based authentication system
+        type: string
+      id:
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+      project_id:
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+      pull_request:
+        example: https://github.com/user/repo/pull/123
+        type: string
+      status:
+        allOf:
+        - $ref: '#/definitions/entity.TaskStatus'
+        example: TODO
+      title:
+        example: Implement user authentication
+        type: string
+      updated_at:
+        example: "2024-01-15T10:30:00Z"
+        type: string
+    type: object
+  dto.TaskStatusUpdateRequest:
+    properties:
+      status:
+        allOf:
+        - $ref: '#/definitions/entity.TaskStatus'
+        enum:
+        - TODO
+        - PLANNING
+        - PLAN_REVIEWING
+        - IMPLEMENTING
+        - CODE_REVIEWING
+        - DONE
+        - CANCELLED
+        example: TODO
+    required:
+    - status
+    type: object
+  dto.TaskUpdateRequest:
+    properties:
+      branch_name:
+        example: feature/user-auth
+        maxLength: 255
+        type: string
+      description:
+        example: Updated description
+        maxLength: 1000
+        type: string
+      pull_request:
+        example: https://github.com/user/repo/pull/123
+        maxLength: 255
+        type: string
+      title:
+        example: Updated task title
+        maxLength: 255
+        minLength: 1
+        type: string
+    type: object
+  dto.TaskWithProjectResponse:
+    properties:
+      branch_name:
+        example: feature/user-auth
+        type: string
+      created_at:
+        example: "2024-01-15T10:30:00Z"
+        type: string
+      description:
+        example: Add JWT-based authentication system
+        type: string
+      id:
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+      project:
+        $ref: '#/definitions/dto.ProjectResponse'
+      project_id:
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+      pull_request:
+        example: https://github.com/user/repo/pull/123
+        type: string
+      status:
+        allOf:
+        - $ref: '#/definitions/entity.TaskStatus'
+        example: TODO
+      title:
+        example: Implement user authentication
+        type: string
+      updated_at:
+        example: "2024-01-15T10:30:00Z"
+        type: string
+    type: object
+  entity.TaskStatus:
+    enum:
+    - TODO
+    - PLANNING
+    - PLAN_REVIEWING
+    - IMPLEMENTING
+    - CODE_REVIEWING
+    - DONE
+    - CANCELLED
+    type: string
+    x-enum-varnames:
+    - TaskStatusTodo
+    - TaskStatusPlanning
+    - TaskStatusPlanReview
+    - TaskStatusImplementing
+    - TaskStatusCodeReview
+    - TaskStatusDone
+    - TaskStatusCancelled
 info:
-  title: Auto-Devs API
-  description: |
-    API for the Auto-Devs project management system.
-    
-    This API provides endpoints for managing projects and tasks in an automated development workflow system.
-  version: 1.0.0
-  contact:
-    name: Auto-Devs Team
-    email: support@auto-devs.com
-  license:
-    name: MIT
-    url: https://opensource.org/licenses/MIT
-
-servers:
-  - url: http://localhost:8098/api/v1
-    description: Development server
-  - url: https://api.auto-devs.com/api/v1
-    description: Production server
-
+  contact: {}
 paths:
-  /health:
+  /api/v1/projects:
     get:
-      tags:
-        - Health
-      summary: Health check
-      description: Check the health status of the API and database
-      responses:
-        '200':
-          description: Service is healthy
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/HealthResponse'
-        '503':
-          description: Service is degraded
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/HealthResponse'
-
-  /projects:
-    post:
-      tags:
-        - Projects
-      summary: Create a new project
-      description: Create a new project with the provided details
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ProjectCreateRequest'
-      responses:
-        '201':
-          description: Project created successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProjectResponse'
-        '400':
-          description: Invalid request data
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '500':
-          description: Internal server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
-    get:
-      tags:
-        - Projects
-      summary: List all projects
+      consumes:
+      - application/json
       description: Get a list of all projects
+      produces:
+      - application/json
       responses:
-        '200':
-          description: List of projects
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProjectListResponse'
-        '500':
-          description: Internal server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
-  /projects/{id}:
-    get:
-      tags:
-        - Projects
-      summary: Get a project by ID
-      description: Get a single project by its ID
-      parameters:
-        - name: id
-          in: path
-          required: true
-          description: Project ID
+        "200":
+          description: OK
           schema:
-            type: string
-            format: uuid
-      responses:
-        '200':
-          description: Project details
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProjectResponse'
-        '400':
-          description: Invalid project ID
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '404':
-          description: Project not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
-    put:
-      tags:
-        - Projects
-      summary: Update a project
-      description: Update a project with the provided details
-      parameters:
-        - name: id
-          in: path
-          required: true
-          description: Project ID
+            $ref: '#/definitions/dto.ProjectListResponse'
+        "500":
+          description: Internal Server Error
           schema:
-            type: string
-            format: uuid
-      requestBody:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: List all projects
+      tags:
+      - projects
+    post:
+      consumes:
+      - application/json
+      description: Create a new project with the provided details
+      parameters:
+      - description: Project creation data
+        in: body
+        name: project
         required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ProjectUpdateRequest'
+        schema:
+          $ref: '#/definitions/dto.ProjectCreateRequest'
+      produces:
+      - application/json
       responses:
-        '200':
-          description: Project updated successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProjectResponse'
-        '400':
-          description: Invalid request data
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '404':
-          description: Project not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
-    delete:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.ProjectResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Create a new project
       tags:
-        - Projects
-      summary: Delete a project
+      - projects
+  /api/v1/projects/{id}:
+    delete:
+      consumes:
+      - application/json
       description: Delete a project by its ID
       parameters:
-        - name: id
-          in: path
-          required: true
-          description: Project ID
-          schema:
-            type: string
-            format: uuid
+      - description: Project ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
       responses:
-        '204':
-          description: Project deleted successfully
-        '400':
-          description: Invalid project ID
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '404':
-          description: Project not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
-  /projects/{id}/tasks:
-    get:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Delete a project
       tags:
-        - Projects
-      summary: Get a project with its tasks
+      - projects
+    get:
+      consumes:
+      - application/json
+      description: Get a single project by its ID
+      parameters:
+      - description: Project ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.ProjectResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Get a project by ID
+      tags:
+      - projects
+    put:
+      consumes:
+      - application/json
+      description: Update a project with the provided details
+      parameters:
+      - description: Project ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Project update data
+        in: body
+        name: project
+        required: true
+        schema:
+          $ref: '#/definitions/dto.ProjectUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.ProjectResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Update a project
+      tags:
+      - projects
+  /api/v1/projects/{id}/tasks:
+    get:
+      consumes:
+      - application/json
       description: Get a single project by its ID including all associated tasks
       parameters:
-        - name: id
-          in: path
-          required: true
-          description: Project ID
-          schema:
-            type: string
-            format: uuid
+      - description: Project ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
       responses:
-        '200':
-          description: Project with tasks
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProjectWithTasksResponse'
-        '400':
-          description: Invalid project ID
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '404':
-          description: Project not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
-  /projects/{project_id}/tasks:
-    get:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.ProjectWithTasksResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Get a project with its tasks
       tags:
-        - Tasks
-      summary: List tasks by project
+      - projects
+  /api/v1/projects/{project_id}/tasks:
+    get:
+      consumes:
+      - application/json
       description: Get all tasks for a specific project
       parameters:
-        - name: project_id
-          in: path
-          required: true
-          description: Project ID
-          schema:
-            type: string
-            format: uuid
-      responses:
-        '200':
-          description: List of tasks
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/TaskListResponse'
-        '400':
-          description: Invalid project ID
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
-  /tasks:
-    post:
-      tags:
-        - Tasks
-      summary: Create a new task
-      description: Create a new task with the provided details
-      requestBody:
+      - description: Project ID
+        in: path
+        name: project_id
         required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/TaskCreateRequest'
+        type: string
+      produces:
+      - application/json
       responses:
-        '201':
-          description: Task created successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/TaskResponse'
-        '400':
-          description: Invalid request data
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
-    get:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.TaskListResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: List tasks by project
       tags:
-        - Tasks
+      - tasks
+  /api/v1/tasks:
+    get:
+      consumes:
+      - application/json
+      description: Get a list of tasks with optional filtering by status, project,
+        or search term
+      parameters:
+      - description: Filter by status
+        enum:
+        - TODO
+        - PLANNING
+        - PLAN_REVIEWING
+        - IMPLEMENTING
+        - CODE_REVIEWING
+        - DONE
+        - CANCELLED
+        in: query
+        name: status
+        type: string
+      - description: Filter by project ID
+        in: query
+        name: project_id
+        type: string
+      - description: Search in title and description
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.TaskListResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
       summary: List tasks with filtering
-      description: Get a list of tasks with optional filtering by status, project, or search term
-      parameters:
-        - name: status
-          in: query
-          description: Filter by status
-          schema:
-            type: string
-            enum: [TODO, PLANNING, PLAN_REVIEWING, IMPLEMENTING, CODE_REVIEWING, DONE, CANCELLED]
-        - name: project_id
-          in: query
-          description: Filter by project ID
-          schema:
-            type: string
-            format: uuid
-        - name: search
-          in: query
-          description: Search in title and description
-          schema:
-            type: string
-            maxLength: 255
-      responses:
-        '200':
-          description: List of tasks
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/TaskListResponse'
-        '400':
-          description: Invalid query parameters
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
-  /tasks/{id}:
-    get:
       tags:
-        - Tasks
-      summary: Get a task by ID
-      description: Get a single task by its ID
+      - tasks
+    post:
+      consumes:
+      - application/json
+      description: Create a new task with the provided details
       parameters:
-        - name: id
-          in: path
-          required: true
-          description: Task ID
-          schema:
-            type: string
-            format: uuid
-      responses:
-        '200':
-          description: Task details
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/TaskResponse'
-        '400':
-          description: Invalid task ID
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '404':
-          description: Task not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
-    put:
-      tags:
-        - Tasks
-      summary: Update a task
-      description: Update a task with the provided details
-      parameters:
-        - name: id
-          in: path
-          required: true
-          description: Task ID
-          schema:
-            type: string
-            format: uuid
-      requestBody:
+      - description: Task creation data
+        in: body
+        name: task
         required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/TaskUpdateRequest'
+        schema:
+          $ref: '#/definitions/dto.TaskCreateRequest'
+      produces:
+      - application/json
       responses:
-        '200':
-          description: Task updated successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/TaskResponse'
-        '400':
-          description: Invalid request data
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '404':
-          description: Task not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
-    delete:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.TaskResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Create a new task
       tags:
-        - Tasks
-      summary: Delete a task
+      - tasks
+  /api/v1/tasks/{id}:
+    delete:
+      consumes:
+      - application/json
       description: Delete a task by its ID
       parameters:
-        - name: id
-          in: path
-          required: true
-          description: Task ID
-          schema:
-            type: string
-            format: uuid
-      responses:
-        '204':
-          description: Task deleted successfully
-        '400':
-          description: Invalid task ID
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '404':
-          description: Task not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
-  /tasks/{id}/status:
-    patch:
-      tags:
-        - Tasks
-      summary: Update a task status
-      description: Update the status of a task
-      parameters:
-        - name: id
-          in: path
-          required: true
-          description: Task ID
-          schema:
-            type: string
-            format: uuid
-      requestBody:
+      - description: Task ID
+        in: path
+        name: id
         required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/TaskStatusUpdateRequest'
+        type: string
+      produces:
+      - application/json
       responses:
-        '200':
-          description: Task status updated successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/TaskResponse'
-        '400':
-          description: Invalid request data
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '404':
-          description: Task not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
-  /tasks/{id}/project:
-    get:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Delete a task
       tags:
-        - Tasks
-      summary: Get a task with its project
+      - tasks
+    get:
+      consumes:
+      - application/json
+      description: Get a single task by its ID
+      parameters:
+      - description: Task ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.TaskResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Get a task by ID
+      tags:
+      - tasks
+    put:
+      consumes:
+      - application/json
+      description: Update a task with the provided details
+      parameters:
+      - description: Task ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Task update data
+        in: body
+        name: task
+        required: true
+        schema:
+          $ref: '#/definitions/dto.TaskUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.TaskResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Update a task
+      tags:
+      - tasks
+  /api/v1/tasks/{id}/project:
+    get:
+      consumes:
+      - application/json
       description: Get a single task by its ID including the associated project
       parameters:
-        - name: id
-          in: path
-          required: true
-          description: Task ID
-          schema:
-            type: string
-            format: uuid
+      - description: Task ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
       responses:
-        '200':
-          description: Task with project
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/TaskWithProjectResponse'
-        '400':
-          description: Invalid task ID
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '404':
-          description: Task not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
-components:
-  schemas:
-    # Health schemas
-    HealthResponse:
-      type: object
-      properties:
-        status:
-          type: string
-          example: "ok"
-        timestamp:
-          type: string
-          format: date-time
-        version:
-          type: string
-          example: "1.0.0"
-        database:
-          $ref: '#/components/schemas/DatabaseHealth'
-
-    DatabaseHealth:
-      type: object
-      properties:
-        status:
-          type: string
-          example: "ok"
-        error:
-          type: string
-          example: "Connection failed"
-
-    # Common schemas
-    ErrorResponse:
-      type: object
-      properties:
-        error:
-          type: string
-          example: "Invalid request"
-        message:
-          type: string
-          example: "The provided data is invalid"
-        code:
-          type: integer
-          example: 400
-        details:
-          type: object
-          additionalProperties:
-            type: string
-
-    # Project schemas
-    ProjectCreateRequest:
-      type: object
-      required:
-        - name
-        - repo_url
-      properties:
-        name:
-          type: string
-          minLength: 1
-          maxLength: 255
-          example: "My Project"
-        description:
-          type: string
-          maxLength: 1000
-          example: "Project description"
-        repo_url:
-          type: string
-          format: uri
-          maxLength: 500
-          example: "https://github.com/user/repo"
-
-    ProjectUpdateRequest:
-      type: object
-      properties:
-        name:
-          type: string
-          minLength: 1
-          maxLength: 255
-          example: "Updated Project Name"
-        description:
-          type: string
-          maxLength: 1000
-          example: "Updated description"
-        repo_url:
-          type: string
-          format: uri
-          maxLength: 500
-          example: "https://github.com/user/updated-repo"
-
-    ProjectResponse:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-          example: "123e4567-e89b-12d3-a456-426614174000"
-        name:
-          type: string
-          example: "My Project"
-        description:
-          type: string
-          example: "Project description"
-        repo_url:
-          type: string
-          example: "https://github.com/user/repo"
-        created_at:
-          type: string
-          format: date-time
-          example: "2024-01-15T10:30:00Z"
-        updated_at:
-          type: string
-          format: date-time
-          example: "2024-01-15T10:30:00Z"
-
-    ProjectWithTasksResponse:
-      allOf:
-        - $ref: '#/components/schemas/ProjectResponse'
-        - type: object
-          properties:
-            tasks:
-              type: array
-              items:
-                $ref: '#/components/schemas/TaskResponse'
-
-    ProjectListResponse:
-      type: object
-      properties:
-        projects:
-          type: array
-          items:
-            $ref: '#/components/schemas/ProjectResponse'
-        total:
-          type: integer
-          example: 10
-
-    # Task schemas
-    TaskCreateRequest:
-      type: object
-      required:
-        - project_id
-        - title
-      properties:
-        project_id:
-          type: string
-          format: uuid
-          example: "123e4567-e89b-12d3-a456-426614174000"
-        title:
-          type: string
-          minLength: 1
-          maxLength: 255
-          example: "Implement user authentication"
-        description:
-          type: string
-          maxLength: 1000
-          example: "Add JWT-based authentication system"
-
-    TaskUpdateRequest:
-      type: object
-      properties:
-        title:
-          type: string
-          minLength: 1
-          maxLength: 255
-          example: "Updated task title"
-        description:
-          type: string
-          maxLength: 1000
-          example: "Updated description"
-        branch_name:
-          type: string
-          maxLength: 255
-          example: "feature/user-auth"
-        pull_request:
-          type: string
-          maxLength: 255
-          example: "https://github.com/user/repo/pull/123"
-
-    TaskStatusUpdateRequest:
-      type: object
-      required:
-        - status
-      properties:
-        status:
-          type: string
-          enum: [TODO, PLANNING, PLAN_REVIEWING, IMPLEMENTING, CODE_REVIEWING, DONE, CANCELLED]
-          example: "TODO"
-
-    TaskResponse:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-          example: "123e4567-e89b-12d3-a456-426614174000"
-        project_id:
-          type: string
-          format: uuid
-          example: "123e4567-e89b-12d3-a456-426614174000"
-        title:
-          type: string
-          example: "Implement user authentication"
-        description:
-          type: string
-          example: "Add JWT-based authentication system"
-        status:
-          type: string
-          enum: [TODO, PLANNING, PLAN_REVIEWING, IMPLEMENTING, CODE_REVIEWING, DONE, CANCELLED]
-          example: "TODO"
-        branch_name:
-          type: string
-          nullable: true
-          example: "feature/user-auth"
-        pull_request:
-          type: string
-          nullable: true
-          example: "https://github.com/user/repo/pull/123"
-        created_at:
-          type: string
-          format: date-time
-          example: "2024-01-15T10:30:00Z"
-        updated_at:
-          type: string
-          format: date-time
-          example: "2024-01-15T10:30:00Z"
-
-    TaskWithProjectResponse:
-      allOf:
-        - $ref: '#/components/schemas/TaskResponse'
-        - type: object
-          properties:
-            project:
-              $ref: '#/components/schemas/ProjectResponse'
-
-    TaskListResponse:
-      type: object
-      properties:
-        tasks:
-          type: array
-          items:
-            $ref: '#/components/schemas/TaskResponse'
-        total:
-          type: integer
-          example: 10
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.TaskWithProjectResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Get a task with its project
+      tags:
+      - tasks
+  /api/v1/tasks/{id}/status:
+    patch:
+      consumes:
+      - application/json
+      description: Update the status of a task
+      parameters:
+      - description: Task ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Task status update data
+        in: body
+        name: status
+        required: true
+        schema:
+          $ref: '#/definitions/dto.TaskStatusUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.TaskResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Update a task status
+      tags:
+      - tasks
+swagger: "2.0"
