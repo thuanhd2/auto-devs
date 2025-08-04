@@ -86,9 +86,49 @@ run: ## Run the application
 	@go run cmd/server/main.go
 
 .PHONY: test
-test: ## Run tests
-	@echo "Running tests..."
+test: ## Run all tests
+	@echo "Running all tests..."
 	@go test ./... -v
+
+.PHONY: test-unit
+test-unit: ## Run unit tests only
+	@echo "Running unit tests..."
+	@go test ./... -v -short
+
+.PHONY: test-integration  
+test-integration: ## Run integration tests only
+	@echo "Running integration tests..."
+	@go test ./... -v -run Integration
+
+.PHONY: test-race
+test-race: ## Run tests with race detection
+	@echo "Running tests with race detection..."
+	@go test ./... -v -race
+
+.PHONY: test-coverage
+test-coverage: ## Run tests with coverage report
+	@echo "Running tests with coverage..."
+	@go test ./... -v -coverprofile=coverage.out
+	@go tool cover -html=coverage.out -o coverage.html
+	@echo "Coverage report generated: coverage.html"
+
+.PHONY: test-coverage-func
+test-coverage-func: ## Show function-level coverage
+	@echo "Running tests with function coverage..."
+	@go test ./... -coverprofile=coverage.out
+	@go tool cover -func=coverage.out
+
+.PHONY: test-bench
+test-bench: ## Run benchmark tests
+	@echo "Running benchmark tests..."
+	@go test ./... -bench=. -benchmem
+
+.PHONY: test-clean
+test-clean: ## Clean test cache and coverage files
+	@echo "Cleaning test cache and coverage files..."
+	@go clean -testcache
+	@rm -f coverage.out coverage.html
+	@echo "Test cache and coverage files cleaned"
 
 .PHONY: clean
 clean: ## Clean build artifacts

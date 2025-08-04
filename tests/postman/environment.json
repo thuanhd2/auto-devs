@@ -1,0 +1,27 @@
+{
+	"id": "auto-devs-test-env",
+	"name": "Auto-Devs Test Environment",
+	"values": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8098",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "project_id",
+			"value": "",
+			"type": "default",
+			"enabled": true,
+			"description": "ID of the test project (set dynamically during tests)"
+		},
+		{
+			"key": "task_id",
+			"value": "",
+			"type": "default",
+			"enabled": true,
+			"description": "ID of the test task (set dynamically during tests)"
+		}
+	],
+	"_postman_variable_scope": "environment"
+}

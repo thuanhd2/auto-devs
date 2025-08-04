@@ -1,0 +1,737 @@
+{
+	"info": {
+		"_postman_id": "auto-devs-api-tests",
+		"name": "Auto-Devs API Test Suite",
+		"description": "Comprehensive API tests for the Auto-Devs project management system",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Projects",
+			"item": [
+				{
+					"name": "Create Project",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 201', function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test('Response has required fields', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('id');",
+									"    pm.expect(jsonData).to.have.property('name');",
+									"    pm.expect(jsonData).to.have.property('description');",
+									"    pm.expect(jsonData).to.have.property('repo_url');",
+									"    pm.expect(jsonData).to.have.property('created_at');",
+									"    pm.expect(jsonData).to.have.property('updated_at');",
+									"});",
+									"",
+									"pm.test('Response data matches request', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.name).to.eql('Test Project');",
+									"    pm.expect(jsonData.description).to.eql('A test project for API testing');",
+									"    pm.expect(jsonData.repo_url).to.eql('https://github.com/test/api-test.git');",
+									"});",
+									"",
+									"pm.test('ID is valid UUID', function () {",
+									"    var jsonData = pm.response.json();",
+									"    var uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;",
+									"    pm.expect(jsonData.id).to.match(uuidRegex);",
+									"});",
+									"",
+									"// Store project ID for subsequent tests",
+									"if (pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.environment.set('project_id', jsonData.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Test Project\",\n    \"description\": \"A test project for API testing\",\n    \"repo_url\": \"https://github.com/test/api-test.git\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/projects",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "projects"]
+						}
+					}
+				},
+				{
+					"name": "Get Projects",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Response has required pagination fields', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('projects');",
+									"    pm.expect(jsonData).to.have.property('total');",
+									"    pm.expect(jsonData).to.have.property('page');",
+									"    pm.expect(jsonData).to.have.property('page_size');",
+									"});",
+									"",
+									"pm.test('Projects array contains project data', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.projects).to.be.an('array');",
+									"    if (jsonData.projects.length > 0) {",
+									"        var project = jsonData.projects[0];",
+									"        pm.expect(project).to.have.property('id');",
+									"        pm.expect(project).to.have.property('name');",
+									"        pm.expect(project).to.have.property('repo_url');",
+									"    }",
+									"});",
+									"",
+									"pm.test('Pagination values are valid', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.page).to.be.at.least(1);",
+									"    pm.expect(jsonData.page_size).to.be.at.least(1);",
+									"    pm.expect(jsonData.total).to.be.at.least(0);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/projects?page=1&page_size=10",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "projects"],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "page_size",
+									"value": "10"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Project by ID",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Response has required fields', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('id');",
+									"    pm.expect(jsonData).to.have.property('name');",
+									"    pm.expect(jsonData).to.have.property('description');",
+									"    pm.expect(jsonData).to.have.property('repo_url');",
+									"});",
+									"",
+									"pm.test('Project ID matches requested ID', function () {",
+									"    var jsonData = pm.response.json();",
+									"    var expectedId = pm.environment.get('project_id');",
+									"    pm.expect(jsonData.id).to.eql(expectedId);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/projects/{{project_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "projects", "{{project_id}}"]
+						}
+					}
+				},
+				{
+					"name": "Update Project",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Updated data is reflected', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.name).to.eql('Updated Test Project');",
+									"    pm.expect(jsonData.description).to.eql('Updated description for API testing');",
+									"});",
+									"",
+									"pm.test('Updated timestamp is newer', function () {",
+									"    var jsonData = pm.response.json();",
+									"    var createdAt = new Date(jsonData.created_at);",
+									"    var updatedAt = new Date(jsonData.updated_at);",
+									"    pm.expect(updatedAt.getTime()).to.be.at.least(createdAt.getTime());",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Updated Test Project\",\n    \"description\": \"Updated description for API testing\",\n    \"repo_url\": \"https://github.com/test/updated-api-test.git\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/projects/{{project_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "projects", "{{project_id}}"]
+						}
+					}
+				},
+				{
+					"name": "Create Project - Validation Error",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 400', function () {",
+									"    pm.response.to.have.status(400);",
+									"});",
+									"",
+									"pm.test('Error response has error field', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('error');",
+									"});",
+									"",
+									"pm.test('Error message indicates missing required field', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.error.toLowerCase()).to.include('required');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"description\": \"Missing name and repo_url\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/projects",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "projects"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Tasks",
+			"item": [
+				{
+					"name": "Create Task",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 201', function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test('Response has required fields', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('id');",
+									"    pm.expect(jsonData).to.have.property('project_id');",
+									"    pm.expect(jsonData).to.have.property('title');",
+									"    pm.expect(jsonData).to.have.property('description');",
+									"    pm.expect(jsonData).to.have.property('status');",
+									"});",
+									"",
+									"pm.test('Task belongs to correct project', function () {",
+									"    var jsonData = pm.response.json();",
+									"    var expectedProjectId = pm.environment.get('project_id');",
+									"    pm.expect(jsonData.project_id).to.eql(expectedProjectId);",
+									"});",
+									"",
+									"pm.test('Default status is TODO', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.status).to.eql('TODO');",
+									"});",
+									"",
+									"// Store task ID for subsequent tests",
+									"if (pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.environment.set('task_id', jsonData.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Test Task\",\n    \"description\": \"A test task for API testing\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/projects/{{project_id}}/tasks",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "projects", "{{project_id}}", "tasks"]
+						}
+					}
+				},
+				{
+					"name": "Get Tasks by Project",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Response has required pagination fields', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('tasks');",
+									"    pm.expect(jsonData).to.have.property('total');",
+									"    pm.expect(jsonData).to.have.property('page');",
+									"    pm.expect(jsonData).to.have.property('page_size');",
+									"});",
+									"",
+									"pm.test('Tasks array contains task data', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.tasks).to.be.an('array');",
+									"    if (jsonData.tasks.length > 0) {",
+									"        var task = jsonData.tasks[0];",
+									"        pm.expect(task).to.have.property('id');",
+									"        pm.expect(task).to.have.property('title');",
+									"        pm.expect(task).to.have.property('status');",
+									"        pm.expect(task).to.have.property('project_id');",
+									"    }",
+									"});",
+									"",
+									"pm.test('All tasks belong to correct project', function () {",
+									"    var jsonData = pm.response.json();",
+									"    var expectedProjectId = pm.environment.get('project_id');",
+									"    jsonData.tasks.forEach(function(task) {",
+									"        pm.expect(task.project_id).to.eql(expectedProjectId);",
+									"    });",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/projects/{{project_id}}/tasks",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "projects", "{{project_id}}", "tasks"]
+						}
+					}
+				},
+				{
+					"name": "Get Task by ID",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Response has required fields', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('id');",
+									"    pm.expect(jsonData).to.have.property('title');",
+									"    pm.expect(jsonData).to.have.property('description');",
+									"    pm.expect(jsonData).to.have.property('status');",
+									"    pm.expect(jsonData).to.have.property('project_id');",
+									"});",
+									"",
+									"pm.test('Task ID matches requested ID', function () {",
+									"    var jsonData = pm.response.json();",
+									"    var expectedId = pm.environment.get('task_id');",
+									"    pm.expect(jsonData.id).to.eql(expectedId);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/tasks/{{task_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "tasks", "{{task_id}}"]
+						}
+					}
+				},
+				{
+					"name": "Update Task",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Updated data is reflected', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.title).to.eql('Updated Test Task');",
+									"    pm.expect(jsonData.description).to.eql('Updated description for API testing');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Updated Test Task\",\n    \"description\": \"Updated description for API testing\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/tasks/{{task_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "tasks", "{{task_id}}"]
+						}
+					}
+				},
+				{
+					"name": "Update Task Status",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Status is updated correctly', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.status).to.eql('IMPLEMENTING');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"status\": \"IMPLEMENTING\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/tasks/{{task_id}}/status",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "tasks", "{{task_id}}", "status"]
+						}
+					}
+				},
+				{
+					"name": "Get Tasks with Filter",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('All tasks have correct status', function () {",
+									"    var jsonData = pm.response.json();",
+									"    jsonData.tasks.forEach(function(task) {",
+									"        pm.expect(task.status).to.eql('IMPLEMENTING');",
+									"    });",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/projects/{{project_id}}/tasks?status=IMPLEMENTING",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "projects", "{{project_id}}", "tasks"],
+							"query": [
+								{
+									"key": "status",
+									"value": "IMPLEMENTING"
+								}
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Error Handling",
+			"item": [
+				{
+					"name": "Get Non-existent Project",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 404', function () {",
+									"    pm.response.to.have.status(404);",
+									"});",
+									"",
+									"pm.test('Error response has error field', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('error');",
+									"});",
+									"",
+									"pm.test('Error message indicates not found', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.error.toLowerCase()).to.include('not found');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/projects/00000000-0000-0000-0000-000000000000",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "projects", "00000000-0000-0000-0000-000000000000"]
+						}
+					}
+				},
+				{
+					"name": "Get Non-existent Task",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 404', function () {",
+									"    pm.response.to.have.status(404);",
+									"});",
+									"",
+									"pm.test('Error response has error field', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('error');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/tasks/00000000-0000-0000-0000-000000000000",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "tasks", "00000000-0000-0000-0000-000000000000"]
+						}
+					}
+				},
+				{
+					"name": "Invalid UUID Format",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 400', function () {",
+									"    pm.response.to.have.status(400);",
+									"});",
+									"",
+									"pm.test('Error response indicates invalid UUID', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.error.toLowerCase()).to.include('invalid');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/projects/invalid-uuid",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "projects", "invalid-uuid"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Cleanup",
+			"item": [
+				{
+					"name": "Delete Task",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 204', function () {",
+									"    pm.response.to.have.status(204);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/tasks/{{task_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "tasks", "{{task_id}}"]
+						}
+					}
+				},
+				{
+					"name": "Delete Project",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 204', function () {",
+									"    pm.response.to.have.status(204);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/projects/{{project_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "projects", "{{project_id}}"]
+						}
+					}
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Global pre-request script",
+					"console.log('Running test: ' + pm.info.requestName);"
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Global test script",
+					"pm.test('Response time is less than 2000ms', function () {",
+					"    pm.expect(pm.response.responseTime).to.be.below(2000);",
+					"});",
+					"",
+					"pm.test('Response has correct content type', function () {",
+					"    if (pm.response.code !== 204) { // Skip content-type check for 204 No Content",
+					"        pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+					"    }",
+					"});"
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8098",
+			"type": "string",
+			"description": "Base URL for the Auto-Devs API"
+		}
+	]
+}

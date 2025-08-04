@@ -2,11 +2,15 @@ package postgres
 
 import (
 	"context"
+	"fmt"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/auto-devs/auto-devs/internal/entity"
 	"github.com/auto-devs/auto-devs/internal/repository"
+	"github.com/auto-devs/auto-devs/internal/testutil"
+	"github.com/auto-devs/auto-devs/pkg/database"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -464,4 +468,405 @@ func TestTaskRepository_WithNullableFields(t *testing.T) {
 
 	assert.Nil(t, retrieved.BranchName)
 	assert.Nil(t, retrieved.PullRequest)
+}
+
+func TestTaskRepository_GetByProjectIDWithParams(t *testing.T) {
+	db, cleanup := setupTestGormDB(t)
+	defer cleanup()
+
+	projectRepo := NewProjectRepository(db)
+	taskRepo := NewTaskRepository(db)
+	ctx := context.Background()
+
+	// Create test project
+	project := createTestProject(t, projectRepo, ctx)
+
+	// Create multiple tasks with different properties
+	taskFactory := testutil.NewTaskFactory()
+	tasks := []*entity.Task{
+		taskFactory.CreateTask(func(t *entity.Task) {
+			t.ProjectID = project.ID
+			t.Title = "Alpha Task"
+			t.Status = entity.TaskStatusTODO
+			t.Priority = entity.TaskPriorityHigh
+		}),
+		taskFactory.CreateTask(func(t *entity.Task) {
+			t.ProjectID = project.ID
+			t.Title = "Beta Task"
+			t.Status = entity.TaskStatusDONE
+			t.Priority = entity.TaskPriorityMedium
+		}),
+		taskFactory.CreateTask(func(t *entity.Task) {
+			t.ProjectID = project.ID
+			t.Title = "Gamma Search"
+			t.Status = entity.TaskStatusIMPLEMENTING
+			t.Priority = entity.TaskPriorityLow
+		}),
+	}
+
+	for _, task := range tasks {
+		err := taskRepo.Create(ctx, task)
+		require.NoError(t, err)
+	}
+
+	t.Run("filter by status", func(t *testing.T) {
+		params := repository.GetTasksParams{
+			Status:   entity.TaskStatusTODO,
+			Page:     1,
+			PageSize: 10,
+		}
+
+		results, total, err := taskRepo.GetByProjectIDWithParams(ctx, project.ID, params)
+		require.NoError(t, err)
+		assert.Equal(t, 1, total)
+		assert.Len(t, results, 1)
+		assert.Equal(t, entity.TaskStatusTODO, results[0].Status)
+	})
+
+	t.Run("filter by priority", func(t *testing.T) {
+		params := repository.GetTasksParams{
+			Priority: entity.TaskPriorityHigh,
+			Page:     1,
+			PageSize: 10,
+		}
+
+		results, total, err := taskRepo.GetByProjectIDWithParams(ctx, project.ID, params)
+		require.NoError(t, err)
+		assert.Equal(t, 1, total)
+		assert.Len(t, results, 1)
+		assert.Equal(t, entity.TaskPriorityHigh, results[0].Priority)
+	})
+
+	t.Run("search functionality", func(t *testing.T) {
+		params := repository.GetTasksParams{
+			Search:   "search",
+			Page:     1,
+			PageSize: 10,
+		}
+
+		results, total, err := taskRepo.GetByProjectIDWithParams(ctx, project.ID, params)
+		require.NoError(t, err)
+		assert.Equal(t, 1, total)
+		assert.Len(t, results, 1)
+		assert.Contains(t, results[0].Title, "Search")
+	})
+
+	t.Run("pagination", func(t *testing.T) {
+		params := repository.GetTasksParams{
+			Page:     1,
+			PageSize: 2,
+		}
+
+		results, total, err := taskRepo.GetByProjectIDWithParams(ctx, project.ID, params)
+		require.NoError(t, err)
+		assert.Equal(t, 3, total)
+		assert.Len(t, results, 2)
+
+		// Second page
+		params.Page = 2
+		results, total, err = taskRepo.GetByProjectIDWithParams(ctx, project.ID, params)
+		require.NoError(t, err)
+		assert.Equal(t, 3, total)
+		assert.Len(t, results, 1)
+	})
+
+	t.Run("sorting", func(t *testing.T) {
+		params := repository.GetTasksParams{
+			SortBy:    "title",
+			SortOrder: "asc",
+			Page:      1,
+			PageSize:  10,
+		}
+
+		results, _, err := taskRepo.GetByProjectIDWithParams(ctx, project.ID, params)
+		require.NoError(t, err)
+		assert.Equal(t, "Alpha Task", results[0].Title)
+		assert.Equal(t, "Beta Task", results[1].Title)
+		assert.Equal(t, "Gamma Search", results[2].Title)
+	})
+}
+
+func TestTaskRepository_GetStatsByProjectID(t *testing.T) {
+	db, cleanup := setupTestGormDB(t)
+	defer cleanup()
+
+	projectRepo := NewProjectRepository(db)
+	taskRepo := NewTaskRepository(db)
+	ctx := context.Background()
+
+	// Create test project
+	project := createTestProject(t, projectRepo, ctx)
+
+	// Create tasks with different statuses
+	taskFactory := testutil.NewTaskFactory()
+	tasks := taskFactory.CreateTasksWithDifferentStatuses(project.ID)
+
+	for _, task := range tasks {
+		err := taskRepo.Create(ctx, task)
+		require.NoError(t, err)
+	}
+
+	// Get statistics
+	stats, err := taskRepo.GetStatsByProjectID(ctx, project.ID)
+	require.NoError(t, err)
+
+	assert.Equal(t, 1, stats[entity.TaskStatusTODO])
+	assert.Equal(t, 1, stats[entity.TaskStatusPLANNING])
+	assert.Equal(t, 1, stats[entity.TaskStatusPLAN_REVIEWING])
+	assert.Equal(t, 1, stats[entity.TaskStatusIMPLEMENTING])
+	assert.Equal(t, 1, stats[entity.TaskStatusCODE_REVIEWING])
+	assert.Equal(t, 1, stats[entity.TaskStatusDONE])
+	assert.Equal(t, 1, stats[entity.TaskStatusCANCELLED])
+}
+
+func TestTaskRepository_Archive_Restore(t *testing.T) {
+	db, cleanup := setupTestGormDB(t)
+	defer cleanup()
+
+	projectRepo := NewProjectRepository(db)
+	taskRepo := NewTaskRepository(db)
+	ctx := context.Background()
+
+	// Create test project
+	project := createTestProject(t, projectRepo, ctx)
+
+	// Create task
+	task := &entity.Task{
+		ProjectID:   project.ID,
+		Title:       "Archive Task",
+		Description: "Test Description",
+		Status:      entity.TaskStatusTODO,
+	}
+	err := taskRepo.Create(ctx, task)
+	require.NoError(t, err)
+
+	// Archive task
+	err = taskRepo.Archive(ctx, task.ID)
+	require.NoError(t, err)
+
+	// Verify it's archived (not found in normal queries)
+	_, err = taskRepo.GetByID(ctx, task.ID)
+	assert.Error(t, err)
+
+	// Restore task
+	err = taskRepo.Restore(ctx, task.ID)
+	require.NoError(t, err)
+
+	// Verify it's restored
+	restored, err := taskRepo.GetByID(ctx, task.ID)
+	require.NoError(t, err)
+	assert.Equal(t, task.ID, restored.ID)
+}
+
+func TestTaskRepository_ConcurrentOperations(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping concurrent test in short mode")
+	}
+
+	db, cleanup := setupTestGormDB(t)
+	defer cleanup()
+
+	projectRepo := NewProjectRepository(db)
+	taskRepo := NewTaskRepository(db)
+	ctx := context.Background()
+
+	// Create test project
+	project := createTestProject(t, projectRepo, ctx)
+
+	// Create initial task
+	task := &entity.Task{
+		ProjectID:   project.ID,
+		Title:       "Concurrent Task",
+		Description: "Test Description",
+		Status:      entity.TaskStatusTODO,
+	}
+	err := taskRepo.Create(ctx, task)
+	require.NoError(t, err)
+
+	// Simulate concurrent updates
+	const numGoroutines = 10
+	done := make(chan bool, numGoroutines)
+	errors := make(chan error, numGoroutines)
+
+	for i := 0; i < numGoroutines; i++ {
+		go func(i int) {
+			defer func() { done <- true }()
+			
+			// Update status
+			newStatus := entity.TaskStatusIMPLEMENTING
+			if i%2 == 0 {
+				newStatus = entity.TaskStatusDONE
+			}
+			
+			if err := taskRepo.UpdateStatus(ctx, task.ID, newStatus); err != nil {
+				errors <- err
+			}
+		}(i)
+	}
+
+	// Wait for all goroutines to complete
+	for i := 0; i < numGoroutines; i++ {
+		<-done
+	}
+
+	// Check for errors
+	select {
+	case err := <-errors:
+		t.Fatalf("Concurrent operation failed: %v", err)
+	default:
+		// No errors, verify task still exists and is in a valid state
+		finalTask, err := taskRepo.GetByID(ctx, task.ID)
+		require.NoError(t, err)
+		assert.NotNil(t, finalTask)
+	}
+}
+
+func TestTaskRepository_TransactionRollback(t *testing.T) {
+	db, cleanup := setupTestGormDB(t)
+	defer cleanup()
+
+	projectRepo := NewProjectRepository(db)
+	taskRepo := NewTaskRepository(db)
+	ctx := context.Background()
+
+	// Create test project
+	project := createTestProject(t, projectRepo, ctx)
+
+	// Test transaction rollback
+	tx := db.DB.Begin()
+	defer tx.Rollback()
+
+	// Create task in transaction
+	task := &entity.Task{
+		ProjectID:   project.ID,
+		Title:       "Transaction Task",
+		Description: "Test Description",
+		Status:      entity.TaskStatusTODO,
+	}
+
+	// Create task repository with transaction
+	txTaskRepo := NewTaskRepository(&testutil.TestContainer{GormDB: tx, DB: &database.GormDB{DB: tx}}.DB)
+	err := txTaskRepo.Create(ctx, task)
+	require.NoError(t, err)
+
+	// Task should exist in transaction
+	_, err = txTaskRepo.GetByID(ctx, task.ID)
+	require.NoError(t, err)
+
+	// But not in main database (transaction not committed)
+	_, err = taskRepo.GetByID(ctx, task.ID)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "task not found")
+}
+
+func TestTaskRepository_BulkOperations(t *testing.T) {
+	db, cleanup := setupTestGormDB(t)
+	defer cleanup()
+
+	projectRepo := NewProjectRepository(db)
+	taskRepo := NewTaskRepository(db)
+	ctx := context.Background()
+
+	// Create test project
+	project := createTestProject(t, projectRepo, ctx)
+
+	// Create multiple tasks
+	const numTasks = 100
+	tasks := make([]*entity.Task, numTasks)
+	
+	for i := 0; i < numTasks; i++ {
+		tasks[i] = &entity.Task{
+			ProjectID:   project.ID,
+			Title:       fmt.Sprintf("Bulk Task %d", i+1),
+			Description: fmt.Sprintf("Description %d", i+1),
+			Status:      entity.TaskStatusTODO,
+		}
+		
+		err := taskRepo.Create(ctx, tasks[i])
+		require.NoError(t, err)
+	}
+
+	// Verify all tasks were created
+	allTasks, err := taskRepo.GetByProjectID(ctx, project.ID)
+	require.NoError(t, err)
+	assert.Len(t, allTasks, numTasks)
+}
+
+func TestTaskRepository_EdgeCases(t *testing.T) {
+	db, cleanup := setupTestGormDB(t)
+	defer cleanup()
+
+	projectRepo := NewProjectRepository(db)
+	taskRepo := NewTaskRepository(db)
+	ctx := context.Background()
+
+	t.Run("empty project has no tasks", func(t *testing.T) {
+		project := createTestProject(t, projectRepo, ctx)
+		
+		tasks, err := taskRepo.GetByProjectID(ctx, project.ID)
+		require.NoError(t, err)
+		assert.Len(t, tasks, 0)
+	})
+
+	t.Run("very long title and description", func(t *testing.T) {
+		project := createTestProject(t, projectRepo, ctx)
+		
+		longTitle := strings.Repeat("A", 1000)
+		longDescription := strings.Repeat("B", 10000)
+		
+		task := &entity.Task{
+			ProjectID:   project.ID,
+			Title:       longTitle,
+			Description: longDescription,
+			Status:      entity.TaskStatusTODO,
+		}
+		
+		err := taskRepo.Create(ctx, task)
+		require.NoError(t, err)
+		
+		retrieved, err := taskRepo.GetByID(ctx, task.ID)
+		require.NoError(t, err)
+		assert.Equal(t, longTitle, retrieved.Title)
+		assert.Equal(t, longDescription, retrieved.Description)
+	})
+
+	t.Run("special characters in title", func(t *testing.T) {
+		project := createTestProject(t, projectRepo, ctx)
+		
+		specialTitle := "Task with special chars: @#$%^&*()[]{}|\:;\"'<>,.?/~`"
+		
+		task := &entity.Task{
+			ProjectID:   project.ID,
+			Title:       specialTitle,
+			Description: "Test description",
+			Status:      entity.TaskStatusTODO,
+		}
+		
+		err := taskRepo.Create(ctx, task)
+		require.NoError(t, err)
+		
+		retrieved, err := taskRepo.GetByID(ctx, task.ID)
+		require.NoError(t, err)
+		assert.Equal(t, specialTitle, retrieved.Title)
+	})
+
+	t.Run("unicode characters in title", func(t *testing.T) {
+		project := createTestProject(t, projectRepo, ctx)
+		
+		unicodeTitle := "タスク测试🚀🎉"
+		
+		task := &entity.Task{
+			ProjectID:   project.ID,
+			Title:       unicodeTitle,
+			Description: "Test description",
+			Status:      entity.TaskStatusTODO,
+		}
+		
+		err := taskRepo.Create(ctx, task)
+		require.NoError(t, err)
+		
+		retrieved, err := taskRepo.GetByID(ctx, task.ID)
+		require.NoError(t, err)
+		assert.Equal(t, unicodeTitle, retrieved.Title)
+	})
 }
