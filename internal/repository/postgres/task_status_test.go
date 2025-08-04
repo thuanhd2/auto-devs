@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/auto-devs/auto-devs/internal/entity"
-	"github.com/auto-devs/auto-devs/internal/repository"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -309,7 +308,7 @@ func TestTaskRepository_GetStatusAnalytics(t *testing.T) {
 		statusCounts[stat.Status] = stat.Count
 	}
 
-	assert.Equal(t, 1, statusCounts[entity.TaskStatusTODO]) // One was moved to PLANNING
+	assert.Equal(t, 1, statusCounts[entity.TaskStatusTODO])     // One was moved to PLANNING
 	assert.Equal(t, 2, statusCounts[entity.TaskStatusPLANNING]) // Original + moved from TODO
 	assert.Equal(t, 1, statusCounts[entity.TaskStatusIMPLEMENTING])
 	assert.Equal(t, 2, statusCounts[entity.TaskStatusDONE])
@@ -353,7 +352,7 @@ func TestTaskRepository_GetTasksWithFilters(t *testing.T) {
 
 	// Test filtering by project ID
 	t.Run("FilterByProjectID", func(t *testing.T) {
-		filters := repository.TaskFilters{
+		filters := entity.TaskFilters{
 			ProjectID: &project1.ID,
 		}
 		results, err := taskRepo.GetTasksWithFilters(ctx, filters)
@@ -366,7 +365,7 @@ func TestTaskRepository_GetTasksWithFilters(t *testing.T) {
 
 	// Test filtering by statuses
 	t.Run("FilterByStatuses", func(t *testing.T) {
-		filters := repository.TaskFilters{
+		filters := entity.TaskFilters{
 			Statuses: []entity.TaskStatus{entity.TaskStatusTODO, entity.TaskStatusDONE},
 		}
 		results, err := taskRepo.GetTasksWithFilters(ctx, filters)
@@ -380,7 +379,7 @@ func TestTaskRepository_GetTasksWithFilters(t *testing.T) {
 	// Test search term
 	t.Run("FilterBySearchTerm", func(t *testing.T) {
 		searchTerm := "auth"
-		filters := repository.TaskFilters{
+		filters := entity.TaskFilters{
 			SearchTerm: &searchTerm,
 		}
 		results, err := taskRepo.GetTasksWithFilters(ctx, filters)
@@ -393,7 +392,7 @@ func TestTaskRepository_GetTasksWithFilters(t *testing.T) {
 	t.Run("FilterWithOrdering", func(t *testing.T) {
 		orderBy := "title"
 		orderDir := "ASC"
-		filters := repository.TaskFilters{
+		filters := entity.TaskFilters{
 			ProjectID: &project1.ID,
 			OrderBy:   &orderBy,
 			OrderDir:  &orderDir,
@@ -401,7 +400,7 @@ func TestTaskRepository_GetTasksWithFilters(t *testing.T) {
 		results, err := taskRepo.GetTasksWithFilters(ctx, filters)
 		require.NoError(t, err)
 		assert.Len(t, results, 3)
-		
+
 		// Should be ordered by title ASC
 		titles := []string{results[0].Title, results[1].Title, results[2].Title}
 		assert.Equal(t, "API Task", titles[0])
@@ -413,7 +412,7 @@ func TestTaskRepository_GetTasksWithFilters(t *testing.T) {
 	t.Run("FilterWithPagination", func(t *testing.T) {
 		limit := 2
 		offset := 0
-		filters := repository.TaskFilters{
+		filters := entity.TaskFilters{
 			Limit:  &limit,
 			Offset: &offset,
 		}
@@ -426,7 +425,7 @@ func TestTaskRepository_GetTasksWithFilters(t *testing.T) {
 	t.Run("FilterCombined", func(t *testing.T) {
 		searchTerm := "task"
 		limit := 10
-		filters := repository.TaskFilters{
+		filters := entity.TaskFilters{
 			ProjectID:  &project1.ID,
 			Statuses:   []entity.TaskStatus{entity.TaskStatusTODO, entity.TaskStatusPLANNING},
 			SearchTerm: &searchTerm,

@@ -1,6 +1,7 @@
 package entity
 
 import (
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -421,4 +422,76 @@ type TaskStatistics struct {
 	TotalActualHours      float64              `json:"total_actual_hours"`
 	OverdueTasks          int                  `json:"overdue_tasks"`
 	GeneratedAt           time.Time            `json:"generated_at"`
+}
+
+// BeforeCreate GORM hook to convert Tags to TagsJSON before saving
+func (t *Task) BeforeCreate(tx *gorm.DB) error {
+	if len(t.Tags) > 0 {
+		tagsJSON, err := json.Marshal(t.Tags)
+		if err != nil {
+			return err
+		}
+		t.TagsJSON = string(tagsJSON)
+	} else {
+		t.TagsJSON = "[]"
+	}
+	return nil
+}
+
+// BeforeUpdate GORM hook to convert Tags to TagsJSON before updating
+func (t *Task) BeforeUpdate(tx *gorm.DB) error {
+	if len(t.Tags) > 0 {
+		tagsJSON, err := json.Marshal(t.Tags)
+		if err != nil {
+			return err
+		}
+		t.TagsJSON = string(tagsJSON)
+	} else {
+		t.TagsJSON = "[]"
+	}
+	return nil
+}
+
+// AfterFind GORM hook to convert TagsJSON to Tags after loading
+func (t *Task) AfterFind(tx *gorm.DB) error {
+	if t.TagsJSON != "" {
+		return json.Unmarshal([]byte(t.TagsJSON), &t.Tags)
+	}
+	return nil
+}
+
+// BeforeCreate GORM hook for TaskTemplate
+func (tt *TaskTemplate) BeforeCreate(tx *gorm.DB) error {
+	if len(tt.Tags) > 0 {
+		tagsJSON, err := json.Marshal(tt.Tags)
+		if err != nil {
+			return err
+		}
+		tt.TagsJSON = string(tagsJSON)
+	} else {
+		tt.TagsJSON = "[]"
+	}
+	return nil
+}
+
+// BeforeUpdate GORM hook for TaskTemplate
+func (tt *TaskTemplate) BeforeUpdate(tx *gorm.DB) error {
+	if len(tt.Tags) > 0 {
+		tagsJSON, err := json.Marshal(tt.Tags)
+		if err != nil {
+			return err
+		}
+		tt.TagsJSON = string(tagsJSON)
+	} else {
+		tt.TagsJSON = "[]"
+	}
+	return nil
+}
+
+// AfterFind GORM hook for TaskTemplate
+func (tt *TaskTemplate) AfterFind(tx *gorm.DB) error {
+	if tt.TagsJSON != "" {
+		return json.Unmarshal([]byte(tt.TagsJSON), &tt.Tags)
+	}
+	return nil
 }

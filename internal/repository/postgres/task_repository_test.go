@@ -429,7 +429,7 @@ func TestTaskRepository_GetByStatus(t *testing.T) {
 	assert.Equal(t, task2.ID, doneTasks[0].ID)
 
 	// Get tasks by status that doesn't exist
-	planningTasks, err := taskRepo.GetByStatus(ctx, entity.TaskStatusTODO)
+	planningTasks, err := taskRepo.GetByStatus(ctx, entity.TaskStatusPLANNING)
 	require.NoError(t, err)
 	assert.Len(t, planningTasks, 0)
 }

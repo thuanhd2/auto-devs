@@ -46,7 +46,7 @@ func (h *TaskHandlerWithWebSocket) CreateTask(c *gin.Context) {
 	}
 
 	response := dto.TaskResponseFromEntity(task)
-	
+
 	// Send WebSocket notification
 	if err := h.wsService.NotifyTaskCreated(response, task.ProjectID); err != nil {
 		log.Printf("Failed to send WebSocket notification for task creation: %v", err)
@@ -79,7 +79,7 @@ func (h *TaskHandlerWithWebSocket) UpdateTask(c *gin.Context) {
 
 	usecaseReq := usecase.UpdateTaskRequest{}
 	changes := make(map[string]interface{})
-	
+
 	if req.Title != nil && *req.Title != originalTask.Title {
 		usecaseReq.Title = *req.Title
 		changes["title"] = map[string]interface{}{
@@ -95,17 +95,17 @@ func (h *TaskHandlerWithWebSocket) UpdateTask(c *gin.Context) {
 		}
 	}
 	if req.BranchName != nil && (originalTask.BranchName == nil || *req.BranchName != *originalTask.BranchName) {
-		usecaseReq.BranchName = *req.BranchName
+		usecaseReq.BranchName = req.BranchName
 		changes["branch_name"] = map[string]interface{}{
 			"old": originalTask.BranchName,
-			"new": *req.BranchName,
+			"new": req.BranchName,
 		}
 	}
 	if req.PullRequest != nil && (originalTask.PullRequest == nil || *req.PullRequest != *originalTask.PullRequest) {
-		usecaseReq.PullRequest = *req.PullRequest
+		usecaseReq.PullRequest = req.PullRequest
 		changes["pull_request"] = map[string]interface{}{
 			"old": originalTask.PullRequest,
-			"new": *req.PullRequest,
+			"new": req.PullRequest,
 		}
 	}
 
@@ -116,7 +116,7 @@ func (h *TaskHandlerWithWebSocket) UpdateTask(c *gin.Context) {
 	}
 
 	response := dto.TaskResponseFromEntity(task)
-	
+
 	// Send WebSocket notification if there were changes
 	if len(changes) > 0 {
 		if err := h.wsService.NotifyTaskUpdated(task.ID, task.ProjectID, changes, response); err != nil {
@@ -156,7 +156,7 @@ func (h *TaskHandlerWithWebSocket) UpdateTaskStatus(c *gin.Context) {
 	}
 
 	response := dto.TaskResponseFromEntity(task)
-	
+
 	// Send WebSocket notifications for status change
 	if originalTask.Status != task.Status {
 		changes := map[string]interface{}{
@@ -165,12 +165,12 @@ func (h *TaskHandlerWithWebSocket) UpdateTaskStatus(c *gin.Context) {
 				"new": task.Status,
 			},
 		}
-		
+
 		// Send task updated notification
 		if err := h.wsService.NotifyTaskUpdated(task.ID, task.ProjectID, changes, response); err != nil {
 			log.Printf("Failed to send WebSocket notification for task update: %v", err)
 		}
-		
+
 		// Send status changed notification
 		if err := h.wsService.NotifyStatusChanged(task.ID, task.ProjectID, "task", string(originalTask.Status), string(task.Status)); err != nil {
 			log.Printf("Failed to send WebSocket notification for status change: %v", err)
