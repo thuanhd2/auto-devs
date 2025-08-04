@@ -11,6 +11,7 @@ import (
 
 	"github.com/auto-devs/auto-devs/internal/entity"
 	"github.com/auto-devs/auto-devs/internal/handler/dto"
+	"github.com/auto-devs/auto-devs/internal/mocks"
 	"github.com/auto-devs/auto-devs/internal/usecase"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -19,91 +20,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// MockProjectUsecase is a mock implementation of ProjectUsecase
-type MockProjectUsecase struct {
-	mock.Mock
-}
-
-func (m *MockProjectUsecase) Create(ctx context.Context, req usecase.CreateProjectRequest) (*entity.Project, error) {
-	args := m.Called(ctx, req)
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-	return args.Get(0).(*entity.Project), args.Error(1)
-}
-
-func (m *MockProjectUsecase) GetByID(ctx context.Context, id uuid.UUID) (*entity.Project, error) {
-	args := m.Called(ctx, id)
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-	return args.Get(0).(*entity.Project), args.Error(1)
-}
-
-func (m *MockProjectUsecase) GetAll(ctx context.Context, params usecase.GetProjectsParams) (*usecase.GetProjectsResult, error) {
-	args := m.Called(ctx, params)
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-	return args.Get(0).(*usecase.GetProjectsResult), args.Error(1)
-}
-
-func (m *MockProjectUsecase) Update(ctx context.Context, id uuid.UUID, req usecase.UpdateProjectRequest) (*entity.Project, error) {
-	args := m.Called(ctx, id, req)
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-	return args.Get(0).(*entity.Project), args.Error(1)
-}
-
-func (m *MockProjectUsecase) Delete(ctx context.Context, id uuid.UUID) error {
-	args := m.Called(ctx, id)
-	return args.Error(0)
-}
-
-func (m *MockProjectUsecase) GetWithTasks(ctx context.Context, id uuid.UUID) (*entity.Project, error) {
-	args := m.Called(ctx, id)
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-	return args.Get(0).(*entity.Project), args.Error(1)
-}
-
-func (m *MockProjectUsecase) GetStatistics(ctx context.Context, id uuid.UUID) (*usecase.ProjectStatistics, error) {
-	args := m.Called(ctx, id)
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-	return args.Get(0).(*usecase.ProjectStatistics), args.Error(1)
-}
-
-func (m *MockProjectUsecase) Archive(ctx context.Context, id uuid.UUID) error {
-	args := m.Called(ctx, id)
-	return args.Error(0)
-}
-
-func (m *MockProjectUsecase) Restore(ctx context.Context, id uuid.UUID) error {
-	args := m.Called(ctx, id)
-	return args.Error(0)
-}
-
-func (m *MockProjectUsecase) CheckNameExists(ctx context.Context, name string, excludeID *uuid.UUID) (bool, error) {
-	args := m.Called(ctx, name, excludeID)
-	return args.Bool(0), args.Error(1)
-}
-
-func (m *MockProjectUsecase) GetSettings(ctx context.Context, projectID uuid.UUID) (*entity.ProjectSettings, error) {
-	args := m.Called(ctx, projectID)
-	return args.Get(0).(*entity.ProjectSettings), args.Error(1)
-}
-
-func (m *MockProjectUsecase) UpdateSettings(ctx context.Context, projectID uuid.UUID, settings *entity.ProjectSettings) (*entity.ProjectSettings, error) {
-	args := m.Called(ctx, projectID, settings)
-	return args.Get(0).(*entity.ProjectSettings), args.Error(1)
-}
-
-func setupProjectHandler() (*ProjectHandler, *MockProjectUsecase) {
-	mockUsecase := new(MockProjectUsecase)
+func setupProjectHandler(t *testing.T) (*ProjectHandler, *mocks.MockProjectUsecase) {
+	mockUsecase := mocks.NewMockProjectUsecase(t)
 	handler := NewProjectHandler(mockUsecase)
 	return handler, mockUsecase
 }
@@ -130,7 +48,7 @@ func setupGinRouter(handler *ProjectHandler) *gin.Engine {
 }
 
 func TestProjectHandler_CreateProject(t *testing.T) {
-	handler, mockUsecase := setupProjectHandler()
+	handler, mockUsecase := setupProjectHandler(t)
 	router := setupGinRouter(handler)
 
 	t.Run("successful creation", func(t *testing.T) {
@@ -141,9 +59,11 @@ func TestProjectHandler_CreateProject(t *testing.T) {
 			RepoURL:     "https://github.com/test/repo.git",
 		}
 
-		mockUsecase.On("Create", mock.Anything, mock.MatchedBy(func(req usecase.CreateProjectRequest) bool {
-			return req.Name == "Test Project" && req.RepoURL == "https://github.com/test/repo.git"
-		})).Return(project, nil)
+		mockUsecase.On("Create", context.Background(), usecase.CreateProjectRequest{
+			Name:        "Test Project",
+			Description: "Test Description",
+			RepoURL:     "https://github.com/test/repo.git",
+		}).Return(project, nil)
 
 		reqBody := dto.ProjectCreateRequest{
 			Name:        "Test Project",
@@ -166,7 +86,7 @@ func TestProjectHandler_CreateProject(t *testing.T) {
 		assert.Equal(t, project.ID, response.ID)
 		assert.Equal(t, project.Name, response.Name)
 
-		mockUsecase.AssertExpectations(t)
+		
 	})
 
 	t.Run("validation error", func(t *testing.T) {
@@ -186,7 +106,7 @@ func TestProjectHandler_CreateProject(t *testing.T) {
 }
 
 func TestProjectHandler_ListProjects(t *testing.T) {
-	handler, mockUsecase := setupProjectHandler()
+	handler, mockUsecase := setupProjectHandler(t)
 	router := setupGinRouter(handler)
 
 	t.Run("successful list with pagination", func(t *testing.T) {
@@ -218,7 +138,7 @@ func TestProjectHandler_ListProjects(t *testing.T) {
 		assert.Len(t, response.Projects, 2)
 		assert.Equal(t, 2, response.Total)
 
-		mockUsecase.AssertExpectations(t)
+		
 	})
 
 	t.Run("with search and sorting", func(t *testing.T) {
@@ -238,12 +158,12 @@ func TestProjectHandler_ListProjects(t *testing.T) {
 		router.ServeHTTP(w, req)
 
 		assert.Equal(t, http.StatusOK, w.Code)
-		mockUsecase.AssertExpectations(t)
+		
 	})
 }
 
 func TestProjectHandler_GetProject(t *testing.T) {
-	handler, mockUsecase := setupProjectHandler()
+	handler, mockUsecase := setupProjectHandler(t)
 	router := setupGinRouter(handler)
 
 	t.Run("successful get", func(t *testing.T) {
@@ -267,7 +187,7 @@ func TestProjectHandler_GetProject(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, projectID, response.ID)
 
-		mockUsecase.AssertExpectations(t)
+		
 	})
 
 	t.Run("invalid UUID", func(t *testing.T) {
@@ -280,7 +200,7 @@ func TestProjectHandler_GetProject(t *testing.T) {
 }
 
 func TestProjectHandler_GetProjectStatistics(t *testing.T) {
-	handler, mockUsecase := setupProjectHandler()
+	handler, mockUsecase := setupProjectHandler(t)
 	router := setupGinRouter(handler)
 
 	projectID := uuid.New()
@@ -308,11 +228,11 @@ func TestProjectHandler_GetProjectStatistics(t *testing.T) {
 	assert.Equal(t, 40.0, response.CompletionPercent)
 	assert.Equal(t, 3, response.TasksByStatus[string(entity.TaskStatusTODO)])
 
-	mockUsecase.AssertExpectations(t)
+	
 }
 
 func TestProjectHandler_ArchiveProject(t *testing.T) {
-	handler, mockUsecase := setupProjectHandler()
+	handler, mockUsecase := setupProjectHandler(t)
 	router := setupGinRouter(handler)
 
 	projectID := uuid.New()
@@ -323,11 +243,11 @@ func TestProjectHandler_ArchiveProject(t *testing.T) {
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusNoContent, w.Code)
-	mockUsecase.AssertExpectations(t)
+	
 }
 
 func TestProjectHandler_RestoreProject(t *testing.T) {
-	handler, mockUsecase := setupProjectHandler()
+	handler, mockUsecase := setupProjectHandler(t)
 	router := setupGinRouter(handler)
 
 	projectID := uuid.New()
@@ -338,11 +258,11 @@ func TestProjectHandler_RestoreProject(t *testing.T) {
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusNoContent, w.Code)
-	mockUsecase.AssertExpectations(t)
+	
 }
 
 func TestProjectHandler_UpdateProject(t *testing.T) {
-	handler, mockUsecase := setupProjectHandler()
+	handler, mockUsecase := setupProjectHandler(t)
 	router := setupGinRouter(handler)
 
 	projectID := uuid.New()
@@ -375,11 +295,11 @@ func TestProjectHandler_UpdateProject(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "Updated Project", response.Name)
 
-	mockUsecase.AssertExpectations(t)
+	
 }
 
 func TestProjectHandler_DeleteProject(t *testing.T) {
-	handler, mockUsecase := setupProjectHandler()
+	handler, mockUsecase := setupProjectHandler(t)
 	router := setupGinRouter(handler)
 
 	projectID := uuid.New()
@@ -390,7 +310,7 @@ func TestProjectHandler_DeleteProject(t *testing.T) {
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusNoContent, w.Code)
-	mockUsecase.AssertExpectations(t)
+	
 }
 
 // Helper function for creating string pointers
