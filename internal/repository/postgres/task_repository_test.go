@@ -833,7 +833,7 @@ func TestTaskRepository_EdgeCases(t *testing.T) {
 	t.Run("special characters in title", func(t *testing.T) {
 		project := createTestProject(t, projectRepo, ctx)
 		
-		specialTitle := "Task with special chars: @#$%^&*()[]{}|\:;\"'<>,.?/~`"
+		specialTitle := "Task with special chars: @#$%^&*()[]{}|\\:;\"'<>,.?/~`"
 		
 		task := &entity.Task{
 			ProjectID:   project.ID,

@@ -73,7 +73,7 @@ func (f *TaskFactory) CreateTask(overrides ...func(*entity.Task)) *entity.Task {
 		Title:       "Test Task",
 		Description: "Test task description",
 		Status:      entity.TaskStatusTODO,
-		Priority:    entity.TaskPriorityMedium,
+		// Priority field not available in entity.Task
 		CreatedAt:   time.Now(),
 		UpdatedAt:   time.Now(),
 	}
@@ -99,9 +99,9 @@ func (f *TaskFactory) CreateTasksWithDifferentStatuses(projectID uuid.UUID) []*e
 	statuses := []entity.TaskStatus{
 		entity.TaskStatusTODO,
 		entity.TaskStatusPLANNING,
-		entity.TaskStatusPLAN_REVIEWING,
+		entity.TaskStatusPLANREVIEWING,
 		entity.TaskStatusIMPLEMENTING,
-		entity.TaskStatusCODE_REVIEWING,
+		entity.TaskStatusCODEREVIEWING,
 		entity.TaskStatusDONE,
 		entity.TaskStatusCANCELLED,
 	}
@@ -119,20 +119,20 @@ func (f *TaskFactory) CreateTasksWithDifferentStatuses(projectID uuid.UUID) []*e
 }
 
 // CreateTasksWithDifferentPriorities creates tasks with different priorities for testing
+// Note: Priority field is not available in current entity.Task, so we'll create tasks with different titles
 func (f *TaskFactory) CreateTasksWithDifferentPriorities(projectID uuid.UUID) []*entity.Task {
-	priorities := []entity.TaskPriority{
-		entity.TaskPriorityLow,
-		entity.TaskPriorityMedium,
-		entity.TaskPriorityHigh,
-		entity.TaskPriorityCritical,
+	priorities := []string{
+		"Low",
+		"Medium", 
+		"High",
+		"Critical",
 	}
 
 	tasks := make([]*entity.Task, len(priorities))
 	for i, priority := range priorities {
 		tasks[i] = f.CreateTask(func(t *entity.Task) {
 			t.ProjectID = projectID
-			t.Priority = priority
-			t.Title = "Task with priority " + string(priority)
+			t.Title = "Task with priority " + priority
 		})
 	}
 

@@ -2,8 +2,9 @@ package testutil
 
 import (
 	"context"
-	"errors"
+	"errors" 
 	"fmt"
+	"time"
 
 	"github.com/auto-devs/auto-devs/internal/entity"
 	"github.com/auto-devs/auto-devs/internal/repository"
@@ -86,12 +87,12 @@ func (m *MockProjectRepository) Restore(ctx context.Context, id uuid.UUID) error
 	return args.Error(0)
 }
 
-func (m *MockProjectRepository) GetLastActivityAt(ctx context.Context, projectID uuid.UUID) (*entity.Time, error) {
+func (m *MockProjectRepository) GetLastActivityAt(ctx context.Context, projectID uuid.UUID) (*time.Time, error) {
 	args := m.Called(ctx, projectID)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).(*entity.Time), args.Error(1)
+	return args.Get(0).(*time.Time), args.Error(1)
 }
 
 // MockTaskRepository is a mock implementation of repository.TaskRepository
@@ -120,7 +121,7 @@ func (m *MockTaskRepository) GetByProjectID(ctx context.Context, projectID uuid.
 	return args.Get(0).([]*entity.Task), args.Error(1)
 }
 
-func (m *MockTaskRepository) GetByProjectIDWithParams(ctx context.Context, projectID uuid.UUID, params repository.GetTasksParams) ([]*entity.Task, int, error) {
+func (m *MockTaskRepository) GetByProjectIDWithParams(ctx context.Context, projectID uuid.UUID, params repository.TaskFilters) ([]*entity.Task, int, error) {
 	args := m.Called(ctx, projectID, params)
 	if args.Get(0) == nil {
 		return nil, args.Int(1), args.Error(2)
