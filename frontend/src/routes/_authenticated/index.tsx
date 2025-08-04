@@ -1,6 +1,11 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, redirect } from '@tanstack/react-router'
 import Dashboard from '@/features/dashboard'
 
 export const Route = createFileRoute('/_authenticated/')({
-  component: Dashboard,
+  beforeLoad: () => {
+    // Redirect từ /abc sang /xyz
+    throw redirect({
+      to: '/projects',
+    })
+  },
 })

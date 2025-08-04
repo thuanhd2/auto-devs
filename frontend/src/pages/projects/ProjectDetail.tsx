@@ -13,9 +13,6 @@ import {
 } from 'lucide-react'
 import { useProject, useProjectStatistics } from '@/hooks/use-projects'
 import { useTasks } from '@/hooks/use-tasks'
-import { RealTimeNotifications } from '@/components/notifications/real-time-notifications'
-import { UserPresence, UserPresenceCompact } from '@/components/collaboration/user-presence'
-import { RealTimeProjectStats, CompactProjectStats } from '@/components/stats/real-time-project-stats'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -26,10 +23,25 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
+import { Separator } from '@/components/ui/separator'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { ProjectBoard } from '@/components/kanban/project-board'
+import {
+  UserPresence,
+  UserPresenceCompact,
+} from '@/components/collaboration/user-presence'
 import { GitStatusCard } from '@/components/kanban/git-status-card'
+import { ProjectBoard } from '@/components/kanban/project-board'
+import { Header } from '@/components/layout/header'
+import { Main } from '@/components/layout/main'
+import { RealTimeNotifications } from '@/components/notifications/real-time-notifications'
+import { ProfileDropdown } from '@/components/profile-dropdown'
+import { Search as SearchComponent } from '@/components/search'
+import {
+  RealTimeProjectStats,
+  CompactProjectStats,
+} from '@/components/stats/real-time-project-stats'
+import { ThemeSwitch } from '@/components/theme-switch'
 
 const statusConfig = {
   TODO: { label: 'To Do', icon: Clock, color: 'bg-slate-500' },
@@ -113,15 +125,14 @@ export function ProjectDetail() {
   return (
     <>
       {/* Real-time notifications */}
-      <RealTimeNotifications 
+      <RealTimeNotifications
         projectId={projectId}
         enableToastNotifications={true}
         enableBrowserNotifications={false}
         enableSound={false}
       />
-      
-      <div className='h-full space-y-6'>
-        {/* Header */}
+      {/* ===== Top Heading ===== */}
+      <Main>
         <div className='flex items-center justify-between'>
           <div className='flex items-center gap-4'>
             <Link to='/projects'>
@@ -132,7 +143,11 @@ export function ProjectDetail() {
             <div>
               <div className='flex items-center gap-3'>
                 <h1 className='text-3xl font-bold'>{project.name}</h1>
-                <UserPresence projectId={projectId} showDetails={false} maxAvatars={3} />
+                <UserPresence
+                  projectId={projectId}
+                  showDetails={false}
+                  maxAvatars={3}
+                />
               </div>
               <p className='text-muted-foreground'>
                 {project.description || 'No description provided'}
@@ -149,140 +164,160 @@ export function ProjectDetail() {
             </Link>
           </div>
         </div>
+        <Separator className='my-4 lg:my-6' />
+        <div className='h-full space-y-6'>
+          {/* Header */}
 
-        <Tabs defaultValue='overview' className='h-full'>
-          <TabsList>
-            <TabsTrigger value='overview'>Overview</TabsTrigger>
-            <TabsTrigger value='tasks'>Tasks</TabsTrigger>
-          </TabsList>
+          <Tabs defaultValue='overview' className='h-full'>
+            <TabsList>
+              <TabsTrigger value='overview'>Overview</TabsTrigger>
+              <TabsTrigger value='tasks'>Tasks</TabsTrigger>
+            </TabsList>
 
-          <TabsContent value='overview' className='space-y-6'>
-            {/* Real-time Project Statistics */}
-            <RealTimeProjectStats 
-              projectId={projectId}
-              tasks={tasks}
-              className='mb-6'
-            />
-
-            {/* Project Info */}
-            <div className='grid gap-6 md:grid-cols-2'>
-              <Card>
-                <CardHeader>
-                  <CardTitle>Project Information</CardTitle>
-                </CardHeader>
-                <CardContent className='space-y-4'>
-                  <div className='flex items-center gap-2 text-sm'>
-                    <GitBranch className='text-muted-foreground h-4 w-4' />
-                    <span className='text-muted-foreground'>Repository:</span>
-                    <span className='truncate font-mono'>{project.repo_url}</span>
-                  </div>
-
-                  {project.git_enabled && (
-                    <>
-                      <div className='flex items-center gap-2 text-sm'>
-                        <span className='text-muted-foreground'>Git Repository:</span>
-                        <span className='truncate font-mono'>{project.repository_url}</span>
-                      </div>
-                      <div className='flex items-center gap-2 text-sm'>
-                        <span className='text-muted-foreground'>Main Branch:</span>
-                        <span className='font-mono'>{project.main_branch}</span>
-                      </div>
-                      <div className='flex items-center gap-2 text-sm'>
-                        <span className='text-muted-foreground'>Auth Method:</span>
-                        <Badge variant='outline'>{project.git_auth_method}</Badge>
-                      </div>
-                    </>
-                  )}
-
-                  <div className='flex items-center gap-2 text-sm'>
-                    <Calendar className='text-muted-foreground h-4 w-4' />
-                    <span className='text-muted-foreground'>Created:</span>
-                    <span>
-                      {formatDistanceToNow(new Date(project.created_at), {
-                        addSuffix: true,
-                      })}
-                    </span>
-                  </div>
-                  <div className='flex items-center gap-2 text-sm'>
-                    <Calendar className='text-muted-foreground h-4 w-4' />
-                    <span className='text-muted-foreground'>Updated:</span>
-                    <span>
-                      {formatDistanceToNow(new Date(project.updated_at), {
-                        addSuffix: true,
-                      })}
-                    </span>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Git Status Card */}
-              <GitStatusCard 
-                projectId={projectId} 
-                gitEnabled={project.git_enabled}
+            <TabsContent value='overview' className='space-y-6'>
+              {/* Real-time Project Statistics */}
+              <RealTimeProjectStats
+                projectId={projectId}
+                tasks={tasks}
+                className='mb-6'
               />
 
-              <Card>
-                <CardHeader>
-                  <CardTitle>Real-time Activity</CardTitle>
-                  <CardDescription>
-                    Live project activity and collaboration
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className='space-y-4'>
-                  <CompactProjectStats projectId={projectId} tasks={tasks} />
-                  
-                  <div className='pt-2 border-t'>
-                    <UserPresence 
-                      projectId={projectId} 
-                      showDetails={true} 
-                      maxAvatars={5} 
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+              {/* Project Info */}
+              <div className='grid gap-6 md:grid-cols-2'>
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Project Information</CardTitle>
+                  </CardHeader>
+                  <CardContent className='space-y-4'>
+                    <div className='flex items-center gap-2 text-sm'>
+                      <GitBranch className='text-muted-foreground h-4 w-4' />
+                      <span className='text-muted-foreground'>Repository:</span>
+                      <span className='truncate font-mono'>
+                        {project.repo_url}
+                      </span>
+                    </div>
 
-            {/* Fallback to original statistics if real-time data is not available */}
-            {!tasks.length && statistics && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Task Distribution</CardTitle>
-                  <CardDescription>Overview of tasks by status</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className='grid gap-4 md:grid-cols-4 lg:grid-cols-7'>
-                    {Object.entries(statistics.tasks_by_status).map(
-                      ([status, count]) => {
-                        const config =
-                          statusConfig[status as keyof typeof statusConfig]
-                        const Icon = config.icon
-
-                        return (
-                          <div key={status} className='space-y-2 text-center'>
-                            <div
-                              className={`mx-auto h-8 w-8 rounded-full ${config.color} flex items-center justify-center`}
-                            >
-                              <Icon className='h-4 w-4 text-white' />
-                            </div>
-                            <div className='text-2xl font-bold'>{count}</div>
-                            <div className='text-muted-foreground text-xs'>
-                              {config.label}
-                            </div>
-                          </div>
-                        )
-                      }
+                    {project.git_enabled && (
+                      <>
+                        <div className='flex items-center gap-2 text-sm'>
+                          <span className='text-muted-foreground'>
+                            Git Repository:
+                          </span>
+                          <span className='truncate font-mono'>
+                            {project.repository_url}
+                          </span>
+                        </div>
+                        <div className='flex items-center gap-2 text-sm'>
+                          <span className='text-muted-foreground'>
+                            Main Branch:
+                          </span>
+                          <span className='font-mono'>
+                            {project.main_branch}
+                          </span>
+                        </div>
+                        <div className='flex items-center gap-2 text-sm'>
+                          <span className='text-muted-foreground'>
+                            Auth Method:
+                          </span>
+                          <Badge variant='outline'>
+                            {project.git_auth_method}
+                          </Badge>
+                        </div>
+                      </>
                     )}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-          </TabsContent>
 
-          <TabsContent value='tasks' className='h-full'>
-            <ProjectBoard projectId={projectId} />
-          </TabsContent>
-        </Tabs>
-      </div>
+                    <div className='flex items-center gap-2 text-sm'>
+                      <Calendar className='text-muted-foreground h-4 w-4' />
+                      <span className='text-muted-foreground'>Created:</span>
+                      <span>
+                        {formatDistanceToNow(new Date(project.created_at), {
+                          addSuffix: true,
+                        })}
+                      </span>
+                    </div>
+                    <div className='flex items-center gap-2 text-sm'>
+                      <Calendar className='text-muted-foreground h-4 w-4' />
+                      <span className='text-muted-foreground'>Updated:</span>
+                      <span>
+                        {formatDistanceToNow(new Date(project.updated_at), {
+                          addSuffix: true,
+                        })}
+                      </span>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Git Status Card */}
+                <GitStatusCard
+                  projectId={projectId}
+                  gitEnabled={project.git_enabled}
+                />
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Real-time Activity</CardTitle>
+                    <CardDescription>
+                      Live project activity and collaboration
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className='space-y-4'>
+                    <CompactProjectStats projectId={projectId} tasks={tasks} />
+
+                    <div className='border-t pt-2'>
+                      <UserPresence
+                        projectId={projectId}
+                        showDetails={true}
+                        maxAvatars={5}
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Fallback to original statistics if real-time data is not available */}
+              {!tasks.length && statistics && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Task Distribution</CardTitle>
+                    <CardDescription>
+                      Overview of tasks by status
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className='grid gap-4 md:grid-cols-4 lg:grid-cols-7'>
+                      {Object.entries(statistics.tasks_by_status).map(
+                        ([status, count]) => {
+                          const config =
+                            statusConfig[status as keyof typeof statusConfig]
+                          const Icon = config.icon
+
+                          return (
+                            <div key={status} className='space-y-2 text-center'>
+                              <div
+                                className={`mx-auto h-8 w-8 rounded-full ${config.color} flex items-center justify-center`}
+                              >
+                                <Icon className='h-4 w-4 text-white' />
+                              </div>
+                              <div className='text-2xl font-bold'>{count}</div>
+                              <div className='text-muted-foreground text-xs'>
+                                {config.label}
+                              </div>
+                            </div>
+                          )
+                        }
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </TabsContent>
+
+            <TabsContent value='tasks' className='h-full'>
+              <ProjectBoard projectId={projectId} />
+            </TabsContent>
+          </Tabs>
+        </div>
+      </Main>
     </>
   )
 }

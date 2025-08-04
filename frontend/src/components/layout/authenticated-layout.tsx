@@ -2,12 +2,12 @@ import Cookies from 'js-cookie'
 import { Outlet } from '@tanstack/react-router'
 import { cn } from '@/lib/utils'
 import { SearchProvider } from '@/context/search-context'
-import { SidebarProvider } from '@/components/ui/sidebar'
-import { AppSidebar } from '@/components/layout/app-sidebar'
-import SkipToMain from '@/components/skip-to-main'
 import { WebSocketProvider } from '@/context/websocket-context'
+import { SidebarProvider } from '@/components/ui/sidebar'
 import { WebSocketDebugPanel } from '@/components/debug/websocket-debug-panel'
+import { AppSidebar } from '@/components/layout/app-sidebar'
 import { RealTimeNotifications } from '@/components/notifications/real-time-notifications'
+import SkipToMain from '@/components/skip-to-main'
 
 interface Props {
   children?: React.ReactNode
@@ -15,13 +15,13 @@ interface Props {
 
 export function AuthenticatedLayout({ children }: Props) {
   const defaultOpen = Cookies.get('sidebar_state') !== 'false'
-  
+
   // Mock auth token - in real app this would come from auth context
   const authToken = Cookies.get('auth_token') || 'mock-token'
-  
+
   return (
     <SearchProvider>
-      <WebSocketProvider 
+      <WebSocketProvider
         authToken={authToken}
         autoConnect={true}
         onTaskCreated={(task) => {
@@ -64,13 +64,13 @@ export function AuthenticatedLayout({ children }: Props) {
             )}
           >
             {children ? children : <Outlet />}
-          
-          {/* Global Real-time Notifications */}
-          <RealTimeNotifications 
-            enableToastNotifications={true}
-            enableBrowserNotifications={false}
-            enableSound={false}
-          />
+
+            {/* Global Real-time Notifications */}
+            <RealTimeNotifications
+              enableToastNotifications={true}
+              enableBrowserNotifications={false}
+              enableSound={false}
+            />
           </div>
           {/* WebSocket Debug Panel - only in development */}
           {import.meta.env.DEV && <WebSocketDebugPanel />}
