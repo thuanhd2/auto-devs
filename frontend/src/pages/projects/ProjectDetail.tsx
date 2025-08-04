@@ -29,6 +29,7 @@ import { Progress } from '@/components/ui/progress'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ProjectBoard } from '@/components/kanban/project-board'
+import { GitStatusCard } from '@/components/kanban/git-status-card'
 
 const statusConfig = {
   TODO: { label: 'To Do', icon: Clock, color: 'bg-slate-500' },
@@ -176,6 +177,23 @@ export function ProjectDetail() {
                     <span className='truncate font-mono'>{project.repo_url}</span>
                   </div>
 
+                  {project.git_enabled && (
+                    <>
+                      <div className='flex items-center gap-2 text-sm'>
+                        <span className='text-muted-foreground'>Git Repository:</span>
+                        <span className='truncate font-mono'>{project.repository_url}</span>
+                      </div>
+                      <div className='flex items-center gap-2 text-sm'>
+                        <span className='text-muted-foreground'>Main Branch:</span>
+                        <span className='font-mono'>{project.main_branch}</span>
+                      </div>
+                      <div className='flex items-center gap-2 text-sm'>
+                        <span className='text-muted-foreground'>Auth Method:</span>
+                        <Badge variant='outline'>{project.git_auth_method}</Badge>
+                      </div>
+                    </>
+                  )}
+
                   <div className='flex items-center gap-2 text-sm'>
                     <Calendar className='text-muted-foreground h-4 w-4' />
                     <span className='text-muted-foreground'>Created:</span>
@@ -196,6 +214,12 @@ export function ProjectDetail() {
                   </div>
                 </CardContent>
               </Card>
+
+              {/* Git Status Card */}
+              <GitStatusCard 
+                projectId={projectId} 
+                gitEnabled={project.git_enabled}
+              />
 
               <Card>
                 <CardHeader>

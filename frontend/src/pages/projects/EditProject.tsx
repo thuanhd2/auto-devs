@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useNavigate, useParams } from '@tanstack/react-router'
 import type { UpdateProjectRequest } from '@/types/project'
-import { ArrowLeft, GitBranch, Trash2, Info } from 'lucide-react'
+import { ArrowLeft, GitBranch, Trash2, Info, GitFork } from 'lucide-react'
 import {
   useProject,
   useUpdateProject,
@@ -29,31 +29,74 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Separator } from '@/components/ui/separator'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { SimpleConfirmDialog } from '@/components/simple-confirm-dialog'
 
-const updateProjectSchema = z.object({
-  name: z
-    .string()
-    .min(1, 'Project name is required')
-    .max(100, 'Project name must be less than 100 characters'),
-  description: z
-    .string()
-    .max(500, 'Description must be less than 500 characters')
-    .optional(),
-  repo_url: z
-    .string()
-    .min(1, 'Repository URL is required')
-    .refine((url) => {
-      try {
-        const parsedUrl = new URL(url)
-        return ['http:', 'https:', 'git:', 'ssh:'].includes(parsedUrl.protocol)
-      } catch {
-        return false
+const updateProjectSchema = z
+  .object({
+    name: z
+      .string()
+      .min(1, 'Project name is required')
+      .max(100, 'Project name must be less than 100 characters'),
+    description: z
+      .string()
+      .max(500, 'Description must be less than 500 characters')
+      .optional(),
+    repo_url: z
+      .string()
+      .min(1, 'Repository URL is required')
+      .refine((url) => {
+        try {
+          const parsedUrl = new URL(url)
+          return ['http:', 'https:', 'git:', 'ssh:'].includes(
+            parsedUrl.protocol
+          )
+        } catch {
+          return false
+        }
+      }, 'Please enter a valid repository URL'),
+
+    // Git-related fields
+    git_enabled: z.boolean(),
+    repository_url: z.string().optional(),
+    main_branch: z.string().optional(),
+    worktree_base_path: z.string().optional(),
+    git_auth_method: z.enum(['ssh', 'https']).optional(),
+  })
+  .refine(
+    (data) => {
+      // If Git is enabled, validate required Git fields
+      if (data.git_enabled) {
+        if (!data.repository_url) {
+          return false
+        }
+        if (!data.main_branch) {
+          return false
+        }
+        if (!data.worktree_base_path) {
+          return false
+        }
+        if (!data.git_auth_method) {
+          return false
+        }
       }
-    }, 'Please enter a valid repository URL'),
-})
+      return true
+    },
+    {
+      message: 'Git configuration is incomplete',
+      path: ['git_enabled'],
+    }
+  )
 
 type UpdateProjectFormData = z.infer<typeof updateProjectSchema>
 
@@ -72,8 +115,15 @@ export function EditProject() {
       name: '',
       description: '',
       repo_url: '',
+      git_enabled: false,
+      repository_url: '',
+      main_branch: 'main',
+      worktree_base_path: '',
+      git_auth_method: 'https',
     },
   })
+
+  const gitEnabled = form.watch('git_enabled')
 
   // Update form when project data loads
   useEffect(() => {
@@ -82,6 +132,12 @@ export function EditProject() {
         name: project.name,
         description: project.description || '',
         repo_url: project.repo_url,
+        git_enabled: project.git_enabled || false,
+        repository_url: project.repository_url || '',
+        main_branch: project.main_branch || 'main',
+        worktree_base_path: project.worktree_base_path || '',
+        git_auth_method:
+          (project.git_auth_method as 'ssh' | 'https') || 'https',
       })
     }
   }, [project, form])
@@ -91,6 +147,11 @@ export function EditProject() {
       name: data.name,
       description: data.description || undefined,
       repo_url: data.repo_url,
+      git_enabled: data.git_enabled,
+      repository_url: data.repository_url,
+      main_branch: data.main_branch,
+      worktree_base_path: data.worktree_base_path,
+      git_auth_method: data.git_auth_method,
     }
 
     try {
@@ -113,44 +174,38 @@ export function EditProject() {
   if (error) {
     return (
       <div className='flex h-full items-center justify-center'>
-        <div className='text-center'>
-          <h3 className='text-lg font-semibold'>Error loading project</h3>
-          <p className='text-muted-foreground mb-4'>
-            {error instanceof Error
-              ? error.message
-              : 'An unexpected error occurred'}
-          </p>
-          <Button
-            variant='outline'
-            onClick={() => navigate({ to: '/projects' })}
-          >
-            <ArrowLeft className='mr-2 h-4 w-4' />
-            Back to Projects
-          </Button>
-        </div>
+        <Alert className='max-w-md'>
+          <Info className='h-4 w-4' />
+          <AlertDescription>
+            Failed to load project. Please try again.
+          </AlertDescription>
+        </Alert>
       </div>
     )
   }
 
   if (isLoading) {
-    return <EditProjectSkeleton />
-  }
-
-  if (!project) {
     return (
-      <div className='flex h-full items-center justify-center'>
-        <div className='text-center'>
-          <h3 className='text-lg font-semibold'>Project not found</h3>
-          <p className='text-muted-foreground mb-4'>
-            The project you're trying to edit doesn't exist or has been deleted.
-          </p>
-          <Button
-            variant='outline'
-            onClick={() => navigate({ to: '/projects' })}
-          >
-            <ArrowLeft className='mr-2 h-4 w-4' />
-            Back to Projects
-          </Button>
+      <div className='h-full space-y-6'>
+        <div className='flex items-center gap-4'>
+          <Skeleton className='h-10 w-10' />
+          <div className='space-y-2'>
+            <Skeleton className='h-8 w-64' />
+            <Skeleton className='h-4 w-96' />
+          </div>
+        </div>
+        <div className='max-w-2xl'>
+          <Card>
+            <CardHeader>
+              <Skeleton className='h-6 w-48' />
+              <Skeleton className='h-4 w-96' />
+            </CardHeader>
+            <CardContent className='space-y-6'>
+              <Skeleton className='h-10 w-full' />
+              <Skeleton className='h-20 w-full' />
+              <Skeleton className='h-10 w-full' />
+            </CardContent>
+          </Card>
         </div>
       </div>
     )
@@ -159,30 +214,52 @@ export function EditProject() {
   return (
     <div className='h-full space-y-6'>
       {/* Header */}
-      <div className='flex items-center gap-4'>
-        <Button
-          variant='ghost'
-          size='icon'
-          onClick={() =>
-            navigate({ to: '/projects/$projectId', params: { projectId } })
-          }
-        >
-          <ArrowLeft className='h-4 w-4' />
-        </Button>
-        <div>
-          <h1 className='text-3xl font-bold'>Edit Project</h1>
-          <p className='text-muted-foreground'>
-            Update project settings and configuration
-          </p>
+      <div className='flex items-center justify-between'>
+        <div className='flex items-center gap-4'>
+          <Button
+            variant='ghost'
+            size='icon'
+            onClick={() =>
+              navigate({ to: '/projects/$projectId', params: { projectId } })
+            }
+          >
+            <ArrowLeft className='h-4 w-4' />
+          </Button>
+          <div>
+            <h1 className='text-3xl font-bold'>Edit Project</h1>
+            <p className='text-muted-foreground'>
+              Update project settings and configuration
+            </p>
+          </div>
         </div>
+
+        <SimpleConfirmDialog
+          title='Delete Project'
+          description='Are you sure you want to delete this project? This action cannot be undone.'
+          onConfirm={onDelete}
+        >
+          <Button variant='destructive' disabled={deleteProject.isPending}>
+            {deleteProject.isPending ? (
+              'Deleting...'
+            ) : (
+              <>
+                <Trash2 className='mr-2 h-4 w-4' />
+                Delete Project
+              </>
+            )}
+          </Button>
+        </SimpleConfirmDialog>
       </div>
 
-      <div className='max-w-2xl space-y-6'>
+      <div className='max-w-2xl'>
         <Card>
           <CardHeader>
-            <CardTitle>Project Information</CardTitle>
+            <CardTitle className='flex items-center gap-2'>
+              <GitBranch className='h-5 w-5' />
+              Project Details
+            </CardTitle>
             <CardDescription>
-              Update basic information about your project and repository
+              Update your project settings and Git integration configuration
             </CardDescription>
           </CardHeader>
 
@@ -238,39 +315,154 @@ export function EditProject() {
                     <FormItem>
                       <FormLabel>Repository URL</FormLabel>
                       <FormControl>
-                        <div className='relative'>
-                          <GitBranch className='text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2' />
-                          <Input
-                            placeholder='https://github.com/username/repo.git'
-                            className='pl-9'
-                            {...field}
-                          />
-                        </div>
+                        <Input
+                          placeholder='https://github.com/user/repo'
+                          {...field}
+                        />
                       </FormControl>
                       <FormDescription>
-                        Git repository URL (HTTPS, SSH, or Git protocol)
+                        The URL of your project repository
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
 
-                <Alert>
-                  <Info className='h-4 w-4' />
-                  <AlertDescription>
-                    Changing the repository URL or branch may affect existing
-                    tasks and their associated branches.
-                  </AlertDescription>
-                </Alert>
+                <Separator />
 
-                <div className='flex gap-3 pt-6'>
-                  <Button
-                    type='submit'
-                    disabled={updateProject.isPending}
-                    className='flex-1 sm:flex-none'
-                  >
-                    {updateProject.isPending ? 'Updating...' : 'Update Project'}
-                  </Button>
+                {/* Git Integration Section */}
+                <div className='space-y-4'>
+                  <div className='flex items-center gap-2'>
+                    <GitFork className='h-4 w-4' />
+                    <h3 className='text-lg font-semibold'>Git Integration</h3>
+                  </div>
+
+                  <FormField
+                    control={form.control}
+                    name='git_enabled'
+                    render={({ field }) => (
+                      <FormItem className='flex flex-row items-center justify-between rounded-lg border p-4'>
+                        <div className='space-y-0.5'>
+                          <FormLabel className='text-base'>
+                            Enable Git Integration
+                          </FormLabel>
+                          <FormDescription>
+                            Enable advanced Git features for this project
+                          </FormDescription>
+                        </div>
+                        <FormControl>
+                          <Switch
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+
+                  {gitEnabled && (
+                    <div className='space-y-4 rounded-lg border p-4'>
+                      <FormField
+                        control={form.control}
+                        name='repository_url'
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Git Repository URL</FormLabel>
+                            <FormControl>
+                              <Input
+                                placeholder='https://github.com/user/repo.git'
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormDescription>
+                              The Git repository URL (HTTPS or SSH)
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <div className='grid grid-cols-2 gap-4'>
+                        <FormField
+                          control={form.control}
+                          name='main_branch'
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Main Branch</FormLabel>
+                              <FormControl>
+                                <Input placeholder='main' {...field} />
+                              </FormControl>
+                              <FormDescription>
+                                Default branch name
+                              </FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name='git_auth_method'
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Authentication Method</FormLabel>
+                              <Select
+                                onValueChange={field.onChange}
+                                defaultValue={field.value}
+                              >
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder='Select auth method' />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  <SelectItem value='https'>HTTPS</SelectItem>
+                                  <SelectItem value='ssh'>SSH</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <FormDescription>
+                                Choose authentication method
+                              </FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+
+                      <FormField
+                        control={form.control}
+                        name='worktree_base_path'
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Worktree Base Path</FormLabel>
+                            <FormControl>
+                              <Input
+                                placeholder='/tmp/projects/repo'
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormDescription>
+                              Base path for Git worktree operations
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <Alert>
+                        <Info className='h-4 w-4' />
+                        <AlertDescription>
+                          Git integration requires proper authentication setup.
+                          Make sure you have SSH keys configured for SSH
+                          authentication or use HTTPS with appropriate
+                          credentials.
+                        </AlertDescription>
+                      </Alert>
+                    </div>
+                  )}
+                </div>
+
+                <div className='flex gap-4'>
                   <Button
                     type='button'
                     variant='outline'
@@ -280,87 +472,15 @@ export function EditProject() {
                         params: { projectId },
                       })
                     }
-                    disabled={updateProject.isPending}
                   >
                     Cancel
+                  </Button>
+                  <Button type='submit' disabled={updateProject.isPending}>
+                    {updateProject.isPending ? 'Saving...' : 'Save Changes'}
                   </Button>
                 </div>
               </form>
             </Form>
-          </CardContent>
-        </Card>
-
-        {/* Danger Zone */}
-        <Card className='border-destructive'>
-          <CardHeader>
-            <CardTitle className='text-destructive'>Danger Zone</CardTitle>
-            <CardDescription>
-              Irreversible and destructive actions
-            </CardDescription>
-          </CardHeader>
-
-          <CardContent>
-            <div className='flex items-center justify-between rounded-lg border p-4'>
-              <div>
-                <h4 className='font-medium'>Delete Project</h4>
-                <p className='text-muted-foreground text-sm'>
-                  Permanently delete this project and all associated tasks
-                </p>
-              </div>
-              <SimpleConfirmDialog
-                title='Delete Project'
-                description={`Are you sure you want to delete "${project.name}"? This action cannot be undone and will permanently delete all tasks, branches, and associated data.`}
-                onConfirm={onDelete}
-                destructive
-              >
-                <Button
-                  variant='destructive'
-                  size='sm'
-                  disabled={deleteProject.isPending}
-                >
-                  <Trash2 className='mr-2 h-4 w-4' />
-                  {deleteProject.isPending ? 'Deleting...' : 'Delete'}
-                </Button>
-              </SimpleConfirmDialog>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
-  )
-}
-
-function EditProjectSkeleton() {
-  return (
-    <div className='h-full space-y-6'>
-      <div className='flex items-center gap-4'>
-        <Skeleton className='h-10 w-10' />
-        <div className='space-y-2'>
-          <Skeleton className='h-8 w-48' />
-          <Skeleton className='h-4 w-64' />
-        </div>
-      </div>
-
-      <div className='max-w-2xl space-y-6'>
-        <Card>
-          <CardHeader>
-            <Skeleton className='h-6 w-40' />
-            <Skeleton className='h-4 w-64' />
-          </CardHeader>
-
-          <CardContent className='space-y-6'>
-            {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className='space-y-2'>
-                <Skeleton className='h-4 w-24' />
-                <Skeleton className='h-10 w-full' />
-                <Skeleton className='h-4 w-48' />
-              </div>
-            ))}
-
-            <div className='flex gap-3 pt-6'>
-              <Skeleton className='h-10 w-32' />
-              <Skeleton className='h-10 w-20' />
-            </div>
           </CardContent>
         </Card>
       </div>
