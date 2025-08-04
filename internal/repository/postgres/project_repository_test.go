@@ -20,9 +20,9 @@ func TestProjectRepository_Create(t *testing.T) {
 	ctx := context.Background()
 
 	project := &entity.Project{
-		Name:        "Test Project",
-		Description: "Test Description",
-		RepoURL:     "https://github.com/test/repo.git",
+		Name:          "Test Project",
+		Description:   "Test Description",
+		RepositoryURL: "https://github.com/test/repo.git",
 	}
 
 	err := repo.Create(ctx, project)
@@ -43,10 +43,10 @@ func TestProjectRepository_CreateWithExistingID(t *testing.T) {
 
 	projectID := uuid.New()
 	project := &entity.Project{
-		ID:          projectID,
-		Name:        "Test Project",
-		Description: "Test Description",
-		RepoURL:     "https://github.com/test/repo.git",
+		ID:            projectID,
+		Name:          "Test Project",
+		Description:   "Test Description",
+		RepositoryURL: "https://github.com/test/repo.git",
 	}
 
 	err := repo.Create(ctx, project)
@@ -66,7 +66,7 @@ func TestProjectRepository_GetByID(t *testing.T) {
 	project := &entity.Project{
 		Name:        "Test Project",
 		Description: "Test Description",
-		RepoURL:     "https://github.com/test/repo.git",
+		RepositoryURL:     "https://github.com/test/repo.git",
 	}
 	err := repo.Create(ctx, project)
 	require.NoError(t, err)
@@ -78,7 +78,7 @@ func TestProjectRepository_GetByID(t *testing.T) {
 	assert.Equal(t, project.ID, retrieved.ID)
 	assert.Equal(t, project.Name, retrieved.Name)
 	assert.Equal(t, project.Description, retrieved.Description)
-	assert.Equal(t, project.RepoURL, retrieved.RepoURL)
+	assert.Equal(t, project.RepositoryURL, retrieved.RepositoryURL)
 }
 
 func TestProjectRepository_GetByID_NotFound(t *testing.T) {
@@ -104,12 +104,12 @@ func TestProjectRepository_GetAll(t *testing.T) {
 	project1 := &entity.Project{
 		Name:        "Project 1",
 		Description: "Description 1",
-		RepoURL:     "https://github.com/test/repo1.git",
+		RepositoryURL:     "https://github.com/test/repo1.git",
 	}
 	project2 := &entity.Project{
 		Name:        "Project 2",
 		Description: "Description 2",
-		RepoURL:     "https://github.com/test/repo2.git",
+		RepositoryURL:     "https://github.com/test/repo2.git",
 	}
 
 	err := repo.Create(ctx, project1)
@@ -138,7 +138,7 @@ func TestProjectRepository_Update(t *testing.T) {
 	project := &entity.Project{
 		Name:        "Original Name",
 		Description: "Original Description",
-		RepoURL:     "https://github.com/test/original.git",
+		RepositoryURL:     "https://github.com/test/original.git",
 	}
 	err := repo.Create(ctx, project)
 	require.NoError(t, err)
@@ -149,7 +149,7 @@ func TestProjectRepository_Update(t *testing.T) {
 	time.Sleep(10 * time.Millisecond) // Ensure different timestamp
 	project.Name = "Updated Name"
 	project.Description = "Updated Description"
-	project.RepoURL = "https://github.com/test/updated.git"
+	project.RepositoryURL = "https://github.com/test/updated.git"
 
 	err = repo.Update(ctx, project)
 	require.NoError(t, err)
@@ -163,7 +163,7 @@ func TestProjectRepository_Update(t *testing.T) {
 
 	assert.Equal(t, "Updated Name", retrieved.Name)
 	assert.Equal(t, "Updated Description", retrieved.Description)
-	assert.Equal(t, "https://github.com/test/updated.git", retrieved.RepoURL)
+	assert.Equal(t, "https://github.com/test/updated.git", retrieved.RepositoryURL)
 }
 
 func TestProjectRepository_Update_NotFound(t *testing.T) {
@@ -177,7 +177,7 @@ func TestProjectRepository_Update_NotFound(t *testing.T) {
 		ID:          uuid.New(),
 		Name:        "Non-existent",
 		Description: "Description",
-		RepoURL:     "https://github.com/test/repo.git",
+		RepositoryURL:     "https://github.com/test/repo.git",
 	}
 
 	err := repo.Update(ctx, project)
@@ -198,7 +198,7 @@ func TestProjectRepository_Delete(t *testing.T) {
 	project := &entity.Project{
 		Name:        "Test Project",
 		Description: "Test Description",
-		RepoURL:     "https://github.com/test/repo.git",
+		RepositoryURL:     "https://github.com/test/repo.git",
 	}
 	err := repo.Create(ctx, project)
 	require.NoError(t, err)
@@ -236,7 +236,7 @@ func TestProjectRepository_GetWithTaskCount(t *testing.T) {
 	project := &entity.Project{
 		Name:        "Test Project",
 		Description: "Test Description",
-		RepoURL:     "https://github.com/test/repo.git",
+		RepositoryURL:     "https://github.com/test/repo.git",
 	}
 	err := projectRepo.Create(ctx, project)
 	require.NoError(t, err)
@@ -280,7 +280,7 @@ func TestProjectRepository_GetWithTaskCount_NoTasks(t *testing.T) {
 	project := &entity.Project{
 		Name:        "Test Project",
 		Description: "Test Description",
-		RepoURL:     "https://github.com/test/repo.git",
+		RepositoryURL:     "https://github.com/test/repo.git",
 	}
 	err := repo.Create(ctx, project)
 	require.NoError(t, err)
@@ -305,7 +305,7 @@ func TestProjectRepository_Delete_WithTasks(t *testing.T) {
 	project := &entity.Project{
 		Name:        "Project with Tasks",
 		Description: "Test Description",
-		RepoURL:     "https://github.com/test/repo.git",
+		RepositoryURL:     "https://github.com/test/repo.git",
 	}
 	err := projectRepo.Create(ctx, project)
 	require.NoError(t, err)
@@ -345,9 +345,9 @@ func TestProjectRepository_GetAllWithParams(t *testing.T) {
 
 	// Create test projects
 	projects := []*entity.Project{
-		{Name: "Alpha Project", Description: "First project", RepoURL: "https://github.com/test/alpha.git"},
-		{Name: "Beta Search", Description: "Second project", RepoURL: "https://github.com/test/beta.git"},
-		{Name: "Gamma Project", Description: "Third search term", RepoURL: "https://github.com/test/gamma.git"},
+		{Name: "Alpha Project", Description: "First project", RepositoryURL: "https://github.com/test/alpha.git"},
+		{Name: "Beta Search", Description: "Second project", RepositoryURL: "https://github.com/test/beta.git"},
+		{Name: "Gamma Project", Description: "Third search term", RepositoryURL: "https://github.com/test/gamma.git"},
 	}
 
 	for _, p := range projects {
@@ -413,7 +413,7 @@ func TestProjectRepository_CheckNameExists(t *testing.T) {
 	project := &entity.Project{
 		Name:        "Unique Project",
 		Description: "Test Description",
-		RepoURL:     "https://github.com/test/repo.git",
+		RepositoryURL:     "https://github.com/test/repo.git",
 	}
 	err := repo.Create(ctx, project)
 	require.NoError(t, err)
@@ -449,7 +449,7 @@ func TestProjectRepository_GetTaskStatistics(t *testing.T) {
 	project := &entity.Project{
 		Name:        "Stats Project",
 		Description: "Test Description",
-		RepoURL:     "https://github.com/test/repo.git",
+		RepositoryURL:     "https://github.com/test/repo.git",
 	}
 	err := projectRepo.Create(ctx, project)
 	require.NoError(t, err)
@@ -487,7 +487,7 @@ func TestProjectRepository_Archive_Restore(t *testing.T) {
 	project := &entity.Project{
 		Name:        "Archive Project",
 		Description: "Test Description",
-		RepoURL:     "https://github.com/test/repo.git",
+		RepositoryURL:     "https://github.com/test/repo.git",
 	}
 	err := repo.Create(ctx, project)
 	require.NoError(t, err)
@@ -522,7 +522,7 @@ func TestProjectRepository_GetLastActivityAt(t *testing.T) {
 	project := &entity.Project{
 		Name:        "Activity Project",
 		Description: "Test Description",
-		RepoURL:     "https://github.com/test/repo.git",
+		RepositoryURL:     "https://github.com/test/repo.git",
 	}
 	err := projectRepo.Create(ctx, project)
 	require.NoError(t, err)

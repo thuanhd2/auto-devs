@@ -27,32 +27,20 @@ type ProjectUsecase interface {
 	CheckNameExists(ctx context.Context, name string, excludeID *uuid.UUID) (bool, error)
 	GetSettings(ctx context.Context, projectID uuid.UUID) (*entity.ProjectSettings, error)
 	UpdateSettings(ctx context.Context, projectID uuid.UUID, settings *entity.ProjectSettings) (*entity.ProjectSettings, error)
+	UpdateRepositoryURL(ctx context.Context, projectID uuid.UUID, repositoryURL string) error
 }
 
 type CreateProjectRequest struct {
-	Name        string `json:"name" binding:"required"`
-	Description string `json:"description"`
-	RepoURL     string `json:"repo_url" binding:"required"`
-
-	// Git-related fields
-	RepositoryURL    string `json:"repository_url"`
-	MainBranch       string `json:"main_branch"`
-	WorktreeBasePath string `json:"worktree_base_path"`
-	GitAuthMethod    string `json:"git_auth_method"`
-	GitEnabled       bool   `json:"git_enabled"`
+	Name             string `json:"name" binding:"required"`
+	Description      string `json:"description"`
+	WorktreeBasePath string `json:"worktree_base_path" binding:"required"`
 }
 
 type UpdateProjectRequest struct {
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	RepoURL     string `json:"repo_url"`
-
-	// Git-related fields
+	Name             string `json:"name"`
+	Description      string `json:"description"`
 	RepositoryURL    string `json:"repository_url"`
-	MainBranch       string `json:"main_branch"`
 	WorktreeBasePath string `json:"worktree_base_path"`
-	GitAuthMethod    string `json:"git_auth_method"`
-	GitEnabled       bool   `json:"git_enabled"`
 }
 
 type GetProjectsParams struct {
@@ -149,12 +137,19 @@ func validateRepoURL(repoURL string) error {
 type projectUsecase struct {
 	projectRepo  repository.ProjectRepository
 	auditUsecase AuditUsecase
+	gitService   interface {
+		UpdateProjectRepositoryURL(ctx context.Context, projectID uuid.UUID, worktreeBasePath string, updateRepoURL func(uuid.UUID, string) error) error
+	}
 }
 
-func NewProjectUsecase(projectRepo repository.ProjectRepository, auditUsecase AuditUsecase) ProjectUsecase {
+func NewProjectUsecase(projectRepo repository.ProjectRepository, auditUsecase AuditUsecase, gitService interface {
+	UpdateProjectRepositoryURL(ctx context.Context, projectID uuid.UUID, worktreeBasePath string, updateRepoURL func(uuid.UUID, string) error) error
+},
+) ProjectUsecase {
 	return &projectUsecase{
 		projectRepo:  projectRepo,
 		auditUsecase: auditUsecase,
+		gitService:   gitService,
 	}
 }
 
@@ -164,9 +159,6 @@ func (u *projectUsecase) Create(ctx context.Context, req CreateProjectRequest) (
 		return nil, err
 	}
 	if err := validateDescription(req.Description); err != nil {
-		return nil, err
-	}
-	if err := validateRepoURL(req.RepoURL); err != nil {
 		return nil, err
 	}
 
@@ -180,19 +172,13 @@ func (u *projectUsecase) Create(ctx context.Context, req CreateProjectRequest) (
 	}
 
 	project := &entity.Project{
-		ID:          uuid.New(),
-		Name:        strings.TrimSpace(req.Name),
-		Description: strings.TrimSpace(req.Description),
-		RepoURL:     strings.TrimSpace(req.RepoURL),
-		CreatedAt:   time.Now(),
-		UpdatedAt:   time.Now(),
-
-		// Git-related fields
-		RepositoryURL:    strings.TrimSpace(req.RepositoryURL),
-		MainBranch:       strings.TrimSpace(req.MainBranch),
+		ID:               uuid.New(),
+		Name:             strings.TrimSpace(req.Name),
+		Description:      strings.TrimSpace(req.Description),
+		RepositoryURL:    "", // Will be populated by git service later
 		WorktreeBasePath: strings.TrimSpace(req.WorktreeBasePath),
-		GitAuthMethod:    strings.TrimSpace(req.GitAuthMethod),
-		GitEnabled:       req.GitEnabled,
+		CreatedAt:        time.Now(),
+		UpdatedAt:        time.Now(),
 	}
 
 	if err := u.projectRepo.Create(ctx, project); err != nil {
@@ -202,6 +188,17 @@ func (u *projectUsecase) Create(ctx context.Context, req CreateProjectRequest) (
 	// Log the create operation
 	if u.auditUsecase != nil {
 		_ = u.auditUsecase.LogProjectOperation(ctx, entity.AuditActionCreate, project.ID, nil, project, fmt.Sprintf("Created project '%s'", project.Name))
+	}
+
+	// Try to automatically update repository URL from Git
+	// Use background context for async operation
+	bgCtx := context.Background()
+	err = u.gitService.UpdateProjectRepositoryURL(bgCtx, project.ID, project.WorktreeBasePath, func(projectID uuid.UUID, repoURL string) error {
+		return u.UpdateRepositoryURL(bgCtx, projectID, repoURL)
+	})
+	if err != nil {
+		// Log error but don't fail the project creation
+		fmt.Printf("Failed to auto-update repository URL for project %s: %v\n", project.ID, err)
 	}
 
 	return project, nil
@@ -279,29 +276,15 @@ func (u *projectUsecase) Update(ctx context.Context, id uuid.UUID, req UpdatePro
 		}
 		oldProject.Description = strings.TrimSpace(req.Description)
 	}
-	if req.RepoURL != "" {
-		if err := validateRepoURL(req.RepoURL); err != nil {
+	if req.RepositoryURL != "" {
+		if err := validateRepoURL(req.RepositoryURL); err != nil {
 			return nil, err
 		}
-		oldProject.RepoURL = strings.TrimSpace(req.RepoURL)
-	}
-
-	// Update Git-related fields
-	if req.RepositoryURL != "" {
 		oldProject.RepositoryURL = strings.TrimSpace(req.RepositoryURL)
-	}
-	if req.MainBranch != "" {
-		oldProject.MainBranch = strings.TrimSpace(req.MainBranch)
 	}
 	if req.WorktreeBasePath != "" {
 		oldProject.WorktreeBasePath = strings.TrimSpace(req.WorktreeBasePath)
 	}
-	if req.GitAuthMethod != "" {
-		oldProject.GitAuthMethod = strings.TrimSpace(req.GitAuthMethod)
-	}
-	// GitEnabled is a boolean, so we need to check if it's explicitly set
-	// For now, we'll always update it if provided
-	oldProject.GitEnabled = req.GitEnabled
 
 	oldProject.UpdatedAt = time.Now()
 
@@ -477,4 +460,26 @@ func (u *projectUsecase) UpdateSettings(ctx context.Context, projectID uuid.UUID
 	}
 
 	return settings, nil
+}
+
+func (u *projectUsecase) UpdateRepositoryURL(ctx context.Context, projectID uuid.UUID, repositoryURL string) error {
+	project, err := u.projectRepo.GetByID(ctx, projectID)
+	if err != nil {
+		return fmt.Errorf("failed to get project: %w", err)
+	}
+
+	// Update repository URL
+	project.RepositoryURL = repositoryURL
+	project.UpdatedAt = time.Now()
+
+	if err := u.projectRepo.Update(ctx, project); err != nil {
+		return fmt.Errorf("failed to update project repository URL: %w", err)
+	}
+
+	// Log the update operation
+	if u.auditUsecase != nil {
+		_ = u.auditUsecase.LogProjectOperation(ctx, entity.AuditActionUpdate, project.ID, nil, project, fmt.Sprintf("Updated repository URL to '%s'", repositoryURL))
+	}
+
+	return nil
 }

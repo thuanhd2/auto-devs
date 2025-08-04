@@ -33,9 +33,9 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Header } from '@/components/layout/header'
 import { Main } from '@/components/layout/main'
 import { ProfileDropdown } from '@/components/profile-dropdown'
+import { ProjectCreateModal } from '@/components/project-create-modal'
 import { Search as SearchComponent } from '@/components/search'
 import { ThemeSwitch } from '@/components/theme-switch'
-import { ProjectCreateModal } from '@/components/project-create-modal'
 
 export function ProjectList() {
   const [search, setSearch] = useState('')
@@ -182,9 +182,9 @@ export function ProjectList() {
         </div>
       </Main>
 
-      <ProjectCreateModal 
-        open={createModalOpen} 
-        onOpenChange={setCreateModalOpen} 
+      <ProjectCreateModal
+        open={createModalOpen}
+        onOpenChange={setCreateModalOpen}
       />
     </>
   )
@@ -210,18 +210,10 @@ function ProjectCard({ project }: { project: any }) {
         </CardHeader>
 
         <CardContent className='space-y-4'>
-          <div className='text-muted-foreground flex items-center gap-2 text-sm'>
-            <GitBranch className='h-4 w-4' />
-            <span className='truncate'>{project.repo_url}</span>
-          </div>
-
-          {project.git_enabled && (
+          {project.repository_url && (
             <div className='text-muted-foreground flex items-center gap-2 text-sm'>
-              <GitFork className='h-4 w-4' />
+              <GitBranch className='h-4 w-4' />
               <span className='truncate'>{project.repository_url}</span>
-              <Badge variant='outline' className='ml-auto'>
-                Git Enabled
-              </Badge>
             </div>
           )}
 
@@ -238,12 +230,6 @@ function ProjectCard({ project }: { project: any }) {
           <div className='flex gap-2'>
             <Badge variant='outline'>0 tasks</Badge>
             <Badge variant='outline'>0 active</Badge>
-            {project.git_enabled && (
-              <Badge variant='secondary'>
-                <GitFork className='mr-1 h-3 w-3' />
-                Git
-              </Badge>
-            )}
           </div>
         </CardContent>
       </Card>

@@ -7,9 +7,6 @@ import type {
   ProjectsResponse,
   ProjectFilters,
   ProjectStatistics,
-  GitProjectValidationRequest,
-  GitProjectValidationResponse,
-  GitProjectStatusResponse,
 } from '@/types/project'
 
 const api = axios.create({
@@ -20,7 +17,7 @@ const api = axios.create({
 export const projectsApi = {
   async getProjects(filters?: ProjectFilters): Promise<ProjectsResponse> {
     const params = new URLSearchParams()
-    
+
     if (filters) {
       if (filters.search) {
         params.append('search', filters.search)
@@ -33,7 +30,9 @@ export const projectsApi = {
       }
     }
 
-    const response = await api.get(`${API_ENDPOINTS.PROJECTS}?${params.toString()}`)
+    const response = await api.get(
+      `${API_ENDPOINTS.PROJECTS}?${params.toString()}`
+    )
     return response.data
   },
 
@@ -43,7 +42,9 @@ export const projectsApi = {
   },
 
   async getProjectStatistics(projectId: string): Promise<ProjectStatistics> {
-    const response = await api.get(`${API_ENDPOINTS.PROJECTS}/${projectId}/statistics`)
+    const response = await api.get(
+      `${API_ENDPOINTS.PROJECTS}/${projectId}/statistics`
+    )
     return response.data
   },
 
@@ -52,31 +53,18 @@ export const projectsApi = {
     return response.data
   },
 
-  async updateProject(projectId: string, updates: UpdateProjectRequest): Promise<Project> {
-    const response = await api.put(`${API_ENDPOINTS.PROJECTS}/${projectId}`, updates)
+  async updateProject(
+    projectId: string,
+    updates: UpdateProjectRequest
+  ): Promise<Project> {
+    const response = await api.put(
+      `${API_ENDPOINTS.PROJECTS}/${projectId}`,
+      updates
+    )
     return response.data
   },
 
   async deleteProject(projectId: string): Promise<void> {
     await api.delete(`${API_ENDPOINTS.PROJECTS}/${projectId}`)
-  },
-
-  // Git-related endpoints
-  async validateGitProject(request: GitProjectValidationRequest): Promise<GitProjectValidationResponse> {
-    const response = await api.post(`${API_ENDPOINTS.PROJECTS}/validate-git`, request)
-    return response.data
-  },
-
-  async getGitProjectStatus(projectId: string): Promise<GitProjectStatusResponse> {
-    const response = await api.get(`${API_ENDPOINTS.PROJECTS}/${projectId}/git-status`)
-    return response.data
-  },
-
-  async testGitConnection(projectId: string): Promise<void> {
-    await api.post(`${API_ENDPOINTS.PROJECTS}/${projectId}/test-git-connection`)
-  },
-
-  async setupGitProject(projectId: string): Promise<void> {
-    await api.post(`${API_ENDPOINTS.PROJECTS}/${projectId}/setup-git`)
   },
 }

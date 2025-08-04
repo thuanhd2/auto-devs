@@ -633,6 +633,53 @@ func (_c *ProjectUsecaseMock_Update_Call) RunAndReturn(run func(ctx context.Cont
 	return _c
 }
 
+// UpdateRepositoryURL provides a mock function for the type ProjectUsecaseMock
+func (_mock *ProjectUsecaseMock) UpdateRepositoryURL(ctx context.Context, projectID uuid.UUID, repositoryURL string) error {
+	ret := _mock.Called(ctx, projectID, repositoryURL)
+
+	if len(ret) == 0 {
+		panic("no return value specified for UpdateRepositoryURL")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, string) error); ok {
+		r0 = returnFunc(ctx, projectID, repositoryURL)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// ProjectUsecaseMock_UpdateRepositoryURL_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UpdateRepositoryURL'
+type ProjectUsecaseMock_UpdateRepositoryURL_Call struct {
+	*mock.Call
+}
+
+// UpdateRepositoryURL is a helper method to define mock.On call
+//   - ctx
+//   - projectID
+//   - repositoryURL
+func (_e *ProjectUsecaseMock_Expecter) UpdateRepositoryURL(ctx interface{}, projectID interface{}, repositoryURL interface{}) *ProjectUsecaseMock_UpdateRepositoryURL_Call {
+	return &ProjectUsecaseMock_UpdateRepositoryURL_Call{Call: _e.mock.On("UpdateRepositoryURL", ctx, projectID, repositoryURL)}
+}
+
+func (_c *ProjectUsecaseMock_UpdateRepositoryURL_Call) Run(run func(ctx context.Context, projectID uuid.UUID, repositoryURL string)) *ProjectUsecaseMock_UpdateRepositoryURL_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(uuid.UUID), args[2].(string))
+	})
+	return _c
+}
+
+func (_c *ProjectUsecaseMock_UpdateRepositoryURL_Call) Return(err error) *ProjectUsecaseMock_UpdateRepositoryURL_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *ProjectUsecaseMock_UpdateRepositoryURL_Call) RunAndReturn(run func(ctx context.Context, projectID uuid.UUID, repositoryURL string) error) *ProjectUsecaseMock_UpdateRepositoryURL_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // UpdateSettings provides a mock function for the type ProjectUsecaseMock
 func (_mock *ProjectUsecaseMock) UpdateSettings(ctx context.Context, projectID uuid.UUID, settings *entity.ProjectSettings) (*entity.ProjectSettings, error) {
 	ret := _mock.Called(ctx, projectID, settings)

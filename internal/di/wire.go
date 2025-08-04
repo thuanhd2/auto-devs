@@ -25,6 +25,7 @@ var ProviderSet = wire.NewSet(
 	postgres.NewAuditRepository,
 	// Service providers
 	ProvideGitManager,
+	ProvideProjectGitService,
 	ProvideIntegratedWorktreeService,
 	// Usecase providers
 	usecase.NewNotificationUsecase,
@@ -124,9 +125,14 @@ func ProvideIntegratedWorktreeService(cfg *config.Config, gitManager *git.GitMan
 	return worktreesvc.NewIntegratedWorktreeService(integratedConfig)
 }
 
+// ProvideProjectGitService provides a ProjectGitService instance
+func ProvideProjectGitService(gitManager *git.GitManager) git.ProjectGitServiceInterface {
+	return git.NewProjectGitService(gitManager)
+}
+
 // ProvideProjectUsecase provides a ProjectUsecase instance
-func ProvideProjectUsecase(projectRepo repository.ProjectRepository, auditUsecase usecase.AuditUsecase) usecase.ProjectUsecase {
-	return usecase.NewProjectUsecase(projectRepo, auditUsecase)
+func ProvideProjectUsecase(projectRepo repository.ProjectRepository, auditUsecase usecase.AuditUsecase, gitService git.ProjectGitServiceInterface) usecase.ProjectUsecase {
+	return usecase.NewProjectUsecase(projectRepo, auditUsecase, gitService)
 }
 
 // ProvideWorktreeUsecase provides a WorktreeUsecase instance

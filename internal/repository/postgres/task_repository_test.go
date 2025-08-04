@@ -16,7 +16,7 @@ func createTestProject(t *testing.T, projectRepo repository.ProjectRepository, c
 	project := &entity.Project{
 		Name:        "Test Project",
 		Description: "Test Description",
-		RepoURL:     "https://github.com/test/repo.git",
+		RepositoryURL:     "https://github.com/test/repo.git",
 	}
 	err := projectRepo.Create(ctx, project)
 	require.NoError(t, err)

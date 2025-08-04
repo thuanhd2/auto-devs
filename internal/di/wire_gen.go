@@ -31,12 +31,13 @@ func InitializeApp() (*App, error) {
 	worktreeRepository := ProvideWorktreeRepository(gormDB)
 	auditRepository := postgres.NewAuditRepository(gormDB)
 	auditUsecase := ProvideAuditUsecase(auditRepository)
-	projectUsecase := ProvideProjectUsecase(projectRepository, auditUsecase)
-	notificationUsecase := usecase.NewNotificationUsecase()
 	gitManager, err := ProvideGitManager(configConfig)
 	if err != nil {
 		return nil, err
 	}
+	projectGitServiceInterface := ProvideProjectGitService(gitManager)
+	projectUsecase := ProvideProjectUsecase(projectRepository, auditUsecase, projectGitServiceInterface)
+	notificationUsecase := usecase.NewNotificationUsecase()
 	integratedWorktreeService, err := ProvideIntegratedWorktreeService(configConfig, gitManager)
 	if err != nil {
 		return nil, err
@@ -51,6 +52,7 @@ func InitializeApp() (*App, error) {
 
 // ProviderSet is the Wire provider set for the entire application
 var ProviderSet = wire.NewSet(config.Load, ProvideGormDB, postgres.NewProjectRepository, postgres.NewTaskRepository, ProvideWorktreeRepository, postgres.NewAuditRepository, ProvideGitManager,
+	ProvideProjectGitService,
 	ProvideIntegratedWorktreeService, usecase.NewNotificationUsecase, ProvideAuditUsecase,
 	ProvideProjectUsecase,
 	ProvideWorktreeUsecase,
@@ -138,9 +140,14 @@ func ProvideIntegratedWorktreeService(cfg *config.Config, gitManager *git.GitMan
 	return worktree.NewIntegratedWorktreeService(integratedConfig)
 }
 
+// ProvideProjectGitService provides a ProjectGitService instance
+func ProvideProjectGitService(gitManager *git.GitManager) git.ProjectGitServiceInterface {
+	return git.NewProjectGitService(gitManager)
+}
+
 // ProvideProjectUsecase provides a ProjectUsecase instance
-func ProvideProjectUsecase(projectRepo repository.ProjectRepository, auditUsecase usecase.AuditUsecase) usecase.ProjectUsecase {
-	return usecase.NewProjectUsecase(projectRepo, auditUsecase)
+func ProvideProjectUsecase(projectRepo repository.ProjectRepository, auditUsecase usecase.AuditUsecase, gitService git.ProjectGitServiceInterface) usecase.ProjectUsecase {
+	return usecase.NewProjectUsecase(projectRepo, auditUsecase, gitService)
 }
 
 // ProvideWorktreeUsecase provides a WorktreeUsecase instance

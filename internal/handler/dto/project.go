@@ -10,46 +10,27 @@ import (
 
 // Project request DTOs
 type ProjectCreateRequest struct {
-	Name        string `json:"name" binding:"required,min=1,max=255" example:"My Project"`
-	Description string `json:"description" binding:"max=1000" example:"Project description"`
-	RepoURL     string `json:"repo_url" binding:"required,url,max=500" example:"https://github.com/user/repo"`
-
-	// Git-related fields
-	RepositoryURL    string `json:"repository_url,omitempty" binding:"omitempty,url,max=500" example:"https://github.com/user/repo.git"`
-	MainBranch       string `json:"main_branch,omitempty" binding:"omitempty,max=100" example:"main"`
-	WorktreeBasePath string `json:"worktree_base_path,omitempty" binding:"omitempty,max=500" example:"/tmp/projects/repo"`
-	GitAuthMethod    string `json:"git_auth_method,omitempty" binding:"omitempty,oneof=ssh https" example:"https"`
-	GitEnabled       bool   `json:"git_enabled,omitempty" example:"false"`
+	Name             string `json:"name" binding:"required,min=1,max=255" example:"My Project"`
+	Description      string `json:"description" binding:"max=1000" example:"Project description"`
+	WorktreeBasePath string `json:"worktree_base_path" binding:"required,max=500" example:"/tmp/projects/repo"`
 }
 
 type ProjectUpdateRequest struct {
-	Name        *string `json:"name,omitempty" binding:"omitempty,min=1,max=255" example:"Updated Project Name"`
-	Description *string `json:"description,omitempty" binding:"omitempty,max=1000" example:"Updated description"`
-	RepoURL     *string `json:"repo_url,omitempty" binding:"omitempty,url,max=500" example:"https://github.com/user/updated-repo"`
-
-	// Git-related fields
+	Name             *string `json:"name,omitempty" binding:"omitempty,min=1,max=255" example:"Updated Project Name"`
+	Description      *string `json:"description,omitempty" binding:"omitempty,max=1000" example:"Updated description"`
 	RepositoryURL    *string `json:"repository_url,omitempty" binding:"omitempty,url,max=500" example:"https://github.com/user/repo.git"`
-	MainBranch       *string `json:"main_branch,omitempty" binding:"omitempty,max=100" example:"main"`
 	WorktreeBasePath *string `json:"worktree_base_path,omitempty" binding:"omitempty,max=500" example:"/tmp/projects/repo"`
-	GitAuthMethod    *string `json:"git_auth_method,omitempty" binding:"omitempty,oneof=ssh https" example:"https"`
-	GitEnabled       *bool   `json:"git_enabled,omitempty" example:"false"`
 }
 
 // Project response DTOs
 type ProjectResponse struct {
-	ID          uuid.UUID `json:"id" example:"123e4567-e89b-12d3-a456-426614174000"`
-	Name        string    `json:"name" example:"My Project"`
-	Description string    `json:"description" example:"Project description"`
-	RepoURL     string    `json:"repo_url" example:"https://github.com/user/repo"`
-	CreatedAt   time.Time `json:"created_at" example:"2024-01-15T10:30:00Z"`
-	UpdatedAt   time.Time `json:"updated_at" example:"2024-01-15T10:30:00Z"`
-
-	// Git-related fields
-	RepositoryURL    string `json:"repository_url,omitempty" example:"https://github.com/user/repo.git"`
-	MainBranch       string `json:"main_branch,omitempty" example:"main"`
-	WorktreeBasePath string `json:"worktree_base_path,omitempty" example:"/tmp/projects/repo"`
-	GitAuthMethod    string `json:"git_auth_method,omitempty" example:"https"`
-	GitEnabled       bool   `json:"git_enabled" example:"false"`
+	ID               uuid.UUID `json:"id" example:"123e4567-e89b-12d3-a456-426614174000"`
+	Name             string    `json:"name" example:"My Project"`
+	Description      string    `json:"description" example:"Project description"`
+	RepositoryURL    string    `json:"repository_url,omitempty" example:"https://github.com/user/repo.git"`
+	WorktreeBasePath string    `json:"worktree_base_path,omitempty" example:"/tmp/projects/repo"`
+	CreatedAt        time.Time `json:"created_at" example:"2024-01-15T10:30:00Z"`
+	UpdatedAt        time.Time `json:"updated_at" example:"2024-01-15T10:30:00Z"`
 }
 
 type ProjectWithTasksResponse struct {
@@ -96,37 +77,8 @@ type ProjectSettingsUpdateRequest struct {
 	TaskPrefix           *string `json:"task_prefix,omitempty"`
 }
 
-// Git-related DTOs
-type GitProjectValidationRequest struct {
-	RepositoryURL    string `json:"repository_url" binding:"required,url,max=500" example:"https://github.com/user/repo.git"`
-	MainBranch       string `json:"main_branch" binding:"required,max=100" example:"main"`
-	WorktreeBasePath string `json:"worktree_base_path" binding:"required,max=500" example:"/tmp/projects/repo"`
-	GitAuthMethod    string `json:"git_auth_method" binding:"required,oneof=ssh https" example:"https"`
-	GitEnabled       bool   `json:"git_enabled" example:"true"`
-}
-
-type GitProjectValidationResponse struct {
-	Valid   bool     `json:"valid" example:"true"`
-	Message string   `json:"message,omitempty" example:"Git configuration is valid"`
-	Errors  []string `json:"errors,omitempty" example:"['Repository URL is invalid']"`
-}
-
-type GitProjectStatusResponse struct {
-	GitEnabled       bool              `json:"git_enabled" example:"true"`
-	WorktreeExists   bool              `json:"worktree_exists" example:"true"`
-	RepositoryValid  bool              `json:"repository_valid" example:"true"`
-	CurrentBranch    string            `json:"current_branch,omitempty" example:"main"`
-	RemoteURL        string            `json:"remote_url,omitempty" example:"https://github.com/user/repo.git"`
-	OnMainBranch     bool              `json:"on_main_branch" example:"true"`
-	WorkingDirStatus *WorkingDirStatus `json:"working_dir_status,omitempty"`
-	Status           string            `json:"status" example:"Git integration is working properly"`
-}
-
-type WorkingDirStatus struct {
-	IsClean            bool `json:"is_clean" example:"true"`
-	HasStagedChanges   bool `json:"has_staged_changes" example:"false"`
-	HasUnstagedChanges bool `json:"has_unstaged_changes" example:"false"`
-	HasUntrackedFiles  bool `json:"has_untracked_files" example:"false"`
+type UpdateRepositoryURLRequest struct {
+	RepositoryURL string `json:"repository_url" binding:"required,url,max=500" example:"https://github.com/user/repo.git"`
 }
 
 // Helper functions to convert between entity and DTO
@@ -134,16 +86,10 @@ func (p *ProjectResponse) FromEntity(project *entity.Project) {
 	p.ID = project.ID
 	p.Name = project.Name
 	p.Description = project.Description
-	p.RepoURL = project.RepoURL
+	p.RepositoryURL = project.RepositoryURL
+	p.WorktreeBasePath = project.WorktreeBasePath
 	p.CreatedAt = project.CreatedAt
 	p.UpdatedAt = project.UpdatedAt
-
-	// Git-related fields
-	p.RepositoryURL = project.RepositoryURL
-	p.MainBranch = project.MainBranch
-	p.WorktreeBasePath = project.WorktreeBasePath
-	p.GitAuthMethod = project.GitAuthMethod
-	p.GitEnabled = project.GitEnabled
 }
 
 func (p *ProjectWithTasksResponse) FromEntity(project *entity.Project) {
