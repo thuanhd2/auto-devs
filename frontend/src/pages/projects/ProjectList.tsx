@@ -35,6 +35,7 @@ import { Main } from '@/components/layout/main'
 import { ProfileDropdown } from '@/components/profile-dropdown'
 import { Search as SearchComponent } from '@/components/search'
 import { ThemeSwitch } from '@/components/theme-switch'
+import { ProjectCreateModal } from '@/components/project-create-modal'
 
 export function ProjectList() {
   const [search, setSearch] = useState('')
@@ -42,6 +43,7 @@ export function ProjectList() {
     'updated_at'
   )
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
+  const [createModalOpen, setCreateModalOpen] = useState(false)
 
   const filters: ProjectFilters = {
     search: search || undefined,
@@ -81,12 +83,10 @@ export function ProjectList() {
         <div className='space-y-0.5'>
           <div className='flex items-center justify-between'>
             <h1 className='text-2xl font-bold tracking-tight'>Projects</h1>
-            <Link to='/projects/create'>
-              <Button>
-                <Plus className='mr-2 h-4 w-4' />
-                New Project
-              </Button>
-            </Link>
+            <Button onClick={() => setCreateModalOpen(true)}>
+              <Plus className='mr-2 h-4 w-4' />
+              New Project
+            </Button>
           </div>
           <p className='text-muted-foreground'>
             Manage your development projects and track their progress.
@@ -164,12 +164,10 @@ export function ProjectList() {
                     ? 'Try adjusting your search terms'
                     : 'Get started by creating your first project'}
                 </p>
-                <Link to='/projects/create'>
-                  <Button>
-                    <Plus className='mr-2 h-4 w-4' />
-                    Create Project
-                  </Button>
-                </Link>
+                <Button onClick={() => setCreateModalOpen(true)}>
+                  <Plus className='mr-2 h-4 w-4' />
+                  Create Project
+                </Button>
               </div>
             </div>
           )}
@@ -183,6 +181,11 @@ export function ProjectList() {
           )}
         </div>
       </Main>
+
+      <ProjectCreateModal 
+        open={createModalOpen} 
+        onOpenChange={setCreateModalOpen} 
+      />
     </>
   )
 }

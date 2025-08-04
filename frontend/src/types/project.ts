@@ -17,14 +17,7 @@ export interface Project {
 export interface CreateProjectRequest {
   name: string
   description?: string
-  repo_url: string
-  
-  // Git-related fields
-  repository_url?: string
-  main_branch?: string
-  worktree_base_path?: string
-  git_auth_method?: string
-  git_enabled?: boolean
+  worktree_base_path: string
 }
 
 export interface UpdateProjectRequest {
