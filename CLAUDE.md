@@ -17,10 +17,14 @@ This is the **Auto-Devs** project - an AI-powered developer task automation syst
 
 ### Technology Stack
 
-- **Backend**: Go with Gin framework, Clean Architecture pattern
-- **Frontend**: React + TypeScript + ShadcnUI (cloned from shadcn-admin template)
-- **Database**: PostgreSQL with Redis for caching
+- **Backend**: Go 1.24+ with Gin framework, Clean Architecture pattern
+- **Frontend**: React 19 + TypeScript + ShadcnUI + TanStack Router/Query
+- **Database**: PostgreSQL with GORM, golang-migrate for migrations
+- **WebSocket**: Real-time updates with Gorilla WebSocket
 - **AI Integration**: External CLI tools via process spawning
+- **Testing**: Testify for Go, comprehensive test coverage
+- **Documentation**: Swagger/OpenAPI with swaggo
+- **DI**: Google Wire for dependency injection
 - **Infrastructure**: Docker, GitHub Actions for CI/CD
 
 ## Development Phases
@@ -68,14 +72,34 @@ Tasks follow this state machine:
 - Branch naming: `task-{task_id}-{slug}`
 - Automatic cleanup after task completion
 
-## Database Schema
+## Code Architecture
 
-### Core Tables
+### Backend Structure (Clean Architecture)
+
+- **Handler Layer** (`internal/handler/`): HTTP handlers, DTOs, middleware, WebSocket handlers
+- **Usecase Layer** (`internal/usecase/`): Business logic, orchestration between repositories
+- **Repository Layer** (`internal/repository/`): Data access with PostgreSQL implementation
+- **Entity Layer** (`internal/entity/`): Domain models and business entities
+- **Service Layer** (`internal/service/`): External integrations (Git operations, worktree management)
+- **WebSocket** (`internal/websocket/`): Real-time communication hub and connection management
+- **DI** (`internal/di/`): Wire-based dependency injection
+
+### Frontend Structure
+
+- **Components**: Reusable UI components with ShadcnUI
+- **Features**: Feature-based organization (dashboard, projects, settings)
+- **Hooks**: Custom React hooks for API calls and state management
+- **Services**: API clients and WebSocket service
+- **Types**: TypeScript type definitions
+- **Routes**: TanStack Router for navigation
+
+### Database Schema
 
 - `projects`: Project configuration and Git repository settings
-- `tasks`: Task details, status, and associated branches/PRs
-- `executions`: AI CLI execution tracking with process management
-- `processes`: Individual process monitoring (setup, cli_agent, monitor, cleanup)
+- `tasks`: Task details, status, and lifecycle tracking
+- `worktrees`: Git worktree management for isolated development
+- `audit_logs`: System audit trail and task history
+- `project_settings`: Configuration and preferences per project
 
 ## Important Files & Directories
 
@@ -88,10 +112,14 @@ Tasks follow this state machine:
 
 ### Development Guidelines
 
-- Follow Clean Architecture pattern with layers (handler, usecase, repository)
-- Use Wire for dependency injection
-- Implement comprehensive testing (unit, integration, e2e)
-- Maintain OpenAPI/Swagger documentation for all APIs
+- **Architecture**: Follow Clean Architecture with clear layer separation
+- **Dependency Injection**: Use Google Wire for DI code generation
+- **Testing**: Comprehensive testing with testify, pgtestdb for database tests
+- **Documentation**: Maintain OpenAPI/Swagger docs for all endpoints
+- **Git Integration**: Use worktree service for isolated branch development
+- **WebSocket**: Real-time updates for task status and project changes
+- **Error Handling**: Structured error responses with proper HTTP status codes
+- **Validation**: Use go-playground/validator for request validation
 
 ## MCP Server Requirements
 
@@ -102,13 +130,43 @@ This project requires these MCP servers:
 
 ## Development Commands
 
-Implementation will begin with Phase 1 backend setup using:
+### Backend (Go)
 
-- Go with Gin framework setup
-- PostgreSQL database with golang-migrate
-- React frontend cloned from shadcn-admin template
-- Docker containerization for development and production
-- Run build: `make build`
+- `make build` - Build the Go application
+- `make run` - Run the Go server (http://localhost:8098)
+- `make test` - Run all Go tests
+- `go run cmd/server/main.go` - Run server directly
+- `make deps` - Download and tidy Go dependencies
+- `make clean` - Clean build artifacts
+
+### Frontend (React + TypeScript)
+
+- `cd frontend && npm run dev` - Start development server (http://localhost:5173)
+- `cd frontend && npm run build` - Build for production
+- `cd frontend && npm run lint` - Run ESLint
+- `cd frontend && npm run format` - Format code with Prettier
+- `cd frontend && npm run format:check` - Check code formatting
+
+### Database (PostgreSQL)
+
+- `make migrate-up` - Run all pending migrations
+- `make migrate-down` - Rollback last migration
+- `make migrate-reset` - Rollback all migrations
+- `make migrate-create name=<name>` - Create new migration
+- `make db-setup` - Setup database with migrations
+
+### Documentation & Code Generation
+
+- `make swagger` - Generate Swagger documentation
+- `make swagger-serve` - Show Swagger UI URLs (http://localhost:8098/swagger/index.html)
+- `make wire` - Generate Wire dependency injection code
+- `make mocks` - Generate mocks for testing
+- `make mocks-regen` - Regenerate all mocks
+
+### Development Environment
+
+- `./run-dev.sh` - Start both backend and frontend in development mode
+- `make help` - Show all available Makefile commands
 
 ## Notes for Claude Code
 
