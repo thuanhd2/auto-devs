@@ -47,7 +47,7 @@ func setupTestGormDB(t *testing.T) (*database.GormDB, func()) {
 	require.NoError(t, err)
 
 	// Run migrations
-	err = db.AutoMigrate(&entity.Project{}, &entity.Task{})
+	err = db.AutoMigrate(&entity.Project{}, &entity.Task{}, &entity.TaskStatusHistory{})
 	require.NoError(t, err)
 
 	// Create GormDB wrapper

@@ -312,7 +312,7 @@ func (r *taskRepository) GetStatusAnalytics(ctx context.Context, projectID uuid.
 			from_status,
 			to_status,
 			COUNT(*) as count
-		FROM task_status_history 
+		FROM task_status_histories 
 		WHERE task_id IN (SELECT id FROM tasks WHERE project_id = ? AND deleted_at IS NULL)
 		AND deleted_at IS NULL
 		GROUP BY from_status, to_status
