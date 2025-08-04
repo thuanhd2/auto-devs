@@ -104,3 +104,33 @@ export function useOptimisticTaskUpdate() {
     })
   }
 }
+
+export function useDuplicateTask() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (task: Task) => {
+      // Create a new task with similar data but different title
+      const duplicatedTask = {
+        project_id: task.project_id,
+        title: `${task.title} (Copy)`,
+        description: task.description,
+        status: 'TODO' as Task['status'], // Reset to TODO
+        plan: task.plan,
+        branch_name: '', // Reset branch name
+        pr_url: '', // Reset PR URL
+      }
+      return tasksApi.createTask(duplicatedTask)
+    },
+    onSuccess: (newTask) => {
+      // Invalidate tasks list for the project
+      queryClient.invalidateQueries({
+        queryKey: [TASKS_QUERY_KEY, newTask.project_id],
+      })
+      toast.success('Task duplicated successfully')
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Failed to duplicate task')
+    },
+  })
+}

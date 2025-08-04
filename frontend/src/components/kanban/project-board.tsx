@@ -6,11 +6,11 @@ import {
   useWebSocketProject,
   useWebSocketContext,
 } from '@/context/websocket-context'
-import { useTasks, useDeleteTask } from '@/hooks/use-tasks'
+import { useTasks, useDeleteTask, useDuplicateTask } from '@/hooks/use-tasks'
 import { BoardFilters } from './board-filters'
 import { BoardToolbar } from './board-toolbar'
 import { KanbanBoard } from './kanban-board'
-import { TaskDetailsModal } from './task-details-modal'
+import { TaskDetailSheet } from './task-detail-sheet'
 import { TaskFormModal } from './task-form-modal'
 
 interface ProjectBoardProps {
@@ -30,7 +30,7 @@ export function ProjectBoard({ projectId }: ProjectBoardProps) {
     task?: Task | null
   }>({ open: false, mode: 'create', task: null })
 
-  const [taskDetailsModal, setTaskDetailsModal] = useState<{
+  const [taskDetailSheet, setTaskDetailSheet] = useState<{
     open: boolean
     task?: Task | null
   }>({ open: false, task: null })
@@ -41,6 +41,7 @@ export function ProjectBoard({ projectId }: ProjectBoardProps) {
     refetch,
   } = useTasks(projectId, filters)
   const deleteTaskMutation = useDeleteTask()
+  const duplicateTaskMutation = useDuplicateTask()
 
   // WebSocket integration
   const { setCurrentProjectId } = useWebSocketProject(projectId)
@@ -144,7 +145,7 @@ export function ProjectBoard({ projectId }: ProjectBoardProps) {
   }
 
   const handleViewTaskDetails = (task: Task) => {
-    setTaskDetailsModal({ open: true, task })
+    setTaskDetailSheet({ open: true, task })
   }
 
   return (
@@ -188,14 +189,27 @@ export function ProjectBoard({ projectId }: ProjectBoardProps) {
         mode={taskFormModal.mode}
       />
 
-      <TaskDetailsModal
-        open={taskDetailsModal.open}
+      <TaskDetailSheet
+        open={taskDetailSheet.open}
         onOpenChange={(open) =>
-          setTaskDetailsModal((prev) => ({ ...prev, open }))
+          setTaskDetailSheet((prev) => ({ ...prev, open }))
         }
-        task={taskDetailsModal.task}
+        task={taskDetailSheet.task || null}
         onEdit={handleEditTask}
         onDelete={handleDeleteTask}
+        onDuplicate={async (task) => {
+          try {
+            await duplicateTaskMutation.mutateAsync(task)
+          } catch (error) {
+            // Error is handled by the mutation hook
+          }
+        }}
+        onStatusChange={(taskId, newStatus) => {
+          // Handle status change
+          setLocalTasks((prev) =>
+            prev.map((t) => (t.id === taskId ? { ...t, status: newStatus } : t))
+          )
+        }}
       />
     </div>
   )
