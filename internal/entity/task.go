@@ -21,6 +21,17 @@ const (
 	TaskStatusCANCELLED     TaskStatus = "CANCELLED"
 )
 
+type TaskGitStatus string
+
+const (
+	TaskGitStatusNone      TaskGitStatus = "none"
+	TaskGitStatusCreating  TaskGitStatus = "creating"
+	TaskGitStatusActive    TaskGitStatus = "active"
+	TaskGitStatusCompleted TaskGitStatus = "completed"
+	TaskGitStatusCleaning  TaskGitStatus = "cleaning"
+	TaskGitStatusError     TaskGitStatus = "error"
+)
+
 // TaskPriority represents the priority level of a task
 type TaskPriority string
 
@@ -181,6 +192,8 @@ type Task struct {
 	Priority       TaskPriority   `json:"priority" gorm:"size:20;default:'MEDIUM'" validate:"oneof=LOW MEDIUM HIGH URGENT"`
 	BranchName     *string        `json:"branch_name,omitempty" gorm:"size:255"`
 	PullRequest    *string        `json:"pull_request,omitempty" gorm:"size:255"`
+	WorktreePath   *string        `json:"worktree_path,omitempty" gorm:"type:text"`
+	GitStatus      TaskGitStatus  `json:"git_status" gorm:"size:50;default:'none'"`
 	EstimatedHours *float64       `json:"estimated_hours,omitempty" gorm:"type:decimal(5,2)" validate:"min=0,max=999.99"`
 	ActualHours    *float64       `json:"actual_hours,omitempty" gorm:"type:decimal(5,2)" validate:"min=0,max=999.99"`
 	Tags           []string       `json:"tags,omitempty" gorm:"-"` // Will be stored as JSON in database
