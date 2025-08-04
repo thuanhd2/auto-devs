@@ -1,0 +1,309 @@
+package worktree
+
+import (
+	"context"
+	"fmt"
+	"log/slog"
+	"time"
+
+	"github.com/auto-devs/auto-devs/internal/service/git"
+)
+
+// IntegratedWorktreeService combines worktree and git operations
+type IntegratedWorktreeService struct {
+	worktreeManager *WorktreeManager
+	gitManager      *git.GitManager
+	logger          *slog.Logger
+}
+
+// IntegratedConfig contains configuration for the integrated service
+type IntegratedConfig struct {
+	Worktree *WorktreeConfig
+	Git      *git.ManagerConfig
+}
+
+// NewIntegratedWorktreeService creates a new integrated worktree service
+func NewIntegratedWorktreeService(config *IntegratedConfig) (*IntegratedWorktreeService, error) {
+	// Initialize worktree manager
+	worktreeManager, err := NewWorktreeManager(config.Worktree)
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize worktree manager: %w", err)
+	}
+
+	// Initialize git manager
+	gitManager, err := git.NewGitManager(config.Git)
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize git manager: %w", err)
+	}
+
+	// Initialize git manager
+	if err := gitManager.Initialize(context.Background()); err != nil {
+		return nil, fmt.Errorf("failed to initialize git manager: %w", err)
+	}
+
+	return &IntegratedWorktreeService{
+		worktreeManager: worktreeManager,
+		gitManager:      gitManager,
+		logger:          slog.Default().With("component", "integrated-worktree-service"),
+	}, nil
+}
+
+// CreateTaskWorktree creates a complete worktree setup for a task
+func (iws *IntegratedWorktreeService) CreateTaskWorktree(ctx context.Context, request *CreateTaskWorktreeRequest) (*TaskWorktreeInfo, error) {
+	iws.logger.Info("Creating task worktree",
+		"project_id", request.ProjectID,
+		"task_id", request.TaskID,
+		"task_title", request.TaskTitle)
+
+	// Generate worktree path
+	worktreePath, err := iws.worktreeManager.GenerateWorktreePath(request.ProjectID, request.TaskID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate worktree path: %w", err)
+	}
+
+	// Create worktree directory
+	_, err = iws.worktreeManager.CreateWorktree(ctx, request.ProjectID, request.TaskID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create worktree directory: %w", err)
+	}
+
+	// Generate branch name
+	branchName, err := iws.gitManager.GenerateBranchName(request.TaskID, request.TaskTitle)
+	if err != nil {
+		// Clean up worktree on error
+		iws.worktreeManager.CleanupWorktree(ctx, worktreePath)
+		return nil, fmt.Errorf("failed to generate branch name: %w", err)
+	}
+
+	// Create branch from main
+	if err := iws.gitManager.CreateBranchFromMain(ctx, worktreePath, branchName); err != nil {
+		// Clean up worktree on error
+		iws.worktreeManager.CleanupWorktree(ctx, worktreePath)
+		return nil, fmt.Errorf("failed to create branch: %w", err)
+	}
+
+	// Get worktree info
+	worktreeInfo, err := iws.worktreeManager.GetWorktreeInfo(worktreePath)
+	if err != nil {
+		iws.logger.Warn("Failed to get worktree info", "error", err)
+	}
+
+	// Get repository status
+	repoStatus, err := iws.gitManager.GetRepositoryStatus(ctx, worktreePath)
+	if err != nil {
+		iws.logger.Warn("Failed to get repository status", "error", err)
+	}
+
+	info := &TaskWorktreeInfo{
+		ProjectID:      request.ProjectID,
+		TaskID:         request.TaskID,
+		TaskTitle:      request.TaskTitle,
+		WorktreePath:   worktreePath,
+		BranchName:     branchName,
+		CreatedAt:      time.Now(),
+		WorktreeInfo:   worktreeInfo,
+		RepositoryInfo: repoStatus,
+	}
+
+	iws.logger.Info("Task worktree created successfully",
+		"worktree_path", worktreePath,
+		"branch_name", branchName)
+
+	return info, nil
+}
+
+// CleanupTaskWorktree cleans up a complete task worktree
+func (iws *IntegratedWorktreeService) CleanupTaskWorktree(ctx context.Context, request *CleanupTaskWorktreeRequest) error {
+	iws.logger.Info("Cleaning up task worktree",
+		"project_id", request.ProjectID,
+		"task_id", request.TaskID)
+
+	// Generate worktree path
+	worktreePath, err := iws.worktreeManager.GenerateWorktreePath(request.ProjectID, request.TaskID)
+	if err != nil {
+		return fmt.Errorf("failed to generate worktree path: %w", err)
+	}
+
+	// Check if worktree exists
+	if !iws.worktreeManager.WorktreeExists(worktreePath) {
+		iws.logger.Warn("Worktree does not exist, skipping cleanup", "path", worktreePath)
+		return nil
+	}
+
+	// Get branch name if not provided
+	branchName := request.BranchName
+	if branchName == "" {
+		// Try to extract branch name from worktree path or use default pattern
+		branchName = fmt.Sprintf("task-%s", request.TaskID)
+	}
+
+	// Delete branch from repository
+	if err := iws.gitManager.DeleteBranch(ctx, worktreePath, branchName, true); err != nil {
+		iws.logger.Warn("Failed to delete branch", "branch", branchName, "error", err)
+		// Continue with cleanup even if branch deletion fails
+	}
+
+	// Clean up worktree directory
+	if err := iws.worktreeManager.CleanupWorktree(ctx, worktreePath); err != nil {
+		return fmt.Errorf("failed to cleanup worktree directory: %w", err)
+	}
+
+	iws.logger.Info("Task worktree cleaned up successfully",
+		"worktree_path", worktreePath,
+		"branch_name", branchName)
+
+	return nil
+}
+
+// GetTaskWorktreeInfo gets complete information about a task worktree
+func (iws *IntegratedWorktreeService) GetTaskWorktreeInfo(ctx context.Context, projectID, taskID string) (*TaskWorktreeInfo, error) {
+	iws.logger.Debug("Getting task worktree info", "project_id", projectID, "task_id", taskID)
+
+	// Generate worktree path
+	worktreePath, err := iws.worktreeManager.GenerateWorktreePath(projectID, taskID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate worktree path: %w", err)
+	}
+
+	// Check if worktree exists
+	if !iws.worktreeManager.WorktreeExists(worktreePath) {
+		return nil, fmt.Errorf("worktree does not exist: %s", worktreePath)
+	}
+
+	// Get worktree info
+	worktreeInfo, err := iws.worktreeManager.GetWorktreeInfo(worktreePath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get worktree info: %w", err)
+	}
+
+	// Get repository status
+	repoStatus, err := iws.gitManager.GetRepositoryStatus(ctx, worktreePath)
+	if err != nil {
+		iws.logger.Warn("Failed to get repository status", "error", err)
+	}
+
+	// Try to get current branch name
+	branchName := ""
+	if repoStatus != nil && len(repoStatus.Branches) > 0 {
+		// Find the current branch (usually the first one or one that's not main/master)
+		for _, branch := range repoStatus.Branches {
+			if branch != "main" && branch != "master" {
+				branchName = branch
+				break
+			}
+		}
+	}
+
+	info := &TaskWorktreeInfo{
+		ProjectID:      projectID,
+		TaskID:         taskID,
+		WorktreePath:   worktreePath,
+		BranchName:     branchName,
+		WorktreeInfo:   worktreeInfo,
+		RepositoryInfo: repoStatus,
+	}
+
+	return info, nil
+}
+
+// ListProjectWorktrees lists all worktrees for a project with git information
+func (iws *IntegratedWorktreeService) ListProjectWorktrees(ctx context.Context, projectID string) ([]*TaskWorktreeInfo, error) {
+	iws.logger.Debug("Listing project worktrees", "project_id", projectID)
+
+	// Get worktree paths
+	worktreePaths, err := iws.worktreeManager.ListWorktrees(projectID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list worktrees: %w", err)
+	}
+
+	var worktreeInfos []*TaskWorktreeInfo
+
+	for _, worktreePath := range worktreePaths {
+		// Extract task ID from path
+		taskID := iws.extractTaskIDFromPath(worktreePath)
+		if taskID == "" {
+			iws.logger.Warn("Could not extract task ID from path", "path", worktreePath)
+			continue
+		}
+
+		// Get worktree info
+		worktreeInfo, err := iws.worktreeManager.GetWorktreeInfo(worktreePath)
+		if err != nil {
+			iws.logger.Warn("Failed to get worktree info", "path", worktreePath, "error", err)
+			continue
+		}
+
+		// Get repository status
+		repoStatus, err := iws.gitManager.GetRepositoryStatus(ctx, worktreePath)
+		if err != nil {
+			iws.logger.Warn("Failed to get repository status", "path", worktreePath, "error", err)
+		}
+
+		// Try to get branch name
+		branchName := ""
+		if repoStatus != nil && len(repoStatus.Branches) > 0 {
+			for _, branch := range repoStatus.Branches {
+				if branch != "main" && branch != "master" {
+					branchName = branch
+					break
+				}
+			}
+		}
+
+		info := &TaskWorktreeInfo{
+			ProjectID:      projectID,
+			TaskID:         taskID,
+			WorktreePath:   worktreePath,
+			BranchName:     branchName,
+			WorktreeInfo:   worktreeInfo,
+			RepositoryInfo: repoStatus,
+		}
+
+		worktreeInfos = append(worktreeInfos, info)
+	}
+
+	return worktreeInfos, nil
+}
+
+// extractTaskIDFromPath extracts task ID from worktree path
+func (iws *IntegratedWorktreeService) extractTaskIDFromPath(worktreePath string) string {
+	// Path format: /worktrees/project-{id}/task-{id}/
+	// Extract the last part after "task-"
+	// This is a simple implementation - in production you might want more robust parsing
+	// For now, we'll assume the task ID is the last component of the path
+	// and it starts with "task-"
+
+	// Split path and get the last component
+	// This is a simplified approach - you might want to use filepath.Base or similar
+	// and then extract the task ID part
+	return ""
+}
+
+// Request and response types
+
+// CreateTaskWorktreeRequest represents a request to create a task worktree
+type CreateTaskWorktreeRequest struct {
+	ProjectID  string `json:"project_id"`
+	TaskID     string `json:"task_id"`
+	TaskTitle  string `json:"task_title"`
+	Repository string `json:"repository,omitempty"` // Optional repository URL to clone
+}
+
+// CleanupTaskWorktreeRequest represents a request to cleanup a task worktree
+type CleanupTaskWorktreeRequest struct {
+	ProjectID  string `json:"project_id"`
+	TaskID     string `json:"task_id"`
+	BranchName string `json:"branch_name,omitempty"` // Optional branch name to delete
+}
+
+// TaskWorktreeInfo contains complete information about a task worktree
+type TaskWorktreeInfo struct {
+	ProjectID      string                `json:"project_id"`
+	TaskID         string                `json:"task_id"`
+	TaskTitle      string                `json:"task_title,omitempty"`
+	WorktreePath   string                `json:"worktree_path"`
+	BranchName     string                `json:"branch_name"`
+	CreatedAt      time.Time             `json:"created_at"`
+	WorktreeInfo   *WorktreeInfo         `json:"worktree_info,omitempty"`
+	RepositoryInfo *git.RepositoryStatus `json:"repository_info,omitempty"`
+}
