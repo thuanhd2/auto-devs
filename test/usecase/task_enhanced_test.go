@@ -148,7 +148,6 @@ func TestTaskUsecase_TemplateOperations(t *testing.T) {
 	taskUsecase := usecase.NewTaskUsecase(mockTaskRepo, mockProjectRepo, mockNotificationUsecase, mockWorktreeUsecase)
 
 	projectID := uuid.New()
-	templateID := uuid.New()
 
 	// Test create template
 	req := usecase.CreateTemplateRequest{
@@ -163,8 +162,8 @@ func TestTaskUsecase_TemplateOperations(t *testing.T) {
 		CreatedBy:      "user123",
 	}
 
+	mockTaskRepo.On("ValidateProjectExists", ctx, req.ProjectID).Return(true, nil)
 	mockTaskRepo.On("CreateTemplate", ctx, mock.AnythingOfType("*entity.TaskTemplate")).Return(nil)
-	mockTaskRepo.On("GetTemplateByID", ctx, templateID).Return(&entity.TaskTemplate{ID: templateID, Name: req.Name}, nil)
 
 	template, err := taskUsecase.CreateTemplate(ctx, req)
 	assert.NoError(t, err)
@@ -186,6 +185,8 @@ func TestTaskUsecase_DependencyOperations(t *testing.T) {
 	dependsOnTaskID := uuid.New()
 
 	// Test add dependency
+	mockTaskRepo.On("ValidateTaskExists", ctx, taskID).Return(true, nil)
+	mockTaskRepo.On("ValidateTaskExists", ctx, dependsOnTaskID).Return(true, nil)
 	mockTaskRepo.On("AddDependency", ctx, taskID, dependsOnTaskID, "blocks").Return(nil)
 	err := taskUsecase.AddDependency(ctx, taskID, dependsOnTaskID, "blocks")
 	assert.NoError(t, err)
@@ -220,6 +221,7 @@ func TestTaskUsecase_CommentOperations(t *testing.T) {
 		CreatedBy: "user123",
 	}
 
+	mockTaskRepo.On("ValidateTaskExists", ctx, taskID).Return(true, nil)
 	mockTaskRepo.On("AddComment", ctx, mock.AnythingOfType("*entity.TaskComment")).Return(nil)
 
 	comment, err := taskUsecase.AddComment(ctx, req)
@@ -260,5 +262,5 @@ func TestTaskUsecase_ValidationErrors(t *testing.T) {
 
 	_, err := taskUsecase.Create(ctx, req)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "duplicate")
+	assert.Contains(t, err.Error(), "already exists in this project")
 }

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/auto-devs/auto-devs/internal/entity"
+	"github.com/auto-devs/auto-devs/pkg/database"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
@@ -14,13 +15,17 @@ type worktreeRepository struct {
 	db *gorm.DB
 }
 
-func NewWorktreeRepository(db *gorm.DB) *worktreeRepository {
-	return &worktreeRepository{db: db}
+func NewWorktreeRepository(db *database.GormDB) *worktreeRepository {
+	return &worktreeRepository{db: db.DB}
 }
 
 // Create creates a new worktree record
 func (r *worktreeRepository) Create(ctx context.Context, worktree *entity.Worktree) error {
-	return r.db.WithContext(ctx).Create(worktree).Error
+	err := r.db.WithContext(ctx).Create(worktree).Error
+	if err != nil {
+		return fmt.Errorf("failed to create worktree: %w", err)
+	}
+	return nil
 }
 
 // GetByID retrieves a worktree by ID
@@ -28,7 +33,10 @@ func (r *worktreeRepository) GetByID(ctx context.Context, id uuid.UUID) (*entity
 	var worktree entity.Worktree
 	err := r.db.WithContext(ctx).Where("id = ?", id).First(&worktree).Error
 	if err != nil {
-		return nil, err
+		if err == gorm.ErrRecordNotFound {
+			return nil, fmt.Errorf("worktree not found with id %s", id)
+		}
+		return nil, fmt.Errorf("failed to get worktree: %w", err)
 	}
 	return &worktree, nil
 }
@@ -38,7 +46,10 @@ func (r *worktreeRepository) GetByTaskID(ctx context.Context, taskID uuid.UUID) 
 	var worktree entity.Worktree
 	err := r.db.WithContext(ctx).Where("task_id = ?", taskID).First(&worktree).Error
 	if err != nil {
-		return nil, err
+		if err == gorm.ErrRecordNotFound {
+			return nil, fmt.Errorf("worktree not found for task %s", taskID)
+		}
+		return nil, fmt.Errorf("failed to get worktree by task: %w", err)
 	}
 	return &worktree, nil
 }
@@ -55,16 +66,49 @@ func (r *worktreeRepository) GetByProjectID(ctx context.Context, projectID uuid.
 
 // Update updates a worktree record
 func (r *worktreeRepository) Update(ctx context.Context, worktree *entity.Worktree) error {
+	// First check if the record exists
+	var existing entity.Worktree
+	err := r.db.WithContext(ctx).Where("id = ?", worktree.ID).First(&existing).Error
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return fmt.Errorf("worktree not found with id %s", worktree.ID)
+		}
+		return fmt.Errorf("failed to check worktree existence: %w", err)
+	}
+	
+	// Update the record
 	return r.db.WithContext(ctx).Save(worktree).Error
 }
 
 // Delete soft deletes a worktree record
 func (r *worktreeRepository) Delete(ctx context.Context, id uuid.UUID) error {
+	// First check if the record exists
+	var existing entity.Worktree
+	err := r.db.WithContext(ctx).Where("id = ?", id).First(&existing).Error
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return fmt.Errorf("worktree not found with id %s", id)
+		}
+		return fmt.Errorf("failed to check worktree existence: %w", err)
+	}
+	
+	// Delete the record
 	return r.db.WithContext(ctx).Delete(&entity.Worktree{}, id).Error
 }
 
 // UpdateStatus updates the status of a worktree
 func (r *worktreeRepository) UpdateStatus(ctx context.Context, id uuid.UUID, status entity.WorktreeStatus) error {
+	// First check if the record exists
+	var existing entity.Worktree
+	err := r.db.WithContext(ctx).Where("id = ?", id).First(&existing).Error
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return fmt.Errorf("worktree not found with id %s", id)
+		}
+		return fmt.Errorf("failed to check worktree existence: %w", err)
+	}
+	
+	// Update the status
 	return r.db.WithContext(ctx).Model(&entity.Worktree{}).Where("id = ?", id).Update("status", status).Error
 }
 
@@ -165,7 +209,10 @@ func (r *worktreeRepository) GetByWorktreePath(ctx context.Context, worktreePath
 	var worktree entity.Worktree
 	err := r.db.WithContext(ctx).Where("worktree_path = ?", worktreePath).First(&worktree).Error
 	if err != nil {
-		return nil, err
+		if err == gorm.ErrRecordNotFound {
+			return nil, fmt.Errorf("worktree not found with path %s", worktreePath)
+		}
+		return nil, fmt.Errorf("failed to get worktree by path: %w", err)
 	}
 	return &worktree, nil
 }

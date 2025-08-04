@@ -108,7 +108,7 @@ func ProvideGormDB(cfg *config.Config) (*database.GormDB, error) {
 
 // ProvideWorktreeRepository provides a WorktreeRepository instance
 func ProvideWorktreeRepository(gormDB *database.GormDB) repository.WorktreeRepository {
-	return postgres.NewWorktreeRepository(gormDB.DB)
+	return postgres.NewWorktreeRepository(gormDB)
 }
 
 // ProvideAuditService provides an AuditService instance
