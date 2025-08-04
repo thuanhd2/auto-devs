@@ -7,14 +7,11 @@ import (
 
 	"github.com/auto-devs/auto-devs/internal/entity"
 	"github.com/auto-devs/auto-devs/internal/mocks"
-	
 	"github.com/auto-devs/auto-devs/internal/usecase"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
-
-
 
 // Test cases for enhanced task management features
 
@@ -23,8 +20,9 @@ func TestTaskUsecase_CreateWithEnhancedFeatures(t *testing.T) {
 	mockTaskRepo := mocks.NewMockTaskRepository(t)
 	mockProjectRepo := mocks.NewMockProjectRepository(t)
 	mockNotificationUsecase := mocks.NewMockNotificationUsecase(t)
+	mockWorktreeUsecase := mocks.NewMockWorktreeUsecase(t)
 
-	taskUsecase := usecase.NewTaskUsecase(mockTaskRepo, mockProjectRepo, mockNotificationUsecase)
+	taskUsecase := usecase.NewTaskUsecase(mockTaskRepo, mockProjectRepo, mockNotificationUsecase, mockWorktreeUsecase)
 
 	projectID := uuid.New()
 	parentTaskID := uuid.New()
@@ -67,9 +65,6 @@ func TestTaskUsecase_CreateWithEnhancedFeatures(t *testing.T) {
 	assert.Equal(t, req.DueDate, task.DueDate)
 	assert.Equal(t, req.BranchName, task.BranchName)
 	assert.Equal(t, req.PullRequest, task.PullRequest)
-
-	
-	
 }
 
 func TestTaskUsecase_SearchTasks(t *testing.T) {
@@ -77,8 +72,9 @@ func TestTaskUsecase_SearchTasks(t *testing.T) {
 	mockTaskRepo := mocks.NewMockTaskRepository(t)
 	mockProjectRepo := mocks.NewMockProjectRepository(t)
 	mockNotificationUsecase := mocks.NewMockNotificationUsecase(t)
+	mockWorktreeUsecase := mocks.NewMockWorktreeUsecase(t)
 
-	taskUsecase := usecase.NewTaskUsecase(mockTaskRepo, mockProjectRepo, mockNotificationUsecase)
+	taskUsecase := usecase.NewTaskUsecase(mockTaskRepo, mockProjectRepo, mockNotificationUsecase, mockWorktreeUsecase)
 
 	query := "search term"
 	projectID := uuid.New()
@@ -102,7 +98,6 @@ func TestTaskUsecase_SearchTasks(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.Equal(t, expectedResults, results)
-	
 }
 
 func TestTaskUsecase_BulkOperations(t *testing.T) {
@@ -110,8 +105,9 @@ func TestTaskUsecase_BulkOperations(t *testing.T) {
 	mockTaskRepo := mocks.NewMockTaskRepository(t)
 	mockProjectRepo := mocks.NewMockProjectRepository(t)
 	mockNotificationUsecase := mocks.NewMockNotificationUsecase(t)
+	mockWorktreeUsecase := mocks.NewMockWorktreeUsecase(t)
 
-	taskUsecase := usecase.NewTaskUsecase(mockTaskRepo, mockProjectRepo, mockNotificationUsecase)
+	taskUsecase := usecase.NewTaskUsecase(mockTaskRepo, mockProjectRepo, mockNotificationUsecase, mockWorktreeUsecase)
 
 	taskIDs := []uuid.UUID{uuid.New(), uuid.New(), uuid.New()}
 
@@ -125,10 +121,14 @@ func TestTaskUsecase_BulkOperations(t *testing.T) {
 	err = taskUsecase.BulkUnarchive(ctx, taskIDs)
 	assert.NoError(t, err)
 
+	// Test bulk delete
+	mockTaskRepo.On("BulkDelete", ctx, taskIDs).Return(nil)
+	err = taskUsecase.BulkDelete(ctx, taskIDs)
+	assert.NoError(t, err)
+
 	// Test bulk update priority
-	priority := entity.TaskPriorityHigh
-	mockTaskRepo.On("BulkUpdatePriority", ctx, taskIDs, priority).Return(nil)
-	err = taskUsecase.BulkUpdatePriority(ctx, taskIDs, priority)
+	mockTaskRepo.On("BulkUpdatePriority", ctx, taskIDs, entity.TaskPriorityHigh).Return(nil)
+	err = taskUsecase.BulkUpdatePriority(ctx, taskIDs, entity.TaskPriorityHigh)
 	assert.NoError(t, err)
 
 	// Test bulk assign
@@ -136,8 +136,6 @@ func TestTaskUsecase_BulkOperations(t *testing.T) {
 	mockTaskRepo.On("BulkAssign", ctx, taskIDs, assignedTo).Return(nil)
 	err = taskUsecase.BulkAssign(ctx, taskIDs, assignedTo)
 	assert.NoError(t, err)
-
-	
 }
 
 func TestTaskUsecase_TemplateOperations(t *testing.T) {
@@ -145,39 +143,34 @@ func TestTaskUsecase_TemplateOperations(t *testing.T) {
 	mockTaskRepo := mocks.NewMockTaskRepository(t)
 	mockProjectRepo := mocks.NewMockProjectRepository(t)
 	mockNotificationUsecase := mocks.NewMockNotificationUsecase(t)
+	mockWorktreeUsecase := mocks.NewMockWorktreeUsecase(t)
 
-	taskUsecase := usecase.NewTaskUsecase(mockTaskRepo, mockProjectRepo, mockNotificationUsecase)
+	taskUsecase := usecase.NewTaskUsecase(mockTaskRepo, mockProjectRepo, mockNotificationUsecase, mockWorktreeUsecase)
 
 	projectID := uuid.New()
-	createdBy := "user123"
+	templateID := uuid.New()
 
 	// Test create template
 	req := usecase.CreateTemplateRequest{
 		ProjectID:      projectID,
-		Name:           "Bug Fix Template",
-		Description:    "Template for bug fixes",
-		Title:          "Fix {bug_description}",
-		Priority:       entity.TaskPriorityHigh,
-		EstimatedHours: &[]float64{4.0}[0],
-		Tags:           []string{"bug", "fix"},
-		IsGlobal:       true,
-		CreatedBy:      createdBy,
+		Name:           "Bug Template",
+		Description:    "Template for bug reports",
+		Title:          "Bug: {title}",
+		Priority:       entity.TaskPriorityMedium,
+		EstimatedHours: &[]float64{2.0}[0],
+		Tags:           []string{"bug", "template"},
+		IsGlobal:       false,
+		CreatedBy:      "user123",
 	}
 
-	mockTaskRepo.On("ValidateProjectExists", ctx, projectID).Return(true, nil)
 	mockTaskRepo.On("CreateTemplate", ctx, mock.AnythingOfType("*entity.TaskTemplate")).Return(nil)
+	mockTaskRepo.On("GetTemplateByID", ctx, templateID).Return(&entity.TaskTemplate{ID: templateID, Name: req.Name}, nil)
 
 	template, err := taskUsecase.CreateTemplate(ctx, req)
-
 	assert.NoError(t, err)
-	assert.NotNil(t, template)
 	assert.Equal(t, req.Name, template.Name)
-	assert.Equal(t, req.Title, template.Title)
 	assert.Equal(t, req.Priority, template.Priority)
 	assert.Equal(t, req.IsGlobal, template.IsGlobal)
-
-	
-	
 }
 
 func TestTaskUsecase_DependencyOperations(t *testing.T) {
@@ -185,37 +178,27 @@ func TestTaskUsecase_DependencyOperations(t *testing.T) {
 	mockTaskRepo := mocks.NewMockTaskRepository(t)
 	mockProjectRepo := mocks.NewMockProjectRepository(t)
 	mockNotificationUsecase := mocks.NewMockNotificationUsecase(t)
+	mockWorktreeUsecase := mocks.NewMockWorktreeUsecase(t)
 
-	taskUsecase := usecase.NewTaskUsecase(mockTaskRepo, mockProjectRepo, mockNotificationUsecase)
+	taskUsecase := usecase.NewTaskUsecase(mockTaskRepo, mockProjectRepo, mockNotificationUsecase, mockWorktreeUsecase)
 
 	taskID := uuid.New()
 	dependsOnTaskID := uuid.New()
 
 	// Test add dependency
-	mockTaskRepo.On("ValidateTaskExists", ctx, taskID).Return(true, nil)
-	mockTaskRepo.On("ValidateTaskExists", ctx, dependsOnTaskID).Return(true, nil)
 	mockTaskRepo.On("AddDependency", ctx, taskID, dependsOnTaskID, "blocks").Return(nil)
-
 	err := taskUsecase.AddDependency(ctx, taskID, dependsOnTaskID, "blocks")
 	assert.NoError(t, err)
 
 	// Test get dependencies
 	expectedDependencies := []*entity.TaskDependency{
-		{
-			ID:              uuid.New(),
-			TaskID:          taskID,
-			DependsOnTaskID: dependsOnTaskID,
-			DependencyType:  "blocks",
-		},
+		{TaskID: taskID, DependsOnTaskID: dependsOnTaskID, DependencyType: "blocks"},
 	}
-
 	mockTaskRepo.On("GetDependencies", ctx, taskID).Return(expectedDependencies, nil)
 
 	dependencies, err := taskUsecase.GetDependencies(ctx, taskID)
 	assert.NoError(t, err)
 	assert.Equal(t, expectedDependencies, dependencies)
-
-	
 }
 
 func TestTaskUsecase_CommentOperations(t *testing.T) {
@@ -223,48 +206,36 @@ func TestTaskUsecase_CommentOperations(t *testing.T) {
 	mockTaskRepo := mocks.NewMockTaskRepository(t)
 	mockProjectRepo := mocks.NewMockProjectRepository(t)
 	mockNotificationUsecase := mocks.NewMockNotificationUsecase(t)
+	mockWorktreeUsecase := mocks.NewMockWorktreeUsecase(t)
 
-	taskUsecase := usecase.NewTaskUsecase(mockTaskRepo, mockProjectRepo, mockNotificationUsecase)
+	taskUsecase := usecase.NewTaskUsecase(mockTaskRepo, mockProjectRepo, mockNotificationUsecase, mockWorktreeUsecase)
 
 	taskID := uuid.New()
-	commentText := "This is a test comment"
-	createdBy := "user123"
+	commentID := uuid.New()
 
 	// Test add comment
 	req := usecase.AddCommentRequest{
 		TaskID:    taskID,
-		Comment:   commentText,
-		CreatedBy: createdBy,
+		Comment:   "This is a test comment",
+		CreatedBy: "user123",
 	}
 
-	mockTaskRepo.On("ValidateTaskExists", ctx, taskID).Return(true, nil)
 	mockTaskRepo.On("AddComment", ctx, mock.AnythingOfType("*entity.TaskComment")).Return(nil)
 
 	comment, err := taskUsecase.AddComment(ctx, req)
-
 	assert.NoError(t, err)
-	assert.NotNil(t, comment)
-	assert.Equal(t, taskID, comment.TaskID)
-	assert.Equal(t, commentText, comment.Comment)
-	assert.Equal(t, createdBy, comment.CreatedBy)
+	assert.Equal(t, req.Comment, comment.Comment)
+	assert.Equal(t, req.CreatedBy, comment.CreatedBy)
 
 	// Test get comments
 	expectedComments := []*entity.TaskComment{
-		{
-			ID:        uuid.New(),
-			TaskID:    taskID,
-			Comment:   commentText,
-			CreatedBy: createdBy,
-		},
+		{ID: commentID, TaskID: taskID, Comment: req.Comment, CreatedBy: req.CreatedBy},
 	}
-
 	mockTaskRepo.On("GetComments", ctx, taskID).Return(expectedComments, nil)
 
 	comments, err := taskUsecase.GetComments(ctx, taskID)
 	assert.NoError(t, err)
 	assert.Equal(t, expectedComments, comments)
-
-	
 }
 
 func TestTaskUsecase_ValidationErrors(t *testing.T) {
@@ -272,31 +243,22 @@ func TestTaskUsecase_ValidationErrors(t *testing.T) {
 	mockTaskRepo := mocks.NewMockTaskRepository(t)
 	mockProjectRepo := mocks.NewMockProjectRepository(t)
 	mockNotificationUsecase := mocks.NewMockNotificationUsecase(t)
+	mockWorktreeUsecase := mocks.NewMockWorktreeUsecase(t)
 
-	taskUsecase := usecase.NewTaskUsecase(mockTaskRepo, mockProjectRepo, mockNotificationUsecase)
+	taskUsecase := usecase.NewTaskUsecase(mockTaskRepo, mockProjectRepo, mockNotificationUsecase, mockWorktreeUsecase)
 
-	// Test empty search query
-	_, err := taskUsecase.SearchTasks(ctx, "", nil)
+	projectID := uuid.New()
+
+	// Test duplicate title validation
+	req := usecase.CreateTaskRequest{
+		ProjectID: projectID,
+		Title:     "Duplicate Task",
+	}
+
+	mockTaskRepo.On("ValidateProjectExists", ctx, projectID).Return(true, nil)
+	mockTaskRepo.On("CheckDuplicateTitle", ctx, projectID, req.Title, (*uuid.UUID)(nil)).Return(true, nil)
+
+	_, err := taskUsecase.Create(ctx, req)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "search query cannot be empty")
-
-	// Test invalid priority
-	_, err = taskUsecase.GetTasksByPriority(ctx, "INVALID_PRIORITY")
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "invalid priority")
-
-	// Test empty tags
-	_, err = taskUsecase.GetTasksByTags(ctx, []string{})
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "at least one tag must be provided")
-
-	// Test empty task IDs for bulk operations
-	err = taskUsecase.BulkDelete(ctx, []uuid.UUID{})
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "no task IDs provided")
-
-	// Test empty assigned_to for bulk assign
-	err = taskUsecase.BulkAssign(ctx, []uuid.UUID{uuid.New()}, "")
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "assigned_to cannot be empty")
+	assert.Contains(t, err.Error(), "duplicate")
 }

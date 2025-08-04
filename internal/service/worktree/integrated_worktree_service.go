@@ -4,6 +4,10 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/auto-devs/auto-devs/internal/service/git"
@@ -65,6 +69,13 @@ func (iws *IntegratedWorktreeService) CreateTaskWorktree(ctx context.Context, re
 	_, err = iws.worktreeManager.CreateWorktree(ctx, request.ProjectID, request.TaskID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create worktree directory: %w", err)
+	}
+
+	// Initialize Git repository in worktree directory
+	if err := iws.initializeGitRepository(ctx, worktreePath); err != nil {
+		// Clean up worktree on error
+		iws.worktreeManager.CleanupWorktree(ctx, worktreePath)
+		return nil, fmt.Errorf("failed to initialize Git repository: %w", err)
 	}
 
 	// Generate branch name
@@ -267,16 +278,74 @@ func (iws *IntegratedWorktreeService) ListProjectWorktrees(ctx context.Context, 
 
 // extractTaskIDFromPath extracts task ID from worktree path
 func (iws *IntegratedWorktreeService) extractTaskIDFromPath(worktreePath string) string {
-	// Path format: /worktrees/project-{id}/task-{id}/
-	// Extract the last part after "task-"
-	// This is a simple implementation - in production you might want more robust parsing
-	// For now, we'll assume the task ID is the last component of the path
-	// and it starts with "task-"
+	// Path format: /tmp/test-integrated-worktrees/project-project-123/task-task-456
+	// Extract the task ID from the last component that starts with "task-"
 
-	// Split path and get the last component
-	// This is a simplified approach - you might want to use filepath.Base or similar
-	// and then extract the task ID part
+	// Split path by filepath separator
+	parts := strings.Split(worktreePath, string(filepath.Separator))
+
+	// Find the last component that starts with "task-"
+	for i := len(parts) - 1; i >= 0; i-- {
+		part := parts[i]
+		if strings.HasPrefix(part, "task-") {
+			// Extract the task ID part after "task-"
+			taskID := strings.TrimPrefix(part, "task-")
+			if taskID != "" {
+				return taskID
+			}
+		}
+	}
+
 	return ""
+}
+
+// initializeGitRepository initializes a Git repository in the specified directory
+func (iws *IntegratedWorktreeService) initializeGitRepository(ctx context.Context, worktreePath string) error {
+	iws.logger.Debug("Initializing Git repository", "path", worktreePath)
+
+	// Initialize Git repository using git init
+	cmd := exec.CommandContext(ctx, "git", "init")
+	cmd.Dir = worktreePath
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to initialize Git repository: %w", err)
+	}
+
+	// Create initial commit to establish main branch
+	if err := iws.createInitialCommit(ctx, worktreePath); err != nil {
+		return fmt.Errorf("failed to create initial commit: %w", err)
+	}
+
+	return nil
+}
+
+// createInitialCommit creates an initial commit in the repository
+func (iws *IntegratedWorktreeService) createInitialCommit(ctx context.Context, worktreePath string) error {
+	iws.logger.Debug("Creating initial commit", "path", worktreePath)
+
+	// Create a README file
+	readmeContent := "# Task Worktree\n\nThis is a worktree for task development.\n"
+	readmePath := filepath.Join(worktreePath, "README.md")
+
+	if err := os.WriteFile(readmePath, []byte(readmeContent), 0o644); err != nil {
+		return fmt.Errorf("failed to create README file: %w", err)
+	}
+
+	// Add file to Git
+	cmd := exec.CommandContext(ctx, "git", "add", "README.md")
+	cmd.Dir = worktreePath
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to add README to Git: %w", err)
+	}
+
+	// Create commit
+	cmd = exec.CommandContext(ctx, "git", "commit", "-m", "Initial commit")
+	cmd.Dir = worktreePath
+	cmd.Env = append(os.Environ(), "GIT_AUTHOR_NAME=Test User", "GIT_AUTHOR_EMAIL=test@example.com")
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to create initial commit: %w", err)
+	}
+
+	return nil
 }
 
 // Request and response types
