@@ -24,8 +24,8 @@ func createTestProject(t *testing.T, projectRepo repository.ProjectRepository, c
 }
 
 func TestTaskRepository_Create(t *testing.T) {
-	db, cleanup := setupTestGormDB(t)
-	defer cleanup()
+	db := SetupTestDB(t)
+	defer TeardownTestDB()
 
 	projectRepo := NewProjectRepository(db)
 	taskRepo := NewTaskRepository(db)
@@ -52,8 +52,8 @@ func TestTaskRepository_Create(t *testing.T) {
 }
 
 func TestTaskRepository_CreateWithDefaultStatus(t *testing.T) {
-	db, cleanup := setupTestGormDB(t)
-	defer cleanup()
+	db := SetupTestDB(t)
+	defer TeardownTestDB()
 
 	projectRepo := NewProjectRepository(db)
 	taskRepo := NewTaskRepository(db)
@@ -76,8 +76,8 @@ func TestTaskRepository_CreateWithDefaultStatus(t *testing.T) {
 }
 
 func TestTaskRepository_CreateWithInvalidProjectID(t *testing.T) {
-	db, cleanup := setupTestGormDB(t)
-	defer cleanup()
+	db := SetupTestDB(t)
+	defer TeardownTestDB()
 
 	taskRepo := NewTaskRepository(db)
 	ctx := context.Background()
@@ -96,8 +96,8 @@ func TestTaskRepository_CreateWithInvalidProjectID(t *testing.T) {
 }
 
 func TestTaskRepository_GetByID(t *testing.T) {
-	db, cleanup := setupTestGormDB(t)
-	defer cleanup()
+	db := SetupTestDB(t)
+	defer TeardownTestDB()
 
 	projectRepo := NewProjectRepository(db)
 	taskRepo := NewTaskRepository(db)
@@ -128,8 +128,8 @@ func TestTaskRepository_GetByID(t *testing.T) {
 }
 
 func TestTaskRepository_GetByID_NotFound(t *testing.T) {
-	db, cleanup := setupTestGormDB(t)
-	defer cleanup()
+	db := SetupTestDB(t)
+	defer TeardownTestDB()
 
 	taskRepo := NewTaskRepository(db)
 	ctx := context.Background()
@@ -140,8 +140,8 @@ func TestTaskRepository_GetByID_NotFound(t *testing.T) {
 }
 
 func TestTaskRepository_GetByProjectID(t *testing.T) {
-	db, cleanup := setupTestGormDB(t)
-	defer cleanup()
+	db := SetupTestDB(t)
+	defer TeardownTestDB()
 
 	projectRepo := NewProjectRepository(db)
 	taskRepo := NewTaskRepository(db)
@@ -180,8 +180,8 @@ func TestTaskRepository_GetByProjectID(t *testing.T) {
 }
 
 func TestTaskRepository_Update(t *testing.T) {
-	db, cleanup := setupTestGormDB(t)
-	defer cleanup()
+	db := SetupTestDB(t)
+	defer TeardownTestDB()
 
 	projectRepo := NewProjectRepository(db)
 	taskRepo := NewTaskRepository(db)
@@ -228,8 +228,8 @@ func TestTaskRepository_Update(t *testing.T) {
 }
 
 func TestTaskRepository_Update_NotFound(t *testing.T) {
-	db, cleanup := setupTestGormDB(t)
-	defer cleanup()
+	db := SetupTestDB(t)
+	defer TeardownTestDB()
 
 	taskRepo := NewTaskRepository(db)
 	ctx := context.Background()
@@ -250,8 +250,8 @@ func TestTaskRepository_Update_NotFound(t *testing.T) {
 }
 
 func TestTaskRepository_Delete(t *testing.T) {
-	db, cleanup := setupTestGormDB(t)
-	defer cleanup()
+	db := SetupTestDB(t)
+	defer TeardownTestDB()
 
 	projectRepo := NewProjectRepository(db)
 	taskRepo := NewTaskRepository(db)
@@ -280,8 +280,8 @@ func TestTaskRepository_Delete(t *testing.T) {
 }
 
 func TestTaskRepository_Delete_NotFound(t *testing.T) {
-	db, cleanup := setupTestGormDB(t)
-	defer cleanup()
+	db := SetupTestDB(t)
+	defer TeardownTestDB()
 
 	taskRepo := NewTaskRepository(db)
 	ctx := context.Background()
@@ -292,8 +292,8 @@ func TestTaskRepository_Delete_NotFound(t *testing.T) {
 }
 
 func TestTaskRepository_UpdateStatus(t *testing.T) {
-	db, cleanup := setupTestGormDB(t)
-	defer cleanup()
+	db := SetupTestDB(t)
+	defer TeardownTestDB()
 
 	projectRepo := NewProjectRepository(db)
 	taskRepo := NewTaskRepository(db)
@@ -328,8 +328,8 @@ func TestTaskRepository_UpdateStatus(t *testing.T) {
 }
 
 func TestTaskRepository_UpdateStatus_InvalidStatus(t *testing.T) {
-	db, cleanup := setupTestGormDB(t)
-	defer cleanup()
+	db := SetupTestDB(t)
+	defer TeardownTestDB()
 
 	projectRepo := NewProjectRepository(db)
 	taskRepo := NewTaskRepository(db)
@@ -361,8 +361,8 @@ func TestTaskRepository_UpdateStatus_InvalidStatus(t *testing.T) {
 }
 
 func TestTaskRepository_UpdateStatus_NotFound(t *testing.T) {
-	db, cleanup := setupTestGormDB(t)
-	defer cleanup()
+	db := SetupTestDB(t)
+	defer TeardownTestDB()
 
 	taskRepo := NewTaskRepository(db)
 	ctx := context.Background()
@@ -375,8 +375,8 @@ func TestTaskRepository_UpdateStatus_NotFound(t *testing.T) {
 }
 
 func TestTaskRepository_GetByStatus(t *testing.T) {
-	db, cleanup := setupTestGormDB(t)
-	defer cleanup()
+	db := SetupTestDB(t)
+	defer TeardownTestDB()
 
 	projectRepo := NewProjectRepository(db)
 	taskRepo := NewTaskRepository(db)
@@ -435,8 +435,8 @@ func TestTaskRepository_GetByStatus(t *testing.T) {
 }
 
 func TestTaskRepository_WithNullableFields(t *testing.T) {
-	db, cleanup := setupTestGormDB(t)
-	defer cleanup()
+	db := SetupTestDB(t)
+	defer TeardownTestDB()
 
 	projectRepo := NewProjectRepository(db)
 	taskRepo := NewTaskRepository(db)

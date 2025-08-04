@@ -1,65 +1,72 @@
 package postgres
 
 import (
-	"context"
+	"os"
+	"path/filepath"
+	"runtime"
 	"testing"
-	"time"
 
-	"github.com/auto-devs/auto-devs/internal/entity"
 	"github.com/auto-devs/auto-devs/pkg/database"
-	"github.com/stretchr/testify/require"
-	"github.com/testcontainers/testcontainers-go"
-	pgcontainer "github.com/testcontainers/testcontainers-go/modules/postgres"
-	"github.com/testcontainers/testcontainers-go/wait"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
+	"github.com/joho/godotenv"
+	_ "github.com/lib/pq" // postgres driver
+	"github.com/peterldowns/pgtestdb"
+	"github.com/peterldowns/pgtestdb/migrators/golangmigrator"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
-// setupTestGormDB creates a test database using GORM and testcontainers
-func setupTestGormDB(t *testing.T) (*database.GormDB, func()) {
-	ctx := context.Background()
+var testDB *database.GormDB
 
-	// Create PostgreSQL test container
-	pgContainer, err := pgcontainer.RunContainer(ctx,
-		testcontainers.WithImage("postgres:15-alpine"),
-		pgcontainer.WithDatabase("testdb"),
-		pgcontainer.WithUsername("testuser"),
-		pgcontainer.WithPassword("testpass"),
-		testcontainers.WithWaitStrategy(
-			wait.ForLog("database system is ready to accept connections").
-				WithOccurrence(2).
-				WithStartupTimeout(5*time.Second),
-		),
-	)
-	require.NoError(t, err)
+func newDbMigrator() pgtestdb.Migrator {
+	_, b, _, _ := runtime.Caller(0)
+	projectRoot := filepath.Join(filepath.Dir(b), "../../../")
 
-	// Get connection details
-	host, err := pgContainer.Host(ctx)
-	require.NoError(t, err)
+	folderPath := filepath.Join(projectRoot, "migrations")
+	gm := golangmigrator.New(folderPath)
 
-	port, err := pgContainer.MappedPort(ctx, "5432")
-	require.NoError(t, err)
+	return gm
+}
 
-	// Create GORM connection
-	dsn := "host=" + host + " user=testuser password=testpass dbname=testdb port=" + port.Port() + " sslmode=disable TimeZone=UTC"
+func SetupTestDB(t *testing.T) *database.GormDB {
+	// Get the absolute path to the project root directory
+	_, b, _, _ := runtime.Caller(0)
+	projectRoot := filepath.Join(filepath.Dir(b), "../../../")
 
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
-	require.NoError(t, err)
-
-	// Run migrations
-	err = db.AutoMigrate(&entity.Project{}, &entity.Task{}, &entity.TaskStatusHistory{})
-	require.NoError(t, err)
-
-	// Create GormDB wrapper
-	gormDB := &database.GormDB{DB: db}
-
-	cleanup := func() {
-		sqlDB, err := db.DB()
-		if err == nil {
-			sqlDB.Close()
-		}
-		pgContainer.Terminate(ctx)
+	// Load .env.test from project root
+	godotenv.Load(filepath.Join(projectRoot, ".env.test"))
+	dbHost := os.Getenv("DB_HOST")
+	dbUser := os.Getenv("DB_USERNAME")
+	dbPassword := os.Getenv("DB_PASSWORD")
+	dbName := os.Getenv("DB_NAME")
+	dbPort := os.Getenv("DB_PORT")
+	role := pgtestdb.DefaultRole()
+	role.Capabilities = "SUPERUSER"
+	// database.InitDB()
+	pgxConf := pgtestdb.Config{
+		DriverName: "pgx",
+		Host:       dbHost,
+		Port:       dbPort,
+		User:       dbUser,
+		Password:   dbPassword,
+		Database:   dbName,
+		Options:    "sslmode=disable",
+		TestRole:   &role,
 	}
+	migrator := newDbMigrator()
+	sqlDb := pgtestdb.New(t, pgxConf, migrator)
+	db, err := gorm.Open(postgres.New(postgres.Config{
+		Conn: sqlDb,
+	}), &gorm.Config{})
+	if err != nil {
+		panic(err)
+	}
+	testDB = &database.GormDB{
+		DB: db,
+	}
+	return testDB
+}
 
-	return gormDB, cleanup
+func TeardownTestDB() error {
+	return nil
 }
