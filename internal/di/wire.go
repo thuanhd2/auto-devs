@@ -28,7 +28,7 @@ var ProviderSet = wire.NewSet(
 	ProvideIntegratedWorktreeService,
 	// Usecase providers
 	usecase.NewNotificationUsecase,
-	ProvideAuditService,
+	ProvideAuditUsecase,
 	ProvideProjectUsecase,
 	ProvideWorktreeUsecase,
 	ProvideTaskUsecase,
@@ -51,7 +51,7 @@ type App struct {
 	TaskRepo            repository.TaskRepository
 	WorktreeRepo        repository.WorktreeRepository
 	AuditRepo           repository.AuditRepository
-	AuditService        usecase.AuditService
+	AuditUsecase        usecase.AuditUsecase
 	ProjectUsecase      usecase.ProjectUsecase
 	TaskUsecase         usecase.TaskUsecase
 	WorktreeUsecase     usecase.WorktreeUsecase
@@ -66,7 +66,7 @@ func NewApp(
 	taskRepo repository.TaskRepository,
 	worktreeRepo repository.WorktreeRepository,
 	auditRepo repository.AuditRepository,
-	auditService usecase.AuditService,
+	auditUsecase usecase.AuditUsecase,
 	projectUsecase usecase.ProjectUsecase,
 	taskUsecase usecase.TaskUsecase,
 	worktreeUsecase usecase.WorktreeUsecase,
@@ -79,7 +79,7 @@ func NewApp(
 		TaskRepo:            taskRepo,
 		WorktreeRepo:        worktreeRepo,
 		AuditRepo:           auditRepo,
-		AuditService:        auditService,
+		AuditUsecase:        auditUsecase,
 		ProjectUsecase:      projectUsecase,
 		TaskUsecase:         taskUsecase,
 		WorktreeUsecase:     worktreeUsecase,
@@ -94,12 +94,12 @@ func ProvideGormDB(cfg *config.Config) (*database.GormDB, error) {
 
 // ProvideWorktreeRepository provides a WorktreeRepository instance
 func ProvideWorktreeRepository(gormDB *database.GormDB) repository.WorktreeRepository {
-	return postgres.NewWorktreeRepository(gormDB.DB)
+	return postgres.NewWorktreeRepository(gormDB)
 }
 
 // ProvideAuditService provides an AuditService instance
-func ProvideAuditService(auditRepo repository.AuditRepository) usecase.AuditService {
-	return usecase.NewAuditService(auditRepo)
+func ProvideAuditUsecase(auditRepo repository.AuditRepository) usecase.AuditUsecase {
+	return usecase.NewAuditUsecase(auditRepo)
 }
 
 // ProvideGitManager provides a GitManager instance
@@ -125,8 +125,8 @@ func ProvideIntegratedWorktreeService(cfg *config.Config, gitManager *git.GitMan
 }
 
 // ProvideProjectUsecase provides a ProjectUsecase instance
-func ProvideProjectUsecase(projectRepo repository.ProjectRepository, auditService usecase.AuditService) usecase.ProjectUsecase {
-	return usecase.NewProjectUsecase(projectRepo, auditService)
+func ProvideProjectUsecase(projectRepo repository.ProjectRepository, auditUsecase usecase.AuditUsecase) usecase.ProjectUsecase {
+	return usecase.NewProjectUsecase(projectRepo, auditUsecase)
 }
 
 // ProvideWorktreeUsecase provides a WorktreeUsecase instance

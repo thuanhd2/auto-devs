@@ -12,31 +12,31 @@ import (
 	"github.com/google/uuid"
 )
 
-type AuditService interface {
+type AuditUsecase interface {
 	LogProjectOperation(ctx context.Context, action entity.AuditAction, projectID uuid.UUID, oldProject, newProject *entity.Project, description string) error
 	LogTaskOperation(ctx context.Context, action entity.AuditAction, taskID uuid.UUID, oldTask, newTask *entity.Task, description string) error
 	GetAuditLogs(ctx context.Context, entityType string, entityID *uuid.UUID, limit int) ([]*entity.AuditLog, error)
 }
 
-type auditService struct {
+type auditUsecase struct {
 	auditRepo repository.AuditRepository
 }
 
-func NewAuditService(auditRepo repository.AuditRepository) AuditService {
-	return &auditService{
+func NewAuditUsecase(auditRepo repository.AuditRepository) AuditUsecase {
+	return &auditUsecase{
 		auditRepo: auditRepo,
 	}
 }
 
-func (s *auditService) LogProjectOperation(ctx context.Context, action entity.AuditAction, projectID uuid.UUID, oldProject, newProject *entity.Project, description string) error {
+func (s *auditUsecase) LogProjectOperation(ctx context.Context, action entity.AuditAction, projectID uuid.UUID, oldProject, newProject *entity.Project, description string) error {
 	return s.logOperation(ctx, "project", projectID, action, oldProject, newProject, description)
 }
 
-func (s *auditService) LogTaskOperation(ctx context.Context, action entity.AuditAction, taskID uuid.UUID, oldTask, newTask *entity.Task, description string) error {
+func (s *auditUsecase) LogTaskOperation(ctx context.Context, action entity.AuditAction, taskID uuid.UUID, oldTask, newTask *entity.Task, description string) error {
 	return s.logOperation(ctx, "task", taskID, action, oldTask, newTask, description)
 }
 
-func (s *auditService) logOperation(ctx context.Context, entityType string, entityID uuid.UUID, action entity.AuditAction, oldEntity, newEntity interface{}, description string) error {
+func (s *auditUsecase) logOperation(ctx context.Context, entityType string, entityID uuid.UUID, action entity.AuditAction, oldEntity, newEntity interface{}, description string) error {
 	auditLog := &entity.AuditLog{
 		ID:          uuid.New(),
 		EntityType:  entityType,
@@ -79,7 +79,7 @@ func (s *auditService) logOperation(ctx context.Context, entityType string, enti
 	return s.auditRepo.Create(ctx, auditLog)
 }
 
-func (s *auditService) GetAuditLogs(ctx context.Context, entityType string, entityID *uuid.UUID, limit int) ([]*entity.AuditLog, error) {
+func (s *auditUsecase) GetAuditLogs(ctx context.Context, entityType string, entityID *uuid.UUID, limit int) ([]*entity.AuditLog, error) {
 	return s.auditRepo.GetByEntity(ctx, entityType, entityID, limit)
 }
 
