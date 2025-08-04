@@ -12,8 +12,8 @@ import (
 )
 
 func TestTaskRepository_UpdateStatusWithHistory(t *testing.T) {
-	db, cleanup := setupTestGormDB(t)
-	defer cleanup()
+	db := SetupTestDB(t)
+	defer TeardownTestDB()
 
 	projectRepo := NewProjectRepository(db)
 	taskRepo := NewTaskRepository(db)
@@ -58,8 +58,8 @@ func TestTaskRepository_UpdateStatusWithHistory(t *testing.T) {
 }
 
 func TestTaskRepository_UpdateStatusWithHistory_InvalidTransition(t *testing.T) {
-	db, cleanup := setupTestGormDB(t)
-	defer cleanup()
+	db := SetupTestDB(t)
+	defer TeardownTestDB()
 
 	projectRepo := NewProjectRepository(db)
 	taskRepo := NewTaskRepository(db)
@@ -90,8 +90,8 @@ func TestTaskRepository_UpdateStatusWithHistory_InvalidTransition(t *testing.T) 
 }
 
 func TestTaskRepository_GetByStatuses(t *testing.T) {
-	db, cleanup := setupTestGormDB(t)
-	defer cleanup()
+	db := SetupTestDB(t)
+	defer TeardownTestDB()
 
 	projectRepo := NewProjectRepository(db)
 	taskRepo := NewTaskRepository(db)
@@ -128,8 +128,8 @@ func TestTaskRepository_GetByStatuses(t *testing.T) {
 }
 
 func TestTaskRepository_BulkUpdateStatus(t *testing.T) {
-	db, cleanup := setupTestGormDB(t)
-	defer cleanup()
+	db := SetupTestDB(t)
+	defer TeardownTestDB()
 
 	projectRepo := NewProjectRepository(db)
 	taskRepo := NewTaskRepository(db)
@@ -173,8 +173,8 @@ func TestTaskRepository_BulkUpdateStatus(t *testing.T) {
 }
 
 func TestTaskRepository_BulkUpdateStatus_PartialInvalidTransitions(t *testing.T) {
-	db, cleanup := setupTestGormDB(t)
-	defer cleanup()
+	db := SetupTestDB(t)
+	defer TeardownTestDB()
 
 	projectRepo := NewProjectRepository(db)
 	taskRepo := NewTaskRepository(db)
@@ -210,8 +210,8 @@ func TestTaskRepository_BulkUpdateStatus_PartialInvalidTransitions(t *testing.T)
 }
 
 func TestTaskRepository_GetStatusHistory(t *testing.T) {
-	db, cleanup := setupTestGormDB(t)
-	defer cleanup()
+	db := SetupTestDB(t)
+	defer TeardownTestDB()
 
 	projectRepo := NewProjectRepository(db)
 	taskRepo := NewTaskRepository(db)
@@ -263,8 +263,8 @@ func TestTaskRepository_GetStatusHistory(t *testing.T) {
 }
 
 func TestTaskRepository_GetStatusAnalytics(t *testing.T) {
-	db, cleanup := setupTestGormDB(t)
-	defer cleanup()
+	db := SetupTestDB(t)
+	defer TeardownTestDB()
 
 	projectRepo := NewProjectRepository(db)
 	taskRepo := NewTaskRepository(db)
@@ -319,8 +319,8 @@ func TestTaskRepository_GetStatusAnalytics(t *testing.T) {
 }
 
 func TestTaskRepository_GetTasksWithFilters(t *testing.T) {
-	db, cleanup := setupTestGormDB(t)
-	defer cleanup()
+	db := SetupTestDB(t)
+	defer TeardownTestDB()
 
 	projectRepo := NewProjectRepository(db)
 	taskRepo := NewTaskRepository(db)
