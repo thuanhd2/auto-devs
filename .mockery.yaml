@@ -1,0 +1,24 @@
+all: false
+dir: '{{.InterfaceDir}}'
+filename: 'mock_{{.InterfaceName}}.go'
+structname: 'Mock{{.InterfaceName}}'
+pkgname: 'mocks'
+template: testify
+require-template-schema-exists: false
+packages:
+  github.com/auto-devs/auto-devs/internal/usecase:
+    config:
+      dir: "internal/mocks"
+      filename: 'mock_{{.InterfaceName}}.go'
+      pkgname: 'mocks'
+    interfaces:
+      ProjectUsecase:
+      NotificationUsecase:
+  github.com/auto-devs/auto-devs/internal/repository:
+    config:
+      dir: "internal/mocks"
+      filename: 'mock_{{.InterfaceName}}.go'
+      pkgname: 'mocks'
+    interfaces:
+      TaskRepository:
+      ProjectRepository:

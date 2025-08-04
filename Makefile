@@ -102,6 +102,19 @@ wire: ## Generate Wire dependency injection code
 	@go generate ./internal/di
 	@echo "Wire code generated successfully!"
 
+.PHONY: mocks
+mocks: ## Generate mocks using mockery
+	@echo "Generating mocks..."
+	@mockery --config .mockery.yaml
+	@echo "Mocks generated successfully!"
+
+.PHONY: mocks-clean
+mocks-clean: ## Clean generated mocks
+	@echo "Cleaning generated mocks..."
+	@rm -rf internal/mocks
+	@mkdir -p internal/mocks/usecase internal/mocks/repository
+	@echo "Mocks cleaned!"
+
 .PHONY: deps
 deps: ## Download dependencies
 	@echo "Downloading dependencies..."
