@@ -11,7 +11,6 @@ import (
 
 	"github.com/auto-devs/auto-devs/internal/entity"
 	"github.com/auto-devs/auto-devs/internal/handler/dto"
-	"github.com/auto-devs/auto-devs/internal/mocks"
 	"github.com/auto-devs/auto-devs/internal/usecase"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -20,8 +19,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func setupProjectHandler(t *testing.T) (*ProjectHandler, *mocks.MockProjectUsecase) {
-	mockUsecase := mocks.NewMockProjectUsecase(t)
+func setupProjectHandler(t *testing.T) (*ProjectHandler, *usecase.ProjectUsecaseMock) {
+	mockUsecase := usecase.NewProjectUsecaseMock(t)
 	handler := NewProjectHandler(mockUsecase)
 	return handler, mockUsecase
 }
@@ -85,8 +84,6 @@ func TestProjectHandler_CreateProject(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, project.ID, response.ID)
 		assert.Equal(t, project.Name, response.Name)
-
-		
 	})
 
 	t.Run("validation error", func(t *testing.T) {
@@ -137,8 +134,6 @@ func TestProjectHandler_ListProjects(t *testing.T) {
 		require.NoError(t, err)
 		assert.Len(t, response.Projects, 2)
 		assert.Equal(t, 2, response.Total)
-
-		
 	})
 
 	t.Run("with search and sorting", func(t *testing.T) {
@@ -158,7 +153,6 @@ func TestProjectHandler_ListProjects(t *testing.T) {
 		router.ServeHTTP(w, req)
 
 		assert.Equal(t, http.StatusOK, w.Code)
-		
 	})
 }
 
@@ -186,8 +180,6 @@ func TestProjectHandler_GetProject(t *testing.T) {
 		err := json.Unmarshal(w.Body.Bytes(), &response)
 		require.NoError(t, err)
 		assert.Equal(t, projectID, response.ID)
-
-		
 	})
 
 	t.Run("invalid UUID", func(t *testing.T) {
@@ -227,8 +219,6 @@ func TestProjectHandler_GetProjectStatistics(t *testing.T) {
 	assert.Equal(t, 5, response.TotalTasks)
 	assert.Equal(t, 40.0, response.CompletionPercent)
 	assert.Equal(t, 3, response.TasksByStatus[string(entity.TaskStatusTODO)])
-
-	
 }
 
 func TestProjectHandler_ArchiveProject(t *testing.T) {
@@ -243,7 +233,6 @@ func TestProjectHandler_ArchiveProject(t *testing.T) {
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusNoContent, w.Code)
-	
 }
 
 func TestProjectHandler_RestoreProject(t *testing.T) {
@@ -258,7 +247,6 @@ func TestProjectHandler_RestoreProject(t *testing.T) {
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusNoContent, w.Code)
-	
 }
 
 func TestProjectHandler_UpdateProject(t *testing.T) {
@@ -294,8 +282,6 @@ func TestProjectHandler_UpdateProject(t *testing.T) {
 	err := json.Unmarshal(w.Body.Bytes(), &response)
 	require.NoError(t, err)
 	assert.Equal(t, "Updated Project", response.Name)
-
-	
 }
 
 func TestProjectHandler_DeleteProject(t *testing.T) {
@@ -310,7 +296,6 @@ func TestProjectHandler_DeleteProject(t *testing.T) {
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusNoContent, w.Code)
-	
 }
 
 // Helper function for creating string pointers

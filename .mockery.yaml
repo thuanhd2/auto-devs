@@ -1,24 +1,25 @@
-all: false
-dir: '{{.InterfaceDir}}'
-filename: 'mock_{{.InterfaceName}}.go'
-structname: 'Mock{{.InterfaceName}}'
-pkgname: 'mocks'
+all: false                                # Không generate tất cả interface toàn repo (chỉ những cái bạn định nghĩa bên dưới)
+dir: '{{.InterfaceDir}}'                  # Giữ nguyên, mockery sẽ tự lấy dir từ gói tương ứng trong `packages:`
+filename: '{{.InterfaceName | snakecase }}_mock.go'
+force-file-write: true
+formatter: goimports
+log-level: info
+structname: '{{.InterfaceName}}Mock'      # Tên struct sẽ là `OrderServiceMock`
+pkgname: '{{.SrcPackageName}}'            # Giữ nguyên tên package như trong source
+recursive: false
 template: testify
 require-template-schema-exists: false
+
 packages:
   github.com/auto-devs/auto-devs/internal/usecase:
     config:
-      dir: "internal/mocks"
-      filename: 'mock_{{.InterfaceName}}.go'
-      pkgname: 'mocks'
+      all: true
     interfaces:
       ProjectUsecase:
       NotificationUsecase:
   github.com/auto-devs/auto-devs/internal/repository:
     config:
-      dir: "internal/mocks"
-      filename: 'mock_{{.InterfaceName}}.go'
-      pkgname: 'mocks'
+      all: true
     interfaces:
       TaskRepository:
       ProjectRepository:

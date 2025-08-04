@@ -30,8 +30,8 @@ func InitializeApp() (*App, error) {
 	taskRepository := postgres.NewTaskRepository(gormDB)
 	worktreeRepository := ProvideWorktreeRepository(gormDB)
 	auditRepository := postgres.NewAuditRepository(gormDB)
-	auditService := ProvideAuditService(auditRepository)
-	projectUsecase := ProvideProjectUsecase(projectRepository, auditService)
+	auditUsecase := ProvideAuditUsecase(auditRepository)
+	projectUsecase := ProvideProjectUsecase(projectRepository, auditUsecase)
 	notificationUsecase := usecase.NewNotificationUsecase()
 	gitManager, err := ProvideGitManager(configConfig)
 	if err != nil {
@@ -43,7 +43,7 @@ func InitializeApp() (*App, error) {
 	}
 	worktreeUsecase := ProvideWorktreeUsecase(worktreeRepository, taskRepository, projectRepository, integratedWorktreeService, gitManager)
 	taskUsecase := ProvideTaskUsecase(taskRepository, projectRepository, notificationUsecase, worktreeUsecase)
-	app := NewApp(configConfig, gormDB, projectRepository, taskRepository, worktreeRepository, auditRepository, auditService, projectUsecase, taskUsecase, worktreeUsecase, notificationUsecase)
+	app := NewApp(configConfig, gormDB, projectRepository, taskRepository, worktreeRepository, auditRepository, auditUsecase, projectUsecase, taskUsecase, worktreeUsecase, notificationUsecase)
 	return app, nil
 }
 
@@ -51,7 +51,7 @@ func InitializeApp() (*App, error) {
 
 // ProviderSet is the Wire provider set for the entire application
 var ProviderSet = wire.NewSet(config.Load, ProvideGormDB, postgres.NewProjectRepository, postgres.NewTaskRepository, ProvideWorktreeRepository, postgres.NewAuditRepository, ProvideGitManager,
-	ProvideIntegratedWorktreeService, usecase.NewNotificationUsecase, ProvideAuditService,
+	ProvideIntegratedWorktreeService, usecase.NewNotificationUsecase, ProvideAuditUsecase,
 	ProvideProjectUsecase,
 	ProvideWorktreeUsecase,
 	ProvideTaskUsecase,
@@ -65,7 +65,7 @@ type App struct {
 	TaskRepo            repository.TaskRepository
 	WorktreeRepo        repository.WorktreeRepository
 	AuditRepo           repository.AuditRepository
-	AuditService        usecase.AuditService
+	AuditUsecase        usecase.AuditUsecase
 	ProjectUsecase      usecase.ProjectUsecase
 	TaskUsecase         usecase.TaskUsecase
 	WorktreeUsecase     usecase.WorktreeUsecase
@@ -80,7 +80,7 @@ func NewApp(
 	taskRepo repository.TaskRepository,
 	worktreeRepo repository.WorktreeRepository,
 	auditRepo repository.AuditRepository,
-	auditService usecase.AuditService,
+	auditUsecase usecase.AuditUsecase,
 	projectUsecase usecase.ProjectUsecase,
 	taskUsecase usecase.TaskUsecase,
 	worktreeUsecase usecase.WorktreeUsecase,
@@ -93,7 +93,7 @@ func NewApp(
 		TaskRepo:            taskRepo,
 		WorktreeRepo:        worktreeRepo,
 		AuditRepo:           auditRepo,
-		AuditService:        auditService,
+		AuditUsecase:        auditUsecase,
 		ProjectUsecase:      projectUsecase,
 		TaskUsecase:         taskUsecase,
 		WorktreeUsecase:     worktreeUsecase,
@@ -112,8 +112,8 @@ func ProvideWorktreeRepository(gormDB *database.GormDB) repository.WorktreeRepos
 }
 
 // ProvideAuditService provides an AuditService instance
-func ProvideAuditService(auditRepo repository.AuditRepository) usecase.AuditService {
-	return usecase.NewAuditService(auditRepo)
+func ProvideAuditUsecase(auditRepo repository.AuditRepository) usecase.AuditUsecase {
+	return usecase.NewAuditUsecase(auditRepo)
 }
 
 // ProvideGitManager provides a GitManager instance
@@ -139,8 +139,8 @@ func ProvideIntegratedWorktreeService(cfg *config.Config, gitManager *git.GitMan
 }
 
 // ProvideProjectUsecase provides a ProjectUsecase instance
-func ProvideProjectUsecase(projectRepo repository.ProjectRepository, auditService usecase.AuditService) usecase.ProjectUsecase {
-	return usecase.NewProjectUsecase(projectRepo, auditService)
+func ProvideProjectUsecase(projectRepo repository.ProjectRepository, auditUsecase usecase.AuditUsecase) usecase.ProjectUsecase {
+	return usecase.NewProjectUsecase(projectRepo, auditUsecase)
 }
 
 // ProvideWorktreeUsecase provides a WorktreeUsecase instance

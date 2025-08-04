@@ -135,7 +135,7 @@ func validateRepoURL(repoURL string) error {
 	}
 
 	// Additional validation for common Git hosting patterns
-	validGitPattern := regexp.MustCompile("^https?://(github\\.com|gitlab\\.com|bitbucket\\.org)/[\\w\\-\\.]+/\\w+/?$")
+	validGitPattern := regexp.MustCompile(`^https?://(github\.com|gitlab\.com|bitbucket\.org)/[\w\-.]+/\w+/?$`)
 	if !validGitPattern.MatchString(repoURL) {
 		// Allow other valid URLs but warn about common patterns
 		if !strings.Contains(parsedURL.Host, ".") {
@@ -148,13 +148,13 @@ func validateRepoURL(repoURL string) error {
 
 type projectUsecase struct {
 	projectRepo  repository.ProjectRepository
-	auditService AuditService
+	auditUsecase AuditUsecase
 }
 
-func NewProjectUsecase(projectRepo repository.ProjectRepository, auditService AuditService) ProjectUsecase {
+func NewProjectUsecase(projectRepo repository.ProjectRepository, auditUsecase AuditUsecase) ProjectUsecase {
 	return &projectUsecase{
 		projectRepo:  projectRepo,
-		auditService: auditService,
+		auditUsecase: auditUsecase,
 	}
 }
 
@@ -200,8 +200,8 @@ func (u *projectUsecase) Create(ctx context.Context, req CreateProjectRequest) (
 	}
 
 	// Log the create operation
-	if u.auditService != nil {
-		_ = u.auditService.LogProjectOperation(ctx, entity.AuditActionCreate, project.ID, nil, project, fmt.Sprintf("Created project '%s'", project.Name))
+	if u.auditUsecase != nil {
+		_ = u.auditUsecase.LogProjectOperation(ctx, entity.AuditActionCreate, project.ID, nil, project, fmt.Sprintf("Created project '%s'", project.Name))
 	}
 
 	return project, nil
@@ -310,8 +310,8 @@ func (u *projectUsecase) Update(ctx context.Context, id uuid.UUID, req UpdatePro
 	}
 
 	// Log the update operation
-	if u.auditService != nil {
-		_ = u.auditService.LogProjectOperation(ctx, entity.AuditActionUpdate, oldProject.ID, &originalProject, oldProject, fmt.Sprintf("Updated project '%s'", oldProject.Name))
+	if u.auditUsecase != nil {
+		_ = u.auditUsecase.LogProjectOperation(ctx, entity.AuditActionUpdate, oldProject.ID, &originalProject, oldProject, fmt.Sprintf("Updated project '%s'", oldProject.Name))
 	}
 
 	return oldProject, nil
@@ -330,8 +330,8 @@ func (u *projectUsecase) Delete(ctx context.Context, id uuid.UUID) error {
 	}
 
 	// Log the delete operation
-	if u.auditService != nil {
-		_ = u.auditService.LogProjectOperation(ctx, entity.AuditActionDelete, id, project, nil, fmt.Sprintf("Deleted project '%s'", project.Name))
+	if u.auditUsecase != nil {
+		_ = u.auditUsecase.LogProjectOperation(ctx, entity.AuditActionDelete, id, project, nil, fmt.Sprintf("Deleted project '%s'", project.Name))
 	}
 
 	return nil
@@ -402,8 +402,8 @@ func (u *projectUsecase) Archive(ctx context.Context, id uuid.UUID) error {
 	}
 
 	// Log the archive operation
-	if u.auditService != nil {
-		_ = u.auditService.LogProjectOperation(ctx, entity.AuditActionArchive, project.ID, project, nil, fmt.Sprintf("Archived project '%s'", project.Name))
+	if u.auditUsecase != nil {
+		_ = u.auditUsecase.LogProjectOperation(ctx, entity.AuditActionArchive, project.ID, project, nil, fmt.Sprintf("Archived project '%s'", project.Name))
 	}
 
 	return nil
@@ -417,8 +417,8 @@ func (u *projectUsecase) Restore(ctx context.Context, id uuid.UUID) error {
 
 	// Get restored project for audit logging
 	project, err := u.projectRepo.GetByID(ctx, id)
-	if err == nil && u.auditService != nil {
-		_ = u.auditService.LogProjectOperation(ctx, entity.AuditActionRestore, id, nil, project, fmt.Sprintf("Restored project '%s'", project.Name))
+	if err == nil && u.auditUsecase != nil {
+		_ = u.auditUsecase.LogProjectOperation(ctx, entity.AuditActionRestore, id, nil, project, fmt.Sprintf("Restored project '%s'", project.Name))
 	}
 
 	return nil
