@@ -1,6 +1,7 @@
 package entity
 
 import (
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -11,7 +12,7 @@ import (
 type TaskStatus string
 
 const (
-	TaskStatusTODO           TaskStatus = "TODO"
+	TaskStatusTODO          TaskStatus = "TODO"
 	TaskStatusPLANNING      TaskStatus = "PLANNING"
 	TaskStatusPLANREVIEWING TaskStatus = "PLAN_REVIEWING"
 	TaskStatusIMPLEMENTING  TaskStatus = "IMPLEMENTING"
@@ -19,6 +20,57 @@ const (
 	TaskStatusDONE          TaskStatus = "DONE"
 	TaskStatusCANCELLED     TaskStatus = "CANCELLED"
 )
+
+// TaskPriority represents the priority level of a task
+type TaskPriority string
+
+const (
+	TaskPriorityLow    TaskPriority = "LOW"
+	TaskPriorityMedium TaskPriority = "MEDIUM"
+	TaskPriorityHigh   TaskPriority = "HIGH"
+	TaskPriorityUrgent TaskPriority = "URGENT"
+)
+
+// IsValid checks if the task priority is valid
+func (tp TaskPriority) IsValid() bool {
+	switch tp {
+	case TaskPriorityLow, TaskPriorityMedium, TaskPriorityHigh, TaskPriorityUrgent:
+		return true
+	default:
+		return false
+	}
+}
+
+// String returns the string representation of TaskPriority
+func (tp TaskPriority) String() string {
+	return string(tp)
+}
+
+// GetDisplayName returns a user-friendly display name for the priority
+func (tp TaskPriority) GetDisplayName() string {
+	switch tp {
+	case TaskPriorityLow:
+		return "Low"
+	case TaskPriorityMedium:
+		return "Medium"
+	case TaskPriorityHigh:
+		return "High"
+	case TaskPriorityUrgent:
+		return "Urgent"
+	default:
+		return string(tp)
+	}
+}
+
+// GetAllTaskPriorities returns all valid task priorities
+func GetAllTaskPriorities() []TaskPriority {
+	return []TaskPriority{
+		TaskPriorityLow,
+		TaskPriorityMedium,
+		TaskPriorityHigh,
+		TaskPriorityUrgent,
+	}
+}
 
 // TaskStatusTransitions defines valid transitions between task statuses
 var TaskStatusTransitions = map[TaskStatus][]TaskStatus{
@@ -58,7 +110,7 @@ var TaskStatusTransitions = map[TaskStatus][]TaskStatus{
 func (ts TaskStatus) IsValid() bool {
 	switch ts {
 	case TaskStatusTODO, TaskStatusPLANNING, TaskStatusPLANREVIEWING,
-		 TaskStatusIMPLEMENTING, TaskStatusCODEREVIEWING, TaskStatusDONE, TaskStatusCANCELLED:
+		TaskStatusIMPLEMENTING, TaskStatusCODEREVIEWING, TaskStatusDONE, TaskStatusCANCELLED:
 		return true
 	default:
 		return false
@@ -76,7 +128,7 @@ func (ts TaskStatus) CanTransitionTo(target TaskStatus) bool {
 	if !exists {
 		return false
 	}
-	
+
 	for _, allowed := range allowedTransitions {
 		if allowed == target {
 			return true
@@ -121,16 +173,69 @@ func (ts TaskStatus) GetDisplayName() string {
 }
 
 type Task struct {
-	ID          uuid.UUID      `json:"id" gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
-	ProjectID   uuid.UUID      `json:"project_id" gorm:"type:uuid;not null" validate:"required"`
-	Title       string         `json:"title" gorm:"size:255;not null" validate:"required,min=1,max=255"`
-	Description string         `json:"description" gorm:"size:1000" validate:"max=1000"`
-	Status      TaskStatus     `json:"status" gorm:"size:50;not null;default:'TODO'" validate:"required,oneof=TODO PLANNING PLAN_REVIEWING IMPLEMENTING CODE_REVIEWING DONE CANCELLED"`
-	BranchName  *string        `json:"branch_name,omitempty" gorm:"size:255"`
-	PullRequest *string        `json:"pull_request,omitempty" gorm:"size:255"`
-	CreatedAt   time.Time      `json:"created_at" gorm:"autoCreateTime"`
-	UpdatedAt   time.Time      `json:"updated_at" gorm:"autoUpdateTime"`
-	DeletedAt   gorm.DeletedAt `json:"deleted_at,omitempty" gorm:"index"`
+	ID             uuid.UUID      `json:"id" gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
+	ProjectID      uuid.UUID      `json:"project_id" gorm:"type:uuid;not null" validate:"required"`
+	Title          string         `json:"title" gorm:"size:255;not null" validate:"required,min=1,max=255"`
+	Description    string         `json:"description" gorm:"size:1000" validate:"max=1000"`
+	Status         TaskStatus     `json:"status" gorm:"size:50;not null;default:'TODO'" validate:"required,oneof=TODO PLANNING PLAN_REVIEWING IMPLEMENTING CODE_REVIEWING DONE CANCELLED"`
+	Priority       TaskPriority   `json:"priority" gorm:"size:20;default:'MEDIUM'" validate:"oneof=LOW MEDIUM HIGH URGENT"`
+	BranchName     *string        `json:"branch_name,omitempty" gorm:"size:255"`
+	PullRequest    *string        `json:"pull_request,omitempty" gorm:"size:255"`
+	EstimatedHours *float64       `json:"estimated_hours,omitempty" gorm:"type:decimal(5,2)" validate:"min=0,max=999.99"`
+	ActualHours    *float64       `json:"actual_hours,omitempty" gorm:"type:decimal(5,2)" validate:"min=0,max=999.99"`
+	Tags           []string       `json:"tags,omitempty" gorm:"-"` // Will be stored as JSON in database
+	TagsJSON       string         `json:"-" gorm:"column:tags;type:jsonb"`
+	ParentTaskID   *uuid.UUID     `json:"parent_task_id,omitempty" gorm:"type:uuid"`
+	IsArchived     bool           `json:"is_archived" gorm:"default:false"`
+	IsTemplate     bool           `json:"is_template" gorm:"default:false"`
+	TemplateID     *uuid.UUID     `json:"template_id,omitempty" gorm:"type:uuid"`
+	AssignedTo     *string        `json:"assigned_to,omitempty" gorm:"size:255"` // User ID for future assignment
+	DueDate        *time.Time     `json:"due_date,omitempty"`
+	CreatedAt      time.Time      `json:"created_at" gorm:"autoCreateTime"`
+	UpdatedAt      time.Time      `json:"updated_at" gorm:"autoUpdateTime"`
+	DeletedAt      gorm.DeletedAt `json:"deleted_at,omitempty" gorm:"index"`
+
+	// Relationships
+	Project    Project        `json:"project,omitempty" gorm:"foreignKey:ProjectID"`
+	ParentTask *Task          `json:"parent_task,omitempty" gorm:"foreignKey:ParentTaskID"`
+	Subtasks   []Task         `json:"subtasks,omitempty" gorm:"foreignKey:ParentTaskID"`
+	AuditLogs  []TaskAuditLog `json:"audit_logs,omitempty" gorm:"foreignKey:TaskID"`
+}
+
+// TaskAuditLog tracks all modifications to tasks
+type TaskAuditLog struct {
+	ID        uuid.UUID      `json:"id" gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
+	TaskID    uuid.UUID      `json:"task_id" gorm:"type:uuid;not null" validate:"required"`
+	Action    string         `json:"action" gorm:"size:100;not null" validate:"required"` // "created", "updated", "deleted", "status_changed", etc.
+	FieldName *string        `json:"field_name,omitempty" gorm:"size:100"`                // Which field was changed
+	OldValue  *string        `json:"old_value,omitempty" gorm:"size:1000"`                // Previous value
+	NewValue  *string        `json:"new_value,omitempty" gorm:"size:1000"`                // New value
+	ChangedBy *string        `json:"changed_by,omitempty" gorm:"size:255"`                // User ID who made the change
+	IPAddress *string        `json:"ip_address,omitempty" gorm:"size:45"`                 // IP address of the change
+	UserAgent *string        `json:"user_agent,omitempty" gorm:"size:500"`                // User agent string
+	CreatedAt time.Time      `json:"created_at" gorm:"autoCreateTime"`
+	DeletedAt gorm.DeletedAt `json:"deleted_at,omitempty" gorm:"index"`
+
+	// Relationships
+	Task Task `json:"task,omitempty" gorm:"foreignKey:TaskID"`
+}
+
+// TaskTemplate represents reusable task templates
+type TaskTemplate struct {
+	ID             uuid.UUID      `json:"id" gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
+	ProjectID      uuid.UUID      `json:"project_id" gorm:"type:uuid;not null" validate:"required"`
+	Name           string         `json:"name" gorm:"size:255;not null" validate:"required,min=1,max=255"`
+	Description    string         `json:"description" gorm:"size:1000" validate:"max=1000"`
+	Title          string         `json:"title" gorm:"size:255;not null" validate:"required,min=1,max=255"`
+	Priority       TaskPriority   `json:"priority" gorm:"size:20;default:'MEDIUM'" validate:"oneof=LOW MEDIUM HIGH URGENT"`
+	EstimatedHours *float64       `json:"estimated_hours,omitempty" gorm:"type:decimal(5,2)" validate:"min=0,max=999.99"`
+	Tags           []string       `json:"tags,omitempty" gorm:"-"` // Will be stored as JSON in database
+	TagsJSON       string         `json:"-" gorm:"column:tags;type:jsonb"`
+	IsGlobal       bool           `json:"is_global" gorm:"default:false"` // Available across all projects
+	CreatedBy      *string        `json:"created_by,omitempty" gorm:"size:255"`
+	CreatedAt      time.Time      `json:"created_at" gorm:"autoCreateTime"`
+	UpdatedAt      time.Time      `json:"updated_at" gorm:"autoUpdateTime"`
+	DeletedAt      gorm.DeletedAt `json:"deleted_at,omitempty" gorm:"index"`
 
 	// Relationships
 	Project Project `json:"project,omitempty" gorm:"foreignKey:ProjectID"`
@@ -174,7 +279,7 @@ func ValidateStatusTransition(from, to TaskStatus) error {
 			Message:       fmt.Sprintf("invalid current status: %s", from),
 		}
 	}
-	
+
 	if !to.IsValid() {
 		return &TaskStatusValidationError{
 			CurrentStatus: from,
@@ -182,14 +287,14 @@ func ValidateStatusTransition(from, to TaskStatus) error {
 			Message:       fmt.Sprintf("invalid target status: %s", to),
 		}
 	}
-	
+
 	if !from.CanTransitionTo(to) {
 		return &TaskStatusValidationError{
 			CurrentStatus: from,
 			TargetStatus:  to,
 		}
 	}
-	
+
 	return nil
 }
 
@@ -201,12 +306,192 @@ type TaskStatusStats struct {
 
 // TaskStatusAnalytics represents comprehensive status analytics
 type TaskStatusAnalytics struct {
-	ProjectID              uuid.UUID         `json:"project_id"`
-	StatusDistribution     []TaskStatusStats `json:"status_distribution"`
-	AverageTimeInStatus    map[TaskStatus]float64 `json:"average_time_in_status"` // in hours
-	TransitionCount        map[string]int    `json:"transition_count"`           // from_status->to_status counts
-	TotalTasks             int               `json:"total_tasks"`
-	CompletedTasks         int               `json:"completed_tasks"`
-	CompletionRate         float64           `json:"completion_rate"`
-	GeneratedAt            time.Time         `json:"generated_at"`
+	ProjectID           uuid.UUID              `json:"project_id"`
+	StatusDistribution  []TaskStatusStats      `json:"status_distribution"`
+	AverageTimeInStatus map[TaskStatus]float64 `json:"average_time_in_status"` // in hours
+	TransitionCount     map[string]int         `json:"transition_count"`       // from_status->to_status counts
+	TotalTasks          int                    `json:"total_tasks"`
+	CompletedTasks      int                    `json:"completed_tasks"`
+	CompletionRate      float64                `json:"completion_rate"`
+	GeneratedAt         time.Time              `json:"generated_at"`
+}
+
+// TaskSearchResult represents a search result with relevance score
+type TaskSearchResult struct {
+	Task    *Task   `json:"task"`
+	Score   float64 `json:"score"`   // Relevance score for search results
+	Matched string  `json:"matched"` // Which field matched the search
+}
+
+// TaskBulkOperation represents a bulk operation on multiple tasks
+type TaskBulkOperation struct {
+	TaskIDs []uuid.UUID `json:"task_ids" validate:"required,min=1"`
+	Action  string      `json:"action" validate:"required"` // "delete", "update_status", "archive", "unarchive"
+	Data    interface{} `json:"data,omitempty"`             // Additional data for the operation
+}
+
+// TaskExportFormat represents the format for task export
+type TaskExportFormat string
+
+const (
+	TaskExportFormatCSV  TaskExportFormat = "csv"
+	TaskExportFormatJSON TaskExportFormat = "json"
+	TaskExportFormatXML  TaskExportFormat = "xml"
+)
+
+// TaskFilters represents comprehensive filtering options for tasks
+type TaskFilters struct {
+	ProjectID      *uuid.UUID
+	Statuses       []TaskStatus
+	Priorities     []TaskPriority
+	Tags           []string
+	ParentTaskID   *uuid.UUID
+	AssignedTo     *string
+	CreatedAfter   *time.Time
+	CreatedBefore  *time.Time
+	UpdatedAfter   *time.Time
+	UpdatedBefore  *time.Time
+	DueDateAfter   *time.Time
+	DueDateBefore  *time.Time
+	SearchTerm     *string
+	IsArchived     *bool
+	IsTemplate     *bool
+	HasSubtasks    *bool
+	EstimatedHours *float64
+	ActualHours    *float64
+	Limit          *int
+	Offset         *int
+	OrderBy        *string // "created_at", "updated_at", "title", "status", "priority", "due_date"
+	OrderDir       *string // "asc", "desc"
+}
+
+// TaskDependency represents dependencies between tasks
+type TaskDependency struct {
+	ID              uuid.UUID `json:"id" gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
+	TaskID          uuid.UUID `json:"task_id" gorm:"type:uuid;not null"`
+	DependsOnTaskID uuid.UUID `json:"depends_on_task_id" gorm:"type:uuid;not null"`
+	DependencyType  string    `json:"dependency_type" gorm:"size:50;default:'blocks'"`
+	CreatedAt       time.Time `json:"created_at" gorm:"autoCreateTime"`
+
+	// Relationships
+	Task          *Task `json:"task,omitempty" gorm:"foreignKey:TaskID"`
+	DependsOnTask *Task `json:"depends_on_task,omitempty" gorm:"foreignKey:DependsOnTaskID"`
+}
+
+// TaskComment represents comments on tasks
+type TaskComment struct {
+	ID        uuid.UUID      `json:"id" gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
+	TaskID    uuid.UUID      `json:"task_id" gorm:"type:uuid;not null"`
+	Comment   string         `json:"comment" gorm:"not null"`
+	CreatedBy string         `json:"created_by" gorm:"size:255;not null"`
+	CreatedAt time.Time      `json:"created_at" gorm:"autoCreateTime"`
+	UpdatedAt time.Time      `json:"updated_at" gorm:"autoUpdateTime"`
+	DeletedAt gorm.DeletedAt `json:"deleted_at,omitempty" gorm:"index"`
+
+	// Relationships
+	Task *Task `json:"task,omitempty" gorm:"foreignKey:TaskID"`
+}
+
+// TaskAttachment represents file attachments for tasks
+type TaskAttachment struct {
+	ID         uuid.UUID      `json:"id" gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
+	TaskID     uuid.UUID      `json:"task_id" gorm:"type:uuid;not null"`
+	Filename   string         `json:"filename" gorm:"size:255;not null"`
+	FilePath   string         `json:"file_path" gorm:"size:500;not null"`
+	FileSize   int64          `json:"file_size" gorm:"not null"`
+	MimeType   string         `json:"mime_type" gorm:"size:100"`
+	UploadedBy string         `json:"uploaded_by" gorm:"size:255;not null"`
+	CreatedAt  time.Time      `json:"created_at" gorm:"autoCreateTime"`
+	DeletedAt  gorm.DeletedAt `json:"deleted_at,omitempty" gorm:"index"`
+
+	// Relationships
+	Task *Task `json:"task,omitempty" gorm:"foreignKey:TaskID"`
+}
+
+// TaskStatistics represents comprehensive task statistics for a project
+type TaskStatistics struct {
+	ProjectID             uuid.UUID            `json:"project_id"`
+	TotalTasks            int                  `json:"total_tasks"`
+	CompletedTasks        int                  `json:"completed_tasks"`
+	InProgressTasks       int                  `json:"in_progress_tasks"`
+	ArchivedTasks         int                  `json:"archived_tasks"`
+	TasksByPriority       map[TaskPriority]int `json:"tasks_by_priority"`
+	TasksByStatus         map[TaskStatus]int   `json:"tasks_by_status"`
+	AverageCompletionTime float64              `json:"average_completion_time"` // in hours
+	TotalEstimatedHours   float64              `json:"total_estimated_hours"`
+	TotalActualHours      float64              `json:"total_actual_hours"`
+	OverdueTasks          int                  `json:"overdue_tasks"`
+	GeneratedAt           time.Time            `json:"generated_at"`
+}
+
+// BeforeCreate GORM hook to convert Tags to TagsJSON before saving
+func (t *Task) BeforeCreate(tx *gorm.DB) error {
+	if len(t.Tags) > 0 {
+		tagsJSON, err := json.Marshal(t.Tags)
+		if err != nil {
+			return err
+		}
+		t.TagsJSON = string(tagsJSON)
+	} else {
+		t.TagsJSON = "[]"
+	}
+	return nil
+}
+
+// BeforeUpdate GORM hook to convert Tags to TagsJSON before updating
+func (t *Task) BeforeUpdate(tx *gorm.DB) error {
+	if len(t.Tags) > 0 {
+		tagsJSON, err := json.Marshal(t.Tags)
+		if err != nil {
+			return err
+		}
+		t.TagsJSON = string(tagsJSON)
+	} else {
+		t.TagsJSON = "[]"
+	}
+	return nil
+}
+
+// AfterFind GORM hook to convert TagsJSON to Tags after loading
+func (t *Task) AfterFind(tx *gorm.DB) error {
+	if t.TagsJSON != "" {
+		return json.Unmarshal([]byte(t.TagsJSON), &t.Tags)
+	}
+	return nil
+}
+
+// BeforeCreate GORM hook for TaskTemplate
+func (tt *TaskTemplate) BeforeCreate(tx *gorm.DB) error {
+	if len(tt.Tags) > 0 {
+		tagsJSON, err := json.Marshal(tt.Tags)
+		if err != nil {
+			return err
+		}
+		tt.TagsJSON = string(tagsJSON)
+	} else {
+		tt.TagsJSON = "[]"
+	}
+	return nil
+}
+
+// BeforeUpdate GORM hook for TaskTemplate
+func (tt *TaskTemplate) BeforeUpdate(tx *gorm.DB) error {
+	if len(tt.Tags) > 0 {
+		tagsJSON, err := json.Marshal(tt.Tags)
+		if err != nil {
+			return err
+		}
+		tt.TagsJSON = string(tagsJSON)
+	} else {
+		tt.TagsJSON = "[]"
+	}
+	return nil
+}
+
+// AfterFind GORM hook for TaskTemplate
+func (tt *TaskTemplate) AfterFind(tx *gorm.DB) error {
+	if tt.TagsJSON != "" {
+		return json.Unmarshal([]byte(tt.TagsJSON), &tt.Tags)
+	}
+	return nil
 }

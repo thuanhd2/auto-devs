@@ -230,10 +230,10 @@ func (h *TaskHandler) UpdateTask(c *gin.Context) {
 		usecaseReq.Description = *req.Description
 	}
 	if req.BranchName != nil {
-		usecaseReq.BranchName = *req.BranchName
+		usecaseReq.BranchName = req.BranchName
 	}
 	if req.PullRequest != nil {
-		usecaseReq.PullRequest = *req.PullRequest
+		usecaseReq.PullRequest = req.PullRequest
 	}
 
 	task, err := h.taskUsecase.Update(c.Request.Context(), id, usecaseReq)
