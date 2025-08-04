@@ -16,6 +16,13 @@ type Project struct {
 	UpdatedAt   time.Time      `json:"updated_at" gorm:"autoUpdateTime"`
 	DeletedAt   gorm.DeletedAt `json:"deleted_at,omitempty" gorm:"index"`
 
+	// Git-related fields
+	RepositoryURL    string `json:"repository_url" gorm:"column:repository_url;size:500"`
+	MainBranch       string `json:"main_branch" gorm:"column:main_branch;default:main;size:100"`
+	WorktreeBasePath string `json:"worktree_base_path" gorm:"column:worktree_base_path;size:500"`
+	GitAuthMethod    string `json:"git_auth_method" gorm:"column:git_auth_method;size:20"` // "ssh" or "https"
+	GitEnabled       bool   `json:"git_enabled" gorm:"column:git_enabled;default:false"`
+
 	// Relationships
 	Tasks []Task `json:"tasks,omitempty" gorm:"foreignKey:ProjectID;constraint:OnDelete:CASCADE"`
 }
