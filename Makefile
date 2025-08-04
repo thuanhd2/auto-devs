@@ -86,7 +86,7 @@ run: ## Run the application
 	@go run cmd/server/main.go
 
 .PHONY: test
-test: ## Run tests
+test: mocks ## Run tests
 	@echo "Running tests..."
 	@go test ./... -v
 
@@ -101,6 +101,12 @@ wire: ## Generate Wire dependency injection code
 	@echo "Generating Wire dependency injection code..."
 	@go generate ./internal/di
 	@echo "Wire code generated successfully!"
+
+.PHONY: mocks
+mocks: ## Generate mocks using Mockery
+	@echo "Generating mocks..."
+	@mockery
+	@echo "Mocks generated successfully!"
 
 .PHONY: deps
 deps: ## Download dependencies

@@ -2,7 +2,6 @@ package handler
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -11,6 +10,7 @@ import (
 
 	"github.com/auto-devs/auto-devs/internal/entity"
 	"github.com/auto-devs/auto-devs/internal/handler/dto"
+	"github.com/auto-devs/auto-devs/internal/mocks"
 	"github.com/auto-devs/auto-devs/internal/usecase"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -19,91 +19,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// MockProjectUsecase is a mock implementation of ProjectUsecase
-type MockProjectUsecase struct {
-	mock.Mock
-}
 
-func (m *MockProjectUsecase) Create(ctx context.Context, req usecase.CreateProjectRequest) (*entity.Project, error) {
-	args := m.Called(ctx, req)
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-	return args.Get(0).(*entity.Project), args.Error(1)
-}
 
-func (m *MockProjectUsecase) GetByID(ctx context.Context, id uuid.UUID) (*entity.Project, error) {
-	args := m.Called(ctx, id)
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-	return args.Get(0).(*entity.Project), args.Error(1)
-}
-
-func (m *MockProjectUsecase) GetAll(ctx context.Context, params usecase.GetProjectsParams) (*usecase.GetProjectsResult, error) {
-	args := m.Called(ctx, params)
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-	return args.Get(0).(*usecase.GetProjectsResult), args.Error(1)
-}
-
-func (m *MockProjectUsecase) Update(ctx context.Context, id uuid.UUID, req usecase.UpdateProjectRequest) (*entity.Project, error) {
-	args := m.Called(ctx, id, req)
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-	return args.Get(0).(*entity.Project), args.Error(1)
-}
-
-func (m *MockProjectUsecase) Delete(ctx context.Context, id uuid.UUID) error {
-	args := m.Called(ctx, id)
-	return args.Error(0)
-}
-
-func (m *MockProjectUsecase) GetWithTasks(ctx context.Context, id uuid.UUID) (*entity.Project, error) {
-	args := m.Called(ctx, id)
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-	return args.Get(0).(*entity.Project), args.Error(1)
-}
-
-func (m *MockProjectUsecase) GetStatistics(ctx context.Context, id uuid.UUID) (*usecase.ProjectStatistics, error) {
-	args := m.Called(ctx, id)
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-	return args.Get(0).(*usecase.ProjectStatistics), args.Error(1)
-}
-
-func (m *MockProjectUsecase) Archive(ctx context.Context, id uuid.UUID) error {
-	args := m.Called(ctx, id)
-	return args.Error(0)
-}
-
-func (m *MockProjectUsecase) Restore(ctx context.Context, id uuid.UUID) error {
-	args := m.Called(ctx, id)
-	return args.Error(0)
-}
-
-func (m *MockProjectUsecase) CheckNameExists(ctx context.Context, name string, excludeID *uuid.UUID) (bool, error) {
-	args := m.Called(ctx, name, excludeID)
-	return args.Bool(0), args.Error(1)
-}
-
-func (m *MockProjectUsecase) GetSettings(ctx context.Context, projectID uuid.UUID) (*entity.ProjectSettings, error) {
-	args := m.Called(ctx, projectID)
-	return args.Get(0).(*entity.ProjectSettings), args.Error(1)
-}
-
-func (m *MockProjectUsecase) UpdateSettings(ctx context.Context, projectID uuid.UUID, settings *entity.ProjectSettings) (*entity.ProjectSettings, error) {
-	args := m.Called(ctx, projectID, settings)
-	return args.Get(0).(*entity.ProjectSettings), args.Error(1)
-}
-
-func setupProjectHandler() (*ProjectHandler, *MockProjectUsecase) {
-	mockUsecase := new(MockProjectUsecase)
+func setupProjectHandler() (*ProjectHandler, *mocks.MockProjectUsecase) {
+	mockUsecase := new(mocks.MockProjectUsecase)
 	handler := NewProjectHandler(mockUsecase)
 	return handler, mockUsecase
 }

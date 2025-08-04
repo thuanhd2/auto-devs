@@ -1,0 +1,12 @@
+packages:
+  github.com/auto-devs/auto-devs/internal/usecase:
+    interfaces:
+      ProjectUsecase:
+      TaskUsecase:
+      NotificationUsecase:
+      AuditService:
+  github.com/auto-devs/auto-devs/internal/repository:
+    interfaces:
+      ProjectRepository:
+      TaskRepository:
+      AuditRepository:
