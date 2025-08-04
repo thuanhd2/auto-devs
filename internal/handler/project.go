@@ -42,6 +42,13 @@ func (h *ProjectHandler) CreateProject(c *gin.Context) {
 		Name:        req.Name,
 		Description: req.Description,
 		RepoURL:     req.RepoURL,
+
+		// Git-related fields
+		RepositoryURL:    req.RepositoryURL,
+		MainBranch:       req.MainBranch,
+		WorktreeBasePath: req.WorktreeBasePath,
+		GitAuthMethod:    req.GitAuthMethod,
+		GitEnabled:       req.GitEnabled,
 	}
 
 	project, err := h.projectUsecase.Create(c.Request.Context(), usecaseReq)
@@ -206,6 +213,23 @@ func (h *ProjectHandler) UpdateProject(c *gin.Context) {
 	}
 	if req.RepoURL != nil {
 		usecaseReq.RepoURL = *req.RepoURL
+	}
+
+	// Git-related fields
+	if req.RepositoryURL != nil {
+		usecaseReq.RepositoryURL = *req.RepositoryURL
+	}
+	if req.MainBranch != nil {
+		usecaseReq.MainBranch = *req.MainBranch
+	}
+	if req.WorktreeBasePath != nil {
+		usecaseReq.WorktreeBasePath = *req.WorktreeBasePath
+	}
+	if req.GitAuthMethod != nil {
+		usecaseReq.GitAuthMethod = *req.GitAuthMethod
+	}
+	if req.GitEnabled != nil {
+		usecaseReq.GitEnabled = *req.GitEnabled
 	}
 
 	project, err := h.projectUsecase.Update(c.Request.Context(), id, usecaseReq)
@@ -402,5 +426,143 @@ func (h *ProjectHandler) UpdateProjectSettings(c *gin.Context) {
 	}
 
 	response := dto.ProjectSettingsResponseFromEntity(updatedSettings)
+	c.JSON(http.StatusOK, response)
+}
+
+// ValidateGitProject godoc
+// @Summary Validate Git project configuration
+// @Description Validate Git configuration for a project
+// @Tags projects
+// @Accept json
+// @Produce json
+// @Param request body dto.GitProjectValidationRequest true "Git validation request"
+// @Success 200 {object} dto.GitProjectValidationResponse
+// @Failure 400 {object} dto.ErrorResponse
+// @Failure 500 {object} dto.ErrorResponse
+// @Router /api/v1/projects/validate-git [post]
+func (h *ProjectHandler) ValidateGitProject(c *gin.Context) {
+	var req dto.GitProjectValidationRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, dto.NewErrorResponse(err, http.StatusBadRequest, "Invalid request data"))
+		return
+	}
+
+	// TODO: Implement Git validation logic
+	// For now, return a basic validation response
+	response := dto.GitProjectValidationResponse{
+		Valid:   true,
+		Message: "Git configuration is valid",
+	}
+
+	c.JSON(http.StatusOK, response)
+}
+
+// GetGitProjectStatus godoc
+// @Summary Get Git project status
+// @Description Get the current Git status for a project
+// @Tags projects
+// @Accept json
+// @Produce json
+// @Param id path string true "Project ID"
+// @Success 200 {object} dto.GitProjectStatusResponse
+// @Failure 400 {object} dto.ErrorResponse
+// @Failure 404 {object} dto.ErrorResponse
+// @Failure 500 {object} dto.ErrorResponse
+// @Router /api/v1/projects/{id}/git-status [get]
+func (h *ProjectHandler) GetGitProjectStatus(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, dto.NewErrorResponse(err, http.StatusBadRequest, "Invalid project ID"))
+		return
+	}
+
+	project, err := h.projectUsecase.GetByID(c.Request.Context(), id)
+	if err != nil {
+		c.JSON(http.StatusNotFound, dto.NewErrorResponse(err, http.StatusNotFound, "Project not found"))
+		return
+	}
+
+	// TODO: Implement Git status logic
+	// For now, return a basic status response
+	response := dto.GitProjectStatusResponse{
+		GitEnabled:      project.GitEnabled,
+		WorktreeExists:  false,
+		RepositoryValid: false,
+		Status:          "Git status not implemented yet",
+	}
+
+	c.JSON(http.StatusOK, response)
+}
+
+// TestGitConnection godoc
+// @Summary Test Git connection
+// @Description Test the Git connection for a project
+// @Tags projects
+// @Accept json
+// @Produce json
+// @Param id path string true "Project ID"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} dto.ErrorResponse
+// @Failure 404 {object} dto.ErrorResponse
+// @Failure 500 {object} dto.ErrorResponse
+// @Router /api/v1/projects/{id}/test-git-connection [post]
+func (h *ProjectHandler) TestGitConnection(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, dto.NewErrorResponse(err, http.StatusBadRequest, "Invalid project ID"))
+		return
+	}
+
+	project, err := h.projectUsecase.GetByID(c.Request.Context(), id)
+	if err != nil {
+		c.JSON(http.StatusNotFound, dto.NewErrorResponse(err, http.StatusNotFound, "Project not found"))
+		return
+	}
+
+	// TODO: Implement Git connection test logic
+	// For now, return a basic response
+	response := map[string]interface{}{
+		"message":    "Git connection test not implemented yet",
+		"project_id": project.ID,
+	}
+
+	c.JSON(http.StatusOK, response)
+}
+
+// SetupGitProject godoc
+// @Summary Setup Git project
+// @Description Setup Git integration for a project
+// @Tags projects
+// @Accept json
+// @Produce json
+// @Param id path string true "Project ID"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} dto.ErrorResponse
+// @Failure 404 {object} dto.ErrorResponse
+// @Failure 500 {object} dto.ErrorResponse
+// @Router /api/v1/projects/{id}/setup-git [post]
+func (h *ProjectHandler) SetupGitProject(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, dto.NewErrorResponse(err, http.StatusBadRequest, "Invalid project ID"))
+		return
+	}
+
+	project, err := h.projectUsecase.GetByID(c.Request.Context(), id)
+	if err != nil {
+		c.JSON(http.StatusNotFound, dto.NewErrorResponse(err, http.StatusNotFound, "Project not found"))
+		return
+	}
+
+	// TODO: Implement Git setup logic
+	// For now, return a basic response
+	response := map[string]interface{}{
+		"message":    "Git setup not implemented yet",
+		"project_id": project.ID,
+	}
+
 	c.JSON(http.StatusOK, response)
 }

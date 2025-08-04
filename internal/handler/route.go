@@ -54,6 +54,12 @@ func SetupRoutes(router *gin.Engine, projectUsecase usecase.ProjectUsecase, task
 			projects.POST("/:id/restore", projectHandler.RestoreProject)
 			projects.GET("/:id/settings", projectHandler.GetProjectSettings)
 			projects.PUT("/:id/settings", projectHandler.UpdateProjectSettings)
+
+			// Git-related endpoints
+			projects.POST("/validate-git", projectHandler.ValidateGitProject)
+			projects.GET("/:id/git-status", projectHandler.GetGitProjectStatus)
+			projects.POST("/:id/test-git-connection", projectHandler.TestGitConnection)
+			projects.POST("/:id/setup-git", projectHandler.SetupGitProject)
 		}
 
 		// Task routes

@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { formatDistanceToNow } from 'date-fns'
 import { Link } from '@tanstack/react-router'
 import type { ProjectFilters } from '@/types/project'
-import { Plus, Search, Calendar, GitBranch, Activity } from 'lucide-react'
+import { Plus, Search, Calendar, GitBranch, Activity, GitFork } from 'lucide-react'
 import { useProjects } from '@/hooks/use-projects'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -187,6 +187,14 @@ function ProjectCard({ project }: { project: any }) {
             <span className='truncate'>{project.repo_url}</span>
           </div>
 
+          {project.git_enabled && (
+            <div className='text-muted-foreground flex items-center gap-2 text-sm'>
+              <GitFork className='h-4 w-4' />
+              <span className='truncate'>{project.repository_url}</span>
+              <Badge variant='outline' className='ml-auto'>Git Enabled</Badge>
+            </div>
+          )}
+
           <div className='text-muted-foreground flex items-center gap-2 text-sm'>
             <Calendar className='h-4 w-4' />
             <span>
@@ -200,6 +208,12 @@ function ProjectCard({ project }: { project: any }) {
           <div className='flex gap-2'>
             <Badge variant='outline'>0 tasks</Badge>
             <Badge variant='outline'>0 active</Badge>
+            {project.git_enabled && (
+              <Badge variant='secondary'>
+                <GitFork className='mr-1 h-3 w-3' />
+                Git
+              </Badge>
+            )}
           </div>
         </CardContent>
       </Card>

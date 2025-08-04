@@ -7,6 +7,9 @@ import type {
   ProjectsResponse,
   ProjectFilters,
   ProjectStatistics,
+  GitProjectValidationRequest,
+  GitProjectValidationResponse,
+  GitProjectStatusResponse,
 } from '@/types/project'
 
 const api = axios.create({
@@ -56,5 +59,24 @@ export const projectsApi = {
 
   async deleteProject(projectId: string): Promise<void> {
     await api.delete(`${API_ENDPOINTS.PROJECTS}/${projectId}`)
+  },
+
+  // Git-related endpoints
+  async validateGitProject(request: GitProjectValidationRequest): Promise<GitProjectValidationResponse> {
+    const response = await api.post(`${API_ENDPOINTS.PROJECTS}/validate-git`, request)
+    return response.data
+  },
+
+  async getGitProjectStatus(projectId: string): Promise<GitProjectStatusResponse> {
+    const response = await api.get(`${API_ENDPOINTS.PROJECTS}/${projectId}/git-status`)
+    return response.data
+  },
+
+  async testGitConnection(projectId: string): Promise<void> {
+    await api.post(`${API_ENDPOINTS.PROJECTS}/${projectId}/test-git-connection`)
+  },
+
+  async setupGitProject(projectId: string): Promise<void> {
+    await api.post(`${API_ENDPOINTS.PROJECTS}/${projectId}/setup-git`)
   },
 }

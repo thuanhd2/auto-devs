@@ -33,12 +33,26 @@ type CreateProjectRequest struct {
 	Name        string `json:"name" binding:"required"`
 	Description string `json:"description"`
 	RepoURL     string `json:"repo_url" binding:"required"`
+
+	// Git-related fields
+	RepositoryURL    string `json:"repository_url"`
+	MainBranch       string `json:"main_branch"`
+	WorktreeBasePath string `json:"worktree_base_path"`
+	GitAuthMethod    string `json:"git_auth_method"`
+	GitEnabled       bool   `json:"git_enabled"`
 }
 
 type UpdateProjectRequest struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
 	RepoURL     string `json:"repo_url"`
+
+	// Git-related fields
+	RepositoryURL    string `json:"repository_url"`
+	MainBranch       string `json:"main_branch"`
+	WorktreeBasePath string `json:"worktree_base_path"`
+	GitAuthMethod    string `json:"git_auth_method"`
+	GitEnabled       bool   `json:"git_enabled"`
 }
 
 type GetProjectsParams struct {
@@ -172,6 +186,13 @@ func (u *projectUsecase) Create(ctx context.Context, req CreateProjectRequest) (
 		RepoURL:     strings.TrimSpace(req.RepoURL),
 		CreatedAt:   time.Now(),
 		UpdatedAt:   time.Now(),
+
+		// Git-related fields
+		RepositoryURL:    strings.TrimSpace(req.RepositoryURL),
+		MainBranch:       strings.TrimSpace(req.MainBranch),
+		WorktreeBasePath: strings.TrimSpace(req.WorktreeBasePath),
+		GitAuthMethod:    strings.TrimSpace(req.GitAuthMethod),
+		GitEnabled:       req.GitEnabled,
 	}
 
 	if err := u.projectRepo.Create(ctx, project); err != nil {
@@ -264,6 +285,24 @@ func (u *projectUsecase) Update(ctx context.Context, id uuid.UUID, req UpdatePro
 		}
 		oldProject.RepoURL = strings.TrimSpace(req.RepoURL)
 	}
+
+	// Update Git-related fields
+	if req.RepositoryURL != "" {
+		oldProject.RepositoryURL = strings.TrimSpace(req.RepositoryURL)
+	}
+	if req.MainBranch != "" {
+		oldProject.MainBranch = strings.TrimSpace(req.MainBranch)
+	}
+	if req.WorktreeBasePath != "" {
+		oldProject.WorktreeBasePath = strings.TrimSpace(req.WorktreeBasePath)
+	}
+	if req.GitAuthMethod != "" {
+		oldProject.GitAuthMethod = strings.TrimSpace(req.GitAuthMethod)
+	}
+	// GitEnabled is a boolean, so we need to check if it's explicitly set
+	// For now, we'll always update it if provided
+	oldProject.GitEnabled = req.GitEnabled
+
 	oldProject.UpdatedAt = time.Now()
 
 	if err := u.projectRepo.Update(ctx, oldProject); err != nil {
