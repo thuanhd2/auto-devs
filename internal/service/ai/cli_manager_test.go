@@ -13,45 +13,39 @@ import (
 func TestNewCLIManager(t *testing.T) {
 	t.Run("with valid config", func(t *testing.T) {
 		config := DefaultCLIConfig()
-		config.APIKey = "test-api-key"
-		
+
 		manager, err := NewCLIManager(config)
-		
+
 		assert.NoError(t, err)
 		assert.NotNil(t, manager)
-		assert.Equal(t, config.CLIPath, manager.config.CLIPath)
-		assert.Equal(t, config.APIKey, manager.config.APIKey)
+		assert.Equal(t, config.CLICommand, manager.config.CLICommand)
 	})
 
 	t.Run("with nil config uses default", func(t *testing.T) {
-		// Default config will fail validation because API key is empty
+		// Nil config will not causes any failure, because it will use the default config
 		manager, err := NewCLIManager(nil)
-		
-		assert.Error(t, err)
-		assert.Nil(t, manager)
-		assert.Contains(t, err.Error(), "API key is required")
+
+		assert.NoError(t, err)
+		assert.NotNil(t, manager)
+		assert.Equal(t, DefaultCLIConfig().CLICommand, manager.config.CLICommand)
 	})
 
 	t.Run("with invalid config", func(t *testing.T) {
 		config := &CLIConfig{
-			CLIPath:   "",
-			APIKey:    "test-key",
-			Model:     "claude-3.5-sonnet",
-			MaxTokens: 4000,
-			Timeout:   30 * time.Minute,
+			CLICommand: "",
+			Timeout:    30 * time.Minute,
 		}
-		
+
 		manager, err := NewCLIManager(config)
-		
+
 		assert.Error(t, err)
 		assert.Nil(t, manager)
-		assert.Contains(t, err.Error(), "CLI path is required")
+		assert.Contains(t, err.Error(), "CLI command is required")
 	})
 }
 
-func TestCLIManager_ComposeCommand(t *testing.T) {
+func TestCLIManager_ComposePrompt(t *testing.T) {
 	config := DefaultCLIConfig()
-	config.APIKey = "test-api-key"
 	manager, err := NewCLIManager(config)
 	require.NoError(t, err)
 
@@ -82,142 +76,89 @@ func TestCLIManager_ComposeCommand(t *testing.T) {
 		},
 	}
 
-	t.Run("planning command", func(t *testing.T) {
+	t.Run("planning prompt", func(t *testing.T) {
 		task.Status = entity.TaskStatusPLANNING
-		
-		command, err := manager.ComposeCommand(task, plan)
-		
+
+		prompt, err := manager.ComposePrompt(task, plan)
+
 		assert.NoError(t, err)
-		assert.Contains(t, command, "claude")
-		assert.Contains(t, command, "--model")
-		assert.Contains(t, command, "claude-3.5-sonnet")
-		assert.Contains(t, command, "--max-tokens")
-		assert.Contains(t, command, "4000")
-		assert.Contains(t, command, "--prompt")
-		assert.Contains(t, command, "Test Task")
-		assert.Contains(t, command, "This is a test task")
+		assert.Contains(t, prompt, "Test Task")
+		assert.Contains(t, prompt, "This is a test task")
+		assert.Contains(t, prompt, "implementation plan")
+		assert.Contains(t, prompt, "Technical approach")
 	})
 
-	t.Run("implementation command", func(t *testing.T) {
+	t.Run("implementation prompt", func(t *testing.T) {
 		task.Status = entity.TaskStatusIMPLEMENTING
-		
-		command, err := manager.ComposeCommand(task, plan)
-		
+
+		prompt, err := manager.ComposePrompt(task, plan)
+
 		assert.NoError(t, err)
-		assert.Contains(t, command, "claude")
-		assert.Contains(t, command, "--model")
-		assert.Contains(t, command, "claude-3.5-sonnet")
-		assert.Contains(t, command, "--prompt")
-		assert.Contains(t, command, "Test Task")
-		assert.Contains(t, command, "First step")
-		assert.Contains(t, command, "Second step")
+		assert.Contains(t, prompt, "Test Task")
+		assert.Contains(t, prompt, "This is a test task")
+		assert.Contains(t, prompt, "Implementation Plan:")
+		assert.Contains(t, prompt, "1. First step")
+		assert.Contains(t, prompt, "2. Second step")
+		assert.Contains(t, prompt, "production-ready code")
 	})
 
-	t.Run("unsupported task status", func(t *testing.T) {
+	t.Run("unsupported status", func(t *testing.T) {
 		task.Status = entity.TaskStatusDONE
-		
-		command, err := manager.ComposeCommand(task, plan)
-		
-		assert.Error(t, err)
-		assert.Empty(t, command)
-		assert.Contains(t, err.Error(), "unsupported task status")
-	})
 
-	t.Run("empty task ID", func(t *testing.T) {
-		task.ID = uuid.Nil
-		task.Status = entity.TaskStatusPLANNING
-		
-		command, err := manager.ComposeCommand(task, plan)
-		
+		prompt, err := manager.ComposePrompt(task, plan)
+
 		assert.Error(t, err)
-		assert.Empty(t, command)
-		assert.Contains(t, err.Error(), "task ID is required")
+		assert.Empty(t, prompt)
+		assert.Contains(t, err.Error(), "unsupported task status")
 	})
 }
 
 func TestCLIManager_GetEnvironmentVars(t *testing.T) {
 	config := &CLIConfig{
-		CLIPath:          "claude",
-		APIKey:           "test-api-key",
-		Model:            "claude-3.5-sonnet",
-		MaxTokens:        4000,
-		Timeout:          30 * time.Minute,
-		WorkingDirectory: "/tmp",
-		EnableLogging:    true,
-		RetryAttempts:    3,
+		CLICommand:    "claude",
+		Timeout:       30 * time.Minute,
+		EnableLogging: true,
 	}
-	
-	manager, err := NewCLIManager(config)
-	require.NoError(t, err)
+
+	manager := &CLIManager{config: config}
 
 	envVars := manager.GetEnvironmentVars()
 
-	assert.Equal(t, "test-api-key", envVars["ANTHROPIC_API_KEY"])
-	assert.Equal(t, "claude-3.5-sonnet", envVars["CLAUDE_MODEL"])
-	assert.Equal(t, "/tmp", envVars["CLAUDE_WORKING_DIR"])
 	assert.Equal(t, "info", envVars["CLAUDE_LOG_LEVEL"])
 }
 
 func TestCLIManager_GetEnvironmentVarsWithLoggingDisabled(t *testing.T) {
-	config := DefaultCLIConfig()
-	config.APIKey = "test-api-key"
-	config.EnableLogging = false
-	
-	manager, err := NewCLIManager(config)
-	require.NoError(t, err)
+	config := &CLIConfig{
+		CLICommand:    "claude",
+		EnableLogging: false,
+	}
+
+	manager := &CLIManager{config: config}
 
 	envVars := manager.GetEnvironmentVars()
 
 	assert.Equal(t, "error", envVars["CLAUDE_LOG_LEVEL"])
 }
 
-func TestCLIManager_SetWorkingDirectory(t *testing.T) {
-	config := DefaultCLIConfig()
-	config.APIKey = "test-api-key"
-	manager, err := NewCLIManager(config)
-	require.NoError(t, err)
-
-	t.Run("set valid directory", func(t *testing.T) {
-		tmpDir := t.TempDir()
-		
-		err := manager.SetWorkingDirectory(tmpDir)
-		
-		assert.NoError(t, err)
-		assert.Equal(t, tmpDir, manager.config.WorkingDirectory)
-	})
-
-	t.Run("set empty directory", func(t *testing.T) {
-		err := manager.SetWorkingDirectory("")
-		
-		assert.NoError(t, err)
-		assert.Equal(t, "", manager.config.WorkingDirectory)
-	})
-
-	t.Run("set non-existent directory", func(t *testing.T) {
-		nonExistentDir := "/non/existent/directory"
-		
-		err := manager.SetWorkingDirectory(nonExistentDir)
-		
-		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "does not exist")
-	})
-}
-
 func TestCLIManager_GetConfig(t *testing.T) {
-	config := DefaultCLIConfig()
-	config.APIKey = "test-api-key"
-	manager, err := NewCLIManager(config)
-	require.NoError(t, err)
+	config := &CLIConfig{
+		CLICommand:    "claude",
+		Timeout:       30 * time.Minute,
+		EnableLogging: true,
+		RetryAttempts: 3,
+		RetryDelay:    5 * time.Second,
+	}
+
+	manager := &CLIManager{config: config}
 
 	retrievedConfig := manager.GetConfig()
 
 	// Should be a copy with same values
-	assert.Equal(t, config.CLIPath, retrievedConfig.CLIPath)
-	assert.Equal(t, config.APIKey, retrievedConfig.APIKey)
-	assert.Equal(t, config.Model, retrievedConfig.Model)
-
-	// Should be different instances
-	assert.NotSame(t, manager.config, retrievedConfig)
+	assert.Equal(t, config.CLICommand, retrievedConfig.CLICommand)
+	assert.Equal(t, config.Timeout, retrievedConfig.Timeout)
+	assert.Equal(t, config.EnableLogging, retrievedConfig.EnableLogging)
+	assert.Equal(t, config.RetryAttempts, retrievedConfig.RetryAttempts)
+	assert.Equal(t, config.RetryDelay, retrievedConfig.RetryDelay)
 }
 
 func TestCLIResult_String(t *testing.T) {
@@ -266,7 +207,7 @@ func TestCLIResult_ToJSON(t *testing.T) {
 	}
 
 	jsonStr, err := result.ToJSON()
-	
+
 	assert.NoError(t, err)
 	assert.Contains(t, jsonStr, "\"command\"")
 	assert.Contains(t, jsonStr, "\"output\"")
@@ -311,9 +252,8 @@ func TestPlan_Struct(t *testing.T) {
 	assert.Equal(t, "go", plan.Context["language"])
 }
 
-func TestCLIManager_composePlanningCommand(t *testing.T) {
+func TestCLIManager_composePlanningPrompt(t *testing.T) {
 	config := DefaultCLIConfig()
-	config.APIKey = "test-api-key"
 	manager, err := NewCLIManager(config)
 	require.NoError(t, err)
 
@@ -324,28 +264,17 @@ func TestCLIManager_composePlanningCommand(t *testing.T) {
 		Priority:    entity.TaskPriorityHigh,
 	}
 
-	args := manager.composePlanningCommand(task, nil)
+	prompt := manager.composePlanningPrompt(task, nil)
 
-	assert.Contains(t, args, "--prompt")
-	
-	// Find the prompt argument
-	var prompt string
-	for i, arg := range args {
-		if arg == "--prompt" && i+1 < len(args) {
-			prompt = args[i+1]
-			break
-		}
-	}
-	
 	assert.Contains(t, prompt, "Implement user authentication")
 	assert.Contains(t, prompt, "Add JWT-based authentication to the API")
 	assert.Contains(t, prompt, "HIGH")
 	assert.Contains(t, prompt, "implementation plan")
+	assert.Contains(t, prompt, "Technical approach")
 }
 
-func TestCLIManager_composeImplementationCommand(t *testing.T) {
+func TestCLIManager_composeImplementationPrompt(t *testing.T) {
 	config := DefaultCLIConfig()
-	config.APIKey = "test-api-key"
 	manager, err := NewCLIManager(config)
 	require.NoError(t, err)
 
@@ -363,21 +292,11 @@ func TestCLIManager_composeImplementationCommand(t *testing.T) {
 		},
 	}
 
-	args := manager.composeImplementationCommand(task, plan)
+	prompt := manager.composeImplementationPrompt(task, plan)
 
-	assert.Contains(t, args, "--prompt")
-	
-	// Find the prompt argument
-	var prompt string
-	for i, arg := range args {
-		if arg == "--prompt" && i+1 < len(args) {
-			prompt = args[i+1]
-			break
-		}
-	}
-	
 	assert.Contains(t, prompt, "Implement user authentication")
-	assert.Contains(t, prompt, "Create user model")
-	assert.Contains(t, prompt, "Implement JWT middleware")
+	assert.Contains(t, prompt, "Implementation Plan:")
+	assert.Contains(t, prompt, "1. Create user model")
+	assert.Contains(t, prompt, "2. Implement JWT middleware")
 	assert.Contains(t, prompt, "production-ready code")
 }

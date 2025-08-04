@@ -7,17 +7,9 @@ import (
 
 // CLIConfig holds configuration for Claude Code CLI
 type CLIConfig struct {
-	// CLIPath is the path to the Claude CLI binary
-	CLIPath string `json:"cli_path" validate:"required"`
-
-	// APIKey is the Claude API key for authentication
-	APIKey string `json:"api_key" validate:"required"`
-
-	// Model specifies the Claude model to use
-	Model string `json:"model" validate:"required"`
-
-	// MaxTokens sets the maximum tokens for AI responses
-	MaxTokens int `json:"max_tokens" validate:"min=1,max=100000"`
+	// CLICommand is the complete CLI command to execute
+	// Example: "npx -y @anthropic-ai/claude-code@latest -p --dangerously-skip-permissions --verbose --output-format=stream-json"
+	CLICommand string `json:"cli_command" validate:"required"`
 
 	// Timeout sets the maximum duration for CLI operations
 	Timeout time.Duration `json:"timeout"`
@@ -38,10 +30,7 @@ type CLIConfig struct {
 // DefaultCLIConfig returns a default configuration for Claude CLI
 func DefaultCLIConfig() *CLIConfig {
 	return &CLIConfig{
-		CLIPath:          "claude", // Assumes 'claude' is in PATH
-		APIKey:           "", // Must be set before use
-		Model:            "claude-3.5-sonnet",
-		MaxTokens:        4000,
+		CLICommand:       "npx -y @anthropic-ai/claude-code@latest -p --dangerously-skip-permissions --verbose --output-format=stream-json",
 		Timeout:          30 * time.Minute,
 		WorkingDirectory: "",
 		EnableLogging:    true,
@@ -52,24 +41,8 @@ func DefaultCLIConfig() *CLIConfig {
 
 // Validate validates the CLI configuration
 func (c *CLIConfig) Validate() error {
-	if c.CLIPath == "" {
-		return fmt.Errorf("CLI path is required")
-	}
-
-	if c.APIKey == "" {
-		return fmt.Errorf("API key is required")
-	}
-
-	if c.Model == "" {
-		return fmt.Errorf("model is required")
-	}
-
-	if c.MaxTokens <= 0 {
-		return fmt.Errorf("max tokens must be greater than 0")
-	}
-
-	if c.MaxTokens > 100000 {
-		return fmt.Errorf("max tokens cannot exceed 100000")
+	if c.CLICommand == "" {
+		return fmt.Errorf("CLI command is required")
 	}
 
 	if c.Timeout <= 0 {
@@ -94,10 +67,7 @@ func (c *CLIConfig) Validate() error {
 // Clone creates a deep copy of the configuration
 func (c *CLIConfig) Clone() *CLIConfig {
 	return &CLIConfig{
-		CLIPath:          c.CLIPath,
-		APIKey:           c.APIKey,
-		Model:            c.Model,
-		MaxTokens:        c.MaxTokens,
+		CLICommand:       c.CLICommand,
 		Timeout:          c.Timeout,
 		WorkingDirectory: c.WorkingDirectory,
 		EnableLogging:    c.EnableLogging,
@@ -108,6 +78,6 @@ func (c *CLIConfig) Clone() *CLIConfig {
 
 // String returns a string representation of the config (without sensitive data)
 func (c *CLIConfig) String() string {
-	return fmt.Sprintf("CLIConfig{CLIPath: %s, Model: %s, MaxTokens: %d, Timeout: %v, RetryAttempts: %d}",
-		c.CLIPath, c.Model, c.MaxTokens, c.Timeout, c.RetryAttempts)
+	return fmt.Sprintf("CLIConfig{CLICommand: %s, Timeout: %v, RetryAttempts: %d}",
+		c.CLICommand, c.Timeout, c.RetryAttempts)
 }

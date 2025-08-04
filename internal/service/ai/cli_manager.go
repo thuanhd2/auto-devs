@@ -7,8 +7,6 @@ import (
 	"log/slog"
 	"os"
 	"os/exec"
-	"path/filepath"
-	"strconv"
 	"strings"
 	"time"
 
@@ -62,146 +60,37 @@ func NewCLIManager(config *CLIConfig) (*CLIManager, error) {
 	}, nil
 }
 
-// ValidateCLIInstallation checks if Claude CLI is properly installed and configured
-func (cm *CLIManager) ValidateCLIInstallation() error {
-	// Check if CLI binary exists and is executable
-	if err := cm.validateCLIBinary(); err != nil {
-		return fmt.Errorf("CLI binary validation failed: %w", err)
-	}
-
-	// Test API key authentication
-	if err := cm.validateAPIKey(); err != nil {
-		return fmt.Errorf("API key validation failed: %w", err)
-	}
-
-	// Validate CLI version compatibility
-	if err := cm.validateCLIVersion(); err != nil {
-		return fmt.Errorf("CLI version validation failed: %w", err)
-	}
-
-	cm.logger.Info("Claude CLI validation successful", 
-		slog.String("cli_path", cm.config.CLIPath),
-		slog.String("model", cm.config.Model))
-
-	return nil
-}
-
-// validateCLIBinary checks if the CLI binary exists and is executable
-func (cm *CLIManager) validateCLIBinary() error {
-	// Resolve the CLI path
-	cliPath, err := exec.LookPath(cm.config.CLIPath)
-	if err != nil {
-		return fmt.Errorf("Claude CLI not found in PATH: %w", err)
-	}
-
-	// Check if file exists and is executable
-	info, err := os.Stat(cliPath)
-	if err != nil {
-		return fmt.Errorf("cannot access Claude CLI at %s: %w", cliPath, err)
-	}
-
-	if info.IsDir() {
-		return fmt.Errorf("CLI path points to a directory, not a file: %s", cliPath)
-	}
-
-	// Check if executable (Unix-style permissions)
-	if info.Mode()&0111 == 0 {
-		return fmt.Errorf("Claude CLI is not executable: %s", cliPath)
-	}
-
-	return nil
-}
-
-// validateAPIKey tests the API key by making a simple authentication request
-func (cm *CLIManager) validateAPIKey() error {
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-
-	// Create a simple test command to validate API key
-	cmd := exec.CommandContext(ctx, cm.config.CLIPath, "--version")
-	
-	// Set environment variables including API key
-	cmd.Env = append(os.Environ(), cm.getEnvironmentVars()...)
-	
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("API key validation failed (exit code %v): %s", err, string(output))
-	}
-
-	cm.logger.Debug("API key validation successful", slog.String("output", string(output)))
-	return nil
-}
-
-// validateCLIVersion checks if the CLI version is compatible
-func (cm *CLIManager) validateCLIVersion() error {
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-	defer cancel()
-
-	cmd := exec.CommandContext(ctx, cm.config.CLIPath, "--version")
-	cmd.Env = append(os.Environ(), cm.getEnvironmentVars()...)
-	
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("failed to get CLI version: %w", err)
-	}
-
-	version := strings.TrimSpace(string(output))
-	cm.logger.Info("Claude CLI version detected", slog.String("version", version))
-
-	// TODO: Add version compatibility checks here when requirements are defined
-	// For now, we just log the version
-
-	return nil
-}
-
-// ComposeCommand generates a Claude CLI command for the given task and plan
-func (cm *CLIManager) ComposeCommand(task entity.Task, plan *Plan) (string, error) {
+// ComposePrompt generates a prompt for the given task and plan
+func (cm *CLIManager) ComposePrompt(task entity.Task, plan *Plan) (string, error) {
 	if task.ID == uuid.Nil {
 		return "", fmt.Errorf("task ID is required")
 	}
 
-	// Build base command with common options
-	args := []string{
-		cm.config.CLIPath,
-	}
+	var prompt strings.Builder
 
-	// Add model specification
-	if cm.config.Model != "" {
-		args = append(args, "--model", cm.config.Model)
-	}
-
-	// Add max tokens if specified
-	if cm.config.MaxTokens > 0 {
-		args = append(args, "--max-tokens", strconv.Itoa(cm.config.MaxTokens))
-	}
-
-	// Determine command type based on task status
+	// Determine prompt type based on task status
 	switch task.Status {
 	case entity.TaskStatusPLANNING:
-		args = append(args, cm.composePlanningCommand(task, plan)...)
+		prompt.WriteString(cm.composePlanningPrompt(task, plan))
 	case entity.TaskStatusIMPLEMENTING:
-		args = append(args, cm.composeImplementationCommand(task, plan)...)
+		prompt.WriteString(cm.composeImplementationPrompt(task, plan))
 	default:
-		return "", fmt.Errorf("unsupported task status for CLI command: %s", task.Status)
+		return "", fmt.Errorf("unsupported task status for prompt composition: %s", task.Status)
 	}
 
-	// Join arguments into a single command string
-	command := strings.Join(args, " ")
-	
-	cm.logger.Debug("Composed CLI command", 
+	composedPrompt := prompt.String()
+
+	cm.logger.Debug("Composed prompt",
 		slog.String("task_id", task.ID.String()),
 		slog.String("status", string(task.Status)),
-		slog.String("command", command))
+		slog.String("prompt_length", fmt.Sprintf("%d", len(composedPrompt))))
 
-	return command, nil
+	return composedPrompt, nil
 }
 
-// composePlanningCommand creates command arguments for planning tasks
-func (cm *CLIManager) composePlanningCommand(task entity.Task, plan *Plan) []string {
-	args := []string{}
-
-	// Add planning-specific prompt
-	prompt := fmt.Sprintf(`You are tasked with creating a detailed implementation plan for the following task:
+// composePlanningPrompt creates prompt for planning tasks
+func (cm *CLIManager) composePlanningPrompt(task entity.Task, _ *Plan) string {
+	return fmt.Sprintf(`You are tasked with creating a detailed implementation plan for the following task:
 
 Title: %s
 Description: %s
@@ -214,25 +103,14 @@ Please analyze the requirements and create a step-by-step implementation plan. I
 4. Testing strategy
 5. Definition of done criteria
 
-Focus on being thorough and actionable.`, 
-		task.Title, 
-		task.Description, 
+Focus on being thorough and actionable.`,
+		task.Title,
+		task.Description,
 		task.Priority)
-
-	args = append(args, "--prompt", fmt.Sprintf(`"%s"`, prompt))
-
-	// Add context if working directory is specified
-	if cm.config.WorkingDirectory != "" {
-		args = append(args, "--working-dir", cm.config.WorkingDirectory)
-	}
-
-	return args
 }
 
-// composeImplementationCommand creates command arguments for implementation tasks
-func (cm *CLIManager) composeImplementationCommand(task entity.Task, plan *Plan) []string {
-	args := []string{}
-
+// composeImplementationPrompt creates prompt for implementation tasks
+func (cm *CLIManager) composeImplementationPrompt(task entity.Task, plan *Plan) string {
 	var prompt strings.Builder
 	prompt.WriteString(fmt.Sprintf(`You are tasked with implementing the following:
 
@@ -260,34 +138,12 @@ Priority: %s
 
 Focus on producing production-ready code.`)
 
-	args = append(args, "--prompt", fmt.Sprintf(`"%s"`, prompt.String()))
-
-	// Add context if working directory is specified
-	if cm.config.WorkingDirectory != "" {
-		args = append(args, "--working-dir", cm.config.WorkingDirectory)
-	}
-
-	return args
+	return prompt.String()
 }
 
 // GetEnvironmentVars returns environment variables needed for Claude CLI
 func (cm *CLIManager) GetEnvironmentVars() map[string]string {
 	envVars := make(map[string]string)
-
-	// Add Claude API key
-	if cm.config.APIKey != "" {
-		envVars["ANTHROPIC_API_KEY"] = cm.config.APIKey
-	}
-
-	// Add model configuration
-	if cm.config.Model != "" {
-		envVars["CLAUDE_MODEL"] = cm.config.Model
-	}
-
-	// Add working directory
-	if cm.config.WorkingDirectory != "" {
-		envVars["CLAUDE_WORKING_DIR"] = cm.config.WorkingDirectory
-	}
 
 	// Add logging configuration
 	if cm.config.EnableLogging {
@@ -311,16 +167,16 @@ func (cm *CLIManager) getEnvironmentVars() []string {
 	return env
 }
 
-// ExecuteCommand executes a CLI command with proper error handling and retries
-func (cm *CLIManager) ExecuteCommand(ctx context.Context, command string) (*CLIResult, error) {
+// ExecuteCommand executes a CLI command with prompt via stdin
+func (cm *CLIManager) ExecuteCommand(ctx context.Context, prompt string) (*CLIResult, error) {
 	var lastErr error
-	
+
 	for attempt := 0; attempt <= cm.config.RetryAttempts; attempt++ {
 		if attempt > 0 {
-			cm.logger.Warn("Retrying CLI command", 
+			cm.logger.Warn("Retrying CLI command",
 				slog.Int("attempt", attempt),
-				slog.String("command", command))
-			
+				slog.String("cli_command", cm.config.CLICommand))
+
 			// Wait before retry
 			select {
 			case <-ctx.Done():
@@ -329,13 +185,13 @@ func (cm *CLIManager) ExecuteCommand(ctx context.Context, command string) (*CLIR
 			}
 		}
 
-		result, err := cm.executeCommandOnce(ctx, command)
+		result, err := cm.executeCommandOnce(ctx, cm.config.CLICommand, prompt)
 		if err == nil {
 			return result, nil
 		}
-		
+
 		lastErr = err
-		cm.logger.Error("CLI command failed", 
+		cm.logger.Error("CLI command failed",
 			slog.Int("attempt", attempt+1),
 			slog.String("error", err.Error()))
 	}
@@ -343,12 +199,24 @@ func (cm *CLIManager) ExecuteCommand(ctx context.Context, command string) (*CLIR
 	return nil, fmt.Errorf("command failed after %d attempts: %w", cm.config.RetryAttempts+1, lastErr)
 }
 
-// executeCommandOnce executes a CLI command once
-func (cm *CLIManager) executeCommandOnce(ctx context.Context, command string) (*CLIResult, error) {
+// ExecuteTask composes a prompt for the given task and executes the CLI command
+func (cm *CLIManager) ExecuteTask(ctx context.Context, task entity.Task, plan *Plan) (*CLIResult, error) {
+	// Compose prompt for the task
+	prompt, err := cm.ComposePrompt(task, plan)
+	if err != nil {
+		return nil, fmt.Errorf("failed to compose prompt: %w", err)
+	}
+
+	// Execute the command with the composed prompt
+	return cm.ExecuteCommand(ctx, prompt)
+}
+
+// executeCommandOnce executes a CLI command once with prompt via stdin
+func (cm *CLIManager) executeCommandOnce(ctx context.Context, cliCommand string, prompt string) (*CLIResult, error) {
 	// Parse command into parts
-	parts := strings.Fields(command)
+	parts := strings.Fields(cliCommand)
 	if len(parts) == 0 {
-		return nil, fmt.Errorf("empty command")
+		return nil, fmt.Errorf("empty CLI command")
 	}
 
 	// Create command with timeout
@@ -357,20 +225,21 @@ func (cm *CLIManager) executeCommandOnce(ctx context.Context, command string) (*
 
 	cmd := exec.CommandContext(cmdCtx, parts[0], parts[1:]...)
 	cmd.Env = append(os.Environ(), cm.getEnvironmentVars()...)
-	
+
 	// Set working directory if specified
 	if cm.config.WorkingDirectory != "" {
-		if abs, err := filepath.Abs(cm.config.WorkingDirectory); err == nil {
-			cmd.Dir = abs
-		}
+		cmd.Dir = cm.config.WorkingDirectory
 	}
+
+	// Set stdin to the prompt
+	cmd.Stdin = strings.NewReader(prompt)
 
 	startTime := time.Now()
 	output, err := cmd.CombinedOutput()
 	duration := time.Since(startTime)
 
 	result := &CLIResult{
-		Command:    command,
+		Command:    cliCommand,
 		Output:     string(output),
 		Duration:   duration,
 		ExitCode:   0,
@@ -387,32 +256,10 @@ func (cm *CLIManager) executeCommandOnce(ctx context.Context, command string) (*
 	}
 
 	cm.logger.Info("CLI command executed successfully",
-		slog.String("command", command),
+		slog.String("command", cliCommand),
 		slog.Duration("duration", duration))
 
 	return result, nil
-}
-
-// SetWorkingDirectory updates the working directory for CLI operations
-func (cm *CLIManager) SetWorkingDirectory(dir string) error {
-	if dir == "" {
-		cm.config.WorkingDirectory = ""
-		return nil
-	}
-
-	absDir, err := filepath.Abs(dir)
-	if err != nil {
-		return fmt.Errorf("failed to resolve absolute path: %w", err)
-	}
-
-	if _, err := os.Stat(absDir); os.IsNotExist(err) {
-		return fmt.Errorf("directory does not exist: %s", absDir)
-	}
-
-	cm.config.WorkingDirectory = absDir
-	cm.logger.Debug("Working directory updated", slog.String("dir", absDir))
-	
-	return nil
 }
 
 // GetConfig returns a copy of the current configuration
@@ -437,8 +284,8 @@ func (r *CLIResult) String() string {
 	if !r.Success {
 		status = "FAILED"
 	}
-	
-	return fmt.Sprintf("CLIResult{Status: %s, Duration: %v, ExitCode: %d}", 
+
+	return fmt.Sprintf("CLIResult{Status: %s, Duration: %v, ExitCode: %d}",
 		status, r.Duration, r.ExitCode)
 }
 
