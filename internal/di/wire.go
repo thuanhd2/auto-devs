@@ -7,6 +7,8 @@ import (
 	"github.com/auto-devs/auto-devs/config"
 	"github.com/auto-devs/auto-devs/internal/repository"
 	"github.com/auto-devs/auto-devs/internal/repository/postgres"
+	"github.com/auto-devs/auto-devs/internal/service/git"
+	worktreesvc "github.com/auto-devs/auto-devs/internal/service/worktree"
 	"github.com/auto-devs/auto-devs/internal/usecase"
 	"github.com/auto-devs/auto-devs/pkg/database"
 	"github.com/google/wire"
@@ -19,12 +21,16 @@ var ProviderSet = wire.NewSet(
 	// Repository providers
 	postgres.NewProjectRepository,
 	postgres.NewTaskRepository,
-	postgres.NewWorktreeRepository,
+	ProvideWorktreeRepository,
 	postgres.NewAuditRepository,
+	// Service providers
+	ProvideGitManager,
+	ProvideIntegratedWorktreeService,
 	// Usecase providers
 	usecase.NewNotificationUsecase,
 	ProvideAuditService,
 	ProvideProjectUsecase,
+	ProvideWorktreeUsecase,
 	ProvideTaskUsecase,
 )
 
@@ -48,6 +54,7 @@ type App struct {
 	AuditService        usecase.AuditService
 	ProjectUsecase      usecase.ProjectUsecase
 	TaskUsecase         usecase.TaskUsecase
+	WorktreeUsecase     usecase.WorktreeUsecase
 	NotificationUsecase usecase.NotificationUsecase
 }
 
@@ -62,6 +69,7 @@ func NewApp(
 	auditService usecase.AuditService,
 	projectUsecase usecase.ProjectUsecase,
 	taskUsecase usecase.TaskUsecase,
+	worktreeUsecase usecase.WorktreeUsecase,
 	notificationUsecase usecase.NotificationUsecase,
 ) *App {
 	return &App{
@@ -74,6 +82,7 @@ func NewApp(
 		AuditService:        auditService,
 		ProjectUsecase:      projectUsecase,
 		TaskUsecase:         taskUsecase,
+		WorktreeUsecase:     worktreeUsecase,
 		NotificationUsecase: notificationUsecase,
 	}
 }
@@ -83,9 +92,36 @@ func ProvideGormDB(cfg *config.Config) (*database.GormDB, error) {
 	return database.NewGormDB(cfg)
 }
 
+// ProvideWorktreeRepository provides a WorktreeRepository instance
+func ProvideWorktreeRepository(gormDB *database.GormDB) repository.WorktreeRepository {
+	return postgres.NewWorktreeRepository(gormDB.DB)
+}
+
 // ProvideAuditService provides an AuditService instance
 func ProvideAuditService(auditRepo repository.AuditRepository) usecase.AuditService {
 	return usecase.NewAuditService(auditRepo)
+}
+
+// ProvideGitManager provides a GitManager instance
+func ProvideGitManager(cfg *config.Config) (*git.GitManager, error) {
+	gitConfig := &git.ManagerConfig{
+		DefaultTimeout: 30,
+		MaxRetries:     3,
+		EnableLogging:  true,
+	}
+	return git.NewGitManager(gitConfig)
+}
+
+// ProvideIntegratedWorktreeService provides an IntegratedWorktreeService instance
+func ProvideIntegratedWorktreeService(cfg *config.Config, gitManager *git.GitManager) (*worktreesvc.IntegratedWorktreeService, error) {
+	worktreeConfig := &worktreesvc.WorktreeConfig{
+		BaseDirectory: "/tmp/worktrees",
+	}
+	integratedConfig := &worktreesvc.IntegratedConfig{
+		Worktree: worktreeConfig,
+		Git:      &git.ManagerConfig{},
+	}
+	return worktreesvc.NewIntegratedWorktreeService(integratedConfig)
 }
 
 // ProvideProjectUsecase provides a ProjectUsecase instance
@@ -93,7 +129,23 @@ func ProvideProjectUsecase(projectRepo repository.ProjectRepository, auditServic
 	return usecase.NewProjectUsecase(projectRepo, auditService)
 }
 
+// ProvideWorktreeUsecase provides a WorktreeUsecase instance
+func ProvideWorktreeUsecase(
+	worktreeRepo repository.WorktreeRepository,
+	taskRepo repository.TaskRepository,
+	projectRepo repository.ProjectRepository,
+	integratedWorktreeSvc *worktreesvc.IntegratedWorktreeService,
+	gitManager *git.GitManager,
+) usecase.WorktreeUsecase {
+	return usecase.NewWorktreeUsecase(worktreeRepo, taskRepo, projectRepo, integratedWorktreeSvc, gitManager)
+}
+
 // ProvideTaskUsecase provides a TaskUsecase instance
-func ProvideTaskUsecase(taskRepo repository.TaskRepository, projectRepo repository.ProjectRepository, notificationUsecase usecase.NotificationUsecase) usecase.TaskUsecase {
-	return usecase.NewTaskUsecase(taskRepo, projectRepo, notificationUsecase)
+func ProvideTaskUsecase(
+	taskRepo repository.TaskRepository,
+	projectRepo repository.ProjectRepository,
+	notificationUsecase usecase.NotificationUsecase,
+	worktreeUsecase usecase.WorktreeUsecase,
+) usecase.TaskUsecase {
+	return usecase.NewTaskUsecase(taskRepo, projectRepo, notificationUsecase, worktreeUsecase)
 }

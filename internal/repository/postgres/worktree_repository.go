@@ -6,189 +6,97 @@ import (
 	"time"
 
 	"github.com/auto-devs/auto-devs/internal/entity"
-	"github.com/auto-devs/auto-devs/internal/repository"
-	"github.com/auto-devs/auto-devs/pkg/database"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
 type worktreeRepository struct {
-	db *database.GormDB
+	db *gorm.DB
 }
 
-// NewWorktreeRepository creates a new PostgreSQL worktree repository
-func NewWorktreeRepository(db *database.GormDB) repository.WorktreeRepository {
+func NewWorktreeRepository(db *gorm.DB) *worktreeRepository {
 	return &worktreeRepository{db: db}
 }
 
-// Create creates a new worktree
+// Create creates a new worktree record
 func (r *worktreeRepository) Create(ctx context.Context, worktree *entity.Worktree) error {
-	// Generate UUID if not provided
-	if worktree.ID == uuid.Nil {
-		worktree.ID = uuid.New()
-	}
-
-	// Set default status if not provided
-	if worktree.Status == "" {
-		worktree.Status = entity.WorktreeStatusCreating
-	}
-
-	result := r.db.WithContext(ctx).Create(worktree)
-	if result.Error != nil {
-		return fmt.Errorf("failed to create worktree: %w", result.Error)
-	}
-
-	return nil
+	return r.db.WithContext(ctx).Create(worktree).Error
 }
 
 // GetByID retrieves a worktree by ID
 func (r *worktreeRepository) GetByID(ctx context.Context, id uuid.UUID) (*entity.Worktree, error) {
 	var worktree entity.Worktree
-
-	result := r.db.WithContext(ctx).First(&worktree, "id = ?", id)
-	if result.Error != nil {
-		if result.Error == gorm.ErrRecordNotFound {
-			return nil, fmt.Errorf("worktree not found with id %s", id)
-		}
-		return nil, fmt.Errorf("failed to get worktree: %w", result.Error)
+	err := r.db.WithContext(ctx).Where("id = ?", id).First(&worktree).Error
+	if err != nil {
+		return nil, err
 	}
-
 	return &worktree, nil
 }
 
 // GetByTaskID retrieves a worktree by task ID
 func (r *worktreeRepository) GetByTaskID(ctx context.Context, taskID uuid.UUID) (*entity.Worktree, error) {
 	var worktree entity.Worktree
-
-	result := r.db.WithContext(ctx).Where("task_id = ?", taskID).First(&worktree)
-	if result.Error != nil {
-		if result.Error == gorm.ErrRecordNotFound {
-			return nil, fmt.Errorf("worktree not found for task %s", taskID)
-		}
-		return nil, fmt.Errorf("failed to get worktree by task ID: %w", result.Error)
+	err := r.db.WithContext(ctx).Where("task_id = ?", taskID).First(&worktree).Error
+	if err != nil {
+		return nil, err
 	}
-
 	return &worktree, nil
 }
 
-// GetByProjectID retrieves all worktrees for a specific project
+// GetByProjectID retrieves all worktrees for a project
 func (r *worktreeRepository) GetByProjectID(ctx context.Context, projectID uuid.UUID) ([]*entity.Worktree, error) {
-	var worktrees []entity.Worktree
-
-	result := r.db.WithContext(ctx).Where("project_id = ?", projectID).Order("created_at DESC").Find(&worktrees)
-	if result.Error != nil {
-		return nil, fmt.Errorf("failed to get worktrees by project: %w", result.Error)
+	var worktrees []*entity.Worktree
+	err := r.db.WithContext(ctx).Where("project_id = ?", projectID).Find(&worktrees).Error
+	if err != nil {
+		return nil, err
 	}
-
-	// Convert to slice of pointers
-	worktreePtrs := make([]*entity.Worktree, len(worktrees))
-	for i := range worktrees {
-		worktreePtrs[i] = &worktrees[i]
-	}
-
-	return worktreePtrs, nil
+	return worktrees, nil
 }
 
-// Update updates an existing worktree
+// Update updates a worktree record
 func (r *worktreeRepository) Update(ctx context.Context, worktree *entity.Worktree) error {
-	// First check if worktree exists
-	var existingWorktree entity.Worktree
-	result := r.db.WithContext(ctx).First(&existingWorktree, "id = ?", worktree.ID)
-	if result.Error != nil {
-		if result.Error == gorm.ErrRecordNotFound {
-			return fmt.Errorf("worktree not found with id %s", worktree.ID)
-		}
-		return fmt.Errorf("failed to check worktree existence: %w", result.Error)
-	}
-
-	// Update the worktree
-	result = r.db.WithContext(ctx).Save(worktree)
-	if result.Error != nil {
-		return fmt.Errorf("failed to update worktree: %w", result.Error)
-	}
-
-	return nil
+	return r.db.WithContext(ctx).Save(worktree).Error
 }
 
-// Delete deletes a worktree by ID (soft delete)
+// Delete soft deletes a worktree record
 func (r *worktreeRepository) Delete(ctx context.Context, id uuid.UUID) error {
-	result := r.db.WithContext(ctx).Delete(&entity.Worktree{}, "id = ?", id)
-	if result.Error != nil {
-		return fmt.Errorf("failed to delete worktree: %w", result.Error)
-	}
-
-	if result.RowsAffected == 0 {
-		return fmt.Errorf("worktree not found with id %s", id)
-	}
-
-	return nil
+	return r.db.WithContext(ctx).Delete(&entity.Worktree{}, id).Error
 }
 
 // UpdateStatus updates the status of a worktree
 func (r *worktreeRepository) UpdateStatus(ctx context.Context, id uuid.UUID, status entity.WorktreeStatus) error {
-	result := r.db.WithContext(ctx).Model(&entity.Worktree{}).Where("id = ?", id).Update("status", status)
-	if result.Error != nil {
-		return fmt.Errorf("failed to update worktree status: %w", result.Error)
-	}
-
-	if result.RowsAffected == 0 {
-		return fmt.Errorf("worktree not found with id %s", id)
-	}
-
-	return nil
+	return r.db.WithContext(ctx).Model(&entity.Worktree{}).Where("id = ?", id).Update("status", status).Error
 }
 
-// GetByStatus retrieves all worktrees with a specific status
+// GetByStatus retrieves worktrees by status
 func (r *worktreeRepository) GetByStatus(ctx context.Context, status entity.WorktreeStatus) ([]*entity.Worktree, error) {
-	var worktrees []entity.Worktree
-
-	result := r.db.WithContext(ctx).Where("status = ?", status).Order("created_at DESC").Find(&worktrees)
-	if result.Error != nil {
-		return nil, fmt.Errorf("failed to get worktrees by status: %w", result.Error)
+	var worktrees []*entity.Worktree
+	err := r.db.WithContext(ctx).Where("status = ?", status).Find(&worktrees).Error
+	if err != nil {
+		return nil, err
 	}
-
-	// Convert to slice of pointers
-	worktreePtrs := make([]*entity.Worktree, len(worktrees))
-	for i := range worktrees {
-		worktreePtrs[i] = &worktrees[i]
-	}
-
-	return worktreePtrs, nil
+	return worktrees, nil
 }
 
-// GetByStatuses retrieves all worktrees with any of the specified statuses
+// GetByStatuses retrieves worktrees by multiple statuses
 func (r *worktreeRepository) GetByStatuses(ctx context.Context, statuses []entity.WorktreeStatus) ([]*entity.Worktree, error) {
-	var worktrees []entity.Worktree
-
-	result := r.db.WithContext(ctx).Where("status IN ?", statuses).Order("created_at DESC").Find(&worktrees)
-	if result.Error != nil {
-		return nil, fmt.Errorf("failed to get worktrees by statuses: %w", result.Error)
+	var worktrees []*entity.Worktree
+	err := r.db.WithContext(ctx).Where("status IN ?", statuses).Find(&worktrees).Error
+	if err != nil {
+		return nil, err
 	}
-
-	// Convert to slice of pointers
-	worktreePtrs := make([]*entity.Worktree, len(worktrees))
-	for i := range worktrees {
-		worktreePtrs[i] = &worktrees[i]
-	}
-
-	return worktreePtrs, nil
+	return worktrees, nil
 }
 
-// BulkUpdateStatus updates the status of multiple worktrees
+// BulkUpdateStatus updates status for multiple worktrees
 func (r *worktreeRepository) BulkUpdateStatus(ctx context.Context, ids []uuid.UUID, status entity.WorktreeStatus) error {
-	result := r.db.WithContext(ctx).Model(&entity.Worktree{}).Where("id IN ?", ids).Update("status", status)
-	if result.Error != nil {
-		return fmt.Errorf("failed to bulk update worktree status: %w", result.Error)
-	}
-
-	return nil
+	return r.db.WithContext(ctx).Model(&entity.Worktree{}).Where("id IN ?", ids).Update("status", status).Error
 }
 
 // GetWorktreesWithFilters retrieves worktrees with advanced filtering
 func (r *worktreeRepository) GetWorktreesWithFilters(ctx context.Context, filters entity.WorktreeFilters) ([]*entity.Worktree, error) {
 	query := r.db.WithContext(ctx).Model(&entity.Worktree{})
 
-	// Apply filters
 	if filters.ProjectID != nil {
 		query = query.Where("project_id = ?", *filters.ProjectID)
 	}
@@ -216,10 +124,10 @@ func (r *worktreeRepository) GetWorktreesWithFilters(ctx context.Context, filter
 	// Apply ordering
 	if filters.OrderBy != nil {
 		orderDir := "ASC"
-		if filters.OrderDir != nil {
-			orderDir = *filters.OrderDir
+		if filters.OrderDir != nil && *filters.OrderDir == "desc" {
+			orderDir = "DESC"
 		}
-		query = query.Order(*filters.OrderBy + " " + orderDir)
+		query = query.Order(fmt.Sprintf("%s %s", *filters.OrderBy, orderDir))
 	} else {
 		query = query.Order("created_at DESC")
 	}
@@ -233,173 +141,129 @@ func (r *worktreeRepository) GetWorktreesWithFilters(ctx context.Context, filter
 		query = query.Offset(*filters.Offset)
 	}
 
-	var worktrees []entity.Worktree
-	result := query.Find(&worktrees)
-	if result.Error != nil {
-		return nil, fmt.Errorf("failed to get worktrees with filters: %w", result.Error)
+	var worktrees []*entity.Worktree
+	err := query.Find(&worktrees).Error
+	if err != nil {
+		return nil, err
 	}
 
-	// Convert to slice of pointers
-	worktreePtrs := make([]*entity.Worktree, len(worktrees))
-	for i := range worktrees {
-		worktreePtrs[i] = &worktrees[i]
-	}
-
-	return worktreePtrs, nil
+	return worktrees, nil
 }
 
 // GetByBranchName retrieves worktrees by branch name
 func (r *worktreeRepository) GetByBranchName(ctx context.Context, branchName string) ([]*entity.Worktree, error) {
-	var worktrees []entity.Worktree
-
-	result := r.db.WithContext(ctx).Where("branch_name = ?", branchName).Order("created_at DESC").Find(&worktrees)
-	if result.Error != nil {
-		return nil, fmt.Errorf("failed to get worktrees by branch name: %w", result.Error)
+	var worktrees []*entity.Worktree
+	err := r.db.WithContext(ctx).Where("branch_name = ?", branchName).Find(&worktrees).Error
+	if err != nil {
+		return nil, err
 	}
-
-	// Convert to slice of pointers
-	worktreePtrs := make([]*entity.Worktree, len(worktrees))
-	for i := range worktrees {
-		worktreePtrs[i] = &worktrees[i]
-	}
-
-	return worktreePtrs, nil
+	return worktrees, nil
 }
 
 // GetByWorktreePath retrieves a worktree by worktree path
 func (r *worktreeRepository) GetByWorktreePath(ctx context.Context, worktreePath string) (*entity.Worktree, error) {
 	var worktree entity.Worktree
-
-	result := r.db.WithContext(ctx).Where("worktree_path = ?", worktreePath).First(&worktree)
-	if result.Error != nil {
-		if result.Error == gorm.ErrRecordNotFound {
-			return nil, fmt.Errorf("worktree not found with path %s", worktreePath)
-		}
-		return nil, fmt.Errorf("failed to get worktree by path: %w", result.Error)
+	err := r.db.WithContext(ctx).Where("worktree_path = ?", worktreePath).First(&worktree).Error
+	if err != nil {
+		return nil, err
 	}
-
 	return &worktree, nil
 }
 
-// BulkDelete deletes multiple worktrees by IDs
+// BulkDelete soft deletes multiple worktrees
 func (r *worktreeRepository) BulkDelete(ctx context.Context, worktreeIDs []uuid.UUID) error {
-	result := r.db.WithContext(ctx).Delete(&entity.Worktree{}, "id IN ?", worktreeIDs)
-	if result.Error != nil {
-		return fmt.Errorf("failed to bulk delete worktrees: %w", result.Error)
-	}
-
-	return nil
+	return r.db.WithContext(ctx).Delete(&entity.Worktree{}, worktreeIDs).Error
 }
 
-// BulkDeleteByProjectID deletes all worktrees for a project
+// BulkDeleteByProjectID soft deletes all worktrees for a project
 func (r *worktreeRepository) BulkDeleteByProjectID(ctx context.Context, projectID uuid.UUID) error {
-	result := r.db.WithContext(ctx).Delete(&entity.Worktree{}, "project_id = ?", projectID)
-	if result.Error != nil {
-		return fmt.Errorf("failed to delete worktrees by project ID: %w", result.Error)
-	}
-
-	return nil
+	return r.db.WithContext(ctx).Where("project_id = ?", projectID).Delete(&entity.Worktree{}).Error
 }
 
-// BulkDeleteByTaskIDs deletes all worktrees for specified tasks
+// BulkDeleteByTaskIDs soft deletes worktrees for multiple tasks
 func (r *worktreeRepository) BulkDeleteByTaskIDs(ctx context.Context, taskIDs []uuid.UUID) error {
-	result := r.db.WithContext(ctx).Delete(&entity.Worktree{}, "task_id IN ?", taskIDs)
-	if result.Error != nil {
-		return fmt.Errorf("failed to delete worktrees by task IDs: %w", result.Error)
-	}
-
-	return nil
+	return r.db.WithContext(ctx).Where("task_id IN ?", taskIDs).Delete(&entity.Worktree{}).Error
 }
 
-// GetWorktreeStatistics retrieves worktree statistics for a project
+// GetWorktreeStatistics gets worktree statistics for a project
 func (r *worktreeRepository) GetWorktreeStatistics(ctx context.Context, projectID uuid.UUID) (*entity.WorktreeStatistics, error) {
-	var totalWorktrees int64
-	var activeWorktrees int64
-	var completedWorktrees int64
-	var errorWorktrees int64
+	var stats entity.WorktreeStatistics
+	stats.ProjectID = projectID
+	stats.GeneratedAt = time.Now()
 
-	// Get total count
-	if err := r.db.WithContext(ctx).Model(&entity.Worktree{}).Where("project_id = ?", projectID).Count(&totalWorktrees).Error; err != nil {
-		return nil, fmt.Errorf("failed to count total worktrees: %w", err)
-	}
-
-	// Get active count
-	if err := r.db.WithContext(ctx).Model(&entity.Worktree{}).Where("project_id = ? AND status = ?", projectID, entity.WorktreeStatusActive).Count(&activeWorktrees).Error; err != nil {
-		return nil, fmt.Errorf("failed to count active worktrees: %w", err)
-	}
-
-	// Get completed count
-	if err := r.db.WithContext(ctx).Model(&entity.Worktree{}).Where("project_id = ? AND status = ?", projectID, entity.WorktreeStatusCompleted).Count(&completedWorktrees).Error; err != nil {
-		return nil, fmt.Errorf("failed to count completed worktrees: %w", err)
-	}
-
-	// Get error count
-	if err := r.db.WithContext(ctx).Model(&entity.Worktree{}).Where("project_id = ? AND status = ?", projectID, entity.WorktreeStatusError).Count(&errorWorktrees).Error; err != nil {
-		return nil, fmt.Errorf("failed to count error worktrees: %w", err)
-	}
-
-	// Get worktrees by status count
-	worktreesByStatus, err := r.GetWorktreesByStatusCount(ctx, projectID)
+	// Get total worktrees
+	var totalCount int64
+	err := r.db.WithContext(ctx).Model(&entity.Worktree{}).Where("project_id = ?", projectID).Count(&totalCount).Error
 	if err != nil {
-		return nil, fmt.Errorf("failed to get worktrees by status count: %w", err)
+		return nil, err
+	}
+	stats.TotalWorktrees = int(totalCount)
+	if err != nil {
+		return nil, err
 	}
 
-	// Calculate average creation time (simplified - could be enhanced with actual timing data)
-	var avgCreationTime float64
-	if totalWorktrees > 0 {
-		// This is a placeholder - in a real implementation, you might track actual creation time
-		avgCreationTime = 30.0 // 30 seconds as placeholder
-	}
-
-	stats := &entity.WorktreeStatistics{
-		ProjectID:           projectID,
-		TotalWorktrees:      int(totalWorktrees),
-		ActiveWorktrees:     int(activeWorktrees),
-		CompletedWorktrees:  int(completedWorktrees),
-		ErrorWorktrees:      int(errorWorktrees),
-		WorktreesByStatus:   worktreesByStatus,
-		AverageCreationTime: avgCreationTime,
-		GeneratedAt:         time.Now(),
-	}
-
-	return stats, nil
-}
-
-// GetActiveWorktreesCount retrieves the count of active worktrees for a project
-func (r *worktreeRepository) GetActiveWorktreesCount(ctx context.Context, projectID uuid.UUID) (int, error) {
-	var count int64
-
-	result := r.db.WithContext(ctx).Model(&entity.Worktree{}).Where("project_id = ? AND status = ?", projectID, entity.WorktreeStatusActive).Count(&count)
-	if result.Error != nil {
-		return 0, fmt.Errorf("failed to count active worktrees: %w", result.Error)
-	}
-
-	return int(count), nil
-}
-
-// GetWorktreesByStatusCount retrieves the count of worktrees by status for a project
-func (r *worktreeRepository) GetWorktreesByStatusCount(ctx context.Context, projectID uuid.UUID) (map[entity.WorktreeStatus]int, error) {
-	var results []struct {
+	// Get worktrees by status
+	var statusCounts []struct {
 		Status entity.WorktreeStatus `json:"status"`
-		Count  int64                 `json:"count"`
+		Count  int                   `json:"count"`
 	}
 
-	result := r.db.WithContext(ctx).Model(&entity.Worktree{}).
+	err = r.db.WithContext(ctx).Model(&entity.Worktree{}).
 		Select("status, count(*) as count").
 		Where("project_id = ?", projectID).
 		Group("status").
-		Find(&results)
-
-	if result.Error != nil {
-		return nil, fmt.Errorf("failed to get worktrees by status count: %w", result.Error)
+		Find(&statusCounts).Error
+	if err != nil {
+		return nil, err
 	}
 
-	statusCounts := make(map[entity.WorktreeStatus]int)
-	for _, result := range results {
-		statusCounts[result.Status] = int(result.Count)
+	stats.WorktreesByStatus = make(map[entity.WorktreeStatus]int)
+	for _, sc := range statusCounts {
+		stats.WorktreesByStatus[sc.Status] = sc.Count
 	}
 
-	return statusCounts, nil
+	// Get specific counts
+	stats.ActiveWorktrees = stats.WorktreesByStatus[entity.WorktreeStatusActive]
+	stats.CompletedWorktrees = stats.WorktreesByStatus[entity.WorktreeStatusCompleted]
+	stats.ErrorWorktrees = stats.WorktreesByStatus[entity.WorktreeStatusError]
+
+	// Calculate average creation time (simplified - in a real implementation you'd track actual creation time)
+	stats.AverageCreationTime = 30.0 // Placeholder value in seconds
+
+	return &stats, nil
+}
+
+// GetActiveWorktreesCount gets the count of active worktrees for a project
+func (r *worktreeRepository) GetActiveWorktreesCount(ctx context.Context, projectID uuid.UUID) (int, error) {
+	var count int64
+	err := r.db.WithContext(ctx).Model(&entity.Worktree{}).
+		Where("project_id = ? AND status = ?", projectID, entity.WorktreeStatusActive).
+		Count(&count).Error
+	return int(count), err
+}
+
+// GetWorktreesByStatusCount gets worktrees count by status for a project
+func (r *worktreeRepository) GetWorktreesByStatusCount(ctx context.Context, projectID uuid.UUID) (map[entity.WorktreeStatus]int, error) {
+	var statusCounts []struct {
+		Status entity.WorktreeStatus `json:"status"`
+		Count  int                   `json:"count"`
+	}
+
+	err := r.db.WithContext(ctx).Model(&entity.Worktree{}).
+		Select("status, count(*) as count").
+		Where("project_id = ?", projectID).
+		Group("status").
+		Find(&statusCounts).Error
+	if err != nil {
+		return nil, err
+	}
+
+	result := make(map[entity.WorktreeStatus]int)
+	for _, sc := range statusCounts {
+		result[sc.Status] = sc.Count
+	}
+
+	return result, nil
 }
 
 // CheckDuplicateWorktreePath checks if a worktree path already exists
@@ -411,110 +275,70 @@ func (r *worktreeRepository) CheckDuplicateWorktreePath(ctx context.Context, wor
 	}
 
 	var count int64
-	result := query.Count(&count)
-	if result.Error != nil {
-		return false, fmt.Errorf("failed to check duplicate worktree path: %w", result.Error)
-	}
-
-	return count > 0, nil
+	err := query.Count(&count).Error
+	return count > 0, err
 }
 
 // CheckDuplicateBranchName checks if a branch name already exists in a project
 func (r *worktreeRepository) CheckDuplicateBranchName(ctx context.Context, projectID uuid.UUID, branchName string, excludeID *uuid.UUID) (bool, error) {
-	query := r.db.WithContext(ctx).Model(&entity.Worktree{}).Where("project_id = ? AND branch_name = ?", projectID, branchName)
+	query := r.db.WithContext(ctx).Model(&entity.Worktree{}).
+		Where("project_id = ? AND branch_name = ?", projectID, branchName)
 
 	if excludeID != nil {
 		query = query.Where("id != ?", *excludeID)
 	}
 
 	var count int64
-	result := query.Count(&count)
-	if result.Error != nil {
-		return false, fmt.Errorf("failed to check duplicate branch name: %w", result.Error)
-	}
-
-	return count > 0, nil
+	err := query.Count(&count).Error
+	return count > 0, err
 }
 
 // ValidateWorktreeExists checks if a worktree exists
 func (r *worktreeRepository) ValidateWorktreeExists(ctx context.Context, worktreeID uuid.UUID) (bool, error) {
 	var count int64
-
-	result := r.db.WithContext(ctx).Model(&entity.Worktree{}).Where("id = ?", worktreeID).Count(&count)
-	if result.Error != nil {
-		return false, fmt.Errorf("failed to validate worktree exists: %w", result.Error)
-	}
-
-	return count > 0, nil
+	err := r.db.WithContext(ctx).Model(&entity.Worktree{}).Where("id = ?", worktreeID).Count(&count).Error
+	return count > 0, err
 }
 
 // ValidateTaskExists checks if a task exists
 func (r *worktreeRepository) ValidateTaskExists(ctx context.Context, taskID uuid.UUID) (bool, error) {
 	var count int64
-
-	result := r.db.WithContext(ctx).Model(&entity.Task{}).Where("id = ?", taskID).Count(&count)
-	if result.Error != nil {
-		return false, fmt.Errorf("failed to validate task exists: %w", result.Error)
-	}
-
-	return count > 0, nil
+	err := r.db.WithContext(ctx).Model(&entity.Task{}).Where("id = ?", taskID).Count(&count).Error
+	return count > 0, err
 }
 
 // ValidateProjectExists checks if a project exists
 func (r *worktreeRepository) ValidateProjectExists(ctx context.Context, projectID uuid.UUID) (bool, error) {
 	var count int64
-
-	result := r.db.WithContext(ctx).Model(&entity.Project{}).Where("id = ?", projectID).Count(&count)
-	if result.Error != nil {
-		return false, fmt.Errorf("failed to validate project exists: %w", result.Error)
-	}
-
-	return count > 0, nil
+	err := r.db.WithContext(ctx).Model(&entity.Project{}).Where("id = ?", projectID).Count(&count).Error
+	return count > 0, err
 }
 
-// GetOrphanedWorktrees retrieves worktrees that reference non-existent tasks or projects
+// GetOrphanedWorktrees gets worktrees that don't have corresponding tasks
 func (r *worktreeRepository) GetOrphanedWorktrees(ctx context.Context) ([]*entity.Worktree, error) {
-	var worktrees []entity.Worktree
-
-	// Find worktrees where task doesn't exist
-	result := r.db.WithContext(ctx).
+	var worktrees []*entity.Worktree
+	err := r.db.WithContext(ctx).
 		Joins("LEFT JOIN tasks ON worktrees.task_id = tasks.id").
 		Where("tasks.id IS NULL").
-		Find(&worktrees)
-
-	if result.Error != nil {
-		return nil, fmt.Errorf("failed to get orphaned worktrees: %w", result.Error)
+		Find(&worktrees).Error
+	if err != nil {
+		return nil, err
 	}
-
-	// Convert to slice of pointers
-	worktreePtrs := make([]*entity.Worktree, len(worktrees))
-	for i := range worktrees {
-		worktreePtrs[i] = &worktrees[i]
-	}
-
-	return worktreePtrs, nil
+	return worktrees, nil
 }
 
-// CleanupCompletedWorktrees removes completed worktrees older than specified days
+// CleanupCompletedWorktrees cleans up completed worktrees older than specified days
 func (r *worktreeRepository) CleanupCompletedWorktrees(ctx context.Context, olderThanDays int) error {
 	cutoffDate := time.Now().AddDate(0, 0, -olderThanDays)
-
-	result := r.db.WithContext(ctx).Delete(&entity.Worktree{}, "status = ? AND created_at < ?", entity.WorktreeStatusCompleted, cutoffDate)
-	if result.Error != nil {
-		return fmt.Errorf("failed to cleanup completed worktrees: %w", result.Error)
-	}
-
-	return nil
+	return r.db.WithContext(ctx).
+		Where("status = ? AND updated_at < ?", entity.WorktreeStatusCompleted, cutoffDate).
+		Delete(&entity.Worktree{}).Error
 }
 
-// CleanupErrorWorktrees removes error worktrees older than specified days
+// CleanupErrorWorktrees cleans up error worktrees older than specified days
 func (r *worktreeRepository) CleanupErrorWorktrees(ctx context.Context, olderThanDays int) error {
 	cutoffDate := time.Now().AddDate(0, 0, -olderThanDays)
-
-	result := r.db.WithContext(ctx).Delete(&entity.Worktree{}, "status = ? AND created_at < ?", entity.WorktreeStatusError, cutoffDate)
-	if result.Error != nil {
-		return fmt.Errorf("failed to cleanup error worktrees: %w", result.Error)
-	}
-
-	return nil
+	return r.db.WithContext(ctx).
+		Where("status = ? AND updated_at < ?", entity.WorktreeStatusError, cutoffDate).
+		Delete(&entity.Worktree{}).Error
 }

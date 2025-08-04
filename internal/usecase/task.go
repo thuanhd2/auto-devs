@@ -183,13 +183,15 @@ type taskUsecase struct {
 	taskRepo            repository.TaskRepository
 	projectRepo         repository.ProjectRepository
 	notificationUsecase NotificationUsecase
+	worktreeUsecase     WorktreeUsecase
 }
 
-func NewTaskUsecase(taskRepo repository.TaskRepository, projectRepo repository.ProjectRepository, notificationUsecase NotificationUsecase) TaskUsecase {
+func NewTaskUsecase(taskRepo repository.TaskRepository, projectRepo repository.ProjectRepository, notificationUsecase NotificationUsecase, worktreeUsecase WorktreeUsecase) TaskUsecase {
 	return &taskUsecase{
 		taskRepo:            taskRepo,
 		projectRepo:         projectRepo,
 		notificationUsecase: notificationUsecase,
+		worktreeUsecase:     worktreeUsecase,
 	}
 }
 
@@ -360,6 +362,14 @@ func (u *taskUsecase) UpdateStatusWithHistory(ctx context.Context, req UpdateSta
 	updatedTask, err := u.taskRepo.GetByID(ctx, req.TaskID)
 	if err != nil {
 		return nil, err
+	}
+
+	// Handle worktree operations based on status change
+	if u.worktreeUsecase != nil {
+		if err := u.handleWorktreeOperations(ctx, updatedTask, req.Status); err != nil {
+			// Log error but don't fail the status update
+			// TODO: Add proper logging here
+		}
 	}
 
 	// Send status change notification
@@ -843,4 +853,55 @@ func (u *taskUsecase) ExportTasks(ctx context.Context, filters entity.TaskFilter
 // CheckDuplicateTitle checks if a task title already exists in a project
 func (u *taskUsecase) CheckDuplicateTitle(ctx context.Context, projectID uuid.UUID, title string, excludeID *uuid.UUID) (bool, error) {
 	return u.taskRepo.CheckDuplicateTitle(ctx, projectID, title, excludeID)
+}
+
+// handleWorktreeOperations handles worktree operations based on task status changes
+func (u *taskUsecase) handleWorktreeOperations(ctx context.Context, task *entity.Task, newStatus entity.TaskStatus) error {
+	switch newStatus {
+	case entity.TaskStatusIMPLEMENTING:
+		// Create worktree when task moves to IMPLEMENTING
+		return u.createWorktreeForTask(ctx, task)
+	case entity.TaskStatusDONE, entity.TaskStatusCANCELLED:
+		// Cleanup worktree when task is completed or cancelled
+		return u.cleanupWorktreeForTask(ctx, task)
+	default:
+		// No worktree operations needed for other statuses
+		return nil
+	}
+}
+
+// createWorktreeForTask creates a worktree for a task
+func (u *taskUsecase) createWorktreeForTask(ctx context.Context, task *entity.Task) error {
+	// Check if worktree already exists
+	existingWorktree, err := u.worktreeUsecase.GetWorktreeByTaskID(ctx, task.ID)
+	if err == nil && existingWorktree != nil {
+		// Worktree already exists, no need to create
+		return nil
+	}
+
+	// Create worktree
+	_, err = u.worktreeUsecase.CreateWorktreeForTask(ctx, CreateWorktreeRequest{
+		TaskID:    task.ID,
+		ProjectID: task.ProjectID,
+		TaskTitle: task.Title,
+	})
+
+	return err
+}
+
+// cleanupWorktreeForTask cleans up worktree for a task
+func (u *taskUsecase) cleanupWorktreeForTask(ctx context.Context, task *entity.Task) error {
+	// Check if worktree exists
+	existingWorktree, err := u.worktreeUsecase.GetWorktreeByTaskID(ctx, task.ID)
+	if err != nil || existingWorktree == nil {
+		// No worktree to cleanup
+		return nil
+	}
+
+	// Cleanup worktree
+	return u.worktreeUsecase.CleanupWorktreeForTask(ctx, CleanupWorktreeRequest{
+		TaskID:    task.ID,
+		ProjectID: task.ProjectID,
+		Force:     true, // Force cleanup for completed/cancelled tasks
+	})
 }
