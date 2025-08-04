@@ -12,6 +12,7 @@ import { Main } from '@/components/layout/main'
 import { ProfileDropdown } from '@/components/profile-dropdown'
 import { Search } from '@/components/search'
 import { ThemeSwitch } from '@/components/theme-switch'
+import { NotificationCenter } from '@/components/notifications/notification-center'
 import SidebarNav from './components/sidebar-nav'
 
 export default function Settings() {
@@ -21,6 +22,7 @@ export default function Settings() {
       <Header>
         <Search />
         <div className='ml-auto flex items-center space-x-4'>
+          <NotificationCenter />
           <ThemeSwitch />
           <ProfileDropdown />
         </div>
@@ -35,12 +37,13 @@ export default function Settings() {
             Manage your account settings and set e-mail preferences.
           </p>
         </div>
-        <Separator className='my-4 lg:my-6' />
-        <div className='flex flex-1 flex-col space-y-2 overflow-hidden md:space-y-2 lg:flex-row lg:space-y-0 lg:space-x-12'>
+
+        <Separator className='my-4' />
+        <div className='flex flex-1 flex-col space-y-8 md:space-y-2 md:overflow-hidden lg:flex-row lg:space-x-12 lg:space-y-0'>
           <aside className='top-0 lg:sticky lg:w-1/5'>
-            <SidebarNav items={sidebarNavItems} />
+            <SidebarNav />
           </aside>
-          <div className='flex w-full overflow-y-hidden p-1'>
+          <div className='flex w-full p-1 pr-4 md:overflow-y-hidden'>
             <Outlet />
           </div>
         </div>

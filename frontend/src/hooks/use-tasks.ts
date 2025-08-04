@@ -31,15 +31,60 @@ export function useCreateTask() {
 
   return useMutation({
     mutationFn: tasksApi.createTask,
-    onSuccess: (newTask) => {
-      // Invalidate tasks list for the project
-      queryClient.invalidateQueries({
-        queryKey: [TASKS_QUERY_KEY, newTask.project_id],
+    onMutate: async (newTask) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: [TASKS_QUERY_KEY, newTask.project_id] })
+
+      // Snapshot the previous value
+      const previousTasks = queryClient.getQueryData([TASKS_QUERY_KEY, newTask.project_id])
+
+      // Optimistically update to the new value
+      const optimisticTask = {
+        ...newTask,
+        id: `temp-${Date.now()}`, // Temporary ID
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      }
+
+      queryClient.setQueryData([TASKS_QUERY_KEY, newTask.project_id], (old: any) => {
+        if (!old) return { tasks: [optimisticTask], total: 1 }
+        return {
+          ...old,
+          tasks: [optimisticTask, ...old.tasks],
+          total: old.total + 1,
+        }
+      })
+
+      // Return a context object with the snapshotted value
+      return { previousTasks, optimisticTask }
+    },
+    onError: (error: any, newTask, context) => {
+      // If the mutation fails, use the context returned from onMutate to roll back
+      if (context?.previousTasks) {
+        queryClient.setQueryData([TASKS_QUERY_KEY, newTask.project_id], context.previousTasks)
+      }
+      toast.error(error.response?.data?.message || 'Failed to create task')
+    },
+    onSuccess: (newTask, variables, context) => {
+      // Replace the optimistic task with the real one
+      queryClient.setQueryData([TASKS_QUERY_KEY, newTask.project_id], (old: any) => {
+        if (!old) return old
+        return {
+          ...old,
+          tasks: old.tasks.map((task: Task) => 
+            task.id === context?.optimisticTask.id ? newTask : task
+          ),
+        }
       })
       toast.success('Task created successfully')
     },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to create task')
+    onSettled: (newTask) => {
+      // Always refetch after error or success to ensure consistency
+      if (newTask) {
+        queryClient.invalidateQueries({
+          queryKey: [TASKS_QUERY_KEY, newTask.project_id],
+        })
+      }
     },
   })
 }
@@ -50,19 +95,87 @@ export function useUpdateTask() {
   return useMutation({
     mutationFn: ({ taskId, updates }: { taskId: string; updates: UpdateTaskRequest }) =>
       tasksApi.updateTask(taskId, updates),
+    onMutate: async ({ taskId, updates }) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: [TASKS_QUERY_KEY, taskId] })
+
+      // Snapshot the previous task
+      const previousTask = queryClient.getQueryData([TASKS_QUERY_KEY, taskId])
+      
+      // Get the project from any tasks query that might contain this task
+      const tasksQueries = queryClient.getQueriesData({ queryKey: [TASKS_QUERY_KEY] })
+      let projectId: string | null = null
+      let previousTasks: any = null
+
+      for (const [queryKey, queryData] of tasksQueries) {
+        if (Array.isArray(queryKey) && queryKey.length >= 2 && queryData && typeof queryData === 'object') {
+          const data = queryData as any
+          if (data.tasks) {
+            const task = data.tasks.find((t: Task) => t.id === taskId)
+            if (task) {
+              projectId = task.project_id
+              previousTasks = queryData
+              break
+            }
+          }
+        }
+      }
+
+      // Optimistically update individual task
+      if (previousTask) {
+        const updatedTask = { ...previousTask as Task, ...updates, updated_at: new Date().toISOString() }
+        queryClient.setQueryData([TASKS_QUERY_KEY, taskId], updatedTask)
+      }
+
+      // Optimistically update task in tasks list
+      if (projectId && previousTasks) {
+        queryClient.setQueryData([TASKS_QUERY_KEY, projectId], (old: any) => {
+          if (!old) return old
+          return {
+            ...old,
+            tasks: old.tasks.map((task: Task) =>
+              task.id === taskId 
+                ? { ...task, ...updates, updated_at: new Date().toISOString() }
+                : task
+            ),
+          }
+        })
+      }
+
+      return { previousTask, previousTasks, projectId }
+    },
+    onError: (error: any, { taskId }, context) => {
+      // Roll back optimistic updates
+      if (context?.previousTask) {
+        queryClient.setQueryData([TASKS_QUERY_KEY, taskId], context.previousTask)
+      }
+      if (context?.previousTasks && context?.projectId) {
+        queryClient.setQueryData([TASKS_QUERY_KEY, context.projectId], context.previousTasks)
+      }
+      toast.error(error.response?.data?.message || 'Failed to update task')
+    },
     onSuccess: (updatedTask) => {
-      // Update individual task query
+      // Update both individual task and tasks list with server response
       queryClient.setQueryData([TASKS_QUERY_KEY, updatedTask.id], updatedTask)
       
-      // Invalidate tasks list for the project
-      queryClient.invalidateQueries({
-        queryKey: [TASKS_QUERY_KEY, updatedTask.project_id],
+      queryClient.setQueryData([TASKS_QUERY_KEY, updatedTask.project_id], (old: any) => {
+        if (!old) return old
+        return {
+          ...old,
+          tasks: old.tasks.map((task: Task) =>
+            task.id === updatedTask.id ? updatedTask : task
+          ),
+        }
       })
       
       toast.success('Task updated successfully')
     },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to update task')
+    onSettled: (updatedTask, error, { taskId }) => {
+      // Always refetch to ensure consistency
+      queryClient.invalidateQueries({ queryKey: [TASKS_QUERY_KEY, taskId] })
+      if (updatedTask) {
+        queryClient.invalidateQueries({ queryKey: [TASKS_QUERY_KEY, updatedTask.project_id] })
+      }
     },
   })
 }
@@ -72,17 +185,67 @@ export function useDeleteTask() {
 
   return useMutation({
     mutationFn: tasksApi.deleteTask,
-    onSuccess: (_, taskId) => {
-      // Remove task from cache
+    onMutate: async (taskId: string) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: [TASKS_QUERY_KEY, taskId] })
+
+      // Snapshot the previous task
+      const previousTask = queryClient.getQueryData([TASKS_QUERY_KEY, taskId])
+      
+      // Find and snapshot the tasks list that contains this task
+      const tasksQueries = queryClient.getQueriesData({ queryKey: [TASKS_QUERY_KEY] })
+      let projectId: string | null = null
+      let previousTasks: any = null
+
+      for (const [queryKey, queryData] of tasksQueries) {
+        if (Array.isArray(queryKey) && queryKey.length >= 2 && queryData && typeof queryData === 'object') {
+          const data = queryData as any
+          if (data.tasks) {
+            const task = data.tasks.find((t: Task) => t.id === taskId)
+            if (task) {
+              projectId = task.project_id
+              previousTasks = queryData
+              break
+            }
+          }
+        }
+      }
+
+      // Optimistically remove task from tasks list
+      if (projectId && previousTasks) {
+        queryClient.setQueryData([TASKS_QUERY_KEY, projectId], (old: any) => {
+          if (!old) return old
+          return {
+            ...old,
+            tasks: old.tasks.filter((task: Task) => task.id !== taskId),
+            total: Math.max(0, old.total - 1),
+          }
+        })
+      }
+
+      // Remove individual task from cache
       queryClient.removeQueries({ queryKey: [TASKS_QUERY_KEY, taskId] })
-      
-      // Invalidate all tasks queries
-      queryClient.invalidateQueries({ queryKey: [TASKS_QUERY_KEY] })
-      
+
+      return { previousTask, previousTasks, projectId }
+    },
+    onError: (error: any, taskId, context) => {
+      // Roll back the deletion
+      if (context?.previousTask) {
+        queryClient.setQueryData([TASKS_QUERY_KEY, taskId], context.previousTask)
+      }
+      if (context?.previousTasks && context?.projectId) {
+        queryClient.setQueryData([TASKS_QUERY_KEY, context.projectId], context.previousTasks)
+      }
+      toast.error(error.response?.data?.message || 'Failed to delete task')
+    },
+    onSuccess: () => {
       toast.success('Task deleted successfully')
     },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to delete task')
+    onSettled: (_, error, taskId, context) => {
+      // Always refetch to ensure consistency
+      if (context?.projectId) {
+        queryClient.invalidateQueries({ queryKey: [TASKS_QUERY_KEY, context.projectId] })
+      }
     },
   })
 }

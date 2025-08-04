@@ -1,7 +1,7 @@
 import { Toaster as Sonner, ToasterProps } from 'sonner'
 import { useTheme } from '@/context/theme-context'
 
-const Toaster = ({ ...props }: ToasterProps) => {
+const const Toaster = ({ ...props }: ToasterProps) => {
   const { theme = 'system' } = useTheme()
 
   return (
@@ -15,6 +15,29 @@ const Toaster = ({ ...props }: ToasterProps) => {
           '--normal-border': 'var(--border)',
         } as React.CSSProperties
       }
+      position="top-right"
+      expand={true}
+      richColors={true}
+      closeButton={true}
+      toastOptions={{
+        style: {
+          background: 'var(--background)',
+          border: '1px solid var(--border)',
+          color: 'var(--foreground)',
+        },
+        className: 'group toast group-[.toaster]:bg-background group-[.toaster]:text-foreground group-[.toaster]:border-border group-[.toaster]:shadow-lg',
+        descriptionClassName: 'group-[.toast]:text-muted-foreground',
+        actionButtonClassName: 'group-[.toast]:bg-primary group-[.toast]:text-primary-foreground',
+        cancelButtonClassName: 'group-[.toast]:bg-muted group-[.toast]:text-muted-foreground',
+      }}
+      offset={16}
+      gap={8}
+      visibleToasts={5}
+      duration={4000}
+      {...props}
+    />
+  )
+}
       {...props}
     />
   )

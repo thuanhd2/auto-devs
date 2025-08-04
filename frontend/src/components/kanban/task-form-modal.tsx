@@ -21,6 +21,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
+import { EnhancedForm, type FormStep } from '@/components/ui/enhanced-form'
 import { useCreateTask, useUpdateTask } from '@/hooks/use-tasks'
 import type { Task } from '@/types/task'
 
@@ -76,37 +77,109 @@ export function TaskFormModal({
 
   const isLoading = createTaskMutation.isPending || updateTaskMutation.isPending
 
+  const steps: FormStep[] = [
+    {
+      id: 'basic',
+      title: 'Basic Info',
+      description: 'Task title and description',
+      fields: ['title'],
+    },
+    {
+      id: 'details',
+      title: 'Details',
+      description: 'Additional task information',
+      fields: ['description'],
+    },
+  ]
+
   const onSubmit = async (values: TaskFormValues) => {
-    try {
-      if (mode === 'create') {
-        await createTaskMutation.mutateAsync({
-          project_id: projectId,
+    if (mode === 'create') {
+      await createTaskMutation.mutateAsync({
+        project_id: projectId,
+        title: values.title,
+        description: values.description || '',
+      })
+    } else if (mode === 'edit' && task) {
+      await updateTaskMutation.mutateAsync({
+        taskId: task.id,
+        updates: {
           title: values.title,
           description: values.description || '',
-        })
-      } else if (mode === 'edit' && task) {
-        await updateTaskMutation.mutateAsync({
-          taskId: task.id,
-          updates: {
-            title: values.title,
-            description: values.description || '',
-          },
-        })
-      }
-      
-      onOpenChange(false)
-      form.reset()
-    } catch (error) {
-      // Error is handled by the mutation hooks
+        },
+      })
     }
+    
+    onOpenChange(false)
+    form.reset()
   }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>
             {mode === 'create' ? 'Create New Task' : 'Edit Task'}
+          </DialogTitle>
+          <DialogDescription>
+            {mode === 'create' 
+              ? 'Add a new task to your project board.'
+              : 'Update the task details.'
+            }
+          </DialogDescription>
+        </DialogHeader>
+
+        <EnhancedForm
+          form={form}
+          onSubmit={onSubmit}
+          steps={steps}
+          showProgress={mode === 'create'}
+          disabled={isLoading}
+          submitText={mode === 'create' ? 'Create Task' : 'Update Task'}
+          submitLoadingText={mode === 'create' ? 'Creating...' : 'Updating...'}
+          successMessage={mode === 'create' ? 'Task created successfully!' : 'Task updated successfully!'}
+          showValidationSummary={true}
+        >
+          <FormField
+            control={form.control}
+            name="title"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Title</FormLabel>
+                <FormControl>
+                  <Input
+                    placeholder="Enter task title..."
+                    {...field}
+                    disabled={isLoading}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="description"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Description (Optional)</FormLabel>
+                <FormControl>
+                  <Textarea
+                    placeholder="Enter task description..."
+                    className="min-h-[100px]"
+                    {...field}
+                    disabled={isLoading}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </EnhancedForm>
+      </DialogContent>
+    </Dialog>
+  )
+}
           </DialogTitle>
           <DialogDescription>
             {mode === 'create' 
