@@ -3,6 +3,7 @@ package config
 import (
 	"log"
 	"os"
+	"strconv"
 
 	"github.com/joho/godotenv"
 )
@@ -10,6 +11,7 @@ import (
 type Config struct {
 	Server   ServerConfig
 	Database DatabaseConfig
+	Worktree WorktreeConfig
 }
 
 type ServerConfig struct {
@@ -24,6 +26,14 @@ type DatabaseConfig struct {
 	Password string
 	Name     string
 	SSLMode  string
+}
+
+type WorktreeConfig struct {
+	BaseDirectory   string
+	MaxPathLength   int
+	MinDiskSpace    int64
+	CleanupInterval string
+	EnableLogging   bool
 }
 
 func Load() *Config {
@@ -45,12 +55,46 @@ func Load() *Config {
 			Name:     getEnv("DB_NAME", "autodevs"),
 			SSLMode:  getEnv("DB_SSLMODE", "disable"),
 		},
+		Worktree: WorktreeConfig{
+			BaseDirectory:   getEnv("WORKTREE_BASE_DIR", "/worktrees"),
+			MaxPathLength:   getEnvAsInt("WORKTREE_MAX_PATH_LENGTH", 4096),
+			MinDiskSpace:    getEnvAsInt64("WORKTREE_MIN_DISK_SPACE", 100*1024*1024), // 100MB
+			CleanupInterval: getEnv("WORKTREE_CLEANUP_INTERVAL", "24h"),
+			EnableLogging:   getEnvAsBool("WORKTREE_ENABLE_LOGGING", true),
+		},
 	}
 }
 
 func getEnv(key, defaultValue string) string {
 	if value := os.Getenv(key); value != "" {
 		return value
+	}
+	return defaultValue
+}
+
+func getEnvAsInt(key string, defaultValue int) int {
+	if value := os.Getenv(key); value != "" {
+		if intValue, err := strconv.Atoi(value); err == nil {
+			return intValue
+		}
+	}
+	return defaultValue
+}
+
+func getEnvAsInt64(key string, defaultValue int64) int64 {
+	if value := os.Getenv(key); value != "" {
+		if intValue, err := strconv.ParseInt(value, 10, 64); err == nil {
+			return intValue
+		}
+	}
+	return defaultValue
+}
+
+func getEnvAsBool(key string, defaultValue bool) bool {
+	if value := os.Getenv(key); value != "" {
+		if boolValue, err := strconv.ParseBool(value); err == nil {
+			return boolValue
+		}
 	}
 	return defaultValue
 }
