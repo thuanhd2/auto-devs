@@ -2,6 +2,11 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## [IMPORTANT] Tools use must to use if possible
+
+- **serena**: Semantic code retrieval and editing tools and so many more
+- **github**: Git repository operations and PR management
+
 ## Project Overview
 
 This is the **Auto-Devs** project - an AI-powered developer task automation system that orchestrates AI CLI tools to automate software development workflows. The system manages the complete lifecycle from task planning to implementation and PR creation.
@@ -120,13 +125,6 @@ Tasks follow this state machine:
 - **WebSocket**: Real-time updates for task status and project changes
 - **Error Handling**: Structured error responses with proper HTTP status codes
 - **Validation**: Use go-playground/validator for request validation
-
-## MCP Server Requirements
-
-This project requires these MCP servers:
-
-- **serena**: For task and project management capabilities
-- **github**: For Git repository operations and PR management
 
 ## Development Commands
 
