@@ -5,6 +5,9 @@
 coverage.*
 bin/
 
+# External tools
+external-tools/
+
 # frontend
 # Logs
 frontend/logs

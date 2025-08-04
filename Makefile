@@ -96,16 +96,37 @@ clean: ## Clean build artifacts
 	@rm -rf bin/
 	@echo "Clean completed"
 
+.PHONY: clean-tools
+clean-tools: ## Clean external tools
+	@echo "Cleaning external tools..."
+	@rm -rf external-tools/
+	@echo "External tools cleaned!"
+
 .PHONY: wire
 wire: ## Generate Wire dependency injection code
 	@echo "Generating Wire dependency injection code..."
 	@go generate ./internal/di
 	@echo "Wire code generated successfully!"
 
+.PHONY: build-tools
+build-tools: ## Download external tools (mockery)
+	@echo "Downloading external tools..."
+	@mkdir -p external-tools
+	@if [ ! -f external-tools/mockery ]; then \
+		echo "Downloading mockery v3.2.4..."; \
+		curl -L -o external-tools/mockery.tar.gz https://github.com/vektra/mockery/releases/download/v3.2.4/mockery_3.2.4_$(shell uname -s)_$(shell uname -m).tar.gz; \
+		tar -xzf external-tools/mockery.tar.gz -C external-tools; \
+		rm external-tools/mockery.tar.gz; \
+		chmod +x external-tools/mockery; \
+		echo "Mockery downloaded successfully!"; \
+	else \
+		echo "Mockery already exists in external-tools/"; \
+	fi
+
 .PHONY: mocks
-mocks: ## Generate mocks using mockery
+mocks: build-tools ## Generate mocks using mockery from external-tools
 	@echo "Generating mocks..."
-	@mockery --config .mockery.yaml
+	@./external-tools/mockery --config .mockery.yaml
 	@echo "Mocks generated successfully!"
 
 .PHONY: mocks-clean
@@ -114,6 +135,10 @@ mocks-clean: ## Clean generated mocks
 	@rm -rf internal/mocks
 	@mkdir -p internal/mocks/usecase internal/mocks/repository
 	@echo "Mocks cleaned!"
+
+.PHONY: mocks-regen
+mocks-regen: mocks-clean mocks ## Regenerate all mocks
+	@echo "All mocks regenerated successfully!"
 
 .PHONY: deps
 deps: ## Download dependencies
