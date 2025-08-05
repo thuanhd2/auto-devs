@@ -1,12 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { toast } from 'sonner'
-import { projectsApi } from '@/lib/api/projects'
 import type {
   Project,
   CreateProjectRequest,
   UpdateProjectRequest,
   ProjectFilters,
 } from '@/types/project'
+import { toast } from 'sonner'
+import { projectsApi } from '@/lib/api/projects'
 
 const QUERY_KEYS = {
   projects: ['projects'] as const,
@@ -44,7 +44,8 @@ export function useCreateProject() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (project: CreateProjectRequest) => projectsApi.createProject(project),
+    mutationFn: (project: CreateProjectRequest) =>
+      projectsApi.createProject(project),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.projects })
       toast.success('Project created successfully!')
@@ -59,11 +60,19 @@ export function useUpdateProject() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ projectId, updates }: { projectId: string; updates: UpdateProjectRequest }) =>
-      projectsApi.updateProject(projectId, updates),
+    mutationFn: ({
+      projectId,
+      updates,
+    }: {
+      projectId: string
+      updates: UpdateProjectRequest
+    }) => projectsApi.updateProject(projectId, updates),
     onSuccess: (updatedProject: Project) => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.projects })
-      queryClient.setQueryData(QUERY_KEYS.project(updatedProject.id), updatedProject)
+      queryClient.setQueryData(
+        QUERY_KEYS.project(updatedProject.id),
+        updatedProject
+      )
       toast.success('Project updated successfully!')
     },
     onError: (error: any) => {
@@ -83,6 +92,21 @@ export function useDeleteProject() {
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.message || 'Failed to delete project')
+    },
+  })
+}
+
+export function useReinitGitRepository() {
+  return useMutation({
+    mutationFn: (projectId: string) =>
+      projectsApi.reinitGitRepository(projectId),
+    onSuccess: () => {
+      toast.success('Git repository reinitialized successfully!')
+    },
+    onError: (error: any) => {
+      toast.error(
+        error.response?.data?.message || 'Failed to reinitialize Git repository'
+      )
     },
   })
 }

@@ -16,7 +16,7 @@ func createTestWorktree(t *testing.T, worktreeRepo repository.WorktreeRepository
 	project := &entity.Project{
 		Name:        "Test Project",
 		Description: "Test Description",
-		RepoURL:     "https://github.com/test/repo.git",
+		RepositoryURL:     "https://github.com/test/repo.git",
 	}
 	err := projectRepo.Create(ctx, project)
 	require.NoError(t, err)
@@ -58,7 +58,7 @@ func TestWorktreeRepository_Create(t *testing.T) {
 	project := &entity.Project{
 		Name:        "Test Project",
 		Description: "Test Description",
-		RepoURL:     "https://github.com/test/repo.git",
+		RepositoryURL:     "https://github.com/test/repo.git",
 	}
 	err := projectRepo.Create(ctx, project)
 	require.NoError(t, err)
@@ -104,7 +104,7 @@ func TestWorktreeRepository_CreateWithDefaultStatus(t *testing.T) {
 	project := &entity.Project{
 		Name:        "Test Project",
 		Description: "Test Description",
-		RepoURL:     "https://github.com/test/repo.git",
+		RepositoryURL:     "https://github.com/test/repo.git",
 	}
 	err := projectRepo.Create(ctx, project)
 	require.NoError(t, err)

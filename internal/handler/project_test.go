@@ -55,19 +55,18 @@ func TestProjectHandler_CreateProject(t *testing.T) {
 			ID:          uuid.New(),
 			Name:        "Test Project",
 			Description: "Test Description",
-			RepoURL:     "https://github.com/test/repo.git",
 		}
 
 		mockUsecase.On("Create", context.Background(), usecase.CreateProjectRequest{
-			Name:        "Test Project",
-			Description: "Test Description",
-			RepoURL:     "https://github.com/test/repo.git",
+			Name:             "Test Project",
+			Description:      "Test Description",
+			WorktreeBasePath: "/tmp/test-repo",
 		}).Return(project, nil)
 
 		reqBody := dto.ProjectCreateRequest{
-			Name:        "Test Project",
-			Description: "Test Description",
-			RepoURL:     "https://github.com/test/repo.git",
+			Name:             "Test Project",
+			Description:      "Test Description",
+			WorktreeBasePath: "/tmp/test-repo",
 		}
 		body, _ := json.Marshal(reqBody)
 
@@ -108,8 +107,8 @@ func TestProjectHandler_ListProjects(t *testing.T) {
 
 	t.Run("successful list with pagination", func(t *testing.T) {
 		projects := []*entity.Project{
-			{ID: uuid.New(), Name: "Project 1", RepoURL: "https://github.com/test/repo1.git"},
-			{ID: uuid.New(), Name: "Project 2", RepoURL: "https://github.com/test/repo2.git"},
+			{ID: uuid.New(), Name: "Project 1", RepositoryURL: "https://github.com/test/repo1.git"},
+			{ID: uuid.New(), Name: "Project 2", RepositoryURL: "https://github.com/test/repo2.git"},
 		}
 
 		result := &usecase.GetProjectsResult{
@@ -163,9 +162,9 @@ func TestProjectHandler_GetProject(t *testing.T) {
 	t.Run("successful get", func(t *testing.T) {
 		projectID := uuid.New()
 		project := &entity.Project{
-			ID:      projectID,
-			Name:    "Test Project",
-			RepoURL: "https://github.com/test/repo.git",
+			ID:            projectID,
+			Name:          "Test Project",
+			RepositoryURL: "https://github.com/test/repo.git",
 		}
 
 		mockUsecase.On("GetByID", mock.Anything, projectID).Return(project, nil)
@@ -255,9 +254,9 @@ func TestProjectHandler_UpdateProject(t *testing.T) {
 
 	projectID := uuid.New()
 	updatedProject := &entity.Project{
-		ID:      projectID,
-		Name:    "Updated Project",
-		RepoURL: "https://github.com/test/updated.git",
+		ID:            projectID,
+		Name:          "Updated Project",
+		RepositoryURL: "https://github.com/test/updated.git",
 	}
 
 	mockUsecase.On("Update", mock.Anything, projectID, mock.MatchedBy(func(req usecase.UpdateProjectRequest) bool {
@@ -265,8 +264,8 @@ func TestProjectHandler_UpdateProject(t *testing.T) {
 	})).Return(updatedProject, nil)
 
 	reqBody := dto.ProjectUpdateRequest{
-		Name:    stringPtr("Updated Project"),
-		RepoURL: stringPtr("https://github.com/test/updated.git"),
+		Name:          stringPtr("Updated Project"),
+		RepositoryURL: stringPtr("https://github.com/test/updated.git"),
 	}
 	body, _ := json.Marshal(reqBody)
 

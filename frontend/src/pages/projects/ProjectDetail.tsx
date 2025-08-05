@@ -189,41 +189,16 @@ export function ProjectDetail() {
                     <CardTitle>Project Information</CardTitle>
                   </CardHeader>
                   <CardContent className='space-y-4'>
-                    <div className='flex items-center gap-2 text-sm'>
-                      <GitBranch className='text-muted-foreground h-4 w-4' />
-                      <span className='text-muted-foreground'>Repository:</span>
-                      <span className='truncate font-mono'>
-                        {project.repo_url}
-                      </span>
-                    </div>
-
-                    {project.git_enabled && (
-                      <>
-                        <div className='flex items-center gap-2 text-sm'>
-                          <span className='text-muted-foreground'>
-                            Git Repository:
-                          </span>
-                          <span className='truncate font-mono'>
-                            {project.repository_url}
-                          </span>
-                        </div>
-                        <div className='flex items-center gap-2 text-sm'>
-                          <span className='text-muted-foreground'>
-                            Main Branch:
-                          </span>
-                          <span className='font-mono'>
-                            {project.main_branch}
-                          </span>
-                        </div>
-                        <div className='flex items-center gap-2 text-sm'>
-                          <span className='text-muted-foreground'>
-                            Auth Method:
-                          </span>
-                          <Badge variant='outline'>
-                            {project.git_auth_method}
-                          </Badge>
-                        </div>
-                      </>
+                    {project.repository_url && (
+                      <div className='flex items-center gap-2 text-sm'>
+                        <GitBranch className='text-muted-foreground h-4 w-4' />
+                        <span className='text-muted-foreground'>
+                          Repository:
+                        </span>
+                        <span className='truncate font-mono'>
+                          {project.repository_url}
+                        </span>
+                      </div>
                     )}
 
                     <div className='flex items-center gap-2 text-sm'>
@@ -250,7 +225,7 @@ export function ProjectDetail() {
                 {/* Git Status Card */}
                 <GitStatusCard
                   projectId={projectId}
-                  gitEnabled={project.git_enabled}
+                  gitEnabled={!!project.repository_url}
                 />
 
                 <Card>

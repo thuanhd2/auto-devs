@@ -331,7 +331,7 @@ func TestTaskRepository_GetTasksWithFilters(t *testing.T) {
 	project2 := &entity.Project{
 		Name:        "Test Project 2",
 		Description: "Test Description 2",
-		RepoURL:     "https://github.com/test/repo2.git",
+		RepositoryURL:     "https://github.com/test/repo2.git",
 	}
 	err := projectRepo.Create(ctx, project2)
 	require.NoError(t, err)

@@ -11,6 +11,7 @@ import (
 
 	"github.com/auto-devs/auto-devs/internal/entity"
 	"github.com/auto-devs/auto-devs/internal/repository"
+	"github.com/auto-devs/auto-devs/internal/service/git"
 	"github.com/google/uuid"
 )
 
@@ -27,32 +28,22 @@ type ProjectUsecase interface {
 	CheckNameExists(ctx context.Context, name string, excludeID *uuid.UUID) (bool, error)
 	GetSettings(ctx context.Context, projectID uuid.UUID) (*entity.ProjectSettings, error)
 	UpdateSettings(ctx context.Context, projectID uuid.UUID, settings *entity.ProjectSettings) (*entity.ProjectSettings, error)
+	UpdateRepositoryURL(ctx context.Context, projectID uuid.UUID, repositoryURL string) error
+	ReinitGitRepository(ctx context.Context, projectID uuid.UUID) error
+	GetGitStatus(ctx context.Context, projectID uuid.UUID) (*GitStatus, error)
 }
 
 type CreateProjectRequest struct {
-	Name        string `json:"name" binding:"required"`
-	Description string `json:"description"`
-	RepoURL     string `json:"repo_url" binding:"required"`
-
-	// Git-related fields
-	RepositoryURL    string `json:"repository_url"`
-	MainBranch       string `json:"main_branch"`
-	WorktreeBasePath string `json:"worktree_base_path"`
-	GitAuthMethod    string `json:"git_auth_method"`
-	GitEnabled       bool   `json:"git_enabled"`
+	Name             string `json:"name" binding:"required"`
+	Description      string `json:"description"`
+	WorktreeBasePath string `json:"worktree_base_path" binding:"required"`
 }
 
 type UpdateProjectRequest struct {
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	RepoURL     string `json:"repo_url"`
-
-	// Git-related fields
+	Name             string `json:"name"`
+	Description      string `json:"description"`
 	RepositoryURL    string `json:"repository_url"`
-	MainBranch       string `json:"main_branch"`
 	WorktreeBasePath string `json:"worktree_base_path"`
-	GitAuthMethod    string `json:"git_auth_method"`
-	GitEnabled       bool   `json:"git_enabled"`
 }
 
 type GetProjectsParams struct {
@@ -76,6 +67,24 @@ type ProjectStatistics struct {
 	TotalTasks        int                       `json:"total_tasks"`
 	CompletionPercent float64                   `json:"completion_percent"`
 	LastActivityAt    *time.Time                `json:"last_activity_at"`
+}
+
+type GitStatus struct {
+	GitEnabled       bool              `json:"git_enabled"`
+	WorktreeExists   bool              `json:"worktree_exists"`
+	RepositoryValid  bool              `json:"repository_valid"`
+	CurrentBranch    string            `json:"current_branch,omitempty"`
+	RemoteURL        string            `json:"remote_url,omitempty"`
+	OnMainBranch     bool              `json:"on_main_branch"`
+	WorkingDirStatus *WorkingDirStatus `json:"working_dir_status,omitempty"`
+	Status           string            `json:"status"`
+}
+
+type WorkingDirStatus struct {
+	IsClean            bool `json:"is_clean"`
+	HasStagedChanges   bool `json:"has_staged_changes"`
+	HasUnstagedChanges bool `json:"has_unstaged_changes"`
+	HasUntrackedFiles  bool `json:"has_untracked_files"`
 }
 
 // Validation errors
@@ -149,12 +158,14 @@ func validateRepoURL(repoURL string) error {
 type projectUsecase struct {
 	projectRepo  repository.ProjectRepository
 	auditUsecase AuditUsecase
+	gitService   git.ProjectGitServiceInterface
 }
 
-func NewProjectUsecase(projectRepo repository.ProjectRepository, auditUsecase AuditUsecase) ProjectUsecase {
+func NewProjectUsecase(projectRepo repository.ProjectRepository, auditUsecase AuditUsecase, gitService git.ProjectGitServiceInterface) ProjectUsecase {
 	return &projectUsecase{
 		projectRepo:  projectRepo,
 		auditUsecase: auditUsecase,
+		gitService:   gitService,
 	}
 }
 
@@ -164,9 +175,6 @@ func (u *projectUsecase) Create(ctx context.Context, req CreateProjectRequest) (
 		return nil, err
 	}
 	if err := validateDescription(req.Description); err != nil {
-		return nil, err
-	}
-	if err := validateRepoURL(req.RepoURL); err != nil {
 		return nil, err
 	}
 
@@ -180,19 +188,13 @@ func (u *projectUsecase) Create(ctx context.Context, req CreateProjectRequest) (
 	}
 
 	project := &entity.Project{
-		ID:          uuid.New(),
-		Name:        strings.TrimSpace(req.Name),
-		Description: strings.TrimSpace(req.Description),
-		RepoURL:     strings.TrimSpace(req.RepoURL),
-		CreatedAt:   time.Now(),
-		UpdatedAt:   time.Now(),
-
-		// Git-related fields
-		RepositoryURL:    strings.TrimSpace(req.RepositoryURL),
-		MainBranch:       strings.TrimSpace(req.MainBranch),
+		ID:               uuid.New(),
+		Name:             strings.TrimSpace(req.Name),
+		Description:      strings.TrimSpace(req.Description),
+		RepositoryURL:    "", // Will be populated by git service later
 		WorktreeBasePath: strings.TrimSpace(req.WorktreeBasePath),
-		GitAuthMethod:    strings.TrimSpace(req.GitAuthMethod),
-		GitEnabled:       req.GitEnabled,
+		CreatedAt:        time.Now(),
+		UpdatedAt:        time.Now(),
 	}
 
 	if err := u.projectRepo.Create(ctx, project); err != nil {
@@ -202,6 +204,17 @@ func (u *projectUsecase) Create(ctx context.Context, req CreateProjectRequest) (
 	// Log the create operation
 	if u.auditUsecase != nil {
 		_ = u.auditUsecase.LogProjectOperation(ctx, entity.AuditActionCreate, project.ID, nil, project, fmt.Sprintf("Created project '%s'", project.Name))
+	}
+
+	// Try to automatically update repository URL from Git
+	// Use background context for async operation
+	bgCtx := context.Background()
+	err = u.gitService.UpdateProjectRepositoryURL(bgCtx, project.ID, project.WorktreeBasePath, func(projectID uuid.UUID, repoURL string) error {
+		return u.UpdateRepositoryURL(bgCtx, projectID, repoURL)
+	})
+	if err != nil {
+		// Log error but don't fail the project creation
+		fmt.Printf("Failed to auto-update repository URL for project %s: %v\n", project.ID, err)
 	}
 
 	return project, nil
@@ -279,29 +292,15 @@ func (u *projectUsecase) Update(ctx context.Context, id uuid.UUID, req UpdatePro
 		}
 		oldProject.Description = strings.TrimSpace(req.Description)
 	}
-	if req.RepoURL != "" {
-		if err := validateRepoURL(req.RepoURL); err != nil {
+	if req.RepositoryURL != "" {
+		if err := validateRepoURL(req.RepositoryURL); err != nil {
 			return nil, err
 		}
-		oldProject.RepoURL = strings.TrimSpace(req.RepoURL)
-	}
-
-	// Update Git-related fields
-	if req.RepositoryURL != "" {
 		oldProject.RepositoryURL = strings.TrimSpace(req.RepositoryURL)
-	}
-	if req.MainBranch != "" {
-		oldProject.MainBranch = strings.TrimSpace(req.MainBranch)
 	}
 	if req.WorktreeBasePath != "" {
 		oldProject.WorktreeBasePath = strings.TrimSpace(req.WorktreeBasePath)
 	}
-	if req.GitAuthMethod != "" {
-		oldProject.GitAuthMethod = strings.TrimSpace(req.GitAuthMethod)
-	}
-	// GitEnabled is a boolean, so we need to check if it's explicitly set
-	// For now, we'll always update it if provided
-	oldProject.GitEnabled = req.GitEnabled
 
 	oldProject.UpdatedAt = time.Now()
 
@@ -477,4 +476,67 @@ func (u *projectUsecase) UpdateSettings(ctx context.Context, projectID uuid.UUID
 	}
 
 	return settings, nil
+}
+
+func (u *projectUsecase) UpdateRepositoryURL(ctx context.Context, projectID uuid.UUID, repositoryURL string) error {
+	project, err := u.projectRepo.GetByID(ctx, projectID)
+	if err != nil {
+		return fmt.Errorf("failed to get project: %w", err)
+	}
+
+	// Update repository URL
+	project.RepositoryURL = repositoryURL
+	project.UpdatedAt = time.Now()
+
+	if err := u.projectRepo.Update(ctx, project); err != nil {
+		return fmt.Errorf("failed to update project repository URL: %w", err)
+	}
+
+	// Log the update operation
+	if u.auditUsecase != nil {
+		_ = u.auditUsecase.LogProjectOperation(ctx, entity.AuditActionUpdate, project.ID, nil, project, fmt.Sprintf("Updated repository URL to '%s'", repositoryURL))
+	}
+
+	return nil
+}
+
+func (u *projectUsecase) ReinitGitRepository(ctx context.Context, projectID uuid.UUID) error {
+	project, err := u.projectRepo.GetByID(ctx, projectID)
+	if err != nil {
+		return fmt.Errorf("failed to get project: %w", err)
+	}
+
+	repoInfo, err := u.gitService.GetGitStatus(ctx, project.WorktreeBasePath)
+	if err != nil {
+		return fmt.Errorf("failed to reinitialize git repository: %w", err)
+	}
+
+	if repoInfo.RemoteURL != project.RepositoryURL {
+		u.UpdateRepositoryURL(ctx, projectID, repoInfo.RemoteURL)
+	}
+
+	return nil
+}
+
+func (u *projectUsecase) GetGitStatus(ctx context.Context, projectID uuid.UUID) (*GitStatus, error) {
+	project, err := u.projectRepo.GetByID(ctx, projectID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get project: %w", err)
+	}
+
+	status := &GitStatus{
+		GitEnabled:     project.RepositoryURL != "" || project.WorktreeBasePath != "",
+		WorktreeExists: project.WorktreeBasePath != "",
+		Status:         "Git status not implemented",
+	}
+
+	// TODO: Implement actual Git status checking using git service
+	// For now, return basic status
+	if project.RepositoryURL != "" {
+		status.RepositoryValid = true
+		status.RemoteURL = project.RepositoryURL
+		status.OnMainBranch = true // Default assumption
+	}
+
+	return status, nil
 }

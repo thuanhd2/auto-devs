@@ -64,15 +64,6 @@ func (h *ProjectHandlerWithWebSocket) UpdateProject(c *gin.Context) {
 			"new": *req.Description,
 		}
 	}
-	if req.RepoURL != nil && *req.RepoURL != originalProject.RepoURL {
-		usecaseReq.RepoURL = *req.RepoURL
-		changes["repo_url"] = map[string]interface{}{
-			"old": originalProject.RepoURL,
-			"new": *req.RepoURL,
-		}
-	}
-
-	// Git-related fields
 	if req.RepositoryURL != nil && *req.RepositoryURL != originalProject.RepositoryURL {
 		usecaseReq.RepositoryURL = *req.RepositoryURL
 		changes["repository_url"] = map[string]interface{}{
@@ -80,32 +71,11 @@ func (h *ProjectHandlerWithWebSocket) UpdateProject(c *gin.Context) {
 			"new": *req.RepositoryURL,
 		}
 	}
-	if req.MainBranch != nil && *req.MainBranch != originalProject.MainBranch {
-		usecaseReq.MainBranch = *req.MainBranch
-		changes["main_branch"] = map[string]interface{}{
-			"old": originalProject.MainBranch,
-			"new": *req.MainBranch,
-		}
-	}
 	if req.WorktreeBasePath != nil && *req.WorktreeBasePath != originalProject.WorktreeBasePath {
 		usecaseReq.WorktreeBasePath = *req.WorktreeBasePath
 		changes["worktree_base_path"] = map[string]interface{}{
 			"old": originalProject.WorktreeBasePath,
 			"new": *req.WorktreeBasePath,
-		}
-	}
-	if req.GitAuthMethod != nil && *req.GitAuthMethod != originalProject.GitAuthMethod {
-		usecaseReq.GitAuthMethod = *req.GitAuthMethod
-		changes["git_auth_method"] = map[string]interface{}{
-			"old": originalProject.GitAuthMethod,
-			"new": *req.GitAuthMethod,
-		}
-	}
-	if req.GitEnabled != nil && *req.GitEnabled != originalProject.GitEnabled {
-		usecaseReq.GitEnabled = *req.GitEnabled
-		changes["git_enabled"] = map[string]interface{}{
-			"old": originalProject.GitEnabled,
-			"new": *req.GitEnabled,
 		}
 	}
 
