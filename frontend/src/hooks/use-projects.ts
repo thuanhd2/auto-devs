@@ -96,6 +96,36 @@ export function useDeleteProject() {
   })
 }
 
+export function useArchiveProject() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (projectId: string) => projectsApi.archiveProject(projectId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.projects })
+      toast.success('Project archived successfully!')
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Failed to archive project')
+    },
+  })
+}
+
+export function useRestoreProject() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (projectId: string) => projectsApi.restoreProject(projectId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.projects })
+      toast.success('Project restored successfully!')
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Failed to restore project')
+    },
+  })
+}
+
 export function useReinitGitRepository() {
   return useMutation({
     mutationFn: (projectId: string) =>

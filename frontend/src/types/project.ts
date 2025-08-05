@@ -25,6 +25,7 @@ export interface ProjectFilters {
   search?: string
   sortBy?: 'created_at' | 'updated_at' | 'name'
   sortOrder?: 'asc' | 'desc'
+  archived?: boolean
 }
 
 export interface ProjectsResponse {

@@ -1,5 +1,5 @@
 import { formatDistanceToNow } from 'date-fns'
-import { Link, useParams } from '@tanstack/react-router'
+import { Link, useParams, useNavigate } from '@tanstack/react-router'
 import {
   ArrowLeft,
   Settings,
@@ -10,8 +10,9 @@ import {
   Clock,
   AlertCircle,
   XCircle,
+  Trash2,
 } from 'lucide-react'
-import { useProject, useProjectStatistics } from '@/hooks/use-projects'
+import { useProject, useProjectStatistics, useDeleteProject } from '@/hooks/use-projects'
 import { useTasks } from '@/hooks/use-tasks'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -42,6 +43,7 @@ import {
   CompactProjectStats,
 } from '@/components/stats/real-time-project-stats'
 import { ThemeSwitch } from '@/components/theme-switch'
+import { SimpleConfirmDialog } from '@/components/simple-confirm-dialog'
 
 const statusConfig = {
   TODO: { label: 'To Do', icon: Clock, color: 'bg-slate-500' },
@@ -65,6 +67,7 @@ export function ProjectDetail() {
   const { projectId } = useParams({
     from: '/_authenticated/projects/$projectId',
   })
+  const navigate = useNavigate()
   const {
     data: project,
     isLoading: projectLoading,
@@ -72,6 +75,16 @@ export function ProjectDetail() {
   } = useProject(projectId)
   const { data: statistics } = useProjectStatistics(projectId)
   const { data: tasksResponse } = useTasks(projectId, {})
+  const deleteProjectMutation = useDeleteProject()
+
+  const handleDeleteProject = async () => {
+    try {
+      await deleteProjectMutation.mutateAsync(projectId)
+      navigate({ to: '/projects' })
+    } catch (error) {
+      // Error handling is done in the mutation hook
+    }
+  }
 
   if (projectError) {
     return (
@@ -162,6 +175,19 @@ export function ProjectDetail() {
                 Settings
               </Button>
             </Link>
+            <SimpleConfirmDialog
+              title="Delete Project"
+              description={`Are you sure you want to delete "${project?.name}"? This action cannot be undone. The project will be moved to the trash and can be restored later.`}
+              onConfirm={handleDeleteProject}
+              destructive={true}
+              confirmText="Delete Project"
+              cancelText="Cancel"
+            >
+              <Button variant='destructive'>
+                <Trash2 className='mr-2 h-4 w-4' />
+                Delete
+              </Button>
+            </SimpleConfirmDialog>
           </div>
         </div>
         <Separator className='my-4 lg:my-6' />
