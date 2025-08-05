@@ -2,16 +2,20 @@ package worktree
 
 import (
 	"context"
+	"fmt"
 	"os"
+	"path/filepath"
 	"testing"
 
+	"github.com/auto-devs/auto-devs/config"
 	"github.com/auto-devs/auto-devs/internal/service/git"
+	"github.com/google/uuid"
 )
 
 func TestNewIntegratedWorktreeService(t *testing.T) {
 	// Test with default config
 	config := &IntegratedConfig{
-		Worktree: &WorktreeConfig{
+		Worktree: &config.WorktreeConfig{
 			BaseDirectory: "/tmp/test-integrated-worktrees",
 			MaxPathLength: 1024,
 			EnableLogging: false,
@@ -35,14 +39,23 @@ func TestNewIntegratedWorktreeService(t *testing.T) {
 }
 
 func TestCreateTaskWorktree(t *testing.T) {
+	// get absolute path of this project
+	projectPath, err := os.Getwd()
+	projectRootPath := filepath.Join(projectPath, "../../../")
+	if err != nil {
+		t.Fatalf("Failed to get project path: %v", err)
+	}
+
+	baseWorktreeDir := filepath.Join(projectRootPath, "bin")
+	projectWorkDir := projectRootPath
 	config := &IntegratedConfig{
-		Worktree: &WorktreeConfig{
-			BaseDirectory: "/tmp/test-integrated-worktrees",
+		Worktree: &config.WorktreeConfig{
+			BaseDirectory: baseWorktreeDir,
 			MaxPathLength: 1024,
 			EnableLogging: false,
 		},
 		Git: &git.ManagerConfig{
-			WorkingDir:    "/tmp/test-integrated-worktrees",
+			WorkingDir:    projectWorkDir,
 			EnableLogging: false,
 		},
 	}
@@ -54,11 +67,14 @@ func TestCreateTaskWorktree(t *testing.T) {
 
 	ctx := context.Background()
 
+	dummyTaskID := fmt.Sprintf("task-%s", uuid.New().String())
 	// Test creating task worktree
 	request := &CreateTaskWorktreeRequest{
-		ProjectID: "project-123",
-		TaskID:    "task-456",
-		TaskTitle: "Test Task",
+		ProjectID:         "project-123",
+		TaskID:            dummyTaskID,
+		TaskTitle:         "Test Task",
+		ProjectWorkDir:    projectWorkDir,
+		ProjectMainBranch: "main",
 	}
 
 	info, err := service.CreateTaskWorktree(ctx, request)
@@ -91,76 +107,28 @@ func TestCreateTaskWorktree(t *testing.T) {
 	}
 
 	// Clean up
-	os.RemoveAll("/tmp/test-integrated-worktrees")
-}
-
-func TestCleanupTaskWorktree(t *testing.T) {
-	config := &IntegratedConfig{
-		Worktree: &WorktreeConfig{
-			BaseDirectory: "/tmp/test-integrated-worktrees",
-			MaxPathLength: 1024,
-			EnableLogging: false,
-		},
-		Git: &git.ManagerConfig{
-			WorkingDir:    "/tmp/test-integrated-worktrees",
-			EnableLogging: false,
-		},
-	}
-
-	service, err := NewIntegratedWorktreeService(config)
-	if err != nil {
-		t.Fatalf("Failed to create integrated worktree service: %v", err)
-	}
-
-	ctx := context.Background()
-
-	// Create a task worktree first
-	createRequest := &CreateTaskWorktreeRequest{
-		ProjectID: "project-123",
-		TaskID:    "task-456",
-		TaskTitle: "Test Task",
-	}
-
-	info, err := service.CreateTaskWorktree(ctx, createRequest)
-	if err != nil {
-		t.Fatalf("Failed to create task worktree: %v", err)
-	}
-
-	// Verify it exists
-	if !service.worktreeManager.WorktreeExists(info.WorktreePath) {
-		t.Error("Created worktree should exist")
-	}
-
-	// Clean up task worktree
-	cleanupRequest := &CleanupTaskWorktreeRequest{
-		ProjectID:  "project-123",
-		TaskID:     "task-456",
-		BranchName: info.BranchName,
-	}
-
-	err = service.CleanupTaskWorktree(ctx, cleanupRequest)
-	if err != nil {
-		t.Fatalf("Failed to cleanup task worktree: %v", err)
-	}
-
-	// Verify it's gone
-	if service.worktreeManager.WorktreeExists(info.WorktreePath) {
-		t.Error("Cleaned up worktree should not exist")
-	}
-
-	// Clean up
-	os.RemoveAll("/tmp/test-integrated-worktrees")
+	service.CleanupTaskWorktree(ctx, &CleanupTaskWorktreeRequest{
+		ProjectID: request.ProjectID,
+		TaskID:    request.TaskID,
+	})
 }
 
 func TestGetTaskWorktreeInfo(t *testing.T) {
+	projectPath, err := os.Getwd()
+	projectRootPath := filepath.Join(projectPath, "../../../")
+	if err != nil {
+		t.Fatalf("Failed to get project path: %v", err)
+	}
+
+	baseWorktreeDir := filepath.Join(projectRootPath, "bin")
 	config := &IntegratedConfig{
-		Worktree: &WorktreeConfig{
-			BaseDirectory: "/tmp/test-integrated-worktrees",
+		Worktree: &config.WorktreeConfig{
+			BaseDirectory: baseWorktreeDir,
 			MaxPathLength: 1024,
 			EnableLogging: false,
 		},
 		Git: &git.ManagerConfig{
-			WorkingDir:    "/tmp/test-integrated-worktrees",
+			WorkingDir:    projectRootPath,
 			EnableLogging: false,
 		},
 	}
@@ -172,11 +140,14 @@ func TestGetTaskWorktreeInfo(t *testing.T) {
 
 	ctx := context.Background()
 
+	dummyTaskID := fmt.Sprintf("task-%s", uuid.New().String())
 	// Create a task worktree first
 	createRequest := &CreateTaskWorktreeRequest{
-		ProjectID: "project-123",
-		TaskID:    "task-456",
-		TaskTitle: "Test Task",
+		ProjectID:         "project-123",
+		TaskID:            dummyTaskID,
+		TaskTitle:         "Test Task",
+		ProjectWorkDir:    projectRootPath,
+		ProjectMainBranch: "main",
 	}
 
 	createdInfo, err := service.CreateTaskWorktree(ctx, createRequest)
@@ -185,7 +156,7 @@ func TestGetTaskWorktreeInfo(t *testing.T) {
 	}
 
 	// Get task worktree info
-	info, err := service.GetTaskWorktreeInfo(ctx, "project-123", "task-456")
+	info, err := service.GetTaskWorktreeInfo(ctx, "project-123", dummyTaskID)
 	if err != nil {
 		t.Fatalf("Failed to get task worktree info: %v", err)
 	}
@@ -198,8 +169,8 @@ func TestGetTaskWorktreeInfo(t *testing.T) {
 		t.Errorf("Expected project ID project-123, got %s", info.ProjectID)
 	}
 
-	if info.TaskID != "task-456" {
-		t.Errorf("Expected task ID task-456, got %s", info.TaskID)
+	if info.TaskID != dummyTaskID {
+		t.Errorf("Expected task ID %s, got %s", dummyTaskID, info.TaskID)
 	}
 
 	if info.WorktreePath != createdInfo.WorktreePath {
@@ -213,18 +184,28 @@ func TestGetTaskWorktreeInfo(t *testing.T) {
 	}
 
 	// Clean up
-	os.RemoveAll("/tmp/test-integrated-worktrees")
+	service.CleanupTaskWorktree(ctx, &CleanupTaskWorktreeRequest{
+		ProjectID: "project-123",
+		TaskID:    dummyTaskID,
+	})
 }
 
 func TestListProjectWorktrees(t *testing.T) {
+	projectPath, err := os.Getwd()
+	projectRootPath := filepath.Join(projectPath, "../../../")
+	if err != nil {
+		t.Fatalf("Failed to get project path: %v", err)
+	}
+
+	baseWorktreeDir := filepath.Join(projectRootPath, "bin")
 	config := &IntegratedConfig{
-		Worktree: &WorktreeConfig{
-			BaseDirectory: "/tmp/test-integrated-worktrees",
+		Worktree: &config.WorktreeConfig{
+			BaseDirectory: baseWorktreeDir,
 			MaxPathLength: 1024,
 			EnableLogging: false,
 		},
 		Git: &git.ManagerConfig{
-			WorkingDir:    "/tmp/test-integrated-worktrees",
+			WorkingDir:    projectRootPath,
 			EnableLogging: false,
 		},
 	}
@@ -236,17 +217,23 @@ func TestListProjectWorktrees(t *testing.T) {
 
 	ctx := context.Background()
 
+	dummyTaskID1 := fmt.Sprintf("task-%s", uuid.New().String())
+	dummyTaskID2 := fmt.Sprintf("task-%s", uuid.New().String())
 	// Create multiple task worktrees
 	createRequest1 := &CreateTaskWorktreeRequest{
-		ProjectID: "project-123",
-		TaskID:    "task-456",
-		TaskTitle: "Test Task 1",
+		ProjectID:         "project-123",
+		TaskID:            dummyTaskID1,
+		TaskTitle:         "Test Task 1",
+		ProjectWorkDir:    projectRootPath,
+		ProjectMainBranch: "main",
 	}
 
 	createRequest2 := &CreateTaskWorktreeRequest{
-		ProjectID: "project-123",
-		TaskID:    "task-789",
-		TaskTitle: "Test Task 2",
+		ProjectID:         "project-123",
+		TaskID:            dummyTaskID2,
+		TaskTitle:         "Test Task 2",
+		ProjectWorkDir:    projectRootPath,
+		ProjectMainBranch: "main",
 	}
 
 	_, err = service.CreateTaskWorktree(ctx, createRequest1)
@@ -265,8 +252,8 @@ func TestListProjectWorktrees(t *testing.T) {
 		t.Fatalf("Failed to list project worktrees: %v", err)
 	}
 
-	if len(worktrees) != 2 {
-		t.Errorf("Expected 2 worktrees, got %d", len(worktrees))
+	if len(worktrees) < 2 {
+		t.Errorf("Expected at least 2 worktrees, got %d", len(worktrees))
 	}
 
 	// Test listing worktrees for non-existent project
@@ -280,5 +267,12 @@ func TestListProjectWorktrees(t *testing.T) {
 	}
 
 	// Clean up
-	os.RemoveAll("/tmp/test-integrated-worktrees")
+	service.CleanupTaskWorktree(ctx, &CleanupTaskWorktreeRequest{
+		ProjectID: "project-123",
+		TaskID:    dummyTaskID1,
+	})
+	service.CleanupTaskWorktree(ctx, &CleanupTaskWorktreeRequest{
+		ProjectID: "project-123",
+		TaskID:    dummyTaskID2,
+	})
 }

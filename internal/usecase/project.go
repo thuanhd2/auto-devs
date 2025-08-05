@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/url"
 	"regexp"
+	"sort"
 	"strings"
 	"time"
 
@@ -31,6 +32,7 @@ type ProjectUsecase interface {
 	UpdateRepositoryURL(ctx context.Context, projectID uuid.UUID, repositoryURL string) error
 	ReinitGitRepository(ctx context.Context, projectID uuid.UUID) error
 	GetGitStatus(ctx context.Context, projectID uuid.UUID) (*GitStatus, error)
+	ListBranches(ctx context.Context, projectID uuid.UUID) ([]GitBranch, error)
 }
 
 type CreateProjectRequest struct {
@@ -85,6 +87,16 @@ type WorkingDirStatus struct {
 	HasStagedChanges   bool `json:"has_staged_changes"`
 	HasUnstagedChanges bool `json:"has_unstaged_changes"`
 	HasUntrackedFiles  bool `json:"has_untracked_files"`
+}
+
+// Validation errors
+
+// GitBranch represents a Git branch with metadata
+type GitBranch struct {
+	Name        string `json:"name"`
+	IsCurrent   bool   `json:"is_current"`
+	LastCommit  string `json:"last_commit,omitempty"`
+	LastUpdated string `json:"last_updated,omitempty"`
 }
 
 // Validation errors
@@ -539,4 +551,67 @@ func (u *projectUsecase) GetGitStatus(ctx context.Context, projectID uuid.UUID) 
 	}
 
 	return status, nil
+}
+
+// ListBranches lists all Git branches for a project
+func (u *projectUsecase) ListBranches(ctx context.Context, projectID uuid.UUID) ([]GitBranch, error) {
+	// Get project to ensure it exists and has Git configuration
+	project, err := u.projectRepo.GetByID(ctx, projectID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get project: %w", err)
+	}
+
+	if project.WorktreeBasePath == "" {
+		return nil, fmt.Errorf("project has no worktree base path configured")
+	}
+
+	// TODO: Use git service to list actual branches
+	// // For now, return mock branches
+	// branches := []GitBranch{
+	// 	{
+	// 		Name:        "main",
+	// 		IsCurrent:   true,
+	// 		LastCommit:  "abc123def",
+	// 		LastUpdated: "2024-01-15T10:30:00Z",
+	// 	},
+	// 	{
+	// 		Name:        "develop",
+	// 		IsCurrent:   false,
+	// 		LastCommit:  "def456ghi",
+	// 		LastUpdated: "2024-01-14T15:20:00Z",
+	// 	},
+	// 	{
+	// 		Name:        "feature/user-auth",
+	// 		IsCurrent:   false,
+	// 		LastCommit:  "ghi789jkl",
+	// 		LastUpdated: "2024-01-13T09:15:00Z",
+	// 	},
+	// }
+
+	branches, err := u.gitService.ListBranches(ctx, project.WorktreeBasePath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list branches: %w", err)
+	}
+
+	gitBranches := make([]GitBranch, len(branches))
+	for i, branch := range branches {
+		isCurrent := false
+		if strings.HasPrefix(branch, "* ") {
+			branch = strings.TrimPrefix(branch, "* ")
+			isCurrent = true
+		}
+		gitBranches[i] = GitBranch{
+			Name:        branch,
+			IsCurrent:   isCurrent,
+			LastCommit:  "",
+			LastUpdated: "",
+		}
+	}
+
+	// sort current branch to the top
+	sort.Slice(gitBranches, func(i, j int) bool {
+		return gitBranches[i].IsCurrent
+	})
+
+	return gitBranches, nil
 }

@@ -6,19 +6,19 @@ import (
 	"log"
 	"time"
 
+	"github.com/auto-devs/auto-devs/config"
 	"github.com/auto-devs/auto-devs/internal/service/git"
 )
 
 // ExampleWorktreeUsage demonstrates how to use the worktree service
 func ExampleWorktreeUsage() {
 	// 1. Create worktree manager with custom configuration
-	worktreeConfig := &WorktreeConfig{
+	worktreeConfig := &config.WorktreeConfig{
 		BaseDirectory:   "/tmp/example-worktrees",
 		MaxPathLength:   2048,
 		MinDiskSpace:    100 * 1024 * 1024, // 100MB
-		CleanupInterval: 24 * time.Hour,
+		CleanupInterval: "24h",
 		EnableLogging:   true,
-		LogLevel:        0,
 	}
 
 	_, err := NewWorktreeManager(worktreeConfig)
@@ -92,9 +92,8 @@ func ExampleWorktreeUsage() {
 	// 6. Clean up worktree
 	fmt.Println("\n=== Cleaning Up Worktree ===")
 	cleanupRequest := &CleanupTaskWorktreeRequest{
-		ProjectID:  "project-123",
-		TaskID:     "task-456",
-		BranchName: taskInfo.BranchName,
+		ProjectID: "project-123",
+		TaskID:    "task-456",
 	}
 
 	err = integratedService.CleanupTaskWorktree(ctx, cleanupRequest)
@@ -117,7 +116,7 @@ func ExampleWorktreeUsage() {
 // ExampleBasicWorktreeUsage demonstrates basic worktree operations without Git
 func ExampleBasicWorktreeUsage() {
 	// Create worktree manager
-	manager, err := NewWorktreeManager(&WorktreeConfig{
+	manager, err := NewWorktreeManager(&config.WorktreeConfig{
 		BaseDirectory: "/tmp/basic-worktrees",
 		EnableLogging: true,
 	})
@@ -169,7 +168,7 @@ func ExampleBasicWorktreeUsage() {
 
 // ExamplePathValidation demonstrates path validation features
 func ExamplePathValidation() {
-	manager, err := NewWorktreeManager(&WorktreeConfig{
+	manager, err := NewWorktreeManager(&config.WorktreeConfig{
 		BaseDirectory: "/tmp/validation-worktrees",
 		EnableLogging: false,
 	})

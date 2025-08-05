@@ -98,6 +98,32 @@ clean: ## Clean build artifacts
 
 .PHONY: clean-tools
 clean-tools: ## Clean external tools
+
+.PHONY: build-worker
+build-worker: ## Build the job worker binary
+	@echo "Building job worker..."
+	@go build -o bin/worker cmd/worker/main.go
+	@echo "Worker build completed"
+
+.PHONY: run-worker
+run-worker: ## Run the job worker (requires Redis)
+	@echo "Starting job worker..."
+	@./scripts/run-worker.sh
+
+.PHONY: run-worker-verbose
+run-worker-verbose: ## Run the job worker with verbose logging
+	@echo "Starting job worker with verbose logging..."
+	@./scripts/run-worker.sh -v
+
+.PHONY: run-worker-named
+run-worker-named: ## Run the job worker with custom name (usage: make run-worker-named name=worker-1)
+	@if [ -z "$(name)" ]; then echo "Usage: make run-worker-named name=<worker_name>"; exit 1; fi
+	@echo "Starting job worker: $(name)"
+	@./scripts/run-worker.sh -n $(name)
+
+.PHONY: worker-help
+worker-help: ## Show worker help
+	@./scripts/run-worker.sh -h
 	@echo "Cleaning external tools..."
 	@rm -rf external-tools/
 	@echo "External tools cleaned!"

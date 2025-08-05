@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/auto-devs/auto-devs/config"
 	"github.com/auto-devs/auto-devs/internal/service/git"
 )
 
@@ -22,7 +23,7 @@ type IntegratedWorktreeService struct {
 
 // IntegratedConfig contains configuration for the integrated service
 type IntegratedConfig struct {
-	Worktree *WorktreeConfig
+	Worktree *config.WorktreeConfig
 	Git      *git.ManagerConfig
 }
 
@@ -71,12 +72,7 @@ func (iws *IntegratedWorktreeService) CreateTaskWorktree(ctx context.Context, re
 		return nil, fmt.Errorf("failed to create worktree directory: %w", err)
 	}
 
-	// Initialize Git repository in worktree directory
-	if err := iws.initializeGitRepository(ctx, worktreePath); err != nil {
-		// Clean up worktree on error
-		iws.worktreeManager.CleanupWorktree(ctx, worktreePath)
-		return nil, fmt.Errorf("failed to initialize Git repository: %w", err)
-	}
+	// TODO: here!!!!
 
 	// Generate branch name
 	branchName, err := iws.gitManager.GenerateBranchName(request.TaskID, request.TaskTitle)
@@ -87,7 +83,12 @@ func (iws *IntegratedWorktreeService) CreateTaskWorktree(ctx context.Context, re
 	}
 
 	// Create branch from main
-	if err := iws.gitManager.CreateBranchFromMain(ctx, worktreePath, branchName); err != nil {
+	if err := iws.gitManager.CreateWorktree(ctx, &git.CreateWorktreeRequest{
+		BaseWorkingDir:     request.ProjectWorkDir,
+		BaseBranchName:     request.ProjectMainBranch,
+		WorktreeWorkingDir: worktreePath,
+		WorktreeBranchName: branchName,
+	}); err != nil {
 		// Clean up worktree on error
 		iws.worktreeManager.CleanupWorktree(ctx, worktreePath)
 		return nil, fmt.Errorf("failed to create branch: %w", err)
@@ -141,16 +142,12 @@ func (iws *IntegratedWorktreeService) CleanupTaskWorktree(ctx context.Context, r
 		return nil
 	}
 
-	// Get branch name if not provided
-	branchName := request.BranchName
-	if branchName == "" {
-		// Try to extract branch name from worktree path or use default pattern
-		branchName = fmt.Sprintf("task-%s", request.TaskID)
-	}
-
 	// Delete branch from repository
-	if err := iws.gitManager.DeleteBranch(ctx, worktreePath, branchName, true); err != nil {
-		iws.logger.Warn("Failed to delete branch", "branch", branchName, "error", err)
+	if err := iws.gitManager.DeleteWorktree(ctx, &git.DeleteWorktreeRequest{
+		WorkingDir:   worktreePath,
+		WorktreePath: worktreePath,
+	}); err != nil {
+		iws.logger.Warn("Failed to delete branch", "error", err)
 		// Continue with cleanup even if branch deletion fails
 	}
 
@@ -161,7 +158,7 @@ func (iws *IntegratedWorktreeService) CleanupTaskWorktree(ctx context.Context, r
 
 	iws.logger.Info("Task worktree cleaned up successfully",
 		"worktree_path", worktreePath,
-		"branch_name", branchName)
+		"task_id", request.TaskID)
 
 	return nil
 }
@@ -352,17 +349,17 @@ func (iws *IntegratedWorktreeService) createInitialCommit(ctx context.Context, w
 
 // CreateTaskWorktreeRequest represents a request to create a task worktree
 type CreateTaskWorktreeRequest struct {
-	ProjectID  string `json:"project_id"`
-	TaskID     string `json:"task_id"`
-	TaskTitle  string `json:"task_title"`
-	Repository string `json:"repository,omitempty"` // Optional repository URL to clone
+	ProjectID         string `json:"project_id"`
+	TaskID            string `json:"task_id"`
+	TaskTitle         string `json:"task_title"`
+	ProjectWorkDir    string `json:"project_work_dir"`
+	ProjectMainBranch string `json:"project_main_branch"`
 }
 
 // CleanupTaskWorktreeRequest represents a request to cleanup a task worktree
 type CleanupTaskWorktreeRequest struct {
-	ProjectID  string `json:"project_id"`
-	TaskID     string `json:"task_id"`
-	BranchName string `json:"branch_name,omitempty"` // Optional branch name to delete
+	ProjectID string `json:"project_id"`
+	TaskID    string `json:"task_id"`
 }
 
 // TaskWorktreeInfo contains complete information about a task worktree

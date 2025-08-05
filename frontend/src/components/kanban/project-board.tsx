@@ -6,7 +6,12 @@ import {
   useWebSocketProject,
   useWebSocketContext,
 } from '@/context/websocket-context'
-import { useTasks, useDeleteTask, useDuplicateTask } from '@/hooks/use-tasks'
+import {
+  useTasks,
+  useDeleteTask,
+  useDuplicateTask,
+  useStartPlanning,
+} from '@/hooks/use-tasks'
 import { BoardFilters } from './board-filters'
 import { BoardToolbar } from './board-toolbar'
 import { KanbanBoard } from './kanban-board'
@@ -42,12 +47,11 @@ export function ProjectBoard({ projectId }: ProjectBoardProps) {
   } = useTasks(projectId, filters)
   const deleteTaskMutation = useDeleteTask()
   const duplicateTaskMutation = useDuplicateTask()
+  const startPlanningMutation = useStartPlanning()
 
   // WebSocket integration
   const { setCurrentProjectId } = useWebSocketProject(projectId)
   const { isConnected } = useWebSocketContext()
-
-  console.log('tasksResponse', tasksResponse)
 
   // Keep local tasks in sync with server data
   useEffect(() => {
@@ -148,6 +152,17 @@ export function ProjectBoard({ projectId }: ProjectBoardProps) {
     setTaskDetailSheet({ open: true, task })
   }
 
+  const handleStartPlanning = async (taskId: string, branchName: string) => {
+    try {
+      await startPlanningMutation.mutateAsync({
+        taskId,
+        request: { branch_name: branchName },
+      })
+    } catch (error) {
+      // Error is handled by the mutation hook
+    }
+  }
+
   return (
     <div className='flex h-full flex-col'>
       <BoardToolbar
@@ -210,6 +225,7 @@ export function ProjectBoard({ projectId }: ProjectBoardProps) {
             prev.map((t) => (t.id === taskId ? { ...t, status: newStatus } : t))
           )
         }}
+        onStartPlanning={handleStartPlanning}
       />
     </div>
   )

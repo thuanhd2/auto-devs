@@ -502,3 +502,47 @@ func (h *ProjectHandler) GetGitStatus(c *gin.Context) {
 	response := dto.GitStatusResponseFromUsecase(status)
 	c.JSON(http.StatusOK, response)
 }
+
+// ListBranches godoc
+// @Summary List Git branches for a project
+// @Description Get all Git branches available in the project repository
+// @Tags projects
+// @Accept json
+// @Produce json
+// @Param id path string true "Project ID"
+// @Success 200 {object} dto.ListBranchesResponse
+// @Failure 400 {object} dto.ErrorResponse
+// @Failure 404 {object} dto.ErrorResponse
+// @Failure 500 {object} dto.ErrorResponse
+// @Router /api/v1/projects/{id}/branches [get]
+func (h *ProjectHandler) ListBranches(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, dto.NewErrorResponse(err, http.StatusBadRequest, "Invalid project ID"))
+		return
+	}
+
+	branches, err := h.projectUsecase.ListBranches(c.Request.Context(), id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, dto.NewErrorResponse(err, http.StatusInternalServerError, "Failed to list branches"))
+		return
+	}
+
+	// Convert usecase.GitBranch to dto.GitBranchResponse
+	branchResponses := make([]dto.GitBranchResponse, len(branches))
+	for i, branch := range branches {
+		branchResponses[i] = dto.GitBranchResponse{
+			Name:        branch.Name,
+			IsCurrent:   branch.IsCurrent,
+			LastCommit:  branch.LastCommit,
+			LastUpdated: branch.LastUpdated,
+		}
+	}
+
+	response := dto.ListBranchesResponse{
+		Branches: branchResponses,
+		Total:    len(branchResponses),
+	}
+	c.JSON(http.StatusOK, response)
+}

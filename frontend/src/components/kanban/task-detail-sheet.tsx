@@ -1,16 +1,7 @@
 import { useState } from 'react'
 import type { Task } from '@/types/task'
-import { Edit, Trash2, Copy, History, MoreVertical } from 'lucide-react'
 import { getStatusColor, getStatusTitle } from '@/lib/kanban'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
 import { Separator } from '@/components/ui/separator'
 import {
   Sheet,
@@ -19,7 +10,6 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet'
 import { ConfirmDialog } from '../confirm-dialog'
-import { GitOperationControls } from './git-operation-controls'
 import { TaskActions } from './task-actions'
 import { TaskEditForm } from './task-edit-form'
 import { TaskHistory } from './task-history'
@@ -33,6 +23,7 @@ interface TaskDetailSheetProps {
   onDelete?: (taskId: string) => void
   onDuplicate?: (task: Task) => void
   onStatusChange?: (taskId: string, newStatus: Task['status']) => void
+  onStartPlanning?: (taskId: string, branchName: string) => void
 }
 
 export function TaskDetailSheet({
@@ -43,6 +34,7 @@ export function TaskDetailSheet({
   onDelete,
   onDuplicate,
   onStatusChange,
+  onStartPlanning,
 }: TaskDetailSheetProps) {
   const [showEditForm, setShowEditForm] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
@@ -135,6 +127,7 @@ export function TaskDetailSheet({
                 onDelete={handleDelete}
                 onDuplicate={handleDuplicate}
                 onStatusChange={handleStatusChange}
+                onStartPlanning={onStartPlanning}
                 // onViewHistory={() => setShowHistory(true)}
               />
             </div>

@@ -1,4 +1,4 @@
-export type TaskStatus = 
+export type TaskStatus =
   | 'TODO'
   | 'PLANNING'
   | 'PLAN_REVIEWING'
@@ -6,17 +6,17 @@ export type TaskStatus =
   | 'CODE_REVIEWING'
   | 'DONE'
   | 'CANCELLED'
-export type TaskGitStatus = 
-  | 'NO_GIT'           // No Git worktree/branch
+export type TaskGitStatus =
+  | 'NO_GIT' // No Git worktree/branch
   | 'WORKTREE_PENDING' // Worktree creation requested but not created
   | 'WORKTREE_CREATED' // Worktree created successfully
-  | 'BRANCH_CREATED'   // Branch created in worktree
-  | 'CHANGES_PENDING'  // Has uncommitted changes
-  | 'CHANGES_STAGED'   // Has staged changes ready for commit
-  | 'CHANGES_COMMITTED'// Changes committed to branch
-  | 'PR_CREATED'       // Pull request created
-  | 'PR_MERGED'        // Pull request merged
-  | 'WORKTREE_ERROR'   // Error with worktree operations
+  | 'BRANCH_CREATED' // Branch created in worktree
+  | 'CHANGES_PENDING' // Has uncommitted changes
+  | 'CHANGES_STAGED' // Has staged changes ready for commit
+  | 'CHANGES_COMMITTED' // Changes committed to branch
+  | 'PR_CREATED' // Pull request created
+  | 'PR_MERGED' // Pull request merged
+  | 'WORKTREE_ERROR' // Error with worktree operations
 
 export interface TaskGitInfo {
   status: TaskGitStatus
@@ -75,4 +75,14 @@ export interface TasksResponse {
   total: number
   page: number
   limit: number
+}
+
+// Start Planning types
+export interface StartPlanningRequest {
+  branch_name: string
+}
+
+export interface StartPlanningResponse {
+  message: string
+  job_id: string
 }

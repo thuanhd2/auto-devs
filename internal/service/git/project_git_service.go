@@ -13,6 +13,7 @@ type ProjectGitServiceInterface interface {
 	UpdateProjectRepositoryURL(ctx context.Context, projectID uuid.UUID, worktreeBasePath string, updateRepoURL func(uuid.UUID, string) error) error
 	SetupProjectGit(ctx context.Context, projectID uuid.UUID, worktreeBasePath string, updateRepoURL func(uuid.UUID, string) error) error
 	GetGitStatus(ctx context.Context, worktreeBasePath string) (*RepositoryInfo, error)
+	ListBranches(ctx context.Context, worktreeBasePath string) ([]string, error)
 }
 
 // ProjectGitService handles Git operations for projects
@@ -108,4 +109,20 @@ func (s *ProjectGitService) GetGitStatus(ctx context.Context, worktreeBasePath s
 	}
 
 	return repoInfo, nil
+}
+
+func (s *ProjectGitService) ListBranches(ctx context.Context, worktreeBasePath string) ([]string, error) {
+	if worktreeBasePath == "" {
+		return nil, fmt.Errorf("project has no worktree base path configured")
+	}
+
+	branches, err := s.gitManager.commands.ListBranches(ctx, worktreeBasePath, &ListBranchesOptions{
+		Remote: true,
+		All:    true,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to list branches: %w", err)
+	}
+
+	return branches, nil
 }

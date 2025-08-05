@@ -12,6 +12,7 @@ type Config struct {
 	Server   ServerConfig
 	Database DatabaseConfig
 	Worktree WorktreeConfig
+	Redis    RedisConfig
 }
 
 type ServerConfig struct {
@@ -34,6 +35,13 @@ type WorktreeConfig struct {
 	MinDiskSpace    int64
 	CleanupInterval string
 	EnableLogging   bool
+}
+
+type RedisConfig struct {
+	Host     string
+	Port     string
+	Password string
+	DB       int
 }
 
 func Load() *Config {
@@ -61,6 +69,12 @@ func Load() *Config {
 			MinDiskSpace:    getEnvAsInt64("WORKTREE_MIN_DISK_SPACE", 100*1024*1024), // 100MB
 			CleanupInterval: getEnv("WORKTREE_CLEANUP_INTERVAL", "24h"),
 			EnableLogging:   getEnvAsBool("WORKTREE_ENABLE_LOGGING", true),
+		},
+		Redis: RedisConfig{
+			Host:     getEnv("REDIS_HOST", "localhost"),
+			Port:     getEnv("REDIS_PORT", "6379"),
+			Password: getEnv("REDIS_PASSWORD", ""),
+			DB:       getEnvAsInt("REDIS_DB", 0),
 		},
 	}
 }

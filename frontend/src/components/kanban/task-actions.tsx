@@ -8,17 +8,11 @@ import {
   History,
   ExternalLink,
   GitBranch,
+  Play,
 } from 'lucide-react'
-import { getStatusColor, getStatusTitle } from '@/lib/kanban'
 import { Button } from '@/components/ui/button'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
 import { ConfirmDialog } from '../confirm-dialog'
+import { BranchSelectionDialog } from './branch-selection-dialog'
 
 interface TaskActionsProps {
   task: Task
@@ -27,6 +21,7 @@ interface TaskActionsProps {
   onDuplicate?: (task: Task) => void
   onStatusChange?: (taskId: string, newStatus: TaskStatus) => void
   onViewHistory?: () => void
+  onStartPlanning?: (taskId: string, branchName: string) => void
   showStatusActions?: boolean
   showGitActions?: boolean
 }
@@ -38,10 +33,12 @@ export function TaskActions({
   onDuplicate,
   onStatusChange,
   onViewHistory,
+  onStartPlanning,
   showStatusActions = true,
   showGitActions = true,
 }: TaskActionsProps) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [showBranchDialog, setShowBranchDialog] = useState(false)
 
   const handleDelete = () => {
     setShowDeleteConfirm(true)
@@ -66,9 +63,31 @@ export function TaskActions({
     }
   }
 
+  const handleStartPlanning = () => {
+    setShowBranchDialog(true)
+  }
+
+  const handleBranchSelected = (branchName: string) => {
+    onStartPlanning?.(task.id, branchName)
+  }
+
   return (
     <>
       <div className='flex flex-wrap items-center gap-2'>
+        {/* Start Planning Action - Only show for TODO tasks */}
+        {task.status === 'TODO' && onStartPlanning && (
+          <Button
+            variant='default'
+            size='sm'
+            onClick={handleStartPlanning}
+            title='Start planning for this task'
+            className='bg-blue-600 text-white hover:bg-blue-700'
+          >
+            <Play className='mr-1 h-4 w-4' />
+            Start Planning
+          </Button>
+        )}
+
         {/* Git Actions */}
         {(task.branch_name || task.pr_url) && (
           <div className='flex items-center gap-1'>
@@ -135,6 +154,15 @@ export function TaskActions({
         onConfirm={confirmDelete}
         confirmText='Delete'
         variant='destructive'
+      />
+
+      {/* Branch Selection Dialog */}
+      <BranchSelectionDialog
+        open={showBranchDialog}
+        onOpenChange={setShowBranchDialog}
+        projectId={task.project_id}
+        taskTitle={task.title}
+        onBranchSelected={handleBranchSelected}
       />
     </>
   )

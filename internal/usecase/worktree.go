@@ -139,9 +139,21 @@ func (w *worktreeUsecase) CreateWorktreeForTask(ctx context.Context, req CreateW
 	}
 
 	// Step 3: Get project information (validate project exists)
-	_, err = w.projectRepo.GetByID(ctx, req.ProjectID)
+	project, err := w.projectRepo.GetByID(ctx, req.ProjectID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get project: %w", err)
+	}
+
+	task, err := w.taskRepo.GetByID(ctx, req.TaskID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get task: %w", err)
+	}
+
+	taskBranchName := ""
+	if task.BranchName != nil {
+		taskBranchName = *task.BranchName
+	} else {
+		taskBranchName = "main"
 	}
 
 	// Step 4: Generate unique branch name using naming conventions
@@ -150,12 +162,23 @@ func (w *worktreeUsecase) CreateWorktreeForTask(ctx context.Context, req CreateW
 		return nil, fmt.Errorf("failed to generate branch name: %w", err)
 	}
 
-	// Step 5: Create worktree record in database with "creating" status
+	// Step 5: Create Git worktree from main branch
+	worktreePath, err := w.integratedWorktreeSvc.CreateTaskWorktree(ctx, &worktreesvc.CreateTaskWorktreeRequest{
+		ProjectID:         req.ProjectID.String(),
+		TaskID:            req.TaskID.String(),
+		TaskTitle:         req.TaskTitle,
+		ProjectWorkDir:    project.WorktreeBasePath,
+		ProjectMainBranch: taskBranchName,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create worktree: %w", err)
+	}
+	// Step 6: Create worktree record in database with "creating" status
 	worktree := &entity.Worktree{
 		TaskID:       req.TaskID,
 		ProjectID:    req.ProjectID,
 		BranchName:   branchName,
-		WorktreePath: "", // Will be set after creation
+		WorktreePath: worktreePath.WorktreePath,
 		Status:       entity.WorktreeStatusCreating,
 	}
 
@@ -163,19 +186,9 @@ func (w *worktreeUsecase) CreateWorktreeForTask(ctx context.Context, req CreateW
 		return nil, fmt.Errorf("failed to create worktree record: %w", err)
 	}
 
-	// Step 6: Create Git worktree from main branch
-	worktreePath, err := w.integratedWorktreeSvc.CreateTaskWorktree(ctx, &worktreesvc.CreateTaskWorktreeRequest{
-		ProjectID:  req.ProjectID.String(),
-		TaskID:     req.TaskID.String(),
-		TaskTitle:  req.TaskTitle,
-		Repository: req.Repository,
-	})
-	if err != nil {
-		// Update worktree status to error
-		worktree.Status = entity.WorktreeStatusError
-		w.worktreeRepo.Update(ctx, worktree)
-		return nil, fmt.Errorf("failed to create worktree: %w", err)
-	}
+	w.logger.Info("Worktree created successfully=============",
+		"worktree_path", worktreePath.WorktreePath,
+		"branch_name", branchName)
 
 	// Step 7: Update worktree record with path and set status to active
 	worktree.WorktreePath = worktreePath.WorktreePath
@@ -223,9 +236,8 @@ func (w *worktreeUsecase) CleanupWorktreeForTask(ctx context.Context, req Cleanu
 
 	// Clean up worktree directory and files
 	if err := w.integratedWorktreeSvc.CleanupTaskWorktree(ctx, &worktreesvc.CleanupTaskWorktreeRequest{
-		ProjectID:  req.ProjectID.String(),
-		TaskID:     req.TaskID.String(),
-		BranchName: req.BranchName,
+		ProjectID: req.ProjectID.String(),
+		TaskID:    req.TaskID.String(),
 	}); err != nil {
 		// Update status to error if cleanup fails
 		worktree.Status = entity.WorktreeStatusError
@@ -546,8 +558,8 @@ func (w *worktreeUsecase) validateTaskEligibility(ctx context.Context, taskID uu
 	}
 
 	// Check if task is in a status that allows worktree creation
-	if task.Status != entity.TaskStatusIMPLEMENTING {
-		return fmt.Errorf("task must be in IMPLEMENTING status to create worktree")
+	if task.Status != entity.TaskStatusPLANNING {
+		return fmt.Errorf("task must be in PLANNING status to create worktree")
 	}
 
 	// Check if task already has a worktree

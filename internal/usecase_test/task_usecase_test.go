@@ -19,9 +19,10 @@ func setupTaskUsecaseTest() (usecase.TaskUsecase, *repository.TaskRepositoryMock
 	mockProjectRepo := &repository.ProjectRepositoryMock{}
 	mockNotificationUsecase := &usecase.NotificationUsecaseMock{}
 	mockWorktreeUsecase := &usecase.WorktreeUsecaseMock{}
+	mockJobClient := &usecase.JobClientInterfaceMock{}
 
 	// Tạo usecase instance
-	taskUsecase := usecase.NewTaskUsecase(mockTaskRepo, mockProjectRepo, mockNotificationUsecase, mockWorktreeUsecase)
+	taskUsecase := usecase.NewTaskUsecase(mockTaskRepo, mockProjectRepo, mockNotificationUsecase, mockWorktreeUsecase, mockJobClient)
 
 	return taskUsecase, mockTaskRepo, mockProjectRepo, mockNotificationUsecase, mockWorktreeUsecase
 }
