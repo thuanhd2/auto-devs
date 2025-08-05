@@ -2326,6 +2326,64 @@ func (_c *TaskUsecaseMock_UpdateComment_Call) RunAndReturn(run func(ctx context.
 	return _c
 }
 
+// UpdateGitStatus provides a mock function for the type TaskUsecaseMock
+func (_mock *TaskUsecaseMock) UpdateGitStatus(ctx context.Context, taskID uuid.UUID, gitStatus entity.TaskGitStatus) (*entity.Task, error) {
+	ret := _mock.Called(ctx, taskID, gitStatus)
+
+	if len(ret) == 0 {
+		panic("no return value specified for UpdateGitStatus")
+	}
+
+	var r0 *entity.Task
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, entity.TaskGitStatus) (*entity.Task, error)); ok {
+		return returnFunc(ctx, taskID, gitStatus)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, entity.TaskGitStatus) *entity.Task); ok {
+		r0 = returnFunc(ctx, taskID, gitStatus)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*entity.Task)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID, entity.TaskGitStatus) error); ok {
+		r1 = returnFunc(ctx, taskID, gitStatus)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// TaskUsecaseMock_UpdateGitStatus_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UpdateGitStatus'
+type TaskUsecaseMock_UpdateGitStatus_Call struct {
+	*mock.Call
+}
+
+// UpdateGitStatus is a helper method to define mock.On call
+//   - ctx
+//   - taskID
+//   - gitStatus
+func (_e *TaskUsecaseMock_Expecter) UpdateGitStatus(ctx interface{}, taskID interface{}, gitStatus interface{}) *TaskUsecaseMock_UpdateGitStatus_Call {
+	return &TaskUsecaseMock_UpdateGitStatus_Call{Call: _e.mock.On("UpdateGitStatus", ctx, taskID, gitStatus)}
+}
+
+func (_c *TaskUsecaseMock_UpdateGitStatus_Call) Run(run func(ctx context.Context, taskID uuid.UUID, gitStatus entity.TaskGitStatus)) *TaskUsecaseMock_UpdateGitStatus_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(uuid.UUID), args[2].(entity.TaskGitStatus))
+	})
+	return _c
+}
+
+func (_c *TaskUsecaseMock_UpdateGitStatus_Call) Return(task *entity.Task, err error) *TaskUsecaseMock_UpdateGitStatus_Call {
+	_c.Call.Return(task, err)
+	return _c
+}
+
+func (_c *TaskUsecaseMock_UpdateGitStatus_Call) RunAndReturn(run func(ctx context.Context, taskID uuid.UUID, gitStatus entity.TaskGitStatus) (*entity.Task, error)) *TaskUsecaseMock_UpdateGitStatus_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // UpdateParentTask provides a mock function for the type TaskUsecaseMock
 func (_mock *TaskUsecaseMock) UpdateParentTask(ctx context.Context, taskID uuid.UUID, parentTaskID *uuid.UUID) error {
 	ret := _mock.Called(ctx, taskID, parentTaskID)
@@ -2542,6 +2600,53 @@ func (_c *TaskUsecaseMock_UpdateTemplate_Call) Return(taskTemplate *entity.TaskT
 }
 
 func (_c *TaskUsecaseMock_UpdateTemplate_Call) RunAndReturn(run func(ctx context.Context, id uuid.UUID, req UpdateTemplateRequest) (*entity.TaskTemplate, error)) *TaskUsecaseMock_UpdateTemplate_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// ValidateGitStatusTransition provides a mock function for the type TaskUsecaseMock
+func (_mock *TaskUsecaseMock) ValidateGitStatusTransition(ctx context.Context, taskID uuid.UUID, newGitStatus entity.TaskGitStatus) error {
+	ret := _mock.Called(ctx, taskID, newGitStatus)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ValidateGitStatusTransition")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, entity.TaskGitStatus) error); ok {
+		r0 = returnFunc(ctx, taskID, newGitStatus)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// TaskUsecaseMock_ValidateGitStatusTransition_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ValidateGitStatusTransition'
+type TaskUsecaseMock_ValidateGitStatusTransition_Call struct {
+	*mock.Call
+}
+
+// ValidateGitStatusTransition is a helper method to define mock.On call
+//   - ctx
+//   - taskID
+//   - newGitStatus
+func (_e *TaskUsecaseMock_Expecter) ValidateGitStatusTransition(ctx interface{}, taskID interface{}, newGitStatus interface{}) *TaskUsecaseMock_ValidateGitStatusTransition_Call {
+	return &TaskUsecaseMock_ValidateGitStatusTransition_Call{Call: _e.mock.On("ValidateGitStatusTransition", ctx, taskID, newGitStatus)}
+}
+
+func (_c *TaskUsecaseMock_ValidateGitStatusTransition_Call) Run(run func(ctx context.Context, taskID uuid.UUID, newGitStatus entity.TaskGitStatus)) *TaskUsecaseMock_ValidateGitStatusTransition_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(uuid.UUID), args[2].(entity.TaskGitStatus))
+	})
+	return _c
+}
+
+func (_c *TaskUsecaseMock_ValidateGitStatusTransition_Call) Return(err error) *TaskUsecaseMock_ValidateGitStatusTransition_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *TaskUsecaseMock_ValidateGitStatusTransition_Call) RunAndReturn(run func(ctx context.Context, taskID uuid.UUID, newGitStatus entity.TaskGitStatus) error) *TaskUsecaseMock_ValidateGitStatusTransition_Call {
 	_c.Call.Return(run)
 	return _c
 }
