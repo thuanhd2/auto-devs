@@ -28,30 +28,30 @@ var (
 	ErrInvalidCredentials   = errors.New("invalid git credentials")
 
 	// Branch and reference errors
-	ErrBranchNotFound       = errors.New("branch not found")
-	ErrBranchAlreadyExists  = errors.New("branch already exists")
-	ErrInvalidBranchName    = errors.New("invalid branch name")
-	ErrCannotDeleteBranch   = errors.New("cannot delete branch")
-	ErrInvalidReference     = errors.New("invalid git reference")
+	ErrBranchNotFound      = errors.New("branch not found")
+	ErrBranchAlreadyExists = errors.New("branch already exists")
+	ErrInvalidBranchName   = errors.New("invalid branch name")
+	ErrCannotDeleteBranch  = errors.New("cannot delete branch")
+	ErrInvalidReference    = errors.New("invalid git reference")
 
 	// Working directory errors
-	ErrWorkingDirDirty      = errors.New("working directory has uncommitted changes")
-	ErrMergeConflicts       = errors.New("merge conflicts detected")
-	ErrUnstagedChanges      = errors.New("unstaged changes detected")
-		
+	ErrWorkingDirDirty = errors.New("working directory has uncommitted changes")
+	ErrMergeConflicts  = errors.New("merge conflicts detected")
+	ErrUnstagedChanges = errors.New("unstaged changes detected")
+
 	// Configuration errors
-	ErrGitConfigNotSet      = errors.New("git configuration not set")
-	ErrInvalidGitConfig     = errors.New("invalid git configuration")
+	ErrGitConfigNotSet  = errors.New("git configuration not set")
+	ErrInvalidGitConfig = errors.New("invalid git configuration")
 )
 
 // GitError represents a structured Git operation error
 type GitError struct {
-	Operation   string // The Git operation that failed (e.g., "clone", "checkout", "push")
-	ExitCode    int    // Git command exit code
-	Command     string // The Git command that was executed
-	Stderr      string // Standard error output from Git
-	Stdout      string // Standard output from Git
-	Underlying  error  // The underlying error
+	Operation   string   // The Git operation that failed (e.g., "clone", "checkout", "push")
+	ExitCode    int      // Git command exit code
+	Command     string   // The Git command that was executed
+	Stderr      string   // Standard error output from Git
+	Stdout      string   // Standard output from Git
+	Underlying  error    // The underlying error
 	Suggestions []string // Suggested solutions for the error
 }
 
@@ -59,7 +59,7 @@ func (e *GitError) Error() string {
 	if e.Underlying != nil {
 		return fmt.Sprintf("git %s failed: %v", e.Operation, e.Underlying)
 	}
-	return fmt.Sprintf("git %s failed with exit code %d", e.Operation, e.ExitCode)
+	return fmt.Sprintf("git %s failed with exit code %d [%s]", e.Operation, e.ExitCode, e.Stderr)
 }
 
 func (e *GitError) Unwrap() error {
@@ -79,7 +79,7 @@ func NewGitError(operation string, exitCode int, command, stdout, stderr string,
 
 	// Add contextual suggestions based on the error
 	gitErr.Suggestions = getSuggestionsForError(gitErr)
-	
+
 	return gitErr
 }
 
@@ -93,7 +93,7 @@ func getSuggestionsForError(err *GitError) []string {
 			"Verify repository access permissions",
 		}
 	}
-	
+
 	switch {
 	case err.ExitCode == 128:
 		if containsAny(err.Stderr, []string{"not a git repository", "not found"}) {

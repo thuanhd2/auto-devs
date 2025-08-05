@@ -8,13 +8,16 @@ package di
 
 import (
 	"github.com/auto-devs/auto-devs/config"
+	"github.com/auto-devs/auto-devs/internal/jobs"
 	"github.com/auto-devs/auto-devs/internal/repository"
 	"github.com/auto-devs/auto-devs/internal/repository/postgres"
+	"github.com/auto-devs/auto-devs/internal/service/ai"
 	"github.com/auto-devs/auto-devs/internal/service/git"
 	"github.com/auto-devs/auto-devs/internal/service/worktree"
 	"github.com/auto-devs/auto-devs/internal/usecase"
 	"github.com/auto-devs/auto-devs/pkg/database"
 	"github.com/google/wire"
+	"time"
 )
 
 // Injectors from wire.go:
@@ -43,8 +46,21 @@ func InitializeApp() (*App, error) {
 		return nil, err
 	}
 	worktreeUsecase := ProvideWorktreeUsecase(worktreeRepository, taskRepository, projectRepository, integratedWorktreeService, gitManager)
-	taskUsecase := ProvideTaskUsecase(taskRepository, projectRepository, notificationUsecase, worktreeUsecase)
-	app := NewApp(configConfig, gormDB, projectRepository, taskRepository, worktreeRepository, auditRepository, auditUsecase, projectUsecase, taskUsecase, worktreeUsecase, notificationUsecase)
+	client := ProvideJobClient(configConfig)
+	jobClientInterface := ProvideJobClientAdapter(client)
+	taskUsecase := ProvideTaskUsecase(taskRepository, projectRepository, notificationUsecase, worktreeUsecase, jobClientInterface)
+	cliManager, err := ProvideCLIManager()
+	if err != nil {
+		return nil, err
+	}
+	processManager := ProvideProcessManager()
+	executionService := ProvideExecutionService(cliManager, processManager)
+	planningService := ProvidePlanningService(executionService, cliManager)
+	worktreeManager, err := ProvideWorktreeManager(configConfig)
+	if err != nil {
+		return nil, err
+	}
+	app := NewApp(configConfig, gormDB, projectRepository, taskRepository, worktreeRepository, auditRepository, auditUsecase, projectUsecase, taskUsecase, worktreeUsecase, notificationUsecase, cliManager, processManager, executionService, planningService, gitManager, worktreeManager, client, jobClientInterface)
 	return app, nil
 }
 
@@ -53,7 +69,16 @@ func InitializeApp() (*App, error) {
 // ProviderSet is the Wire provider set for the entire application
 var ProviderSet = wire.NewSet(config.Load, ProvideGormDB, postgres.NewProjectRepository, postgres.NewTaskRepository, ProvideWorktreeRepository, postgres.NewAuditRepository, ProvideGitManager,
 	ProvideProjectGitService,
-	ProvideIntegratedWorktreeService, usecase.NewNotificationUsecase, ProvideAuditUsecase,
+	ProvideIntegratedWorktreeService,
+	ProvideWorktreeManager,
+
+	ProvideCLIManager,
+	ProvideProcessManager,
+	ProvideExecutionService,
+	ProvidePlanningService,
+
+	ProvideJobClient,
+	ProvideJobClientAdapter, usecase.NewNotificationUsecase, ProvideAuditUsecase,
 	ProvideProjectUsecase,
 	ProvideWorktreeUsecase,
 	ProvideTaskUsecase,
@@ -72,6 +97,17 @@ type App struct {
 	TaskUsecase         usecase.TaskUsecase
 	WorktreeUsecase     usecase.WorktreeUsecase
 	NotificationUsecase usecase.NotificationUsecase
+	// AI Services
+	CLIManager       *ai.CLIManager
+	ProcessManager   *ai.ProcessManager
+	ExecutionService *ai.ExecutionService
+	PlanningService  *ai.PlanningService
+	// Git Services
+	GitManager      *git.GitManager
+	WorktreeManager *worktree.WorktreeManager
+	// Job Services
+	JobClient        *jobs.Client
+	JobClientAdapter usecase.JobClientInterface
 }
 
 // NewApp creates a new App instance
@@ -87,6 +123,14 @@ func NewApp(
 	taskUsecase usecase.TaskUsecase,
 	worktreeUsecase usecase.WorktreeUsecase,
 	notificationUsecase usecase.NotificationUsecase,
+	cliManager *ai.CLIManager,
+	processManager *ai.ProcessManager,
+	executionService *ai.ExecutionService,
+	planningService *ai.PlanningService,
+	gitManager *git.GitManager,
+	worktreeManager *worktree.WorktreeManager,
+	jobClient *jobs.Client,
+	jobClientAdapter usecase.JobClientInterface,
 ) *App {
 	return &App{
 		Config:              cfg,
@@ -100,6 +144,14 @@ func NewApp(
 		TaskUsecase:         taskUsecase,
 		WorktreeUsecase:     worktreeUsecase,
 		NotificationUsecase: notificationUsecase,
+		CLIManager:          cliManager,
+		ProcessManager:      processManager,
+		ExecutionService:    executionService,
+		PlanningService:     planningService,
+		GitManager:          gitManager,
+		WorktreeManager:     worktreeManager,
+		JobClient:           jobClient,
+		JobClientAdapter:    jobClientAdapter,
 	}
 }
 
@@ -130,11 +182,8 @@ func ProvideGitManager(cfg *config.Config) (*git.GitManager, error) {
 
 // ProvideIntegratedWorktreeService provides an IntegratedWorktreeService instance
 func ProvideIntegratedWorktreeService(cfg *config.Config, gitManager *git.GitManager) (*worktree.IntegratedWorktreeService, error) {
-	worktreeConfig := &worktree.WorktreeConfig{
-		BaseDirectory: "/tmp/worktrees",
-	}
 	integratedConfig := &worktree.IntegratedConfig{
-		Worktree: worktreeConfig,
+		Worktree: &cfg.Worktree,
 		Git:      &git.ManagerConfig{},
 	}
 	return worktree.NewIntegratedWorktreeService(integratedConfig)
@@ -167,6 +216,51 @@ func ProvideTaskUsecase(
 	projectRepo repository.ProjectRepository,
 	notificationUsecase usecase.NotificationUsecase,
 	worktreeUsecase usecase.WorktreeUsecase,
+	jobClient usecase.JobClientInterface,
 ) usecase.TaskUsecase {
-	return usecase.NewTaskUsecase(taskRepo, projectRepo, notificationUsecase, worktreeUsecase)
+	return usecase.NewTaskUsecase(taskRepo, projectRepo, notificationUsecase, worktreeUsecase, jobClient)
+}
+
+// ProvideCLIManager provides a CLIManager instance
+func ProvideCLIManager() (*ai.CLIManager, error) {
+	config2 := &ai.CLIConfig{
+		CLICommand:       "claude-code",
+		Timeout:          300 * time.Second,
+		WorkingDirectory: "",
+		EnableLogging:    true,
+		RetryAttempts:    3,
+		RetryDelay:       5 * time.Second,
+	}
+	return ai.NewCLIManager(config2)
+}
+
+// ProvideProcessManager provides a ProcessManager instance
+func ProvideProcessManager() *ai.ProcessManager {
+	return ai.NewProcessManager()
+}
+
+// ProvideExecutionService provides an ExecutionService instance
+func ProvideExecutionService(cliManager *ai.CLIManager, processManager *ai.ProcessManager) *ai.ExecutionService {
+	return ai.NewExecutionService(cliManager, processManager)
+}
+
+// ProvidePlanningService provides a PlanningService instance
+func ProvidePlanningService(executionService *ai.ExecutionService, cliManager *ai.CLIManager) *ai.PlanningService {
+	return ai.NewPlanningService(executionService, cliManager)
+}
+
+// ProvideJobClient provides a JobClient instance
+func ProvideJobClient(cfg *config.Config) *jobs.Client {
+	redisAddr := cfg.Redis.Host + ":" + cfg.Redis.Port
+	return jobs.NewClient(redisAddr, cfg.Redis.Password, cfg.Redis.DB)
+}
+
+// ProvideJobClientAdapter provides a JobClientAdapter instance
+func ProvideJobClientAdapter(client *jobs.Client) usecase.JobClientInterface {
+	return jobs.NewJobClientAdapter(client)
+}
+
+// ProvideWorktreeManager provides a WorktreeManager instance
+func ProvideWorktreeManager(cfg *config.Config) (*worktree.WorktreeManager, error) {
+	return worktree.NewWorktreeManager(&cfg.Worktree)
 }

@@ -2,19 +2,18 @@ package worktree
 
 import (
 	"context"
-	"log/slog"
 	"os"
 	"path/filepath"
 	"testing"
-	"time"
+
+	"github.com/auto-devs/auto-devs/config"
 )
 
 func TestNewWorktreeManager(t *testing.T) {
 	// Test with default config but using temp directory
-	config := DefaultWorktreeConfig()
-	config.BaseDirectory = "/tmp/test-worktrees-default"
-
-	manager, err := NewWorktreeManager(config)
+	manager, err := NewWorktreeManager(&config.WorktreeConfig{
+		BaseDirectory: "/tmp/test-worktrees-default",
+	})
 	if err != nil {
 		t.Fatalf("Failed to create worktree manager with default config: %v", err)
 	}
@@ -23,13 +22,12 @@ func TestNewWorktreeManager(t *testing.T) {
 	}
 
 	// Test with custom config
-	customConfig := &WorktreeConfig{
+	customConfig := &config.WorktreeConfig{
 		BaseDirectory:   "/tmp/test-worktrees",
 		MaxPathLength:   1024,
 		MinDiskSpace:    50 * 1024 * 1024,
-		CleanupInterval: 1 * time.Hour,
+		CleanupInterval: "1h",
 		EnableLogging:   true,
-		LogLevel:        slog.LevelInfo,
 	}
 
 	manager, err = NewWorktreeManager(customConfig)
@@ -46,7 +44,7 @@ func TestNewWorktreeManager(t *testing.T) {
 }
 
 func TestGenerateWorktreePath(t *testing.T) {
-	manager, err := NewWorktreeManager(&WorktreeConfig{
+	manager, err := NewWorktreeManager(&config.WorktreeConfig{
 		BaseDirectory: "/tmp/test-worktrees",
 		MaxPathLength: 1024,
 		EnableLogging: false,
@@ -91,7 +89,7 @@ func TestGenerateWorktreePath(t *testing.T) {
 }
 
 func TestCleanPathComponent(t *testing.T) {
-	manager, err := NewWorktreeManager(&WorktreeConfig{
+	manager, err := NewWorktreeManager(&config.WorktreeConfig{
 		BaseDirectory: "/tmp/test-worktrees",
 		MaxPathLength: 1024,
 		EnableLogging: false,
@@ -126,7 +124,7 @@ func TestCleanPathComponent(t *testing.T) {
 }
 
 func TestCreateWorktree(t *testing.T) {
-	manager, err := NewWorktreeManager(&WorktreeConfig{
+	manager, err := NewWorktreeManager(&config.WorktreeConfig{
 		BaseDirectory: "/tmp/test-worktrees",
 		MaxPathLength: 1024,
 		EnableLogging: false,
@@ -159,7 +157,7 @@ func TestCreateWorktree(t *testing.T) {
 }
 
 func TestWorktreeExists(t *testing.T) {
-	manager, err := NewWorktreeManager(&WorktreeConfig{
+	manager, err := NewWorktreeManager(&config.WorktreeConfig{
 		BaseDirectory: "/tmp/test-worktrees",
 		MaxPathLength: 1024,
 		EnableLogging: false,
@@ -191,7 +189,7 @@ func TestWorktreeExists(t *testing.T) {
 }
 
 func TestCleanupWorktree(t *testing.T) {
-	manager, err := NewWorktreeManager(&WorktreeConfig{
+	manager, err := NewWorktreeManager(&config.WorktreeConfig{
 		BaseDirectory: "/tmp/test-worktrees",
 		MaxPathLength: 1024,
 		EnableLogging: false,
@@ -235,7 +233,7 @@ func TestCleanupWorktree(t *testing.T) {
 }
 
 func TestListWorktrees(t *testing.T) {
-	manager, err := NewWorktreeManager(&WorktreeConfig{
+	manager, err := NewWorktreeManager(&config.WorktreeConfig{
 		BaseDirectory: "/tmp/test-worktrees",
 		MaxPathLength: 1024,
 		EnableLogging: false,
@@ -297,7 +295,7 @@ func TestListWorktrees(t *testing.T) {
 }
 
 func TestGetWorktreeInfo(t *testing.T) {
-	manager, err := NewWorktreeManager(&WorktreeConfig{
+	manager, err := NewWorktreeManager(&config.WorktreeConfig{
 		BaseDirectory: "/tmp/test-worktrees",
 		MaxPathLength: 1024,
 		EnableLogging: false,

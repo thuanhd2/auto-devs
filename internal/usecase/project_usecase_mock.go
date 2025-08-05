@@ -586,6 +586,63 @@ func (_c *ProjectUsecaseMock_GetWithTasks_Call) RunAndReturn(run func(ctx contex
 	return _c
 }
 
+// ListBranches provides a mock function for the type ProjectUsecaseMock
+func (_mock *ProjectUsecaseMock) ListBranches(ctx context.Context, projectID uuid.UUID) ([]GitBranch, error) {
+	ret := _mock.Called(ctx, projectID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ListBranches")
+	}
+
+	var r0 []GitBranch
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID) ([]GitBranch, error)); ok {
+		return returnFunc(ctx, projectID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID) []GitBranch); ok {
+		r0 = returnFunc(ctx, projectID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]GitBranch)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID) error); ok {
+		r1 = returnFunc(ctx, projectID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// ProjectUsecaseMock_ListBranches_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ListBranches'
+type ProjectUsecaseMock_ListBranches_Call struct {
+	*mock.Call
+}
+
+// ListBranches is a helper method to define mock.On call
+//   - ctx
+//   - projectID
+func (_e *ProjectUsecaseMock_Expecter) ListBranches(ctx interface{}, projectID interface{}) *ProjectUsecaseMock_ListBranches_Call {
+	return &ProjectUsecaseMock_ListBranches_Call{Call: _e.mock.On("ListBranches", ctx, projectID)}
+}
+
+func (_c *ProjectUsecaseMock_ListBranches_Call) Run(run func(ctx context.Context, projectID uuid.UUID)) *ProjectUsecaseMock_ListBranches_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(uuid.UUID))
+	})
+	return _c
+}
+
+func (_c *ProjectUsecaseMock_ListBranches_Call) Return(gitBranchs []GitBranch, err error) *ProjectUsecaseMock_ListBranches_Call {
+	_c.Call.Return(gitBranchs, err)
+	return _c
+}
+
+func (_c *ProjectUsecaseMock_ListBranches_Call) RunAndReturn(run func(ctx context.Context, projectID uuid.UUID) ([]GitBranch, error)) *ProjectUsecaseMock_ListBranches_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // ReinitGitRepository provides a mock function for the type ProjectUsecaseMock
 func (_mock *ProjectUsecaseMock) ReinitGitRepository(ctx context.Context, projectID uuid.UUID) error {
 	ret := _mock.Called(ctx, projectID)

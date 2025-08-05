@@ -11,6 +11,18 @@ import (
 	"github.com/google/uuid"
 )
 
+// JobClientInterface defines the interface for job client operations
+type JobClientInterface interface {
+	EnqueueTaskPlanning(payload *TaskPlanningPayload, delay time.Duration) (string, error)
+}
+
+// TaskPlanningPayload represents the payload for task planning jobs
+type TaskPlanningPayload struct {
+	TaskID     uuid.UUID `json:"task_id"`
+	BranchName string    `json:"branch_name"`
+	ProjectID  uuid.UUID `json:"project_id"`
+}
+
 type TaskUsecase interface {
 	// Basic CRUD operations
 	Create(ctx context.Context, req CreateTaskRequest) (*entity.Task, error)
@@ -84,6 +96,10 @@ type TaskUsecase interface {
 	// Git status management
 	UpdateGitStatus(ctx context.Context, taskID uuid.UUID, gitStatus entity.TaskGitStatus) (*entity.Task, error)
 	ValidateGitStatusTransition(ctx context.Context, taskID uuid.UUID, newGitStatus entity.TaskGitStatus) error
+
+	// Planning workflow
+	StartPlanning(ctx context.Context, taskID uuid.UUID, branchName string) (string, error) // returns job ID
+	ListGitBranches(ctx context.Context, projectID uuid.UUID) ([]GitBranch, error)
 }
 
 type CreateTaskRequest struct {
@@ -111,6 +127,7 @@ type UpdateTaskRequest struct {
 	DueDate        *time.Time           `json:"due_date"`
 	BranchName     *string              `json:"branch_name"`
 	PullRequest    *string              `json:"pull_request"`
+	WorktreePath   *string              `json:"worktree_path"`
 }
 
 type UpdateStatusRequest struct {
@@ -188,14 +205,16 @@ type taskUsecase struct {
 	projectRepo         repository.ProjectRepository
 	notificationUsecase NotificationUsecase
 	worktreeUsecase     WorktreeUsecase
+	jobClient           JobClientInterface
 }
 
-func NewTaskUsecase(taskRepo repository.TaskRepository, projectRepo repository.ProjectRepository, notificationUsecase NotificationUsecase, worktreeUsecase WorktreeUsecase) TaskUsecase {
+func NewTaskUsecase(taskRepo repository.TaskRepository, projectRepo repository.ProjectRepository, notificationUsecase NotificationUsecase, worktreeUsecase WorktreeUsecase, jobClient JobClientInterface) TaskUsecase {
 	return &taskUsecase{
 		taskRepo:            taskRepo,
 		projectRepo:         projectRepo,
 		notificationUsecase: notificationUsecase,
 		worktreeUsecase:     worktreeUsecase,
+		jobClient:           jobClient,
 	}
 }
 
@@ -312,6 +331,11 @@ func (u *taskUsecase) Update(ctx context.Context, id uuid.UUID, req UpdateTaskRe
 	}
 	if req.PullRequest != nil {
 		task.PullRequest = req.PullRequest
+	}
+
+	task.UpdatedAt = time.Now()
+	if req.WorktreePath != nil {
+		task.WorktreePath = req.WorktreePath
 	}
 
 	task.UpdatedAt = time.Now()
@@ -900,7 +924,6 @@ func (u *taskUsecase) createWorktreeForTask(ctx context.Context, task *entity.Ta
 		ProjectID: task.ProjectID,
 		TaskTitle: task.Title,
 	})
-
 	if err != nil {
 		// Update Git status to error if creation fails
 		u.updateTaskGitStatus(ctx, task, entity.TaskGitStatusError)
@@ -949,7 +972,6 @@ func (u *taskUsecase) cleanupWorktreeForTask(ctx context.Context, task *entity.T
 		ProjectID: task.ProjectID,
 		Force:     true, // Force cleanup for completed/cancelled tasks
 	})
-
 	if err != nil {
 		// Update Git status to error if cleanup fails
 		u.updateTaskGitStatus(ctx, task, entity.TaskGitStatusError)
@@ -999,4 +1021,42 @@ func (u *taskUsecase) ValidateGitStatusTransition(ctx context.Context, taskID uu
 
 	// Validate transition using entity logic
 	return entity.ValidateGitStatusTransition(task.GitStatus, newGitStatus)
+}
+
+// StartPlanning starts the planning process for a task
+func (u *taskUsecase) StartPlanning(ctx context.Context, taskID uuid.UUID, branchName string) (string, error) {
+	// Get task to validate it exists and is in TODO status
+	task, err := u.taskRepo.GetByID(ctx, taskID)
+	if err != nil {
+		return "", fmt.Errorf("failed to get task: %w", err)
+	}
+
+	if task.Status != entity.TaskStatusTODO {
+		return "", fmt.Errorf("task must be in TODO status to start planning, current status: %s", task.Status)
+	}
+
+	u.Update(ctx, taskID, UpdateTaskRequest{
+		BranchName: &branchName,
+	})
+
+	// Enqueue the planning job using asynq client
+	payload := &TaskPlanningPayload{
+		TaskID:     taskID,
+		BranchName: branchName,
+		ProjectID:  task.ProjectID,
+	}
+
+	jobID, err := u.jobClient.EnqueueTaskPlanning(payload, 0)
+	if err != nil {
+		return "", fmt.Errorf("failed to enqueue planning job: %w", err)
+	}
+
+	return jobID, nil
+}
+
+// ListGitBranches lists all Git branches for a project (delegated to project usecase)
+func (u *taskUsecase) ListGitBranches(ctx context.Context, projectID uuid.UUID) ([]GitBranch, error) {
+	// This is a bit awkward - we'd need project usecase here
+	// For now, return empty list as this will be handled by project usecase
+	return []GitBranch{}, fmt.Errorf("method should be called on project usecase instead")
 }

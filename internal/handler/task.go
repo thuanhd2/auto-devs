@@ -687,3 +687,56 @@ func (h *TaskHandler) ValidateTaskGitStatusTransition(c *gin.Context) {
 
 	c.JSON(http.StatusOK, response)
 }
+
+// StartPlanning godoc
+// @Summary Start planning for a task
+// @Description Start the planning phase for a task by selecting a branch and initiating background processing
+// @Tags tasks
+// @Accept json
+// @Produce json
+// @Param id path string true "Task ID"
+// @Param request body dto.StartPlanningRequest true "Start planning request"
+// @Success 200 {object} dto.StartPlanningResponse
+// @Failure 400 {object} dto.ErrorResponse
+// @Failure 404 {object} dto.ErrorResponse
+// @Failure 500 {object} dto.ErrorResponse
+// @Router /api/v1/tasks/{id}/start-planning [post]
+func (h *TaskHandler) StartPlanning(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, dto.NewErrorResponse(err, http.StatusBadRequest, "Invalid task ID"))
+		return
+	}
+
+	var req dto.StartPlanningRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, dto.NewErrorResponse(err, http.StatusBadRequest, "Invalid request data"))
+		return
+	}
+
+	// Validate that task exists and is in TODO status
+	task, err := h.taskUsecase.GetByID(c.Request.Context(), id)
+	if err != nil {
+		c.JSON(http.StatusNotFound, dto.NewErrorResponse(err, http.StatusNotFound, "Task not found"))
+		return
+	}
+
+	if task.Status != entity.TaskStatusTODO {
+		c.JSON(http.StatusBadRequest, dto.NewErrorResponse(nil, http.StatusBadRequest, "Task must be in TODO status to start planning"))
+		return
+	}
+
+	// Start planning (this will enqueue a background job)
+	jobID, err := h.taskUsecase.StartPlanning(c.Request.Context(), id, req.BranchName)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, dto.NewErrorResponse(err, http.StatusInternalServerError, "Failed to start planning"))
+		return
+	}
+
+	response := dto.StartPlanningResponse{
+		Message: "Planning started successfully",
+		JobID:   jobID,
+	}
+	c.JSON(http.StatusOK, response)
+}

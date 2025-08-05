@@ -8,42 +8,18 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/auto-devs/auto-devs/config"
 )
 
 // WorktreeManager provides worktree directory management functionality
 type WorktreeManager struct {
-	config *WorktreeConfig
+	config *config.WorktreeConfig
 	logger *slog.Logger
 }
 
-// WorktreeConfig contains configuration for worktree management
-type WorktreeConfig struct {
-	BaseDirectory   string        // Base directory for all worktrees
-	MaxPathLength   int           // Maximum path length allowed
-	MinDiskSpace    int64         // Minimum disk space required in bytes
-	CleanupInterval time.Duration // Interval for cleanup operations
-	EnableLogging   bool          // Enable detailed logging
-	LogLevel        slog.Level    // Log level for worktree operations
-}
-
-// DefaultWorktreeConfig returns the default worktree configuration
-func DefaultWorktreeConfig() *WorktreeConfig {
-	return &WorktreeConfig{
-		BaseDirectory:   "/worktrees",
-		MaxPathLength:   4096,
-		MinDiskSpace:    100 * 1024 * 1024, // 100MB
-		CleanupInterval: 24 * time.Hour,
-		EnableLogging:   true,
-		LogLevel:        slog.LevelInfo,
-	}
-}
-
 // NewWorktreeManager creates a new WorktreeManager instance
-func NewWorktreeManager(config *WorktreeConfig) (*WorktreeManager, error) {
-	if config == nil {
-		config = DefaultWorktreeConfig()
-	}
-
+func NewWorktreeManager(config *config.WorktreeConfig) (*WorktreeManager, error) {
 	// Setup logger
 	var logger *slog.Logger
 	if config.EnableLogging {
@@ -132,7 +108,7 @@ func (wm *WorktreeManager) GenerateWorktreePath(projectID string, taskID string)
 
 	// Validate path length
 	if len(worktreePath) > wm.config.MaxPathLength {
-		return "", fmt.Errorf("generated path exceeds maximum length: %d > %d", len(worktreePath), wm.config.MaxPathLength)
+		return "", fmt.Errorf("generated path %s exceeds maximum length: %d > %d", worktreePath, len(worktreePath), wm.config.MaxPathLength)
 	}
 
 	wm.logger.Debug("Generated worktree path", "path", worktreePath)

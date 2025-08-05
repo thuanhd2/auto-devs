@@ -87,4 +87,21 @@ export const projectsApi = {
   async reinitGitRepository(projectId: string): Promise<void> {
     await api.post(`${API_ENDPOINTS.PROJECTS}/${projectId}/git/reinit`)
   },
+
+  async getProjectBranches(
+    projectId: string
+  ): Promise<{
+    branches: Array<{
+      name: string
+      is_current: boolean
+      last_commit: string
+      last_updated: string
+    }>
+    total: number
+  }> {
+    const response = await api.get(
+      `${API_ENDPOINTS.PROJECTS}/${projectId}/branches`
+    )
+    return response.data
+  },
 }

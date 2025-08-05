@@ -1,12 +1,13 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { toast } from 'sonner'
-import { tasksApi } from '@/lib/api/tasks'
+import { taskOptimisticUpdates } from '@/services/optimisticUpdates'
 import type {
   Task,
-
   UpdateTaskRequest,
   TaskFilters,
+  StartPlanningRequest,
 } from '@/types/task'
+import { toast } from 'sonner'
+import { tasksApi } from '@/lib/api/tasks'
 
 export const TASKS_QUERY_KEY = 'tasks'
 
@@ -48,17 +49,22 @@ export function useUpdateTask() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ taskId, updates }: { taskId: string; updates: UpdateTaskRequest }) =>
-      tasksApi.updateTask(taskId, updates),
+    mutationFn: ({
+      taskId,
+      updates,
+    }: {
+      taskId: string
+      updates: UpdateTaskRequest
+    }) => tasksApi.updateTask(taskId, updates),
     onSuccess: (updatedTask) => {
       // Update individual task query
       queryClient.setQueryData([TASKS_QUERY_KEY, updatedTask.id], updatedTask)
-      
+
       // Invalidate tasks list for the project
       queryClient.invalidateQueries({
         queryKey: [TASKS_QUERY_KEY, updatedTask.project_id],
       })
-      
+
       toast.success('Task updated successfully')
     },
     onError: (error: any) => {
@@ -75,10 +81,10 @@ export function useDeleteTask() {
     onSuccess: (_, taskId) => {
       // Remove task from cache
       queryClient.removeQueries({ queryKey: [TASKS_QUERY_KEY, taskId] })
-      
+
       // Invalidate all tasks queries
       queryClient.invalidateQueries({ queryKey: [TASKS_QUERY_KEY] })
-      
+
       toast.success('Task deleted successfully')
     },
     onError: (error: any) => {
@@ -94,7 +100,7 @@ export function useOptimisticTaskUpdate() {
   return (projectId: string, taskId: string, newStatus: Task['status']) => {
     queryClient.setQueryData([TASKS_QUERY_KEY, projectId], (old: any) => {
       if (!old) return old
-      
+
       return {
         ...old,
         tasks: old.tasks.map((task: Task) =>
@@ -131,6 +137,57 @@ export function useDuplicateTask() {
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.message || 'Failed to duplicate task')
+    },
+  })
+}
+
+export function useStartPlanning() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({
+      taskId,
+      request,
+    }: {
+      taskId: string
+      request: StartPlanningRequest
+    }) => tasksApi.startPlanning(taskId, request),
+    onMutate: async ({ taskId, request }) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: [TASKS_QUERY_KEY] })
+
+      // Snapshot the previous value
+      const previousTasks = queryClient.getQueryData([TASKS_QUERY_KEY])
+
+      // Optimistically update task status to PLANNING
+      queryClient.setQueryData([TASKS_QUERY_KEY], (old: any) => {
+        if (!old) return old
+        return {
+          ...old,
+          tasks: old.tasks.map((task: Task) =>
+            task.id === taskId
+              ? { ...task, status: 'PLANNING' as Task['status'] }
+              : task
+          ),
+        }
+      })
+
+      // Return a context object with the snapshotted value
+      return { previousTasks }
+    },
+    onSuccess: (response, { taskId }) => {
+      toast.success(`Planning started successfully. Job ID: ${response.job_id}`)
+    },
+    onError: (error: any, { taskId }, context) => {
+      // Revert optimistic update on error
+      if (context?.previousTasks) {
+        queryClient.setQueryData([TASKS_QUERY_KEY], context.previousTasks)
+      }
+      toast.error(error.response?.data?.message || 'Failed to start planning')
+    },
+    onSettled: () => {
+      // Always refetch after error or success
+      queryClient.invalidateQueries({ queryKey: [TASKS_QUERY_KEY] })
     },
   })
 }

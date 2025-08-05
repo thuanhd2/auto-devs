@@ -203,3 +203,26 @@ func TaskStatusAnalyticsResponseFromEntity(analytics *entity.TaskStatusAnalytics
 		GeneratedAt:         analytics.GeneratedAt,
 	}
 }
+
+// Start Planning DTOs
+type StartPlanningRequest struct {
+	BranchName string `json:"branch_name" binding:"required" example:"main"`
+}
+
+type StartPlanningResponse struct {
+	Message string `json:"message" example:"Planning started successfully"`
+	JobID   string `json:"job_id" example:"task-123-planning-456"`
+}
+
+// Git Branches DTOs
+type GitBranchResponse struct {
+	Name        string `json:"name" example:"main"`
+	IsCurrent   bool   `json:"is_current" example:"true"`
+	LastCommit  string `json:"last_commit,omitempty" example:"abc123def"`
+	LastUpdated string `json:"last_updated,omitempty" example:"2024-01-15T10:30:00Z"`
+}
+
+type ListBranchesResponse struct {
+	Branches []GitBranchResponse `json:"branches"`
+	Total    int                 `json:"total"`
+}

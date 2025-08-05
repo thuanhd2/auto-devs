@@ -251,6 +251,48 @@ func (m *GitManager) GetRepositoryStatus(ctx context.Context, workingDir string)
 	return status, nil
 }
 
+// Create a git worktree
+type CreateWorktreeRequest struct {
+	BaseWorkingDir     string
+	BaseBranchName     string
+	WorktreeWorkingDir string
+	WorktreeBranchName string
+}
+
+func (m *GitManager) CreateWorktree(ctx context.Context, request *CreateWorktreeRequest) error {
+	// run command git worktree add -b <worktree-branch-name> <worktree-path> <base-branch-name>
+	err := m.executeWithRetry(ctx, func() error {
+		return m.commands.CreateWorktree(
+			ctx,
+			request.BaseWorkingDir,
+			request.BaseBranchName,
+			request.WorktreeBranchName,
+			request.WorktreeWorkingDir,
+		)
+	})
+	if err != nil {
+		return fmt.Errorf("failed to create worktree: %w", err)
+	}
+	return nil
+}
+
+// DeleteWorktree deletes a worktree
+type DeleteWorktreeRequest struct {
+	WorkingDir   string
+	WorktreePath string
+}
+
+func (m *GitManager) DeleteWorktree(ctx context.Context, request *DeleteWorktreeRequest) error {
+	// run command git worktree remove --force <worktree-path>
+	err := m.executeWithRetry(ctx, func() error {
+		return m.commands.DeleteWorktree(ctx, request.WorkingDir, request.WorktreePath)
+	})
+	if err != nil {
+		return fmt.Errorf("failed to delete worktree: %w", err)
+	}
+	return nil
+}
+
 // Branch Management Methods
 
 // GenerateBranchName generates a branch name based on task information

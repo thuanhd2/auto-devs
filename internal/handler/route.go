@@ -61,6 +61,9 @@ func SetupRoutes(router *gin.Engine, projectUsecase usecase.ProjectUsecase, task
 			// Git repository management endpoints
 			projects.POST("/:id/git/reinit", projectHandler.ReinitGitRepository)
 			projects.GET("/:id/git/status", projectHandler.GetGitStatus)
+			
+			// Git branches endpoint
+			projects.GET("/:id/branches", projectHandler.ListBranches)
 		}
 
 		// Task routes
@@ -80,6 +83,9 @@ func SetupRoutes(router *gin.Engine, projectUsecase usecase.ProjectUsecase, task
 			tasks.PATCH("/:id/git-status", taskHandler.UpdateTaskGitStatus)
 			tasks.GET("/:id/validate-git-transition", taskHandler.ValidateTaskGitStatusTransition)
 			tasks.GET("/:id/project", taskHandler.GetTaskWithProject)
+			
+			// Planning workflow endpoints
+			tasks.POST("/:id/start-planning", taskHandler.StartPlanning)
 		}
 	}
 }

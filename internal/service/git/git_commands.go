@@ -66,7 +66,7 @@ func (e *DefaultCommandExecutor) ExecuteWithTimeout(ctx context.Context, working
 
 	// Execute the command
 	stdout, stderr, err := e.executeCommand(cmd)
-	
+
 	result := &CommandResult{
 		Command:  fmt.Sprintf("git %s", strings.Join(args, " ")),
 		Stdout:   stdout,
@@ -119,11 +119,11 @@ func (g *GitCommands) Version(ctx context.Context) (string, error) {
 	if err != nil {
 		return "", WrapWithOperation("version", err)
 	}
-	
+
 	if result.ExitCode != 0 {
 		return "", NewGitError("version", result.ExitCode, result.Command, result.Stdout, result.Stderr, nil)
 	}
-	
+
 	return strings.TrimPrefix(strings.TrimSpace(result.Stdout), "git version "), nil
 }
 
@@ -133,23 +133,23 @@ func (g *GitCommands) Init(ctx context.Context, workingDir string, bare bool) er
 	if bare {
 		args = append(args, "--bare")
 	}
-	
+
 	result, err := g.executor.Execute(ctx, workingDir, args...)
 	if err != nil {
 		return WrapWithOperation("init", err)
 	}
-	
+
 	if result.ExitCode != 0 {
 		return NewGitError("init", result.ExitCode, result.Command, result.Stdout, result.Stderr, nil)
 	}
-	
+
 	return nil
 }
 
 // Clone clones a repository
 func (g *GitCommands) Clone(ctx context.Context, url, destination string, options *CloneOptions) error {
 	args := []string{"clone"}
-	
+
 	if options != nil {
 		if options.Branch != "" {
 			args = append(args, "--branch", options.Branch)
@@ -164,19 +164,19 @@ func (g *GitCommands) Clone(ctx context.Context, url, destination string, option
 			args = append(args, "--no-checkout")
 		}
 	}
-	
+
 	args = append(args, url, destination)
-	
+
 	// Use longer timeout for clone operations
 	result, err := g.executor.ExecuteWithTimeout(ctx, "", 5*time.Minute, args...)
 	if err != nil {
 		return WrapWithOperation("clone", err)
 	}
-	
+
 	if result.ExitCode != 0 {
 		return NewGitError("clone", result.ExitCode, result.Command, result.Stdout, result.Stderr, nil)
 	}
-	
+
 	return nil
 }
 
@@ -186,16 +186,16 @@ func (g *GitCommands) Status(ctx context.Context, workingDir string, porcelain b
 	if porcelain {
 		args = append(args, "--porcelain")
 	}
-	
+
 	result, err := g.executor.Execute(ctx, workingDir, args...)
 	if err != nil {
 		return "", WrapWithOperation("status", err)
 	}
-	
+
 	if result.ExitCode != 0 {
 		return "", NewGitError("status", result.ExitCode, result.Command, result.Stdout, result.Stderr, nil)
 	}
-	
+
 	return result.Stdout, nil
 }
 
@@ -205,24 +205,24 @@ func (g *GitCommands) CurrentBranch(ctx context.Context, workingDir string) (str
 	if err != nil {
 		return "", WrapWithOperation("current-branch", err)
 	}
-	
+
 	if result.ExitCode != 0 {
 		return "", NewGitError("current-branch", result.ExitCode, result.Command, result.Stdout, result.Stderr, nil)
 	}
-	
+
 	branch := strings.TrimSpace(result.Stdout)
 	if branch == "HEAD" {
 		// We're in a detached HEAD state
 		return "", fmt.Errorf("repository is in detached HEAD state")
 	}
-	
+
 	return branch, nil
 }
 
 // ListBranches returns a list of branches
 func (g *GitCommands) ListBranches(ctx context.Context, workingDir string, options *ListBranchesOptions) ([]string, error) {
 	args := []string{"branch"}
-	
+
 	if options != nil {
 		if options.Remote {
 			args = append(args, "--remote")
@@ -237,16 +237,16 @@ func (g *GitCommands) ListBranches(ctx context.Context, workingDir string, optio
 			args = append(args, "--no-merged", options.NoMerged)
 		}
 	}
-	
+
 	result, err := g.executor.Execute(ctx, workingDir, args...)
 	if err != nil {
 		return nil, WrapWithOperation("list-branches", err)
 	}
-	
+
 	if result.ExitCode != 0 {
 		return nil, NewGitError("list-branches", result.ExitCode, result.Command, result.Stdout, result.Stderr, nil)
 	}
-	
+
 	// Parse branch output
 	branches := []string{}
 	lines := strings.Split(strings.TrimSpace(result.Stdout), "\n")
@@ -256,14 +256,11 @@ func (g *GitCommands) ListBranches(ctx context.Context, workingDir string, optio
 			continue
 		}
 		// Remove the current branch marker (*) and remote prefix
-		branch := strings.TrimPrefix(line, "* ")
+		branch := line
 		branch = strings.TrimSpace(branch)
-		if strings.HasPrefix(branch, "origin/") {
-			branch = strings.TrimPrefix(branch, "origin/")
-		}
 		branches = append(branches, branch)
 	}
-	
+
 	return branches, nil
 }
 
@@ -273,16 +270,16 @@ func (g *GitCommands) CreateBranch(ctx context.Context, workingDir, branchName, 
 	if startPoint != "" {
 		args = append(args, startPoint)
 	}
-	
+
 	result, err := g.executor.Execute(ctx, workingDir, args...)
 	if err != nil {
 		return WrapWithOperation("create-branch", err)
 	}
-	
+
 	if result.ExitCode != 0 {
 		return NewGitError("create-branch", result.ExitCode, result.Command, result.Stdout, result.Stderr, nil)
 	}
-	
+
 	return nil
 }
 
@@ -293,16 +290,16 @@ func (g *GitCommands) Checkout(ctx context.Context, workingDir, target string, c
 		args = append(args, "-b")
 	}
 	args = append(args, target)
-	
+
 	result, err := g.executor.Execute(ctx, workingDir, args...)
 	if err != nil {
 		return WrapWithOperation("checkout", err)
 	}
-	
+
 	if result.ExitCode != 0 {
 		return NewGitError("checkout", result.ExitCode, result.Command, result.Stdout, result.Stderr, nil)
 	}
-	
+
 	return nil
 }
 
@@ -312,12 +309,12 @@ func (g *GitCommands) IsRepository(ctx context.Context, path string) (bool, erro
 	if err != nil {
 		return false, fmt.Errorf("invalid path: %w", err)
 	}
-	
+
 	result, err := g.executor.Execute(ctx, absPath, "rev-parse", "--git-dir")
 	if err != nil {
 		return false, nil // Not a git repository
 	}
-	
+
 	return result.ExitCode == 0, nil
 }
 
@@ -327,11 +324,11 @@ func (g *GitCommands) GetRemoteURL(ctx context.Context, workingDir, remoteName s
 	if err != nil {
 		return "", WrapWithOperation("get-remote-url", err)
 	}
-	
+
 	if result.ExitCode != 0 {
 		return "", NewGitError("get-remote-url", result.ExitCode, result.Command, result.Stdout, result.Stderr, nil)
 	}
-	
+
 	return strings.TrimSpace(result.Stdout), nil
 }
 
@@ -343,27 +340,27 @@ func (g *GitCommands) GetCommitInfo(ctx context.Context, workingDir, commitish s
 	if commitish != "" {
 		args = append(args, commitish)
 	}
-	
+
 	result, err := g.executor.Execute(ctx, workingDir, args...)
 	if err != nil {
 		return nil, WrapWithOperation("get-commit-info", err)
 	}
-	
+
 	if result.ExitCode != 0 {
 		return nil, NewGitError("get-commit-info", result.ExitCode, result.Command, result.Stdout, result.Stderr, nil)
 	}
-	
+
 	// Parse the output
 	parts := strings.Split(strings.TrimSpace(result.Stdout), "|")
 	if len(parts) < 4 {
 		return nil, fmt.Errorf("unexpected git show output format")
 	}
-	
+
 	commitTime, err := time.Parse("2006-01-02 15:04:05 -0700", parts[2])
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse commit date: %w", err)
 	}
-	
+
 	return &CommitInfo{
 		Hash:    parts[0],
 		Author:  parts[1],
@@ -396,4 +393,37 @@ type CommitInfo struct {
 	Author  string
 	Date    time.Time
 	Subject string
+}
+
+// CreateWorktree creates a new worktree
+// run command git worktree add -b <worktree-branch-name> <worktree-path> <base-branch-name>
+
+func (g *GitCommands) CreateWorktree(ctx context.Context, workingDir, baseBranchName, worktreeBranchName, worktreePath string) error {
+	args := []string{"worktree", "add", "-b", worktreeBranchName, worktreePath, baseBranchName}
+	result, err := g.executor.Execute(ctx, workingDir, args...)
+	if err != nil {
+		return WrapWithOperation("create-worktree", err)
+	}
+
+	if result.ExitCode != 0 {
+		return NewGitError("create-worktree", result.ExitCode, result.Command, result.Stdout, result.Stderr, nil)
+	}
+
+	return nil
+}
+
+// DeleteWorktree deletes a worktree
+// run command git worktree remove --force <worktree-path>
+func (g *GitCommands) DeleteWorktree(ctx context.Context, workingDir, worktreePath string) error {
+	args := []string{"worktree", "remove", "--force", worktreePath}
+	result, err := g.executor.Execute(ctx, workingDir, args...)
+	if err != nil {
+		return WrapWithOperation("delete-worktree", err)
+	}
+
+	if result.ExitCode != 0 {
+		return NewGitError("delete-worktree", result.ExitCode, result.Command, result.Stdout, result.Stderr, nil)
+	}
+
+	return nil
 }

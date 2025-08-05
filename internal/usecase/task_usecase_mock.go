@@ -2105,6 +2105,63 @@ func (_c *TaskUsecaseMock_GetWithProject_Call) RunAndReturn(run func(ctx context
 	return _c
 }
 
+// ListGitBranches provides a mock function for the type TaskUsecaseMock
+func (_mock *TaskUsecaseMock) ListGitBranches(ctx context.Context, projectID uuid.UUID) ([]GitBranch, error) {
+	ret := _mock.Called(ctx, projectID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ListGitBranches")
+	}
+
+	var r0 []GitBranch
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID) ([]GitBranch, error)); ok {
+		return returnFunc(ctx, projectID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID) []GitBranch); ok {
+		r0 = returnFunc(ctx, projectID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]GitBranch)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID) error); ok {
+		r1 = returnFunc(ctx, projectID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// TaskUsecaseMock_ListGitBranches_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ListGitBranches'
+type TaskUsecaseMock_ListGitBranches_Call struct {
+	*mock.Call
+}
+
+// ListGitBranches is a helper method to define mock.On call
+//   - ctx
+//   - projectID
+func (_e *TaskUsecaseMock_Expecter) ListGitBranches(ctx interface{}, projectID interface{}) *TaskUsecaseMock_ListGitBranches_Call {
+	return &TaskUsecaseMock_ListGitBranches_Call{Call: _e.mock.On("ListGitBranches", ctx, projectID)}
+}
+
+func (_c *TaskUsecaseMock_ListGitBranches_Call) Run(run func(ctx context.Context, projectID uuid.UUID)) *TaskUsecaseMock_ListGitBranches_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(uuid.UUID))
+	})
+	return _c
+}
+
+func (_c *TaskUsecaseMock_ListGitBranches_Call) Return(gitBranchs []GitBranch, err error) *TaskUsecaseMock_ListGitBranches_Call {
+	_c.Call.Return(gitBranchs, err)
+	return _c
+}
+
+func (_c *TaskUsecaseMock_ListGitBranches_Call) RunAndReturn(run func(ctx context.Context, projectID uuid.UUID) ([]GitBranch, error)) *TaskUsecaseMock_ListGitBranches_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // RemoveDependency provides a mock function for the type TaskUsecaseMock
 func (_mock *TaskUsecaseMock) RemoveDependency(ctx context.Context, taskID uuid.UUID, dependsOnTaskID uuid.UUID) error {
 	ret := _mock.Called(ctx, taskID, dependsOnTaskID)
@@ -2206,6 +2263,62 @@ func (_c *TaskUsecaseMock_SearchTasks_Call) Return(taskSearchResults []*entity.T
 }
 
 func (_c *TaskUsecaseMock_SearchTasks_Call) RunAndReturn(run func(ctx context.Context, query string, projectID *uuid.UUID) ([]*entity.TaskSearchResult, error)) *TaskUsecaseMock_SearchTasks_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// StartPlanning provides a mock function for the type TaskUsecaseMock
+func (_mock *TaskUsecaseMock) StartPlanning(ctx context.Context, taskID uuid.UUID, branchName string) (string, error) {
+	ret := _mock.Called(ctx, taskID, branchName)
+
+	if len(ret) == 0 {
+		panic("no return value specified for StartPlanning")
+	}
+
+	var r0 string
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, string) (string, error)); ok {
+		return returnFunc(ctx, taskID, branchName)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, string) string); ok {
+		r0 = returnFunc(ctx, taskID, branchName)
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID, string) error); ok {
+		r1 = returnFunc(ctx, taskID, branchName)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// TaskUsecaseMock_StartPlanning_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'StartPlanning'
+type TaskUsecaseMock_StartPlanning_Call struct {
+	*mock.Call
+}
+
+// StartPlanning is a helper method to define mock.On call
+//   - ctx
+//   - taskID
+//   - branchName
+func (_e *TaskUsecaseMock_Expecter) StartPlanning(ctx interface{}, taskID interface{}, branchName interface{}) *TaskUsecaseMock_StartPlanning_Call {
+	return &TaskUsecaseMock_StartPlanning_Call{Call: _e.mock.On("StartPlanning", ctx, taskID, branchName)}
+}
+
+func (_c *TaskUsecaseMock_StartPlanning_Call) Run(run func(ctx context.Context, taskID uuid.UUID, branchName string)) *TaskUsecaseMock_StartPlanning_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(uuid.UUID), args[2].(string))
+	})
+	return _c
+}
+
+func (_c *TaskUsecaseMock_StartPlanning_Call) Return(s string, err error) *TaskUsecaseMock_StartPlanning_Call {
+	_c.Call.Return(s, err)
+	return _c
+}
+
+func (_c *TaskUsecaseMock_StartPlanning_Call) RunAndReturn(run func(ctx context.Context, taskID uuid.UUID, branchName string) (string, error)) *TaskUsecaseMock_StartPlanning_Call {
 	_c.Call.Return(run)
 	return _c
 }

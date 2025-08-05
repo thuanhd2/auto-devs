@@ -6,6 +6,8 @@ import type {
   UpdateTaskRequest,
   TasksResponse,
   TaskFilters,
+  StartPlanningRequest,
+  StartPlanningResponse,
 } from '@/types/task'
 
 const api = axios.create({
@@ -14,13 +16,16 @@ const api = axios.create({
 })
 
 export const tasksApi = {
-  async getTasks(projectId: string, filters?: TaskFilters): Promise<TasksResponse> {
+  async getTasks(
+    projectId: string,
+    filters?: TaskFilters
+  ): Promise<TasksResponse> {
     const params = new URLSearchParams()
     params.append('project_id', projectId)
-    
+
     if (filters) {
       if (filters.status && filters.status.length > 0) {
-        filters.status.forEach(status => params.append('status', status))
+        filters.status.forEach((status) => params.append('status', status))
       }
       if (filters.search) {
         params.append('search', filters.search)
@@ -33,7 +38,9 @@ export const tasksApi = {
       }
     }
 
-    const response = await api.get(`${API_ENDPOINTS.TASKS}?${params.toString()}`)
+    const response = await api.get(
+      `${API_ENDPOINTS.TASKS}?${params.toString()}`
+    )
     return response.data
   },
 
@@ -54,5 +61,16 @@ export const tasksApi = {
 
   async deleteTask(taskId: string): Promise<void> {
     await api.delete(`${API_ENDPOINTS.TASKS}/${taskId}`)
+  },
+
+  async startPlanning(
+    taskId: string,
+    request: StartPlanningRequest
+  ): Promise<StartPlanningResponse> {
+    const response = await api.post(
+      `${API_ENDPOINTS.TASKS}/${taskId}/start-planning`,
+      request
+    )
+    return response.data
   },
 }
