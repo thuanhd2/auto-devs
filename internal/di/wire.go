@@ -7,6 +7,7 @@ import (
 	"github.com/auto-devs/auto-devs/config"
 	"github.com/auto-devs/auto-devs/internal/repository"
 	"github.com/auto-devs/auto-devs/internal/repository/postgres"
+	"github.com/auto-devs/auto-devs/internal/service/ai"
 	"github.com/auto-devs/auto-devs/internal/service/git"
 	worktreesvc "github.com/auto-devs/auto-devs/internal/service/worktree"
 	"github.com/auto-devs/auto-devs/internal/usecase"
@@ -27,6 +28,11 @@ var ProviderSet = wire.NewSet(
 	ProvideGitManager,
 	ProvideProjectGitService,
 	ProvideIntegratedWorktreeService,
+	// AI Service providers
+	ProvideCLIManager,
+	ProvideProcessManager,
+	ProvideExecutionService,
+	ProvidePlanningService,
 	// Usecase providers
 	usecase.NewNotificationUsecase,
 	ProvideAuditUsecase,
@@ -57,6 +63,11 @@ type App struct {
 	TaskUsecase         usecase.TaskUsecase
 	WorktreeUsecase     usecase.WorktreeUsecase
 	NotificationUsecase usecase.NotificationUsecase
+	// AI Services
+	CLIManager       *ai.CLIManager
+	ProcessManager   *ai.ProcessManager
+	ExecutionService *ai.ExecutionService
+	PlanningService  *ai.PlanningService
 }
 
 // NewApp creates a new App instance
@@ -72,6 +83,10 @@ func NewApp(
 	taskUsecase usecase.TaskUsecase,
 	worktreeUsecase usecase.WorktreeUsecase,
 	notificationUsecase usecase.NotificationUsecase,
+	cliManager *ai.CLIManager,
+	processManager *ai.ProcessManager,
+	executionService *ai.ExecutionService,
+	planningService *ai.PlanningService,
 ) *App {
 	return &App{
 		Config:              cfg,
@@ -85,6 +100,10 @@ func NewApp(
 		TaskUsecase:         taskUsecase,
 		WorktreeUsecase:     worktreeUsecase,
 		NotificationUsecase: notificationUsecase,
+		CLIManager:          cliManager,
+		ProcessManager:      processManager,
+		ExecutionService:    executionService,
+		PlanningService:     planningService,
 	}
 }
 
@@ -154,4 +173,32 @@ func ProvideTaskUsecase(
 	worktreeUsecase usecase.WorktreeUsecase,
 ) usecase.TaskUsecase {
 	return usecase.NewTaskUsecase(taskRepo, projectRepo, notificationUsecase, worktreeUsecase)
+}
+
+// ProvideCLIManager provides a CLIManager instance
+func ProvideCLIManager() (*ai.CLIManager, error) {
+	config := &ai.CLIConfig{
+		CLICommand:       "claude-code",
+		Timeout:          300 * time.Second, // 5 minutes
+		WorkingDirectory: "",
+		EnableLogging:    true,
+		RetryAttempts:    3,
+		RetryDelay:       5 * time.Second,
+	}
+	return ai.NewCLIManager(config)
+}
+
+// ProvideProcessManager provides a ProcessManager instance
+func ProvideProcessManager() *ai.ProcessManager {
+	return ai.NewProcessManager()
+}
+
+// ProvideExecutionService provides an ExecutionService instance
+func ProvideExecutionService(cliManager *ai.CLIManager, processManager *ai.ProcessManager) *ai.ExecutionService {
+	return ai.NewExecutionService(cliManager, processManager)
+}
+
+// ProvidePlanningService provides a PlanningService instance
+func ProvidePlanningService(executionService *ai.ExecutionService, cliManager *ai.CLIManager) *ai.PlanningService {
+	return ai.NewPlanningService(executionService, cliManager)
 }
