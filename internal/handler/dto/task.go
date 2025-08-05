@@ -52,15 +52,17 @@ type TaskAdvancedFilterQuery struct {
 
 // Task response DTOs
 type TaskResponse struct {
-	ID          uuid.UUID         `json:"id" example:"123e4567-e89b-12d3-a456-426614174000"`
-	ProjectID   uuid.UUID         `json:"project_id" example:"123e4567-e89b-12d3-a456-426614174000"`
-	Title       string            `json:"title" example:"Implement user authentication"`
-	Description string            `json:"description" example:"Add JWT-based authentication system"`
-	Status      entity.TaskStatus `json:"status" example:"TODO"`
-	BranchName  *string           `json:"branch_name,omitempty" example:"feature/user-auth"`
-	PullRequest *string           `json:"pull_request,omitempty" example:"https://github.com/user/repo/pull/123"`
-	CreatedAt   time.Time         `json:"created_at" example:"2024-01-15T10:30:00Z"`
-	UpdatedAt   time.Time         `json:"updated_at" example:"2024-01-15T10:30:00Z"`
+	ID           uuid.UUID            `json:"id" example:"123e4567-e89b-12d3-a456-426614174000"`
+	ProjectID    uuid.UUID            `json:"project_id" example:"123e4567-e89b-12d3-a456-426614174000"`
+	Title        string               `json:"title" example:"Implement user authentication"`
+	Description  string               `json:"description" example:"Add JWT-based authentication system"`
+	Status       entity.TaskStatus    `json:"status" example:"TODO"`
+	GitStatus    entity.TaskGitStatus `json:"git_status" example:"none"`
+	BranchName   *string              `json:"branch_name,omitempty" example:"feature/user-auth"`
+	PullRequest  *string              `json:"pull_request,omitempty" example:"https://github.com/user/repo/pull/123"`
+	WorktreePath *string              `json:"worktree_path,omitempty" example:"/tmp/worktrees/task-123"`
+	CreatedAt    time.Time            `json:"created_at" example:"2024-01-15T10:30:00Z"`
+	UpdatedAt    time.Time            `json:"updated_at" example:"2024-01-15T10:30:00Z"`
 }
 
 type TaskWithProjectResponse struct {
@@ -112,6 +114,17 @@ type TaskStatusValidationResponse struct {
 	Message       string            `json:"message,omitempty" example:"Transition is valid"`
 }
 
+type TaskGitStatusUpdateRequest struct {
+	GitStatus entity.TaskGitStatus `json:"git_status" binding:"required,oneof=none creating active completed cleaning error" example:"active"`
+}
+
+type TaskGitStatusValidationResponse struct {
+	Valid            bool                 `json:"valid" example:"true"`
+	CurrentGitStatus entity.TaskGitStatus `json:"current_git_status" example:"none"`
+	TargetGitStatus  entity.TaskGitStatus `json:"target_git_status" example:"creating"`
+	Message          string               `json:"message,omitempty" example:"Git status transition is valid"`
+}
+
 // Helper functions to convert between entity and DTO
 func (t *TaskResponse) FromEntity(task *entity.Task) {
 	t.ID = task.ID
@@ -119,8 +132,10 @@ func (t *TaskResponse) FromEntity(task *entity.Task) {
 	t.Title = task.Title
 	t.Description = task.Description
 	t.Status = task.Status
+	t.GitStatus = task.GitStatus
 	t.BranchName = task.BranchName
 	t.PullRequest = task.PullRequest
+	t.WorktreePath = task.WorktreePath
 	t.CreatedAt = task.CreatedAt
 	t.UpdatedAt = task.UpdatedAt
 }

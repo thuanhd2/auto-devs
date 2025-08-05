@@ -587,3 +587,103 @@ func (h *TaskHandler) ValidateTaskStatusTransition(c *gin.Context) {
 
 	c.JSON(http.StatusOK, response)
 }
+
+// UpdateTaskGitStatus godoc
+// @Summary Update task Git status
+// @Description Update the Git status of a task with validation
+// @Tags tasks
+// @Accept json
+// @Produce json
+// @Param id path string true "Task ID"
+// @Param git_status body dto.TaskGitStatusUpdateRequest true "Git status update data"
+// @Success 200 {object} dto.TaskResponse
+// @Failure 400 {object} dto.ErrorResponse
+// @Failure 404 {object} dto.ErrorResponse
+// @Failure 500 {object} dto.ErrorResponse
+// @Router /api/v1/tasks/{id}/git-status [patch]
+func (h *TaskHandler) UpdateTaskGitStatus(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, dto.NewErrorResponse(err, http.StatusBadRequest, "Invalid task ID"))
+		return
+	}
+
+	var req dto.TaskGitStatusUpdateRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, dto.NewErrorResponse(err, http.StatusBadRequest, "Invalid request data"))
+		return
+	}
+
+	task, err := h.taskUsecase.UpdateGitStatus(c.Request.Context(), id, req.GitStatus)
+	if err != nil {
+		// Check if it's a validation error
+		if _, ok := err.(*entity.TaskGitStatusValidationError); ok {
+			c.JSON(http.StatusBadRequest, dto.NewErrorResponse(err, http.StatusBadRequest, err.Error()))
+			return
+		}
+		c.JSON(http.StatusInternalServerError, dto.NewErrorResponse(err, http.StatusInternalServerError, "Failed to update task Git status"))
+		return
+	}
+
+	response := dto.TaskResponseFromEntity(task)
+	c.JSON(http.StatusOK, response)
+}
+
+// ValidateTaskGitStatusTransition godoc
+// @Summary Validate task Git status transition
+// @Description Check if a Git status transition is valid for a task
+// @Tags tasks
+// @Accept json
+// @Produce json
+// @Param id path string true "Task ID"
+// @Param target_git_status query string true "Target Git status to validate"
+// @Success 200 {object} dto.TaskGitStatusValidationResponse
+// @Failure 400 {object} dto.ErrorResponse
+// @Failure 404 {object} dto.ErrorResponse
+// @Failure 500 {object} dto.ErrorResponse
+// @Router /api/v1/tasks/{id}/validate-git-transition [get]
+func (h *TaskHandler) ValidateTaskGitStatusTransition(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, dto.NewErrorResponse(err, http.StatusBadRequest, "Invalid task ID"))
+		return
+	}
+
+	targetGitStatusStr := c.Query("target_git_status")
+	if targetGitStatusStr == "" {
+		c.JSON(http.StatusBadRequest, dto.NewErrorResponse(nil, http.StatusBadRequest, "target_git_status query parameter is required"))
+		return
+	}
+
+	targetGitStatus := entity.TaskGitStatus(targetGitStatusStr)
+	if !targetGitStatus.IsValid() {
+		c.JSON(http.StatusBadRequest, dto.NewErrorResponse(nil, http.StatusBadRequest, "Invalid target Git status"))
+		return
+	}
+
+	// Get current task to show current Git status
+	task, err := h.taskUsecase.GetByID(c.Request.Context(), id)
+	if err != nil {
+		c.JSON(http.StatusNotFound, dto.NewErrorResponse(err, http.StatusNotFound, "Task not found"))
+		return
+	}
+
+	// Validate transition
+	err = h.taskUsecase.ValidateGitStatusTransition(c.Request.Context(), id, targetGitStatus)
+
+	response := dto.TaskGitStatusValidationResponse{
+		Valid:            err == nil,
+		CurrentGitStatus: task.GitStatus,
+		TargetGitStatus:  targetGitStatus,
+	}
+
+	if err != nil {
+		response.Message = err.Error()
+	} else {
+		response.Message = "Git status transition is valid"
+	}
+
+	c.JSON(http.StatusOK, response)
+}

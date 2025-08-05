@@ -128,6 +128,84 @@ func (ts TaskStatus) IsValid() bool {
 	}
 }
 
+// TaskGitStatusTransitions defines valid transitions between task Git statuses
+var TaskGitStatusTransitions = map[TaskGitStatus][]TaskGitStatus{
+	TaskGitStatusNone: {
+		TaskGitStatusCreating,
+	},
+	TaskGitStatusCreating: {
+		TaskGitStatusActive,
+		TaskGitStatusError,
+	},
+	TaskGitStatusActive: {
+		TaskGitStatusCompleted,
+		TaskGitStatusCleaning,
+		TaskGitStatusError,
+	},
+	TaskGitStatusCompleted: {
+		TaskGitStatusCleaning,
+	},
+	TaskGitStatusCleaning: {
+		TaskGitStatusNone,
+		TaskGitStatusError, // If cleanup fails
+	},
+	TaskGitStatusError: {
+		TaskGitStatusCreating, // Allow retry
+		TaskGitStatusCleaning, // Allow cleanup after error
+	},
+}
+
+// IsValid checks if the task Git status is valid
+func (tgs TaskGitStatus) IsValid() bool {
+	switch tgs {
+	case TaskGitStatusNone, TaskGitStatusCreating, TaskGitStatusActive,
+		TaskGitStatusCompleted, TaskGitStatusCleaning, TaskGitStatusError:
+		return true
+	default:
+		return false
+	}
+}
+
+// String returns the string representation of TaskGitStatus
+func (tgs TaskGitStatus) String() string {
+	return string(tgs)
+}
+
+// CanTransitionTo checks if the current Git status can transition to the target status
+func (tgs TaskGitStatus) CanTransitionTo(target TaskGitStatus) bool {
+	allowedTransitions, exists := TaskGitStatusTransitions[tgs]
+	if !exists {
+		return false
+	}
+
+	for _, allowed := range allowedTransitions {
+		if allowed == target {
+			return true
+		}
+	}
+	return false
+}
+
+// GetDisplayName returns a user-friendly display name for the Git status
+func (tgs TaskGitStatus) GetDisplayName() string {
+	switch tgs {
+	case TaskGitStatusNone:
+		return "None"
+	case TaskGitStatusCreating:
+		return "Creating"
+	case TaskGitStatusActive:
+		return "Active"
+	case TaskGitStatusCompleted:
+		return "Completed"
+	case TaskGitStatusCleaning:
+		return "Cleaning"
+	case TaskGitStatusError:
+		return "Error"
+	default:
+		return string(tgs)
+	}
+}
+
 // String returns the string representation of TaskStatus
 func (ts TaskStatus) String() string {
 	return string(ts)
@@ -303,6 +381,48 @@ func ValidateStatusTransition(from, to TaskStatus) error {
 
 	if !from.CanTransitionTo(to) {
 		return &TaskStatusValidationError{
+			CurrentStatus: from,
+			TargetStatus:  to,
+		}
+	}
+
+	return nil
+}
+
+// TaskGitStatusValidationError represents an error when attempting invalid Git status transitions
+type TaskGitStatusValidationError struct {
+	CurrentStatus TaskGitStatus
+	TargetStatus  TaskGitStatus
+	Message       string
+}
+
+func (e *TaskGitStatusValidationError) Error() string {
+	if e.Message != "" {
+		return e.Message
+	}
+	return fmt.Sprintf("invalid Git status transition from %s to %s", e.CurrentStatus, e.TargetStatus)
+}
+
+// ValidateGitStatusTransition validates if a Git status transition is allowed
+func ValidateGitStatusTransition(from, to TaskGitStatus) error {
+	if !from.IsValid() {
+		return &TaskGitStatusValidationError{
+			CurrentStatus: from,
+			TargetStatus:  to,
+			Message:       fmt.Sprintf("invalid current Git status: %s", from),
+		}
+	}
+
+	if !to.IsValid() {
+		return &TaskGitStatusValidationError{
+			CurrentStatus: from,
+			TargetStatus:  to,
+			Message:       fmt.Sprintf("invalid target Git status: %s", to),
+		}
+	}
+
+	if !from.CanTransitionTo(to) {
+		return &TaskGitStatusValidationError{
 			CurrentStatus: from,
 			TargetStatus:  to,
 		}

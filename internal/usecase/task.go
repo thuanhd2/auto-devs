@@ -80,6 +80,10 @@ type TaskUsecase interface {
 
 	// Validation
 	CheckDuplicateTitle(ctx context.Context, projectID uuid.UUID, title string, excludeID *uuid.UUID) (bool, error)
+
+	// Git status management
+	UpdateGitStatus(ctx context.Context, taskID uuid.UUID, gitStatus entity.TaskGitStatus) (*entity.Task, error)
+	ValidateGitStatusTransition(ctx context.Context, taskID uuid.UUID, newGitStatus entity.TaskGitStatus) error
 }
 
 type CreateTaskRequest struct {
@@ -861,8 +865,11 @@ func (u *taskUsecase) handleWorktreeOperations(ctx context.Context, task *entity
 	case entity.TaskStatusIMPLEMENTING:
 		// Create worktree when task moves to IMPLEMENTING
 		return u.createWorktreeForTask(ctx, task)
-	case entity.TaskStatusDONE, entity.TaskStatusCANCELLED:
-		// Cleanup worktree when task is completed or cancelled
+	case entity.TaskStatusDONE:
+		// Complete worktree when task is done
+		return u.completeWorktreeForTask(ctx, task)
+	case entity.TaskStatusCANCELLED:
+		// Cleanup worktree when task is cancelled
 		return u.cleanupWorktreeForTask(ctx, task)
 	default:
 		// No worktree operations needed for other statuses
@@ -875,8 +882,16 @@ func (u *taskUsecase) createWorktreeForTask(ctx context.Context, task *entity.Ta
 	// Check if worktree already exists
 	existingWorktree, err := u.worktreeUsecase.GetWorktreeByTaskID(ctx, task.ID)
 	if err == nil && existingWorktree != nil {
-		// Worktree already exists, no need to create
+		// Worktree already exists, update Git status to active if needed
+		if task.GitStatus != entity.TaskGitStatusActive {
+			return u.updateTaskGitStatus(ctx, task, entity.TaskGitStatusActive)
+		}
 		return nil
+	}
+
+	// Update Git status to creating
+	if err := u.updateTaskGitStatus(ctx, task, entity.TaskGitStatusCreating); err != nil {
+		return fmt.Errorf("failed to update Git status: %w", err)
 	}
 
 	// Create worktree
@@ -886,7 +901,32 @@ func (u *taskUsecase) createWorktreeForTask(ctx context.Context, task *entity.Ta
 		TaskTitle: task.Title,
 	})
 
-	return err
+	if err != nil {
+		// Update Git status to error if creation fails
+		u.updateTaskGitStatus(ctx, task, entity.TaskGitStatusError)
+		return err
+	}
+
+	// Git status will be updated to active by the worktree usecase
+	return nil
+}
+
+// completeWorktreeForTask marks a worktree as completed for a task
+func (u *taskUsecase) completeWorktreeForTask(ctx context.Context, task *entity.Task) error {
+	// Check if worktree exists
+	existingWorktree, err := u.worktreeUsecase.GetWorktreeByTaskID(ctx, task.ID)
+	if err != nil || existingWorktree == nil {
+		// No worktree to complete
+		return nil
+	}
+
+	// Update Git status to completed
+	if err := u.updateTaskGitStatus(ctx, task, entity.TaskGitStatusCompleted); err != nil {
+		return fmt.Errorf("failed to update Git status: %w", err)
+	}
+
+	// Update worktree status to completed
+	return u.worktreeUsecase.UpdateWorktreeStatus(ctx, existingWorktree.ID, entity.WorktreeStatusCompleted)
 }
 
 // cleanupWorktreeForTask cleans up worktree for a task
@@ -898,10 +938,65 @@ func (u *taskUsecase) cleanupWorktreeForTask(ctx context.Context, task *entity.T
 		return nil
 	}
 
+	// Update Git status to cleaning
+	if err := u.updateTaskGitStatus(ctx, task, entity.TaskGitStatusCleaning); err != nil {
+		return fmt.Errorf("failed to update Git status: %w", err)
+	}
+
 	// Cleanup worktree
-	return u.worktreeUsecase.CleanupWorktreeForTask(ctx, CleanupWorktreeRequest{
+	err = u.worktreeUsecase.CleanupWorktreeForTask(ctx, CleanupWorktreeRequest{
 		TaskID:    task.ID,
 		ProjectID: task.ProjectID,
 		Force:     true, // Force cleanup for completed/cancelled tasks
 	})
+
+	if err != nil {
+		// Update Git status to error if cleanup fails
+		u.updateTaskGitStatus(ctx, task, entity.TaskGitStatusError)
+		return err
+	}
+
+	// Git status will be updated to none by the worktree usecase
+	return nil
+}
+
+// updateTaskGitStatus updates the Git status of a task with validation
+func (u *taskUsecase) updateTaskGitStatus(ctx context.Context, task *entity.Task, newGitStatus entity.TaskGitStatus) error {
+	// Validate Git status transition
+	if err := entity.ValidateGitStatusTransition(task.GitStatus, newGitStatus); err != nil {
+		return fmt.Errorf("invalid Git status transition: %w", err)
+	}
+
+	// Update task Git status
+	task.GitStatus = newGitStatus
+	return u.taskRepo.Update(ctx, task)
+}
+
+// UpdateGitStatus updates the Git status of a task
+func (u *taskUsecase) UpdateGitStatus(ctx context.Context, taskID uuid.UUID, gitStatus entity.TaskGitStatus) (*entity.Task, error) {
+	// Get current task
+	task, err := u.taskRepo.GetByID(ctx, taskID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get task: %w", err)
+	}
+
+	// Update Git status with validation
+	if err := u.updateTaskGitStatus(ctx, task, gitStatus); err != nil {
+		return nil, err
+	}
+
+	// Return updated task
+	return u.taskRepo.GetByID(ctx, taskID)
+}
+
+// ValidateGitStatusTransition validates if a Git status transition is allowed for a specific task
+func (u *taskUsecase) ValidateGitStatusTransition(ctx context.Context, taskID uuid.UUID, newGitStatus entity.TaskGitStatus) error {
+	// Get current task
+	task, err := u.taskRepo.GetByID(ctx, taskID)
+	if err != nil {
+		return fmt.Errorf("failed to get task: %w", err)
+	}
+
+	// Validate transition using entity logic
+	return entity.ValidateGitStatusTransition(task.GitStatus, newGitStatus)
 }
