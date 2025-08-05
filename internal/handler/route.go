@@ -77,6 +77,8 @@ func SetupRoutes(router *gin.Engine, projectUsecase usecase.ProjectUsecase, task
 			tasks.PATCH("/:id/status-with-history", taskHandler.UpdateTaskStatusWithHistory)
 			tasks.GET("/:id/status-history", taskHandler.GetTaskStatusHistory)
 			tasks.GET("/:id/validate-transition", taskHandler.ValidateTaskStatusTransition)
+			tasks.PATCH("/:id/git-status", taskHandler.UpdateTaskGitStatus)
+			tasks.GET("/:id/validate-git-transition", taskHandler.ValidateTaskGitStatusTransition)
 			tasks.GET("/:id/project", taskHandler.GetTaskWithProject)
 		}
 	}
