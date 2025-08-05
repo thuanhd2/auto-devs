@@ -95,7 +95,7 @@ export function TaskMetadata({
               {task.git_info && (
                 <div className='flex items-center gap-2'>
                   <span className='text-sm text-gray-500'>Status:</span>
-                  <GitStatusBadge 
+                  <GitStatusBadge
                     status={task.git_info.status}
                     branchName={task.git_info.branch_name}
                   />
@@ -116,21 +116,27 @@ export function TaskMetadata({
                   <div className='flex items-center gap-2 text-sm'>
                     <FolderOpen className='h-4 w-4 text-gray-500' />
                     <span className='text-gray-500'>Worktree:</span>
-                    <span className='rounded bg-gray-100 px-2 py-1 font-mono text-gray-600 max-w-xs truncate' title={task.git_info.worktree_path}>
+                    <span
+                      className='max-w-xs truncate rounded bg-gray-100 px-2 py-1 font-mono text-gray-600'
+                      title={task.git_info.worktree_path}
+                    >
                       {task.git_info.worktree_path}
                     </span>
                   </div>
                   <Button
-                    variant="ghost"
-                    size="sm"
+                    variant='ghost'
+                    size='sm'
                     onClick={() => {
                       // TODO: Implement file manager opening
-                      console.log('Open worktree:', task.git_info?.worktree_path)
+                      console.log(
+                        'Open worktree:',
+                        task.git_info?.worktree_path
+                      )
                     }}
-                    className="h-6 w-6 p-0"
-                    title="Open in file manager"
+                    className='h-6 w-6 p-0'
+                    title='Open in file manager'
                   >
-                    <FolderOpen className="h-3 w-3" />
+                    <FolderOpen className='h-3 w-3' />
                   </Button>
                 </div>
               )}
@@ -165,7 +171,10 @@ export function TaskMetadata({
               <div className='flex items-center gap-2 text-sm'>
                 <Activity className='h-4 w-4 text-gray-500' />
                 <span>Current Status:</span>
-                <Badge className={getStatusColor(task.status)}>
+                <Badge
+                  className={getStatusColor(task.status)}
+                  variant='outline'
+                >
                   {getStatusTitle(task.status)}
                 </Badge>
               </div>

@@ -19,11 +19,11 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet'
 import { ConfirmDialog } from '../confirm-dialog'
+import { GitOperationControls } from './git-operation-controls'
 import { TaskActions } from './task-actions'
 import { TaskEditForm } from './task-edit-form'
 import { TaskHistory } from './task-history'
 import { TaskMetadata } from './task-metadata'
-import { GitOperationControls } from './git-operation-controls'
 
 interface TaskDetailSheetProps {
   open: boolean
@@ -91,44 +91,10 @@ export function TaskDetailSheet({
                   {task.title}
                 </SheetTitle>
                 <div className='flex items-center gap-2'>
-                  <Badge className={statusColor}>{statusTitle}</Badge>
+                  <Badge className={statusColor} variant='outline'>
+                    {statusTitle}
+                  </Badge>
                 </div>
-              </div>
-
-              <div className='flex items-center gap-1'>
-                <Button
-                  variant='outline'
-                  size='sm'
-                  onClick={() => setShowHistory(true)}
-                >
-                  <History className='h-4 w-4' />
-                </Button>
-
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant='outline' size='sm'>
-                      <MoreVertical className='h-4 w-4' />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align='end'>
-                    <DropdownMenuItem onClick={handleEdit}>
-                      <Edit className='mr-2 h-4 w-4' />
-                      Edit Task
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={handleDuplicate}>
-                      <Copy className='mr-2 h-4 w-4' />
-                      Duplicate Task
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      onClick={handleDelete}
-                      className='text-red-600 focus:text-red-600'
-                    >
-                      <Trash2 className='mr-2 h-4 w-4' />
-                      Delete Task
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
               </div>
             </div>
           </SheetHeader>
@@ -169,9 +135,7 @@ export function TaskDetailSheet({
                 onDelete={handleDelete}
                 onDuplicate={handleDuplicate}
                 onStatusChange={handleStatusChange}
-                onViewHistory={() => setShowHistory(true)}
-                showStatusActions={true}
-                showGitActions={true}
+                // onViewHistory={() => setShowHistory(true)}
               />
             </div>
 
@@ -182,7 +146,7 @@ export function TaskDetailSheet({
               task={task}
               showGitInfo={true}
               showTimestamps={true}
-              showStatusHistory={false}
+              showStatusHistory={true}
             />
           </div>
         </SheetContent>

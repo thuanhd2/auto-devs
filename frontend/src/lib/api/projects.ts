@@ -28,6 +28,14 @@ export const projectsApi = {
       if (filters.sortOrder) {
         params.append('sort_order', filters.sortOrder)
       }
+      if (filters.archived !== undefined) {
+        params.append('archived', filters.archived.toString())
+      }
+    }
+
+    // Default to show only non-archived projects if not specified
+    if (!params.has('archived')) {
+      params.append('archived', 'false')
     }
 
     const response = await api.get(
@@ -66,6 +74,14 @@ export const projectsApi = {
 
   async deleteProject(projectId: string): Promise<void> {
     await api.delete(`${API_ENDPOINTS.PROJECTS}/${projectId}`)
+  },
+
+  async archiveProject(projectId: string): Promise<void> {
+    await api.post(`${API_ENDPOINTS.PROJECTS}/${projectId}/archive`)
+  },
+
+  async restoreProject(projectId: string): Promise<void> {
+    await api.post(`${API_ENDPOINTS.PROJECTS}/${projectId}/restore`)
   },
 
   async reinitGitRepository(projectId: string): Promise<void> {
