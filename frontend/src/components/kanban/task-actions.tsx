@@ -68,36 +68,9 @@ export function TaskActions({
 
   return (
     <>
-      <div className='flex items-center gap-2'>
-        {/* Status Actions */}
-        {showStatusActions && onStatusChange && (
-          <div className='flex flex-wrap gap-1'>
-            {(
-              [
-                'TODO',
-                'PLANNING',
-                'PLAN_REVIEWING',
-                'IMPLEMENTING',
-                'CODE_REVIEWING',
-                'DONE',
-                'CANCELLED',
-              ] as const
-            ).map((status) => (
-              <Button
-                key={status}
-                variant={task.status === status ? 'default' : 'outline'}
-                size='sm'
-                onClick={() => handleStatusChange(status)}
-                className={task.status === status ? getStatusColor(status) : ''}
-              >
-                {getStatusTitle(status)}
-              </Button>
-            ))}
-          </div>
-        )}
-
+      <div className='flex flex-wrap items-center gap-2'>
         {/* Git Actions */}
-        {showGitActions && (task.branch_name || task.pr_url) && (
+        {(task.branch_name || task.pr_url) && (
           <div className='flex items-center gap-1'>
             {task.branch_name && (
               <Button
@@ -131,52 +104,26 @@ export function TaskActions({
             onClick={onViewHistory}
             title='View History'
           >
-            <History className='h-4 w-4' />
+            <History className='h-4 w-4' /> View History
+          </Button>
+        )}
+        {onEdit && (
+          <Button variant='outline' size='sm' onClick={() => onEdit(task)}>
+            <Edit className='h-4 w-4' /> Edit
           </Button>
         )}
 
-        {/* More Actions Dropdown */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant='outline' size='sm'>
-              <MoreVertical className='h-4 w-4' />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align='end'>
-            {onEdit && (
-              <DropdownMenuItem onClick={() => onEdit(task)}>
-                <Edit className='mr-2 h-4 w-4' />
-                Edit Task
-              </DropdownMenuItem>
-            )}
+        {onDuplicate && (
+          <Button variant='outline' size='sm' onClick={() => onDuplicate(task)}>
+            <Copy className='h-4 w-4' /> Duplicate
+          </Button>
+        )}
 
-            {onDuplicate && (
-              <DropdownMenuItem onClick={() => onDuplicate(task)}>
-                <Copy className='mr-2 h-4 w-4' />
-                Duplicate Task
-              </DropdownMenuItem>
-            )}
-
-            {onViewHistory && (
-              <DropdownMenuItem onClick={onViewHistory}>
-                <History className='mr-2 h-4 w-4' />
-                View History
-              </DropdownMenuItem>
-            )}
-
-            <DropdownMenuSeparator />
-
-            {onDelete && (
-              <DropdownMenuItem
-                onClick={handleDelete}
-                className='text-red-600 focus:text-red-600'
-              >
-                <Trash2 className='mr-2 h-4 w-4' />
-                Delete Task
-              </DropdownMenuItem>
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
+        {onDelete && (
+          <Button variant='destructive' size='sm' onClick={handleDelete}>
+            <Trash2 className='h-4 w-4' /> Delete
+          </Button>
+        )}
       </div>
 
       {/* Delete Confirmation */}
