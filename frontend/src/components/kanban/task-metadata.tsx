@@ -6,10 +6,14 @@ import {
   GitBranch,
   ExternalLink,
   Activity,
+  Copy,
+  FolderOpen,
 } from 'lucide-react'
 import { getStatusColor, getStatusTitle } from '@/lib/kanban'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
+import { GitStatusBadge } from './git-status-badge'
 
 interface TaskMetadataProps {
   task: Task
@@ -79,14 +83,24 @@ export function TaskMetadata({
       )}
 
       {/* Git Information */}
-      {showGitInfo && (task.branch_name || task.pr_url) && (
+      {showGitInfo && (task.git_info || task.branch_name || task.pr_url) && (
         <>
           <Separator />
           <div>
             <h4 className='mb-3 text-sm font-medium text-gray-700'>
               Git Information
             </h4>
-            <div className='space-y-3'>
+            <div className='space-y-4'>
+              {/* Git Status */}
+              {task.git_info && (
+                <div className='flex items-center gap-2'>
+                  <span className='text-sm text-gray-500'>Status:</span>
+                  <GitStatusBadge 
+                    status={task.git_info.status}
+                    branchName={task.git_info.branch_name}
+                  />
+                </div>
+              )}
               {task.branch_name && (
                 <div className='flex items-center gap-2 text-sm'>
                   <GitBranch className='h-4 w-4 text-gray-500' />
@@ -96,11 +110,36 @@ export function TaskMetadata({
                 </div>
               )}
 
-              {task.pr_url && (
+              {/* Worktree Path */}
+              {task.git_info?.worktree_path && (
+                <div className='flex items-center justify-between gap-2'>
+                  <div className='flex items-center gap-2 text-sm'>
+                    <FolderOpen className='h-4 w-4 text-gray-500' />
+                    <span className='text-gray-500'>Worktree:</span>
+                    <span className='rounded bg-gray-100 px-2 py-1 font-mono text-gray-600 max-w-xs truncate' title={task.git_info.worktree_path}>
+                      {task.git_info.worktree_path}
+                    </span>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      // TODO: Implement file manager opening
+                      console.log('Open worktree:', task.git_info?.worktree_path)
+                    }}
+                    className="h-6 w-6 p-0"
+                    title="Open in file manager"
+                  >
+                    <FolderOpen className="h-3 w-3" />
+                  </Button>
+                </div>
+              )}
+
+              {(task.git_info?.pr_url || task.pr_url) && (
                 <div className='flex items-center gap-2 text-sm'>
                   <ExternalLink className='h-4 w-4 text-gray-500' />
                   <a
-                    href={task.pr_url}
+                    href={task.git_info?.pr_url || task.pr_url}
                     target='_blank'
                     rel='noopener noreferrer'
                     className='text-blue-600 hover:text-blue-700 hover:underline'

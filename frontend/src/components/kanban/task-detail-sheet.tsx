@@ -23,6 +23,7 @@ import { TaskActions } from './task-actions'
 import { TaskEditForm } from './task-edit-form'
 import { TaskHistory } from './task-history'
 import { TaskMetadata } from './task-metadata'
+import { GitOperationControls } from './git-operation-controls'
 
 interface TaskDetailSheetProps {
   open: boolean
