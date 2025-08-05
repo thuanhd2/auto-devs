@@ -18,7 +18,21 @@ import {
 import { Checkbox } from '@/components/ui/checkbox'
 import { Separator } from '@/components/ui/separator'
 import { KANBAN_COLUMNS } from '@/lib/kanban'
-import type { TaskFilters, TaskStatus } from '@/types/task'
+import { GitStatusBadge, getGitStatusLabel } from './git-status-badge'
+import type { TaskFilters, TaskStatus, TaskGitStatus } from '@/types/task'
+
+const GIT_STATUS_OPTIONS: { id: TaskGitStatus; title: string }[] = [
+  { id: 'NO_GIT', title: 'No Git' },
+  { id: 'WORKTREE_PENDING', title: 'Creating...' },
+  { id: 'WORKTREE_CREATED', title: 'Worktree Ready' },
+  { id: 'BRANCH_CREATED', title: 'Branch Ready' },
+  { id: 'CHANGES_PENDING', title: 'Changes' },
+  { id: 'CHANGES_STAGED', title: 'Staged' },
+  { id: 'CHANGES_COMMITTED', title: 'Committed' },
+  { id: 'PR_CREATED', title: 'PR Created' },
+  { id: 'PR_MERGED', title: 'Merged' },
+  { id: 'WORKTREE_ERROR', title: 'Git Error' },
+]
 
 interface BoardFiltersProps {
   filters: TaskFilters
@@ -39,7 +53,9 @@ export function BoardFilters({
 
   const activeFilterCount = [
     filters.status?.length || 0,
+    filters.git_status?.length || 0,
     filters.sortBy ? 1 : 0,
+    filters.branch_search ? 1 : 0,
   ].reduce((a, b) => a + b, 0)
 
   const handleStatusToggle = (status: TaskStatus, checked: boolean) => {
@@ -51,6 +67,24 @@ export function BoardFilters({
     onFiltersChange({
       ...filters,
       status: newStatuses.length > 0 ? newStatuses : undefined,
+    })
+  }
+  const handleGitStatusToggle = (gitStatus: TaskGitStatus, checked: boolean) => {
+    const currentGitStatuses = filters.git_status || []
+    const newGitStatuses = checked
+      ? [...currentGitStatuses, gitStatus]
+      : currentGitStatuses.filter(s => s !== gitStatus)
+    
+    onFiltersChange({
+      ...filters,
+      git_status: newGitStatuses.length > 0 ? newGitStatuses : undefined,
+    })
+  }
+
+  const handleBranchSearchChange = (branchSearch: string) => {
+    onFiltersChange({
+      ...filters,
+      branch_search: branchSearch.trim() || undefined,
     })
   }
 
@@ -74,7 +108,7 @@ export function BoardFilters({
     onSearchChange('')
   }
 
-  const hasActiveFilters = activeFilterCount > 0 || searchQuery.length > 0
+  const hasActiveFilters = activeFilterCount > 0 || searchQuery.length > 0 || (filters.branch_search && filters.branch_search.length > 0)
 
   return (
     <div className="flex items-center gap-3 p-4 bg-white border-b">

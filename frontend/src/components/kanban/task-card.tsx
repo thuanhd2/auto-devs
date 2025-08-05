@@ -12,6 +12,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { getStatusColor, getStatusTitle } from '@/lib/kanban'
+import { GitStatusBadge } from './git-status-badge'
 import type { Task } from '@/types/task'
 
 interface TaskCardProps {
@@ -64,9 +65,19 @@ export function TaskCard({
             <h3 className="font-medium text-sm line-clamp-2 text-gray-900">
               {task.title}
             </h3>
-            <Badge variant="secondary" className="mt-1 text-xs">
-              {statusTitle}
-            </Badge>
+            <div className="flex items-center gap-1 mt-1">
+              <Badge variant="secondary" className="text-xs">
+                {statusTitle}
+              </Badge>
+              {task.git_info && (
+                <GitStatusBadge 
+                  status={task.git_info.status}
+                  branchName={task.git_info.branch_name}
+                  variant="compact"
+                  className="ml-1"
+                />
+              )}
+            </div>
           </div>
           
           <DropdownMenu open={isMenuOpen} onOpenChange={setIsMenuOpen}>
@@ -113,16 +124,26 @@ export function TaskCard({
           </div>
           
           <div className="flex items-center gap-2">
-            {task.branch_name && (
+            {(task.git_info?.branch_name || task.branch_name) && (
               <div className="flex items-center gap-1">
                 <GitBranch className="h-3 w-3" />
-                <span className="max-w-16 truncate">{task.branch_name}</span>
+                <span className="max-w-16 truncate">
+                  {task.git_info?.branch_name || task.branch_name}
+                </span>
               </div>
             )}
             
-            {task.pr_url && (
+            {task.git_info?.worktree_path && (
+              <div className="flex items-center gap-1 text-xs text-blue-600" title={task.git_info.worktree_path}>
+                <span className="max-w-20 truncate">
+                  {task.git_info.worktree_path.split('/').pop()}
+                </span>
+              </div>
+            )}
+            
+            {(task.git_info?.pr_url || task.pr_url) && (
               <a
-                href={task.pr_url}
+                href={task.git_info?.pr_url || task.pr_url}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-1 hover:text-blue-600 transition-colors"
