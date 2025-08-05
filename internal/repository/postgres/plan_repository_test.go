@@ -3,7 +3,6 @@ package postgres
 import (
 	"context"
 	"testing"
-	"time"
 
 	"github.com/auto-devs/auto-devs/internal/entity"
 	"github.com/google/uuid"
@@ -11,49 +10,24 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func createTestProject(t *testing.T, ctx context.Context, db *database.GormDB) *entity.Project {
-	project := &entity.Project{
-		Name:        "Test Project",
-		Description: "Test Description",
-		RepositoryURL: "https://github.com/test/repo.git",
-	}
-	
-	result := db.WithContext(ctx).Create(project)
-	require.NoError(t, result.Error)
-	return project
-}
-
-func createTestTask(t *testing.T, ctx context.Context, db *database.GormDB, projectID uuid.UUID) *entity.Task {
-	task := &entity.Task{
-		ProjectID:   projectID,
-		Title:       "Test Task",
-		Description: "Test Description",
-		Status:      entity.TaskStatusTODO,
-	}
-	
-	result := db.WithContext(ctx).Create(task)
-	require.NoError(t, result.Error)
-	return task
-}
-
 func TestPlanRepository_Create(t *testing.T) {
 	db := SetupTestDB(t)
 	defer TeardownTestDB()
 
 	repo := NewPlanRepository(db)
+	projectRepo := NewProjectRepository(db)
+	taskRepo := NewTaskRepository(db)
 	ctx := context.Background()
 
 	// Create test project and task
-	project := createTestProject(t, ctx, db)
-	task := createTestTask(t, ctx, db, project.ID)
+	project := CreateTestProject(t, projectRepo, ctx)
+	task := CreateTestTask(t, taskRepo, project.ID, ctx)
 
 	// Test creating a plan
 	plan := &entity.Plan{
 		TaskID:  task.ID,
 		Status:  entity.PlanStatusDRAFT,
-		Content: "# Test Plan
-
-This is a test plan.",
+		Content: "# Test Plan\nThis is a test plan.",
 	}
 
 	err := repo.Create(ctx, plan)
@@ -64,118 +38,89 @@ This is a test plan.",
 
 func TestPlanRepository_GetByID(t *testing.T) {
 	db := SetupTestDB(t)
+	defer TeardownTestDB()
 
 	repo := NewPlanRepository(db)
+	projectRepo := NewProjectRepository(db)
+	taskRepo := NewTaskRepository(db)
 	ctx := context.Background()
 
 	// Create test data
-	projectID := uuid.New()
-	taskID := uuid.New()
-	planID := uuid.New()
+	project := CreateTestProject(t, projectRepo, ctx)
+	task := CreateTestTask(t, taskRepo, project.ID, ctx)
 
-	// Insert test project
-	_, err := db.ExecContext(ctx, `
-		INSERT INTO projects (id, name, description, repo_url) 
-		VALUES ($1, 'Test Project', 'Test Description', 'https://github.com/test/repo')`,
-		projectID)
-	require.NoError(t, err)
+	// Create test plan
+	plan := &entity.Plan{
+		TaskID:  task.ID,
+		Status:  entity.PlanStatusDRAFT,
+		Content: "Test content",
+	}
 
-	// Insert test task
-	_, err = db.ExecContext(ctx, `
-		INSERT INTO tasks (id, project_id, title, description, status) 
-		VALUES ($1, $2, 'Test Task', 'Test Description', 'TODO')`,
-		taskID, projectID)
-	require.NoError(t, err)
-
-	// Insert test plan
-	_, err = db.ExecContext(ctx, `
-		INSERT INTO plans (id, task_id, status, content, created_at, updated_at) 
-		VALUES ($1, $2, $3, $4, $5, $6)`,
-		planID, taskID, entity.PlanStatusDRAFT, "Test content", time.Now(), time.Now())
+	err := repo.Create(ctx, plan)
 	require.NoError(t, err)
 
 	// Test getting plan by ID
-	plan, err := repo.GetByID(ctx, planID)
+	retrievedPlan, err := repo.GetByID(ctx, plan.ID)
 	require.NoError(t, err)
-	assert.Equal(t, planID, plan.ID)
-	assert.Equal(t, taskID, plan.TaskID)
-	assert.Equal(t, entity.PlanStatusDRAFT, plan.Status)
-	assert.Equal(t, "Test content", plan.Content)
+	assert.Equal(t, plan.ID, retrievedPlan.ID)
+	assert.Equal(t, task.ID, retrievedPlan.TaskID)
+	assert.Equal(t, entity.PlanStatusDRAFT, retrievedPlan.Status)
+	assert.Equal(t, "Test content", retrievedPlan.Content)
 }
 
 func TestPlanRepository_GetByTaskID(t *testing.T) {
 	db := SetupTestDB(t)
+	defer TeardownTestDB()
 
 	repo := NewPlanRepository(db)
+	projectRepo := NewProjectRepository(db)
+	taskRepo := NewTaskRepository(db)
 	ctx := context.Background()
 
 	// Create test data
-	projectID := uuid.New()
-	taskID := uuid.New()
-	planID := uuid.New()
+	project := CreateTestProject(t, projectRepo, ctx)
+	task := CreateTestTask(t, taskRepo, project.ID, ctx)
 
-	// Insert test project
-	_, err := db.ExecContext(ctx, `
-		INSERT INTO projects (id, name, description, repo_url) 
-		VALUES ($1, 'Test Project', 'Test Description', 'https://github.com/test/repo')`,
-		projectID)
-	require.NoError(t, err)
+	// Create test plan
+	plan := &entity.Plan{
+		TaskID:  task.ID,
+		Status:  entity.PlanStatusDRAFT,
+		Content: "Test content",
+	}
 
-	// Insert test task
-	_, err = db.ExecContext(ctx, `
-		INSERT INTO tasks (id, project_id, title, description, status) 
-		VALUES ($1, $2, 'Test Task', 'Test Description', 'TODO')`,
-		taskID, projectID)
-	require.NoError(t, err)
-
-	// Insert test plan
-	_, err = db.ExecContext(ctx, `
-		INSERT INTO plans (id, task_id, status, content, created_at, updated_at) 
-		VALUES ($1, $2, $3, $4, $5, $6)`,
-		planID, taskID, entity.PlanStatusDRAFT, "Test content", time.Now(), time.Now())
+	err := repo.Create(ctx, plan)
 	require.NoError(t, err)
 
 	// Test getting plan by task ID
-	plan, err := repo.GetByTaskID(ctx, taskID)
+	retrievedPlan, err := repo.GetByTaskID(ctx, task.ID)
 	require.NoError(t, err)
-	assert.Equal(t, planID, plan.ID)
-	assert.Equal(t, taskID, plan.TaskID)
-	assert.Equal(t, entity.PlanStatusDRAFT, plan.Status)
-	assert.Equal(t, "Test content", plan.Content)
+	assert.Equal(t, plan.ID, retrievedPlan.ID)
+	assert.Equal(t, task.ID, retrievedPlan.TaskID)
+	assert.Equal(t, entity.PlanStatusDRAFT, retrievedPlan.Status)
+	assert.Equal(t, "Test content", retrievedPlan.Content)
 }
 
 func TestPlanRepository_Update(t *testing.T) {
 	db := SetupTestDB(t)
+	defer TeardownTestDB()
 
 	repo := NewPlanRepository(db)
+	projectRepo := NewProjectRepository(db)
+	taskRepo := NewTaskRepository(db)
 	ctx := context.Background()
 
 	// Create test data
-	projectID := uuid.New()
-	taskID := uuid.New()
-
-	// Insert test project
-	_, err := db.ExecContext(ctx, `
-		INSERT INTO projects (id, name, description, repo_url) 
-		VALUES ($1, 'Test Project', 'Test Description', 'https://github.com/test/repo')`,
-		projectID)
-	require.NoError(t, err)
-
-	// Insert test task
-	_, err = db.ExecContext(ctx, `
-		INSERT INTO tasks (id, project_id, title, description, status) 
-		VALUES ($1, $2, 'Test Task', 'Test Description', 'TODO')`,
-		taskID, projectID)
-	require.NoError(t, err)
+	project := CreateTestProject(t, projectRepo, ctx)
+	task := CreateTestTask(t, taskRepo, project.ID, ctx)
 
 	// Create and insert plan
 	plan := &entity.Plan{
-		TaskID:  taskID,
+		TaskID:  task.ID,
 		Status:  entity.PlanStatusDRAFT,
 		Content: "# Initial Plan",
 	}
 
-	err = repo.Create(ctx, plan)
+	err := repo.Create(ctx, plan)
 	require.NoError(t, err)
 
 	// Update the plan
@@ -194,36 +139,25 @@ func TestPlanRepository_Update(t *testing.T) {
 
 func TestPlanRepository_Delete(t *testing.T) {
 	db := SetupTestDB(t)
+	defer TeardownTestDB()
 
 	repo := NewPlanRepository(db)
+	projectRepo := NewProjectRepository(db)
+	taskRepo := NewTaskRepository(db)
 	ctx := context.Background()
 
 	// Create test data
-	projectID := uuid.New()
-	taskID := uuid.New()
-
-	// Insert test project
-	_, err := db.ExecContext(ctx, `
-		INSERT INTO projects (id, name, description, repo_url) 
-		VALUES ($1, 'Test Project', 'Test Description', 'https://github.com/test/repo')`,
-		projectID)
-	require.NoError(t, err)
-
-	// Insert test task
-	_, err = db.ExecContext(ctx, `
-		INSERT INTO tasks (id, project_id, title, description, status) 
-		VALUES ($1, $2, 'Test Task', 'Test Description', 'TODO')`,
-		taskID, projectID)
-	require.NoError(t, err)
+	project := CreateTestProject(t, projectRepo, ctx)
+	task := CreateTestTask(t, taskRepo, project.ID, ctx)
 
 	// Create and insert plan
 	plan := &entity.Plan{
-		TaskID:  taskID,
+		TaskID:  task.ID,
 		Status:  entity.PlanStatusDRAFT,
 		Content: "# Test Plan",
 	}
 
-	err = repo.Create(ctx, plan)
+	err := repo.Create(ctx, plan)
 	require.NoError(t, err)
 
 	// Delete the plan
@@ -238,49 +172,32 @@ func TestPlanRepository_Delete(t *testing.T) {
 
 func TestPlanRepository_ListByStatus(t *testing.T) {
 	db := SetupTestDB(t)
+	defer TeardownTestDB()
 
 	repo := NewPlanRepository(db)
+	projectRepo := NewProjectRepository(db)
+	taskRepo := NewTaskRepository(db)
 	ctx := context.Background()
 
 	// Create test data
-	projectID := uuid.New()
-	taskID1 := uuid.New()
-	taskID2 := uuid.New()
-
-	// Insert test project
-	_, err := db.ExecContext(ctx, `
-		INSERT INTO projects (id, name, description, repo_url) 
-		VALUES ($1, 'Test Project', 'Test Description', 'https://github.com/test/repo')`,
-		projectID)
-	require.NoError(t, err)
-
-	// Insert test tasks
-	_, err = db.ExecContext(ctx, `
-		INSERT INTO tasks (id, project_id, title, description, status) 
-		VALUES ($1, $2, 'Test Task 1', 'Test Description', 'TODO')`,
-		taskID1, projectID)
-	require.NoError(t, err)
-
-	_, err = db.ExecContext(ctx, `
-		INSERT INTO tasks (id, project_id, title, description, status) 
-		VALUES ($1, $2, 'Test Task 2', 'Test Description', 'TODO')`,
-		taskID2, projectID)
-	require.NoError(t, err)
+	project := CreateTestProject(t, projectRepo, ctx)
+	task1 := CreateTestTask(t, taskRepo, project.ID, ctx)
+	task2 := CreateTestTask(t, taskRepo, project.ID, ctx)
 
 	// Create plans with different statuses
 	plan1 := &entity.Plan{
-		TaskID:  taskID1,
+		TaskID:  task1.ID,
 		Status:  entity.PlanStatusDRAFT,
 		Content: "# Draft Plan",
 	}
 
 	plan2 := &entity.Plan{
-		TaskID:  taskID2,
+		TaskID:  task2.ID,
 		Status:  entity.PlanStatusREVIEWING,
 		Content: "# Reviewing Plan",
 	}
 
-	err = repo.Create(ctx, plan1)
+	err := repo.Create(ctx, plan1)
 	require.NoError(t, err)
 
 	err = repo.Create(ctx, plan2)
@@ -300,36 +217,25 @@ func TestPlanRepository_ListByStatus(t *testing.T) {
 
 func TestPlanRepository_CreateVersion(t *testing.T) {
 	db := SetupTestDB(t)
+	defer TeardownTestDB()
 
 	repo := NewPlanRepository(db)
+	projectRepo := NewProjectRepository(db)
+	taskRepo := NewTaskRepository(db)
 	ctx := context.Background()
 
 	// Create test data
-	projectID := uuid.New()
-	taskID := uuid.New()
-
-	// Insert test project
-	_, err := db.ExecContext(ctx, `
-		INSERT INTO projects (id, name, description, repo_url) 
-		VALUES ($1, 'Test Project', 'Test Description', 'https://github.com/test/repo')`,
-		projectID)
-	require.NoError(t, err)
-
-	// Insert test task
-	_, err = db.ExecContext(ctx, `
-		INSERT INTO tasks (id, project_id, title, description, status) 
-		VALUES ($1, $2, 'Test Task', 'Test Description', 'TODO')`,
-		taskID, projectID)
-	require.NoError(t, err)
+	project := CreateTestProject(t, projectRepo, ctx)
+	task := CreateTestTask(t, taskRepo, project.ID, ctx)
 
 	// Create plan
 	plan := &entity.Plan{
-		TaskID:  taskID,
+		TaskID:  task.ID,
 		Status:  entity.PlanStatusDRAFT,
 		Content: "# Initial Plan",
 	}
 
-	err = repo.Create(ctx, plan)
+	err := repo.Create(ctx, plan)
 	require.NoError(t, err)
 
 	// Create a version
@@ -344,36 +250,25 @@ func TestPlanRepository_CreateVersion(t *testing.T) {
 
 func TestPlanRepository_GetVersions(t *testing.T) {
 	db := SetupTestDB(t)
+	defer TeardownTestDB()
 
 	repo := NewPlanRepository(db)
+	projectRepo := NewProjectRepository(db)
+	taskRepo := NewTaskRepository(db)
 	ctx := context.Background()
 
 	// Create test data
-	projectID := uuid.New()
-	taskID := uuid.New()
-
-	// Insert test project
-	_, err := db.ExecContext(ctx, `
-		INSERT INTO projects (id, name, description, repo_url) 
-		VALUES ($1, 'Test Project', 'Test Description', 'https://github.com/test/repo')`,
-		projectID)
-	require.NoError(t, err)
-
-	// Insert test task
-	_, err = db.ExecContext(ctx, `
-		INSERT INTO tasks (id, project_id, title, description, status) 
-		VALUES ($1, $2, 'Test Task', 'Test Description', 'TODO')`,
-		taskID, projectID)
-	require.NoError(t, err)
+	project := CreateTestProject(t, projectRepo, ctx)
+	task := CreateTestTask(t, taskRepo, project.ID, ctx)
 
 	// Create plan
 	plan := &entity.Plan{
-		TaskID:  taskID,
+		TaskID:  task.ID,
 		Status:  entity.PlanStatusDRAFT,
 		Content: "# Initial Plan",
 	}
 
-	err = repo.Create(ctx, plan)
+	err := repo.Create(ctx, plan)
 	require.NoError(t, err)
 
 	// Create additional versions
@@ -394,36 +289,25 @@ func TestPlanRepository_GetVersions(t *testing.T) {
 
 func TestPlanRepository_ValidatePlanExists(t *testing.T) {
 	db := SetupTestDB(t)
+	defer TeardownTestDB()
 
 	repo := NewPlanRepository(db)
+	projectRepo := NewProjectRepository(db)
+	taskRepo := NewTaskRepository(db)
 	ctx := context.Background()
 
 	// Create test data
-	projectID := uuid.New()
-	taskID := uuid.New()
-
-	// Insert test project
-	_, err := db.ExecContext(ctx, `
-		INSERT INTO projects (id, name, description, repo_url) 
-		VALUES ($1, 'Test Project', 'Test Description', 'https://github.com/test/repo')`,
-		projectID)
-	require.NoError(t, err)
-
-	// Insert test task
-	_, err = db.ExecContext(ctx, `
-		INSERT INTO tasks (id, project_id, title, description, status) 
-		VALUES ($1, $2, 'Test Task', 'Test Description', 'TODO')`,
-		taskID, projectID)
-	require.NoError(t, err)
+	project := CreateTestProject(t, projectRepo, ctx)
+	task := CreateTestTask(t, taskRepo, project.ID, ctx)
 
 	// Create plan
 	plan := &entity.Plan{
-		TaskID:  taskID,
+		TaskID:  task.ID,
 		Status:  entity.PlanStatusDRAFT,
 		Content: "# Test Plan",
 	}
 
-	err = repo.Create(ctx, plan)
+	err := repo.Create(ctx, plan)
 	require.NoError(t, err)
 
 	// Test validation

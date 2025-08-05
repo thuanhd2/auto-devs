@@ -1,17 +1,22 @@
 package postgres
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"runtime"
 	"testing"
 
+	"github.com/auto-devs/auto-devs/internal/entity"
+	"github.com/auto-devs/auto-devs/internal/repository"
 	"github.com/auto-devs/auto-devs/pkg/database"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
+	"github.com/google/uuid"
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq" // postgres driver
 	"github.com/peterldowns/pgtestdb"
 	"github.com/peterldowns/pgtestdb/migrators/golangmigrator"
+	"github.com/stretchr/testify/require"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -69,4 +74,29 @@ func SetupTestDB(t *testing.T) *database.GormDB {
 
 func TeardownTestDB() error {
 	return nil
+}
+
+// Helper functions for creating test data
+func CreateTestProject(t *testing.T, projectRepo repository.ProjectRepository, ctx context.Context) *entity.Project {
+	project := &entity.Project{
+		Name:          "Test Project",
+		Description:   "Test Description",
+		RepositoryURL: "https://github.com/test/repo.git",
+	}
+	err := projectRepo.Create(ctx, project)
+	require.NoError(t, err)
+	return project
+}
+
+func CreateTestTask(t *testing.T, taskRepo repository.TaskRepository, projectID uuid.UUID, ctx context.Context) *entity.Task {
+	task := &entity.Task{
+		ProjectID:   projectID,
+		Title:       "Test Task",
+		Description: "Test Description",
+		Status:      entity.TaskStatusTODO,
+	}
+
+	err := taskRepo.Create(ctx, task)
+	require.NoError(t, err)
+	return task
 }
