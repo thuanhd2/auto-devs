@@ -22,6 +22,7 @@ var ProviderSet = wire.NewSet(
 	// Repository providers
 	postgres.NewProjectRepository,
 	postgres.NewTaskRepository,
+	postgres.NewPlanRepository,
 	ProvideWorktreeRepository,
 	postgres.NewAuditRepository,
 	// Service providers
@@ -56,6 +57,7 @@ type App struct {
 	GormDB              *database.GormDB
 	ProjectRepo         repository.ProjectRepository
 	TaskRepo            repository.TaskRepository
+	PlanRepo            repository.PlanRepository
 	WorktreeRepo        repository.WorktreeRepository
 	AuditRepo           repository.AuditRepository
 	AuditUsecase        usecase.AuditUsecase
@@ -76,6 +78,7 @@ func NewApp(
 	gormDB *database.GormDB,
 	projectRepo repository.ProjectRepository,
 	taskRepo repository.TaskRepository,
+	planRepo repository.PlanRepository,
 	worktreeRepo repository.WorktreeRepository,
 	auditRepo repository.AuditRepository,
 	auditUsecase usecase.AuditUsecase,
@@ -93,6 +96,7 @@ func NewApp(
 		GormDB:              gormDB,
 		ProjectRepo:         projectRepo,
 		TaskRepo:            taskRepo,
+		PlanRepo:            planRepo,
 		WorktreeRepo:        worktreeRepo,
 		AuditRepo:           auditRepo,
 		AuditUsecase:        auditUsecase,
