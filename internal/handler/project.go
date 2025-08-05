@@ -443,3 +443,62 @@ func (h *ProjectHandler) UpdateRepositoryURL(c *gin.Context) {
 
 	c.JSON(http.StatusOK, dto.NewSuccessResponse("Repository URL updated successfully", nil))
 }
+
+// ReinitGitRepository godoc
+// @Summary Reinitialize Git repository for a project
+// @Description Reinitialize and reassign Git repository and GitHub repository URL for a project
+// @Tags projects
+// @Accept json
+// @Produce json
+// @Param id path string true "Project ID"
+// @Success 200 {object} dto.SuccessResponse
+// @Failure 400 {object} dto.ErrorResponse
+// @Failure 404 {object} dto.ErrorResponse
+// @Failure 500 {object} dto.ErrorResponse
+// @Router /api/v1/projects/{id}/git/reinit [post]
+func (h *ProjectHandler) ReinitGitRepository(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, dto.NewErrorResponse(err, http.StatusBadRequest, "Invalid project ID"))
+		return
+	}
+
+	err = h.projectUsecase.ReinitGitRepository(c.Request.Context(), id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, dto.NewErrorResponse(err, http.StatusInternalServerError, "Failed to reinitialize Git repository"))
+		return
+	}
+
+	c.JSON(http.StatusOK, dto.NewSuccessResponse("Git repository reinitialized successfully", nil))
+}
+
+// GetGitStatus godoc
+// @Summary Get Git status for a project
+// @Description Get the current Git integration status for a project
+// @Tags projects
+// @Accept json
+// @Produce json
+// @Param id path string true "Project ID"
+// @Success 200 {object} dto.GitStatusResponse
+// @Failure 400 {object} dto.ErrorResponse
+// @Failure 404 {object} dto.ErrorResponse
+// @Failure 500 {object} dto.ErrorResponse
+// @Router /api/v1/projects/{id}/git/status [get]
+func (h *ProjectHandler) GetGitStatus(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, dto.NewErrorResponse(err, http.StatusBadRequest, "Invalid project ID"))
+		return
+	}
+
+	status, err := h.projectUsecase.GetGitStatus(c.Request.Context(), id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, dto.NewErrorResponse(err, http.StatusInternalServerError, "Failed to get Git status"))
+		return
+	}
+
+	response := dto.GitStatusResponseFromUsecase(status)
+	c.JSON(http.StatusOK, response)
+}

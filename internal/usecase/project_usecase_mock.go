@@ -358,6 +358,63 @@ func (_c *ProjectUsecaseMock_GetByID_Call) RunAndReturn(run func(ctx context.Con
 	return _c
 }
 
+// GetGitStatus provides a mock function for the type ProjectUsecaseMock
+func (_mock *ProjectUsecaseMock) GetGitStatus(ctx context.Context, projectID uuid.UUID) (*GitStatus, error) {
+	ret := _mock.Called(ctx, projectID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetGitStatus")
+	}
+
+	var r0 *GitStatus
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID) (*GitStatus, error)); ok {
+		return returnFunc(ctx, projectID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID) *GitStatus); ok {
+		r0 = returnFunc(ctx, projectID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*GitStatus)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID) error); ok {
+		r1 = returnFunc(ctx, projectID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// ProjectUsecaseMock_GetGitStatus_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetGitStatus'
+type ProjectUsecaseMock_GetGitStatus_Call struct {
+	*mock.Call
+}
+
+// GetGitStatus is a helper method to define mock.On call
+//   - ctx
+//   - projectID
+func (_e *ProjectUsecaseMock_Expecter) GetGitStatus(ctx interface{}, projectID interface{}) *ProjectUsecaseMock_GetGitStatus_Call {
+	return &ProjectUsecaseMock_GetGitStatus_Call{Call: _e.mock.On("GetGitStatus", ctx, projectID)}
+}
+
+func (_c *ProjectUsecaseMock_GetGitStatus_Call) Run(run func(ctx context.Context, projectID uuid.UUID)) *ProjectUsecaseMock_GetGitStatus_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(uuid.UUID))
+	})
+	return _c
+}
+
+func (_c *ProjectUsecaseMock_GetGitStatus_Call) Return(gitStatus *GitStatus, err error) *ProjectUsecaseMock_GetGitStatus_Call {
+	_c.Call.Return(gitStatus, err)
+	return _c
+}
+
+func (_c *ProjectUsecaseMock_GetGitStatus_Call) RunAndReturn(run func(ctx context.Context, projectID uuid.UUID) (*GitStatus, error)) *ProjectUsecaseMock_GetGitStatus_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetSettings provides a mock function for the type ProjectUsecaseMock
 func (_mock *ProjectUsecaseMock) GetSettings(ctx context.Context, projectID uuid.UUID) (*entity.ProjectSettings, error) {
 	ret := _mock.Called(ctx, projectID)
@@ -525,6 +582,52 @@ func (_c *ProjectUsecaseMock_GetWithTasks_Call) Return(project *entity.Project, 
 }
 
 func (_c *ProjectUsecaseMock_GetWithTasks_Call) RunAndReturn(run func(ctx context.Context, id uuid.UUID) (*entity.Project, error)) *ProjectUsecaseMock_GetWithTasks_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// ReinitGitRepository provides a mock function for the type ProjectUsecaseMock
+func (_mock *ProjectUsecaseMock) ReinitGitRepository(ctx context.Context, projectID uuid.UUID) error {
+	ret := _mock.Called(ctx, projectID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ReinitGitRepository")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID) error); ok {
+		r0 = returnFunc(ctx, projectID)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// ProjectUsecaseMock_ReinitGitRepository_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ReinitGitRepository'
+type ProjectUsecaseMock_ReinitGitRepository_Call struct {
+	*mock.Call
+}
+
+// ReinitGitRepository is a helper method to define mock.On call
+//   - ctx
+//   - projectID
+func (_e *ProjectUsecaseMock_Expecter) ReinitGitRepository(ctx interface{}, projectID interface{}) *ProjectUsecaseMock_ReinitGitRepository_Call {
+	return &ProjectUsecaseMock_ReinitGitRepository_Call{Call: _e.mock.On("ReinitGitRepository", ctx, projectID)}
+}
+
+func (_c *ProjectUsecaseMock_ReinitGitRepository_Call) Run(run func(ctx context.Context, projectID uuid.UUID)) *ProjectUsecaseMock_ReinitGitRepository_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(uuid.UUID))
+	})
+	return _c
+}
+
+func (_c *ProjectUsecaseMock_ReinitGitRepository_Call) Return(err error) *ProjectUsecaseMock_ReinitGitRepository_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *ProjectUsecaseMock_ReinitGitRepository_Call) RunAndReturn(run func(ctx context.Context, projectID uuid.UUID) error) *ProjectUsecaseMock_ReinitGitRepository_Call {
 	_c.Call.Return(run)
 	return _c
 }

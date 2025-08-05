@@ -12,6 +12,7 @@ import (
 type ProjectGitServiceInterface interface {
 	UpdateProjectRepositoryURL(ctx context.Context, projectID uuid.UUID, worktreeBasePath string, updateRepoURL func(uuid.UUID, string) error) error
 	SetupProjectGit(ctx context.Context, projectID uuid.UUID, worktreeBasePath string, updateRepoURL func(uuid.UUID, string) error) error
+	GetGitStatus(ctx context.Context, worktreeBasePath string) (*RepositoryInfo, error)
 }
 
 // ProjectGitService handles Git operations for projects
@@ -94,4 +95,17 @@ func (s *ProjectGitService) SetupProjectGit(ctx context.Context, projectID uuid.
 		"remote_url", repoInfo.RemoteURL)
 
 	return nil
+}
+
+func (s *ProjectGitService) GetGitStatus(ctx context.Context, worktreeBasePath string) (*RepositoryInfo, error) {
+	if worktreeBasePath == "" {
+		return nil, fmt.Errorf("project has no worktree base path configured")
+	}
+
+	repoInfo, err := s.gitManager.ValidateRepository(ctx, worktreeBasePath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to validate repository: %w", err)
+	}
+
+	return repoInfo, nil
 }

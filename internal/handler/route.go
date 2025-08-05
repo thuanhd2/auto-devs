@@ -57,6 +57,10 @@ func SetupRoutes(router *gin.Engine, projectUsecase usecase.ProjectUsecase, task
 
 			// Repository URL endpoint
 			projects.PUT("/:id/repository-url", projectHandler.UpdateRepositoryURL)
+
+			// Git repository management endpoints
+			projects.POST("/:id/git/reinit", projectHandler.ReinitGitRepository)
+			projects.GET("/:id/git/status", projectHandler.GetGitStatus)
 		}
 
 		// Task routes

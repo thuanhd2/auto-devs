@@ -81,6 +81,24 @@ type UpdateRepositoryURLRequest struct {
 	RepositoryURL string `json:"repository_url" binding:"required,url,max=500" example:"https://github.com/user/repo.git"`
 }
 
+type GitStatusResponse struct {
+	GitEnabled       bool                      `json:"git_enabled"`
+	WorktreeExists   bool                      `json:"worktree_exists"`
+	RepositoryValid  bool                      `json:"repository_valid"`
+	CurrentBranch    string                    `json:"current_branch,omitempty"`
+	RemoteURL        string                    `json:"remote_url,omitempty"`
+	OnMainBranch     bool                      `json:"on_main_branch"`
+	WorkingDirStatus *WorkingDirStatusResponse `json:"working_dir_status,omitempty"`
+	Status           string                    `json:"status"`
+}
+
+type WorkingDirStatusResponse struct {
+	IsClean            bool `json:"is_clean"`
+	HasStagedChanges   bool `json:"has_staged_changes"`
+	HasUnstagedChanges bool `json:"has_unstaged_changes"`
+	HasUntrackedFiles  bool `json:"has_untracked_files"`
+}
+
 // Helper functions to convert between entity and DTO
 func (p *ProjectResponse) FromEntity(project *entity.Project) {
 	p.ID = project.ID
@@ -170,6 +188,29 @@ func ProjectSettingsResponseFromEntity(settings *entity.ProjectSettings) Project
 		CreatedAt:            settings.CreatedAt,
 		UpdatedAt:            settings.UpdatedAt,
 	}
+}
+
+func GitStatusResponseFromUsecase(status *usecase.GitStatus) GitStatusResponse {
+	response := GitStatusResponse{
+		GitEnabled:      status.GitEnabled,
+		WorktreeExists:  status.WorktreeExists,
+		RepositoryValid: status.RepositoryValid,
+		CurrentBranch:   status.CurrentBranch,
+		RemoteURL:       status.RemoteURL,
+		OnMainBranch:    status.OnMainBranch,
+		Status:          status.Status,
+	}
+
+	if status.WorkingDirStatus != nil {
+		response.WorkingDirStatus = &WorkingDirStatusResponse{
+			IsClean:            status.WorkingDirStatus.IsClean,
+			HasStagedChanges:   status.WorkingDirStatus.HasStagedChanges,
+			HasUnstagedChanges: status.WorkingDirStatus.HasUnstagedChanges,
+			HasUntrackedFiles:  status.WorkingDirStatus.HasUntrackedFiles,
+		}
+	}
+
+	return response
 }
 
 func (req *ProjectSettingsUpdateRequest) ToEntity() *entity.ProjectSettings {

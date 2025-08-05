@@ -11,6 +11,7 @@ import (
 
 	"github.com/auto-devs/auto-devs/internal/entity"
 	"github.com/auto-devs/auto-devs/internal/repository"
+	"github.com/auto-devs/auto-devs/internal/service/git"
 	"github.com/google/uuid"
 )
 
@@ -28,6 +29,8 @@ type ProjectUsecase interface {
 	GetSettings(ctx context.Context, projectID uuid.UUID) (*entity.ProjectSettings, error)
 	UpdateSettings(ctx context.Context, projectID uuid.UUID, settings *entity.ProjectSettings) (*entity.ProjectSettings, error)
 	UpdateRepositoryURL(ctx context.Context, projectID uuid.UUID, repositoryURL string) error
+	ReinitGitRepository(ctx context.Context, projectID uuid.UUID) error
+	GetGitStatus(ctx context.Context, projectID uuid.UUID) (*GitStatus, error)
 }
 
 type CreateProjectRequest struct {
@@ -64,6 +67,24 @@ type ProjectStatistics struct {
 	TotalTasks        int                       `json:"total_tasks"`
 	CompletionPercent float64                   `json:"completion_percent"`
 	LastActivityAt    *time.Time                `json:"last_activity_at"`
+}
+
+type GitStatus struct {
+	GitEnabled       bool              `json:"git_enabled"`
+	WorktreeExists   bool              `json:"worktree_exists"`
+	RepositoryValid  bool              `json:"repository_valid"`
+	CurrentBranch    string            `json:"current_branch,omitempty"`
+	RemoteURL        string            `json:"remote_url,omitempty"`
+	OnMainBranch     bool              `json:"on_main_branch"`
+	WorkingDirStatus *WorkingDirStatus `json:"working_dir_status,omitempty"`
+	Status           string            `json:"status"`
+}
+
+type WorkingDirStatus struct {
+	IsClean            bool `json:"is_clean"`
+	HasStagedChanges   bool `json:"has_staged_changes"`
+	HasUnstagedChanges bool `json:"has_unstaged_changes"`
+	HasUntrackedFiles  bool `json:"has_untracked_files"`
 }
 
 // Validation errors
@@ -137,15 +158,10 @@ func validateRepoURL(repoURL string) error {
 type projectUsecase struct {
 	projectRepo  repository.ProjectRepository
 	auditUsecase AuditUsecase
-	gitService   interface {
-		UpdateProjectRepositoryURL(ctx context.Context, projectID uuid.UUID, worktreeBasePath string, updateRepoURL func(uuid.UUID, string) error) error
-	}
+	gitService   git.ProjectGitServiceInterface
 }
 
-func NewProjectUsecase(projectRepo repository.ProjectRepository, auditUsecase AuditUsecase, gitService interface {
-	UpdateProjectRepositoryURL(ctx context.Context, projectID uuid.UUID, worktreeBasePath string, updateRepoURL func(uuid.UUID, string) error) error
-},
-) ProjectUsecase {
+func NewProjectUsecase(projectRepo repository.ProjectRepository, auditUsecase AuditUsecase, gitService git.ProjectGitServiceInterface) ProjectUsecase {
 	return &projectUsecase{
 		projectRepo:  projectRepo,
 		auditUsecase: auditUsecase,
@@ -482,4 +498,45 @@ func (u *projectUsecase) UpdateRepositoryURL(ctx context.Context, projectID uuid
 	}
 
 	return nil
+}
+
+func (u *projectUsecase) ReinitGitRepository(ctx context.Context, projectID uuid.UUID) error {
+	project, err := u.projectRepo.GetByID(ctx, projectID)
+	if err != nil {
+		return fmt.Errorf("failed to get project: %w", err)
+	}
+
+	repoInfo, err := u.gitService.GetGitStatus(ctx, project.WorktreeBasePath)
+	if err != nil {
+		return fmt.Errorf("failed to reinitialize git repository: %w", err)
+	}
+
+	if repoInfo.RemoteURL != project.RepositoryURL {
+		u.UpdateRepositoryURL(ctx, projectID, repoInfo.RemoteURL)
+	}
+
+	return nil
+}
+
+func (u *projectUsecase) GetGitStatus(ctx context.Context, projectID uuid.UUID) (*GitStatus, error) {
+	project, err := u.projectRepo.GetByID(ctx, projectID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get project: %w", err)
+	}
+
+	status := &GitStatus{
+		GitEnabled:     project.RepositoryURL != "" || project.WorktreeBasePath != "",
+		WorktreeExists: project.WorktreeBasePath != "",
+		Status:         "Git status not implemented",
+	}
+
+	// TODO: Implement actual Git status checking using git service
+	// For now, return basic status
+	if project.RepositoryURL != "" {
+		status.RepositoryValid = true
+		status.RemoteURL = project.RepositoryURL
+		status.OnMainBranch = true // Default assumption
+	}
+
+	return status, nil
 }

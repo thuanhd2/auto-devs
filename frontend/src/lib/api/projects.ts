@@ -67,4 +67,8 @@ export const projectsApi = {
   async deleteProject(projectId: string): Promise<void> {
     await api.delete(`${API_ENDPOINTS.PROJECTS}/${projectId}`)
   },
+
+  async reinitGitRepository(projectId: string): Promise<void> {
+    await api.post(`${API_ENDPOINTS.PROJECTS}/${projectId}/git/reinit`)
+  },
 }
