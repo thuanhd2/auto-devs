@@ -48,12 +48,8 @@ func main() {
 		log.Fatalf("Failed to initialize application: %v", err)
 	}
 
-	// Create job processor with dependencies
-	processor := jobs.NewProcessor(
-		app.TaskUsecase,
-		app.ProjectUsecase,
-		app.WorktreeUsecase,
-	)
+	// Use job processor from DI container
+	processor := app.JobProcessor
 
 	// Create job server
 	redisAddr := fmt.Sprintf("%s:%s", cfg.Redis.Host, cfg.Redis.Port)

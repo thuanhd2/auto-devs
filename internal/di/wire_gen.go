@@ -31,6 +31,7 @@ func InitializeApp() (*App, error) {
 	}
 	projectRepository := postgres.NewProjectRepository(gormDB)
 	taskRepository := postgres.NewTaskRepository(gormDB)
+	planRepository := postgres.NewPlanRepository(gormDB)
 	worktreeRepository := ProvideWorktreeRepository(gormDB)
 	auditRepository := postgres.NewAuditRepository(gormDB)
 	auditUsecase := ProvideAuditUsecase(auditRepository)
@@ -60,14 +61,15 @@ func InitializeApp() (*App, error) {
 	if err != nil {
 		return nil, err
 	}
-	app := NewApp(configConfig, gormDB, projectRepository, taskRepository, worktreeRepository, auditRepository, auditUsecase, projectUsecase, taskUsecase, worktreeUsecase, notificationUsecase, cliManager, processManager, executionService, planningService, gitManager, worktreeManager, client, jobClientInterface)
+	processor := ProvideJobProcessor(taskUsecase, projectUsecase, worktreeUsecase, planningService, planRepository)
+	app := NewApp(configConfig, gormDB, projectRepository, taskRepository, planRepository, worktreeRepository, auditRepository, auditUsecase, projectUsecase, taskUsecase, worktreeUsecase, notificationUsecase, cliManager, processManager, executionService, planningService, gitManager, worktreeManager, client, jobClientInterface, processor)
 	return app, nil
 }
 
 // wire.go:
 
 // ProviderSet is the Wire provider set for the entire application
-var ProviderSet = wire.NewSet(config.Load, ProvideGormDB, postgres.NewProjectRepository, postgres.NewTaskRepository, ProvideWorktreeRepository, postgres.NewAuditRepository, ProvideGitManager,
+var ProviderSet = wire.NewSet(config.Load, ProvideGormDB, postgres.NewProjectRepository, postgres.NewTaskRepository, postgres.NewPlanRepository, ProvideWorktreeRepository, postgres.NewAuditRepository, ProvideGitManager,
 	ProvideProjectGitService,
 	ProvideIntegratedWorktreeService,
 	ProvideWorktreeManager,
@@ -78,7 +80,8 @@ var ProviderSet = wire.NewSet(config.Load, ProvideGormDB, postgres.NewProjectRep
 	ProvidePlanningService,
 
 	ProvideJobClient,
-	ProvideJobClientAdapter, usecase.NewNotificationUsecase, ProvideAuditUsecase,
+	ProvideJobClientAdapter,
+	ProvideJobProcessor, usecase.NewNotificationUsecase, ProvideAuditUsecase,
 	ProvideProjectUsecase,
 	ProvideWorktreeUsecase,
 	ProvideTaskUsecase,
@@ -90,6 +93,7 @@ type App struct {
 	GormDB              *database.GormDB
 	ProjectRepo         repository.ProjectRepository
 	TaskRepo            repository.TaskRepository
+	PlanRepo            repository.PlanRepository
 	WorktreeRepo        repository.WorktreeRepository
 	AuditRepo           repository.AuditRepository
 	AuditUsecase        usecase.AuditUsecase
@@ -108,6 +112,7 @@ type App struct {
 	// Job Services
 	JobClient        *jobs.Client
 	JobClientAdapter usecase.JobClientInterface
+	JobProcessor     *jobs.Processor
 }
 
 // NewApp creates a new App instance
@@ -116,6 +121,7 @@ func NewApp(
 	gormDB *database.GormDB,
 	projectRepo repository.ProjectRepository,
 	taskRepo repository.TaskRepository,
+	planRepo repository.PlanRepository,
 	worktreeRepo repository.WorktreeRepository,
 	auditRepo repository.AuditRepository,
 	auditUsecase usecase.AuditUsecase,
@@ -131,12 +137,14 @@ func NewApp(
 	worktreeManager *worktree.WorktreeManager,
 	jobClient *jobs.Client,
 	jobClientAdapter usecase.JobClientInterface,
+	jobProcessor *jobs.Processor,
 ) *App {
 	return &App{
 		Config:              cfg,
 		GormDB:              gormDB,
 		ProjectRepo:         projectRepo,
 		TaskRepo:            taskRepo,
+		PlanRepo:            planRepo,
 		WorktreeRepo:        worktreeRepo,
 		AuditRepo:           auditRepo,
 		AuditUsecase:        auditUsecase,
@@ -152,6 +160,7 @@ func NewApp(
 		WorktreeManager:     worktreeManager,
 		JobClient:           jobClient,
 		JobClientAdapter:    jobClientAdapter,
+		JobProcessor:        jobProcessor,
 	}
 }
 
@@ -263,4 +272,15 @@ func ProvideJobClientAdapter(client *jobs.Client) usecase.JobClientInterface {
 // ProvideWorktreeManager provides a WorktreeManager instance
 func ProvideWorktreeManager(cfg *config.Config) (*worktree.WorktreeManager, error) {
 	return worktree.NewWorktreeManager(&cfg.Worktree)
+}
+
+// ProvideJobProcessor provides a Processor instance
+func ProvideJobProcessor(
+	taskUsecase usecase.TaskUsecase,
+	projectUsecase usecase.ProjectUsecase,
+	worktreeUsecase usecase.WorktreeUsecase,
+	planningService *ai.PlanningService,
+	planRepo repository.PlanRepository,
+) *jobs.Processor {
+	return jobs.NewProcessor(taskUsecase, projectUsecase, worktreeUsecase, planningService, planRepo)
 }
