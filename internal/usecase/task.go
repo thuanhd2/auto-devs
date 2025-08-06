@@ -14,6 +14,7 @@ import (
 // JobClientInterface defines the interface for job client operations
 type JobClientInterface interface {
 	EnqueueTaskPlanning(payload *TaskPlanningPayload, delay time.Duration) (string, error)
+	EnqueueTaskImplementation(payload *TaskImplementationPayload, delay time.Duration) (string, error)
 }
 
 // TaskPlanningPayload represents the payload for task planning jobs
@@ -21,6 +22,12 @@ type TaskPlanningPayload struct {
 	TaskID     uuid.UUID `json:"task_id"`
 	BranchName string    `json:"branch_name"`
 	ProjectID  uuid.UUID `json:"project_id"`
+}
+
+// TaskImplementationPayload represents the payload for task implementation jobs
+type TaskImplementationPayload struct {
+	TaskID    uuid.UUID `json:"task_id"`
+	ProjectID uuid.UUID `json:"project_id"`
 }
 
 type TaskUsecase interface {
@@ -99,6 +106,7 @@ type TaskUsecase interface {
 
 	// Planning workflow
 	StartPlanning(ctx context.Context, taskID uuid.UUID, branchName string) (string, error) // returns job ID
+	ApprovePlan(ctx context.Context, taskID uuid.UUID) (string, error) // returns job ID
 	ListGitBranches(ctx context.Context, projectID uuid.UUID) ([]GitBranch, error)
 }
 
@@ -1049,6 +1057,37 @@ func (u *taskUsecase) StartPlanning(ctx context.Context, taskID uuid.UUID, branc
 	jobID, err := u.jobClient.EnqueueTaskPlanning(payload, 0)
 	if err != nil {
 		return "", fmt.Errorf("failed to enqueue planning job: %w", err)
+	}
+
+	return jobID, nil
+}
+
+// ApprovePlan approves the plan for a task and starts implementation
+func (u *taskUsecase) ApprovePlan(ctx context.Context, taskID uuid.UUID) (string, error) {
+	// Get task to validate it exists and is in PLAN_REVIEWING status
+	task, err := u.taskRepo.GetByID(ctx, taskID)
+	if err != nil {
+		return "", fmt.Errorf("failed to get task: %w", err)
+	}
+
+	if task.Status != entity.TaskStatusPLANREVIEWING {
+		return "", fmt.Errorf("task must be in PLAN_REVIEWING status to approve plan, current status: %s", task.Status)
+	}
+
+	// Update task status to IMPLEMENTING
+	if err := u.taskRepo.UpdateStatus(ctx, taskID, entity.TaskStatusIMPLEMENTING); err != nil {
+		return "", fmt.Errorf("failed to update task status to IMPLEMENTING: %w", err)
+	}
+
+	// Enqueue the implementation job using asynq client
+	payload := &TaskImplementationPayload{
+		TaskID:    taskID,
+		ProjectID: task.ProjectID,
+	}
+
+	jobID, err := u.jobClient.EnqueueTaskImplementation(payload, 0)
+	if err != nil {
+		return "", fmt.Errorf("failed to enqueue implementation job: %w", err)
 	}
 
 	return jobID, nil

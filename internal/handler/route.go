@@ -86,6 +86,7 @@ func SetupRoutes(router *gin.Engine, projectUsecase usecase.ProjectUsecase, task
 			
 			// Planning workflow endpoints
 			tasks.POST("/:id/start-planning", taskHandler.StartPlanning)
+			tasks.POST("/:id/approve-plan", taskHandler.ApprovePlan)
 		}
 	}
 }
