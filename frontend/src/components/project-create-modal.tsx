@@ -2,7 +2,7 @@ import { z } from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useNavigate } from '@tanstack/react-router'
-import { Plus, X } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import { useCreateProject } from '@/hooks/use-projects'
 import { Button } from '@/components/ui/button'
 import {
@@ -46,7 +46,10 @@ interface ProjectCreateModalProps {
   onOpenChange: (open: boolean) => void
 }
 
-export function ProjectCreateModal({ open, onOpenChange }: ProjectCreateModalProps) {
+export function ProjectCreateModal({
+  open,
+  onOpenChange,
+}: ProjectCreateModalProps) {
   const navigate = useNavigate()
   const createProject = useCreateProject()
 
@@ -66,11 +69,11 @@ export function ProjectCreateModal({ open, onOpenChange }: ProjectCreateModalPro
         description: data.description || undefined,
         worktree_base_path: data.worktree_base_path,
       })
-      
+
       // Close modal and reset form
       onOpenChange(false)
       form.reset()
-      
+
       // Navigate to the new project
       navigate({
         to: '/projects/$projectId',
@@ -88,10 +91,10 @@ export function ProjectCreateModal({ open, onOpenChange }: ProjectCreateModalPro
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className='sm:max-w-[425px]'>
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Plus className="h-5 w-5" />
+          <DialogTitle className='flex items-center gap-2'>
+            <Plus className='h-5 w-5' />
             Create New Project
           </DialogTitle>
           <DialogDescription>
@@ -100,15 +103,15 @@ export function ProjectCreateModal({ open, onOpenChange }: ProjectCreateModalPro
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-4'>
             <FormField
               control={form.control}
-              name="name"
+              name='name'
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Project Name</FormLabel>
                   <FormControl>
-                    <Input placeholder="My Awesome Project" {...field} />
+                    <Input placeholder='My Awesome Project' {...field} />
                   </FormControl>
                   <FormDescription>
                     A descriptive name for your project
@@ -120,14 +123,14 @@ export function ProjectCreateModal({ open, onOpenChange }: ProjectCreateModalPro
 
             <FormField
               control={form.control}
-              name="description"
+              name='description'
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Description</FormLabel>
                   <FormControl>
                     <Textarea
-                      placeholder="Brief description of what this project does..."
-                      className="resize-none"
+                      placeholder='Brief description of what this project does...'
+                      className='resize-none'
                       rows={3}
                       {...field}
                     />
@@ -142,15 +145,12 @@ export function ProjectCreateModal({ open, onOpenChange }: ProjectCreateModalPro
 
             <FormField
               control={form.control}
-              name="worktree_base_path"
+              name='worktree_base_path'
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Worktree Base Path</FormLabel>
                   <FormControl>
-                    <Input
-                      placeholder="/path/to/your/project"
-                      {...field}
-                    />
+                    <Input placeholder='/path/to/your/project' {...field} />
                   </FormControl>
                   <FormDescription>
                     Base path for Git worktree operations
@@ -160,15 +160,11 @@ export function ProjectCreateModal({ open, onOpenChange }: ProjectCreateModalPro
               )}
             />
 
-            <div className="flex justify-end gap-3 pt-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleClose}
-              >
+            <div className='flex justify-end gap-3 pt-4'>
+              <Button type='button' variant='outline' onClick={handleClose}>
                 Cancel
               </Button>
-              <Button type="submit" disabled={createProject.isPending}>
+              <Button type='submit' disabled={createProject.isPending}>
                 {createProject.isPending ? 'Creating...' : 'Create Project'}
               </Button>
             </div>
@@ -177,4 +173,4 @@ export function ProjectCreateModal({ open, onOpenChange }: ProjectCreateModalPro
       </DialogContent>
     </Dialog>
   )
-} 
+}

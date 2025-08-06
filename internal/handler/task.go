@@ -740,3 +740,49 @@ func (h *TaskHandler) StartPlanning(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, response)
 }
+
+// ApprovePlan godoc
+// @Summary Approve plan and start implementation
+// @Description Approve the plan for a task and enqueue implementation job
+// @Tags tasks
+// @Accept json
+// @Produce json
+// @Param id path string true "Task ID"
+// @Success 200 {object} dto.StartPlanningResponse
+// @Failure 400 {object} dto.ErrorResponse
+// @Failure 404 {object} dto.ErrorResponse
+// @Failure 500 {object} dto.ErrorResponse
+// @Router /api/v1/tasks/{id}/approve-plan [post]
+func (h *TaskHandler) ApprovePlan(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, dto.NewErrorResponse(err, http.StatusBadRequest, "Invalid task ID"))
+		return
+	}
+
+	// Validate that task exists and is in PLAN_REVIEWING status
+	task, err := h.taskUsecase.GetByID(c.Request.Context(), id)
+	if err != nil {
+		c.JSON(http.StatusNotFound, dto.NewErrorResponse(err, http.StatusNotFound, "Task not found"))
+		return
+	}
+
+	if task.Status != entity.TaskStatusPLANREVIEWING {
+		c.JSON(http.StatusBadRequest, dto.NewErrorResponse(nil, http.StatusBadRequest, "Task must be in PLAN_REVIEWING status to approve plan"))
+		return
+	}
+
+	// Approve plan and start implementation (this will enqueue a background job)
+	jobID, err := h.taskUsecase.ApprovePlan(c.Request.Context(), id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, dto.NewErrorResponse(err, http.StatusInternalServerError, "Failed to approve plan and start implementation"))
+		return
+	}
+
+	response := dto.StartPlanningResponse{
+		Message: "Plan approved and implementation started successfully",
+		JobID:   jobID,
+	}
+	c.JSON(http.StatusOK, response)
+}

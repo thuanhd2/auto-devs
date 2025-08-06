@@ -32,7 +32,7 @@ func TestGitError(t *testing.T) {
 				ExitCode:  128,
 				Command:   "git push",
 			},
-			expectMsg:  "git push failed with exit code 128",
+			expectMsg:  "git push failed with exit code 128 []",
 			underlying: nil,
 		},
 	}
@@ -127,10 +127,10 @@ func TestGetSuggestionsForError(t *testing.T) {
 
 func TestContainsAny(t *testing.T) {
 	tests := []struct {
-		name        string
-		text        string
-		substrings  []string
-		expected    bool
+		name       string
+		text       string
+		substrings []string
+		expected   bool
 	}{
 		{
 			name:       "contains match",

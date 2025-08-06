@@ -191,3 +191,48 @@ export function useStartPlanning() {
     },
   })
 }
+
+export function useApprovePlan() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (taskId: string) => tasksApi.approvePlan(taskId),
+    onMutate: async (taskId) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: [TASKS_QUERY_KEY] })
+
+      // Snapshot the previous value
+      const previousTasks = queryClient.getQueryData([TASKS_QUERY_KEY])
+
+      // Optimistically update task status to IMPLEMENTING
+      queryClient.setQueryData([TASKS_QUERY_KEY], (old: any) => {
+        if (!old) return old
+        return {
+          ...old,
+          tasks: old.tasks.map((task: Task) =>
+            task.id === taskId
+              ? { ...task, status: 'IMPLEMENTING' as Task['status'] }
+              : task
+          ),
+        }
+      })
+
+      // Return a context object with the snapshotted value
+      return { previousTasks }
+    },
+    onSuccess: (response, taskId) => {
+      toast.success(`Plan approved! Implementation job enqueued. Job ID: ${response.job_id}`)
+    },
+    onError: (error: any, taskId, context) => {
+      // Revert optimistic update on error
+      if (context?.previousTasks) {
+        queryClient.setQueryData([TASKS_QUERY_KEY], context.previousTasks)
+      }
+      toast.error(error.response?.data?.message || 'Failed to approve plan')
+    },
+    onSettled: () => {
+      // Always refetch after error or success
+      queryClient.invalidateQueries({ queryKey: [TASKS_QUERY_KEY] })
+    },
+  })
+}

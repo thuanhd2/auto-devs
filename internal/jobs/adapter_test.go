@@ -20,6 +20,11 @@ func (m *MockClient) EnqueueTaskPlanningString(payload *TaskPlanningPayload, del
 	return args.String(0), args.Error(1)
 }
 
+func (m *MockClient) EnqueueTaskImplementationString(payload *TaskImplementationPayload, delay time.Duration) (string, error) {
+	args := m.Called(payload, delay)
+	return args.String(0), args.Error(1)
+}
+
 func (m *MockClient) Close() error {
 	args := m.Called()
 	return args.Error(0)

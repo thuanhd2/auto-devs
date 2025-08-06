@@ -141,6 +141,23 @@ func (p *Processor) ProcessTaskPlanning(ctx context.Context, task *asynq.Task) e
 	return nil
 }
 
+func (p *Processor) ProcessTaskImplementation(ctx context.Context, task *asynq.Task) error {
+	p.logger.Info("Processing task implementation job!!!!!!")
+
+	payload, err := ParseTaskImplementationPayload(task)
+	if err != nil {
+		return fmt.Errorf("failed to parse task implementation payload: %w", err)
+	}
+
+	p.logger.Info("Processing task implementation job",
+		"task_id", payload.TaskID,
+		"project_id", payload.ProjectID)
+
+	// TODO: call ai executor to implement the task
+
+	return nil
+}
+
 // updateTaskStatus updates the task status
 func (p *Processor) updateTaskStatus(ctx context.Context, taskID uuid.UUID, status entity.TaskStatus) error {
 	p.logger.Info("Updating task status", "task_id", taskID, "status", status)

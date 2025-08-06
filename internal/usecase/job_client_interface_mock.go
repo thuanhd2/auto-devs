@@ -37,6 +37,61 @@ func (_m *JobClientInterfaceMock) EXPECT() *JobClientInterfaceMock_Expecter {
 	return &JobClientInterfaceMock_Expecter{mock: &_m.Mock}
 }
 
+// EnqueueTaskImplementation provides a mock function for the type JobClientInterfaceMock
+func (_mock *JobClientInterfaceMock) EnqueueTaskImplementation(payload *TaskImplementationPayload, delay time.Duration) (string, error) {
+	ret := _mock.Called(payload, delay)
+
+	if len(ret) == 0 {
+		panic("no return value specified for EnqueueTaskImplementation")
+	}
+
+	var r0 string
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(*TaskImplementationPayload, time.Duration) (string, error)); ok {
+		return returnFunc(payload, delay)
+	}
+	if returnFunc, ok := ret.Get(0).(func(*TaskImplementationPayload, time.Duration) string); ok {
+		r0 = returnFunc(payload, delay)
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+	if returnFunc, ok := ret.Get(1).(func(*TaskImplementationPayload, time.Duration) error); ok {
+		r1 = returnFunc(payload, delay)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// JobClientInterfaceMock_EnqueueTaskImplementation_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'EnqueueTaskImplementation'
+type JobClientInterfaceMock_EnqueueTaskImplementation_Call struct {
+	*mock.Call
+}
+
+// EnqueueTaskImplementation is a helper method to define mock.On call
+//   - payload
+//   - delay
+func (_e *JobClientInterfaceMock_Expecter) EnqueueTaskImplementation(payload interface{}, delay interface{}) *JobClientInterfaceMock_EnqueueTaskImplementation_Call {
+	return &JobClientInterfaceMock_EnqueueTaskImplementation_Call{Call: _e.mock.On("EnqueueTaskImplementation", payload, delay)}
+}
+
+func (_c *JobClientInterfaceMock_EnqueueTaskImplementation_Call) Run(run func(payload *TaskImplementationPayload, delay time.Duration)) *JobClientInterfaceMock_EnqueueTaskImplementation_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(*TaskImplementationPayload), args[1].(time.Duration))
+	})
+	return _c
+}
+
+func (_c *JobClientInterfaceMock_EnqueueTaskImplementation_Call) Return(s string, err error) *JobClientInterfaceMock_EnqueueTaskImplementation_Call {
+	_c.Call.Return(s, err)
+	return _c
+}
+
+func (_c *JobClientInterfaceMock_EnqueueTaskImplementation_Call) RunAndReturn(run func(payload *TaskImplementationPayload, delay time.Duration) (string, error)) *JobClientInterfaceMock_EnqueueTaskImplementation_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // EnqueueTaskPlanning provides a mock function for the type JobClientInterfaceMock
 func (_mock *JobClientInterfaceMock) EnqueueTaskPlanning(payload *TaskPlanningPayload, delay time.Duration) (string, error) {
 	ret := _mock.Called(payload, delay)

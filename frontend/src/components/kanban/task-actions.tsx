@@ -22,6 +22,7 @@ interface TaskActionsProps {
   onStatusChange?: (taskId: string, newStatus: TaskStatus) => void
   onViewHistory?: () => void
   onStartPlanning?: (taskId: string, branchName: string) => void
+  onApprovePlanAndStartImplement?: (taskId: string) => void
   showStatusActions?: boolean
   showGitActions?: boolean
 }
@@ -34,19 +35,14 @@ export function TaskActions({
   onStatusChange,
   onViewHistory,
   onStartPlanning,
+  onApprovePlanAndStartImplement,
   showStatusActions = true,
   showGitActions = true,
 }: TaskActionsProps) {
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [showBranchDialog, setShowBranchDialog] = useState(false)
 
   const handleDelete = () => {
-    setShowDeleteConfirm(true)
-  }
-
-  const confirmDelete = () => {
     onDelete?.(task.id)
-    setShowDeleteConfirm(false)
   }
 
   const handleStatusChange = (newStatus: TaskStatus) => {
@@ -71,6 +67,10 @@ export function TaskActions({
     onStartPlanning?.(task.id, branchName)
   }
 
+  const handleApprovePlanAndStartImplement = () => {
+    onApprovePlanAndStartImplement?.(task.id)
+  }
+
   return (
     <>
       <div className='flex flex-wrap items-center gap-2'>
@@ -88,6 +88,20 @@ export function TaskActions({
           </Button>
         )}
 
+        {/* Approve Plan and Start Implement Action - Only show for TODO tasks */}
+
+        {task.status === 'PLAN_REVIEWING' && onApprovePlanAndStartImplement && (
+          <Button
+            variant='default'
+            size='sm'
+            onClick={handleApprovePlanAndStartImplement}
+            title='Approve plan and start implementing'
+            className='bg-green-600 text-white hover:bg-green-700'
+          >
+            <Play className='mr-1 h-4 w-4' />
+            Approve Plan and Start Implement
+          </Button>
+        )}
         {/* Git Actions */}
         {(task.branch_name || task.pr_url) && (
           <div className='flex items-center gap-1'>
@@ -144,17 +158,6 @@ export function TaskActions({
           </Button>
         )}
       </div>
-
-      {/* Delete Confirmation */}
-      <ConfirmDialog
-        open={showDeleteConfirm}
-        onOpenChange={setShowDeleteConfirm}
-        title='Delete Task'
-        description='Are you sure you want to delete this task? This action cannot be undone.'
-        onConfirm={confirmDelete}
-        confirmText='Delete'
-        variant='destructive'
-      />
 
       {/* Branch Selection Dialog */}
       <BranchSelectionDialog

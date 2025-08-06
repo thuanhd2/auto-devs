@@ -2,12 +2,13 @@ import { useState } from 'react'
 import type { Task } from '@/types/task'
 import { Check, X, Edit, Download, FileText, Eye } from 'lucide-react'
 import { toast } from 'sonner'
-import { useUpdateTask } from '@/hooks/use-tasks'
+import { useUpdateTask, useApprovePlan } from '@/hooks/use-tasks'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
   Card,
   CardContent,
+  CardDescription,
   CardFooter,
   CardHeader,
   CardTitle,
@@ -33,67 +34,21 @@ export function PlanReview({
   const [isEditing, setIsEditing] = useState(false)
   const [editedPlan, setEditedPlan] = useState(planContent)
   const updateTaskMutation = useUpdateTask()
+  const approvePlanMutation = useApprovePlan()
 
-  const isLoading = updateTaskMutation.isPending
+  const isLoading =
+    updateTaskMutation.isPending || approvePlanMutation.isPending
   const canReview = task.status === 'PLAN_REVIEWING'
   const hasPlan = Boolean(planContent?.trim())
 
   const handleApprovePlan = async () => {
     try {
-      const updatedTask = await updateTaskMutation.mutateAsync({
-        taskId: task.id,
-        updates: { status: 'IMPLEMENTING' },
-      })
+      await approvePlanMutation.mutateAsync(task.id)
       onStatusChange?.(task.id, 'IMPLEMENTING')
-      onPlanUpdate?.(updatedTask)
-      toast.success('Plan approved! Task moved to implementation.')
+      // The success toast and task updates are handled by the mutation hook
     } catch (error) {
       // Error handled by mutation hook
     }
-  }
-
-  const handleRejectPlan = async () => {
-    try {
-      const updatedTask = await updateTaskMutation.mutateAsync({
-        taskId: task.id,
-        updates: { status: 'PLANNING' },
-      })
-      onStatusChange?.(task.id, 'PLANNING')
-      onPlanUpdate?.(updatedTask)
-      toast.success('Plan rejected. Task moved back to planning.')
-    } catch (error) {
-      // Error handled by mutation hook
-    }
-  }
-
-  const handleSavePlan = async (newPlan: string) => {
-    try {
-      const updatedTask = await updateTaskMutation.mutateAsync({
-        taskId: task.id,
-        updates: { plan: newPlan },
-      })
-      setEditedPlan(newPlan)
-      setIsEditing(false)
-      onPlanUpdate?.(updatedTask)
-      toast.success('Plan updated successfully!')
-    } catch (error) {
-      // Error handled by mutation hook
-    }
-  }
-
-  const handleExportPlan = () => {
-    if (!task.plan) return
-
-    const blob = new Blob([task.plan], { type: 'text/markdown' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `${task.title.replace(/[^a-zA-Z0-9]/g, '-')}-plan.md`
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    URL.revokeObjectURL(url)
-    toast.success('Plan exported successfully!')
   }
 
   if (!hasPlan) {
@@ -115,6 +70,12 @@ export function PlanReview({
 
   return (
     <Card className='w-full'>
+      <CardHeader>
+        <CardTitle>Plan Review</CardTitle>
+        <CardDescription>
+          Review the plan for this task and approve it for implementation.
+        </CardDescription>
+      </CardHeader>
       <CardContent className='flex flex-col items-center justify-center py-8'>
         <PlanPreview content={planContent} />
       </CardContent>

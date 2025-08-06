@@ -73,4 +73,11 @@ export const tasksApi = {
     )
     return response.data
   },
+
+  async approvePlan(taskId: string): Promise<StartPlanningResponse> {
+    const response = await api.post(
+      `${API_ENDPOINTS.TASKS}/${taskId}/approve-plan`
+    )
+    return response.data
+  },
 }

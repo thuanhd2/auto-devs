@@ -28,12 +28,12 @@ func (m *MockCommandExecutor) ExecuteWithTimeout(ctx context.Context, workingDir
 
 func TestNewDefaultCommandExecutor(t *testing.T) {
 	executor, err := NewDefaultCommandExecutor()
-	
+
 	// This test will pass if git is installed, fail if not
 	if err == ErrGitNotInstalled {
 		t.Skip("Git not installed, skipping test")
 	}
-	
+
 	assert.NoError(t, err)
 	assert.NotNil(t, executor)
 	assert.NotEmpty(t, executor.gitPath)
@@ -51,7 +51,7 @@ func TestDefaultCommandExecutor_Execute(t *testing.T) {
 
 	ctx := context.Background()
 	result, err := executor.Execute(ctx, "", "--version")
-	
+
 	assert.NoError(t, err)
 	assert.Equal(t, 0, result.ExitCode)
 	assert.Contains(t, result.Stdout, "git version")
@@ -63,10 +63,10 @@ func TestGitCommands_Version(t *testing.T) {
 	commands := NewGitCommands(mockExecutor)
 
 	tests := []struct {
-		name           string
-		result         *CommandResult
-		executeError   error
-		expectedError  bool
+		name            string
+		result          *CommandResult
+		executeError    error
+		expectedError   bool
 		expectedVersion string
 	}{
 		{
@@ -122,13 +122,13 @@ func TestGitCommands_Init(t *testing.T) {
 	commands := NewGitCommands(mockExecutor)
 
 	tests := []struct {
-		name         string
-		workingDir   string
-		bare         bool
-		result       *CommandResult
-		executeError error
+		name          string
+		workingDir    string
+		bare          bool
+		result        *CommandResult
+		executeError  error
 		expectedError bool
-		expectedArgs []string
+		expectedArgs  []string
 	}{
 		{
 			name:       "successful init",
@@ -191,14 +191,14 @@ func TestGitCommands_Clone(t *testing.T) {
 	commands := NewGitCommands(mockExecutor)
 
 	tests := []struct {
-		name         string
-		url          string
-		destination  string
-		options      *CloneOptions
-		result       *CommandResult
-		executeError error
+		name          string
+		url           string
+		destination   string
+		options       *CloneOptions
+		result        *CommandResult
+		executeError  error
 		expectedError bool
-		expectedArgs []string
+		expectedArgs  []string
 	}{
 		{
 			name:        "basic clone",
@@ -255,14 +255,14 @@ func TestGitCommands_Status(t *testing.T) {
 	commands := NewGitCommands(mockExecutor)
 
 	tests := []struct {
-		name         string
-		workingDir   string
-		porcelain    bool
-		result       *CommandResult
-		executeError error
-		expectedError bool
+		name           string
+		workingDir     string
+		porcelain      bool
+		result         *CommandResult
+		executeError   error
+		expectedError  bool
 		expectedOutput string
-		expectedArgs []string
+		expectedArgs   []string
 	}{
 		{
 			name:       "normal status",
@@ -316,10 +316,10 @@ func TestGitCommands_CurrentBranch(t *testing.T) {
 	commands := NewGitCommands(mockExecutor)
 
 	tests := []struct {
-		name         string
-		result       *CommandResult
-		executeError error
-		expectedError bool
+		name           string
+		result         *CommandResult
+		executeError   error
+		expectedError  bool
 		expectedBranch string
 	}{
 		{
@@ -367,13 +367,13 @@ func TestGitCommands_ListBranches(t *testing.T) {
 	commands := NewGitCommands(mockExecutor)
 
 	tests := []struct {
-		name            string
-		options         *ListBranchesOptions
-		result          *CommandResult
-		executeError    error
-		expectedError   bool
+		name             string
+		options          *ListBranchesOptions
+		result           *CommandResult
+		executeError     error
+		expectedError    bool
 		expectedBranches []string
-		expectedArgs    []string
+		expectedArgs     []string
 	}{
 		{
 			name:    "local branches",
@@ -384,7 +384,7 @@ func TestGitCommands_ListBranches(t *testing.T) {
 			},
 			executeError:     nil,
 			expectedError:    false,
-			expectedBranches: []string{"develop", "main", "feature-branch"},
+			expectedBranches: []string{"develop", "* main", "feature-branch"},
 			expectedArgs:     []string{"branch"},
 		},
 		{
@@ -398,7 +398,7 @@ func TestGitCommands_ListBranches(t *testing.T) {
 			},
 			executeError:     nil,
 			expectedError:    false,
-			expectedBranches: []string{"main", "develop"},
+			expectedBranches: []string{"origin/main", "origin/develop"},
 			expectedArgs:     []string{"branch", "--remote"},
 		},
 	}
@@ -427,10 +427,10 @@ func TestGitCommands_IsRepository(t *testing.T) {
 	commands := NewGitCommands(mockExecutor)
 
 	tests := []struct {
-		name         string
-		path         string
-		result       *CommandResult
-		executeError error
+		name           string
+		path           string
+		result         *CommandResult
+		executeError   error
 		expectedResult bool
 		expectedError  bool
 	}{
