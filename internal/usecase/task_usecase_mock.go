@@ -144,6 +144,61 @@ func (_c *TaskUsecaseMock_AddDependency_Call) RunAndReturn(run func(ctx context.
 	return _c
 }
 
+// ApprovePlan provides a mock function for the type TaskUsecaseMock
+func (_mock *TaskUsecaseMock) ApprovePlan(ctx context.Context, taskID uuid.UUID) (string, error) {
+	ret := _mock.Called(ctx, taskID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ApprovePlan")
+	}
+
+	var r0 string
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID) (string, error)); ok {
+		return returnFunc(ctx, taskID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID) string); ok {
+		r0 = returnFunc(ctx, taskID)
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID) error); ok {
+		r1 = returnFunc(ctx, taskID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// TaskUsecaseMock_ApprovePlan_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ApprovePlan'
+type TaskUsecaseMock_ApprovePlan_Call struct {
+	*mock.Call
+}
+
+// ApprovePlan is a helper method to define mock.On call
+//   - ctx
+//   - taskID
+func (_e *TaskUsecaseMock_Expecter) ApprovePlan(ctx interface{}, taskID interface{}) *TaskUsecaseMock_ApprovePlan_Call {
+	return &TaskUsecaseMock_ApprovePlan_Call{Call: _e.mock.On("ApprovePlan", ctx, taskID)}
+}
+
+func (_c *TaskUsecaseMock_ApprovePlan_Call) Run(run func(ctx context.Context, taskID uuid.UUID)) *TaskUsecaseMock_ApprovePlan_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(uuid.UUID))
+	})
+	return _c
+}
+
+func (_c *TaskUsecaseMock_ApprovePlan_Call) Return(s string, err error) *TaskUsecaseMock_ApprovePlan_Call {
+	_c.Call.Return(s, err)
+	return _c
+}
+
+func (_c *TaskUsecaseMock_ApprovePlan_Call) RunAndReturn(run func(ctx context.Context, taskID uuid.UUID) (string, error)) *TaskUsecaseMock_ApprovePlan_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // BulkArchive provides a mock function for the type TaskUsecaseMock
 func (_mock *TaskUsecaseMock) BulkArchive(ctx context.Context, taskIDs []uuid.UUID) error {
 	ret := _mock.Called(ctx, taskIDs)

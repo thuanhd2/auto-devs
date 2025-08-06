@@ -768,7 +768,7 @@ func (h *TaskHandler) ApprovePlan(c *gin.Context) {
 		return
 	}
 
-	if task.Status != entity.TaskStatusPLAN_REVIEWING {
+	if task.Status != entity.TaskStatusPLANREVIEWING {
 		c.JSON(http.StatusBadRequest, dto.NewErrorResponse(nil, http.StatusBadRequest, "Task must be in PLAN_REVIEWING status to approve plan"))
 		return
 	}

@@ -68,6 +68,41 @@ func (c *Client) EnqueueTaskPlanningString(payload *TaskPlanningPayload, delay t
 	return taskInfo.ID, nil
 }
 
+// EnqueueTaskImplementation enqueues a task implementation job
+func (c *Client) EnqueueTaskImplementation(payload *TaskImplementationPayload, delay time.Duration) (*asynq.TaskInfo, error) {
+	task, err := NewTaskImplementationJob(payload.TaskID, payload.ProjectID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create task implementation job: %w", err)
+	}
+
+	// Set task options
+	opts := []asynq.Option{
+		asynq.MaxRetry(1),
+		asynq.Timeout(60 * time.Minute), // Implementation can take longer than planning
+		asynq.Queue("implementation"),   // Use dedicated queue for implementation jobs
+	}
+
+	if delay > 0 {
+		opts = append(opts, asynq.ProcessIn(delay))
+	}
+
+	taskInfo, err := c.client.Enqueue(task, opts...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to enqueue task implementation job: %w", err)
+	}
+
+	return taskInfo, nil
+}
+
+// EnqueueTaskImplementationString enqueues a task implementation job and returns job ID as string
+func (c *Client) EnqueueTaskImplementationString(payload *TaskImplementationPayload, delay time.Duration) (string, error) {
+	taskInfo, err := c.EnqueueTaskImplementation(payload, delay)
+	if err != nil {
+		return "", err
+	}
+	return taskInfo.ID, nil
+}
+
 // GetTaskInfo retrieves information about a task
 func (c *Client) GetTaskInfo(queue, taskID string) (*asynq.TaskInfo, error) {
 	// Note: asynq.Client doesn't have GetTaskInfo method
