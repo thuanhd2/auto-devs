@@ -15,12 +15,13 @@ import (
 
 // Processor handles background job processing
 type Processor struct {
-	taskUsecase     usecase.TaskUsecase
-	projectUsecase  usecase.ProjectUsecase
-	worktreeUsecase usecase.WorktreeUsecase
-	planningService *ai.PlanningService
-	planRepo        repository.PlanRepository
-	logger          *slog.Logger
+	taskUsecase      usecase.TaskUsecase
+	projectUsecase   usecase.ProjectUsecase
+	worktreeUsecase  usecase.WorktreeUsecase
+	planningService  *ai.PlanningService
+	executionService *ai.ExecutionService
+	planRepo         repository.PlanRepository
+	logger           *slog.Logger
 }
 
 // NewProcessor creates a new job processor
@@ -29,15 +30,17 @@ func NewProcessor(
 	projectUsecase usecase.ProjectUsecase,
 	worktreeUsecase usecase.WorktreeUsecase,
 	planningService *ai.PlanningService,
+	executionService *ai.ExecutionService,
 	planRepo repository.PlanRepository,
 ) *Processor {
 	return &Processor{
-		taskUsecase:     taskUsecase,
-		projectUsecase:  projectUsecase,
-		worktreeUsecase: worktreeUsecase,
-		planningService: planningService,
-		planRepo:        planRepo,
-		logger:          slog.Default().With("component", "job-processor"),
+		taskUsecase:      taskUsecase,
+		projectUsecase:   projectUsecase,
+		worktreeUsecase:  worktreeUsecase,
+		planningService:  planningService,
+		executionService: executionService,
+		planRepo:         planRepo,
+		logger:           slog.Default().With("component", "job-processor"),
 	}
 }
 
@@ -153,9 +156,110 @@ func (p *Processor) ProcessTaskImplementation(ctx context.Context, task *asynq.T
 		"task_id", payload.TaskID,
 		"project_id", payload.ProjectID)
 
-	// TODO: call ai executor to implement the task
+	// Step 1: Update task status to IMPLEMENTING
+	err = p.updateTaskStatus(ctx, payload.TaskID, entity.TaskStatusIMPLEMENTING)
+	if err != nil {
+		p.logger.Error("Failed to update task status to IMPLEMENTING",
+			"task_id", payload.TaskID, "error", err)
+		return fmt.Errorf("failed to update task status to IMPLEMENTING: %w", err)
+	}
+
+	p.logger.Info("Updated task status to IMPLEMENTING")
+
+	// Step 2: Get the task and check if it has git worktree
+	projectTask, err := p.taskUsecase.GetByID(ctx, payload.TaskID)
+	if err != nil {
+		// Revert task status on failure
+		_ = p.updateTaskStatus(ctx, payload.TaskID, entity.TaskStatusPLANREVIEWING)
+		p.logger.Error("Failed to get task", "task_id", payload.TaskID, "error", err)
+		return fmt.Errorf("failed to get task: %w", err)
+	}
+
+	// Check if task has worktree path
+	if projectTask.WorktreePath == nil || *projectTask.WorktreePath == "" {
+		// Revert task status on failure
+		_ = p.updateTaskStatus(ctx, payload.TaskID, entity.TaskStatusPLANREVIEWING)
+		p.logger.Error("Task does not have worktree path", "task_id", payload.TaskID)
+		return fmt.Errorf("task does not have worktree path set")
+	}
+
+	p.logger.Info("Task has valid worktree path", "task_id", payload.TaskID, "worktree_path", *projectTask.WorktreePath)
+
+	// Step 3: Get the approved plan for the task
+	plan, err := p.planRepo.GetByTaskID(ctx, payload.TaskID)
+	if err != nil {
+		// Revert task status on failure
+		_ = p.updateTaskStatus(ctx, payload.TaskID, entity.TaskStatusPLANREVIEWING)
+		p.logger.Error("Failed to get plan for task", "task_id", payload.TaskID, "error", err)
+		return fmt.Errorf("failed to get plan for task: %w", err)
+	}
+
+	// Step 4: Validate plan status - ensure it's APPROVED
+	if plan.Status != entity.PlanStatusAPPROVED {
+		// Revert task status on failure
+		_ = p.updateTaskStatus(ctx, payload.TaskID, entity.TaskStatusPLANREVIEWING)
+		p.logger.Error("Plan is not approved", "task_id", payload.TaskID, "plan_status", plan.Status)
+		return fmt.Errorf("plan is not approved, current status: %s", plan.Status)
+	}
+
+	p.logger.Info("Plan is approved and ready for implementation", "task_id", payload.TaskID, "plan_id", plan.ID)
+
+	// Step 5: Convert entity.Plan to ai.Plan format for the execution service
+	aiPlan := p.convertEntityPlanToAIPlan(plan)
+
+	// Step 6: Start AI execution using executionService.StartExecution()
+	execution, err := p.executionService.StartExecution(payload.TaskID.String(), *aiPlan)
+	if err != nil {
+		// Revert task status on failure
+		_ = p.updateTaskStatus(ctx, payload.TaskID, entity.TaskStatusPLANREVIEWING)
+		p.logger.Error("Failed to start AI execution", "task_id", payload.TaskID, "error", err)
+		return fmt.Errorf("failed to start AI execution: %w", err)
+	}
+
+	p.logger.Info("AI execution started successfully", 
+		"task_id", payload.TaskID, 
+		"execution_id", execution.ID,
+		"execution_status", execution.Status)
+
+	// Step 7: Monitor execution progress (in a real implementation, this would be done via callbacks)
+	// For now, we'll just log that monitoring should be handled by the execution service callbacks
+	p.logger.Info("Implementation execution started, progress will be monitored via execution service callbacks",
+		"task_id", payload.TaskID,
+		"execution_id", execution.ID)
+
+	// Note: The execution service will handle updating task status to CODE_REVIEWING on completion
+	// or back to IMPLEMENTING on failure through its callback mechanism
 
 	return nil
+}
+
+// convertEntityPlanToAIPlan converts database Plan entity to AI service Plan format
+func (p *Processor) convertEntityPlanToAIPlan(plan *entity.Plan) *ai.Plan {
+	// For this implementation, we'll create a structured plan from the markdown content
+	// In a more sophisticated version, the content could be parsed to extract steps
+	return &ai.Plan{
+		ID:          plan.ID.String(),
+		TaskID:      plan.TaskID.String(),
+		Description: "Implementation plan",
+		Steps: []ai.PlanStep{
+			{
+				ID:          "1",
+				Description: "Execute implementation based on plan content",
+				Action:      "implement",
+				Parameters: map[string]string{
+					"content":        plan.Content,
+					"worktree_path": "", // Will be set by execution service
+				},
+				Order: 1,
+			},
+		},
+		Context: map[string]string{
+			"plan_content": plan.Content,
+			"plan_status":  string(plan.Status),
+			"created_at":   plan.CreatedAt.Format("2006-01-02T15:04:05Z"),
+		},
+		CreatedAt: plan.CreatedAt,
+	}
 }
 
 // updateTaskStatus updates the task status
