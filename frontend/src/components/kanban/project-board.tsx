@@ -11,6 +11,7 @@ import {
   useDeleteTask,
   useDuplicateTask,
   useStartPlanning,
+  useApprovePlan,
 } from '@/hooks/use-tasks'
 import { BoardFilters } from './board-filters'
 import { BoardToolbar } from './board-toolbar'
@@ -48,7 +49,7 @@ export function ProjectBoard({ projectId }: ProjectBoardProps) {
   const deleteTaskMutation = useDeleteTask()
   const duplicateTaskMutation = useDuplicateTask()
   const startPlanningMutation = useStartPlanning()
-
+  const approvePlanAndStartImplementMutation = useApprovePlan()
   // WebSocket integration
   const { setCurrentProjectId } = useWebSocketProject(projectId)
   const { isConnected } = useWebSocketContext()
@@ -163,6 +164,20 @@ export function ProjectBoard({ projectId }: ProjectBoardProps) {
     }
   }
 
+  const handleApprovePlanAndStartImplement = async (taskId: string) => {
+    if (
+      confirm(
+        'Are you sure you want to approve the plan and start implementing?'
+      )
+    ) {
+      try {
+        await approvePlanAndStartImplementMutation.mutateAsync(taskId)
+      } catch (error) {
+        // Error is handled by the mutation hook
+      }
+    }
+  }
+
   return (
     <div className='flex h-full flex-col'>
       <BoardToolbar
@@ -226,6 +241,7 @@ export function ProjectBoard({ projectId }: ProjectBoardProps) {
           )
         }}
         onStartPlanning={handleStartPlanning}
+        onApprovePlanAndStartImplement={handleApprovePlanAndStartImplement}
       />
     </div>
   )

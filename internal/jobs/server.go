@@ -28,9 +28,10 @@ func NewServer(redisAddr, redisPassword string, redisDB int, processor *Processo
 		redisOpt,
 		asynq.Config{
 			Queues: map[string]int{
-				"critical": 6, // High priority queue
-				"planning": 4, // Planning jobs queue
-				"default":  1, // Default queue
+				"critical":       6, // High priority queue
+				"planning":       4, // Planning jobs queue
+				"implementation": 4, // Implementing jobs queue
+				"default":        1, // Default queue
 			},
 			// Concurrency settings
 			Concurrency: 4,
@@ -72,6 +73,7 @@ func NewServer(redisAddr, redisPassword string, redisDB int, processor *Processo
 // RegisterHandlers registers job handlers
 func (s *Server) RegisterHandlers() {
 	s.mux.HandleFunc(TypeTaskPlanning, s.processor.ProcessTaskPlanning)
+	s.mux.HandleFunc(TypeTaskImplementation, s.processor.ProcessTaskImplementation)
 }
 
 // Start starts the job server

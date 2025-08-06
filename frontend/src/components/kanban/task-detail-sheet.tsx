@@ -9,7 +9,6 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet'
-import { ConfirmDialog } from '../confirm-dialog'
 import { PlanReview } from '../planning'
 import { TaskActions } from './task-actions'
 import { TaskEditForm } from './task-edit-form'
@@ -25,6 +24,7 @@ interface TaskDetailSheetProps {
   onDuplicate?: (task: Task) => void
   onStatusChange?: (taskId: string, newStatus: Task['status']) => void
   onStartPlanning?: (taskId: string, branchName: string) => void
+  onApprovePlanAndStartImplement?: (taskId: string) => void
 }
 
 export function TaskDetailSheet({
@@ -36,9 +36,9 @@ export function TaskDetailSheet({
   onDuplicate,
   onStatusChange,
   onStartPlanning,
+  onApprovePlanAndStartImplement,
 }: TaskDetailSheetProps) {
   const [showEditForm, setShowEditForm] = useState(false)
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [showHistory, setShowHistory] = useState(false)
 
   if (!task) return null
@@ -50,22 +50,12 @@ export function TaskDetailSheet({
     setShowEditForm(true)
   }
 
-  const handleDelete = () => {
-    setShowDeleteConfirm(true)
-  }
-
   const handleDuplicate = () => {
     onDuplicate?.(task)
   }
 
   const handleStatusChange = (taskId: string, newStatus: Task['status']) => {
     onStatusChange?.(taskId, newStatus)
-  }
-
-  const confirmDelete = () => {
-    onDelete?.(task.id)
-    setShowDeleteConfirm(false)
-    onOpenChange(false)
   }
 
   const handleEditSave = (updatedTask: Task) => {
@@ -105,6 +95,25 @@ export function TaskDetailSheet({
               </div>
             )}
 
+            {/* Status Actions */}
+            <div>
+              <h4 className='mb-3 text-sm font-medium text-gray-700'>
+                Actions
+              </h4>
+              <TaskActions
+                task={task}
+                onEdit={handleEdit}
+                onDelete={onDelete}
+                onDuplicate={handleDuplicate}
+                onStatusChange={handleStatusChange}
+                onStartPlanning={onStartPlanning}
+                onApprovePlanAndStartImplement={onApprovePlanAndStartImplement}
+                // onViewHistory={() => setShowHistory(true)}
+              />
+            </div>
+
+            <Separator />
+
             {/* Plan Review */}
             <div>
               <h4 className='mb-3 text-sm font-medium text-gray-700'>
@@ -118,25 +127,6 @@ export function TaskDetailSheet({
             </div>
 
             <Separator />
-
-            {/* Status Actions */}
-            <div>
-              <h4 className='mb-3 text-sm font-medium text-gray-700'>
-                Actions
-              </h4>
-              <TaskActions
-                task={task}
-                onEdit={handleEdit}
-                onDelete={handleDelete}
-                onDuplicate={handleDuplicate}
-                onStatusChange={handleStatusChange}
-                onStartPlanning={onStartPlanning}
-                // onViewHistory={() => setShowHistory(true)}
-              />
-            </div>
-
-            <Separator />
-
             {/* Metadata */}
             <TaskMetadata
               task={task}
@@ -166,17 +156,6 @@ export function TaskDetailSheet({
           taskId={task.id}
         />
       )}
-
-      {/* Delete Confirmation */}
-      <ConfirmDialog
-        open={showDeleteConfirm}
-        onOpenChange={setShowDeleteConfirm}
-        title='Delete Task'
-        description='Are you sure you want to delete this task? This action cannot be undone.'
-        onConfirm={confirmDelete}
-        confirmText='Delete'
-        variant='destructive'
-      />
     </>
   )
 }
