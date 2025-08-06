@@ -291,6 +291,7 @@ type Task struct {
 	ParentTask *Task          `json:"parent_task,omitempty" gorm:"foreignKey:ParentTaskID"`
 	Subtasks   []Task         `json:"subtasks,omitempty" gorm:"foreignKey:ParentTaskID"`
 	AuditLogs  []TaskAuditLog `json:"audit_logs,omitempty" gorm:"foreignKey:TaskID"`
+	Plans      []Plan         `json:"plan,omitempty" gorm:"foreignKey:TaskID"`
 }
 
 // TaskAuditLog tracks all modifications to tasks

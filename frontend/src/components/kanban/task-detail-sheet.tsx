@@ -10,6 +10,7 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet'
 import { ConfirmDialog } from '../confirm-dialog'
+import { PlanReview } from '../planning'
 import { TaskActions } from './task-actions'
 import { TaskEditForm } from './task-edit-form'
 import { TaskHistory } from './task-history'
@@ -104,15 +105,17 @@ export function TaskDetailSheet({
               </div>
             )}
 
-            {/* Plan */}
-            {task.plan && (
-              <div>
-                <h4 className='mb-2 text-sm font-medium text-gray-700'>Plan</h4>
-                <div className='rounded border bg-blue-50 p-3 text-sm whitespace-pre-wrap text-gray-600'>
-                  {task.plan}
-                </div>
-              </div>
-            )}
+            {/* Plan Review */}
+            <div>
+              <h4 className='mb-3 text-sm font-medium text-gray-700'>
+                Implementation Plan
+              </h4>
+              <PlanReview
+                task={task}
+                onPlanUpdate={onEdit}
+                onStatusChange={onStatusChange}
+              />
+            </div>
 
             <Separator />
 
