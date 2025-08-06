@@ -10,11 +10,11 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet'
 import { ConfirmDialog } from '../confirm-dialog'
+import { PlanReview } from '../planning'
 import { TaskActions } from './task-actions'
 import { TaskEditForm } from './task-edit-form'
 import { TaskHistory } from './task-history'
 import { TaskMetadata } from './task-metadata'
-import { PlanReview } from '../planning'
 
 interface TaskDetailSheetProps {
   open: boolean
@@ -106,18 +106,16 @@ export function TaskDetailSheet({
             )}
 
             {/* Plan Review */}
-            {(task.plan || task.status === 'PLAN_REVIEWING') && (
-              <div>
-                <h4 className='mb-3 text-sm font-medium text-gray-700'>
-                  Implementation Plan
-                </h4>
-                <PlanReview 
-                  task={task}
-                  onPlanUpdate={onEdit}
-                  onStatusChange={onStatusChange}
-                />
-              </div>
-            )}
+            <div>
+              <h4 className='mb-3 text-sm font-medium text-gray-700'>
+                Implementation Plan
+              </h4>
+              <PlanReview
+                task={task}
+                onPlanUpdate={onEdit}
+                onStatusChange={onStatusChange}
+              />
+            </div>
 
             <Separator />
 

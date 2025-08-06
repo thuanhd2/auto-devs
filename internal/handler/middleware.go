@@ -14,7 +14,19 @@ import (
 // CORSMiddleware configures CORS settings
 func CORSMiddleware() gin.HandlerFunc {
 	config := cors.Config{
-		AllowOrigins:     []string{"http://localhost:3000", "http://localhost:5173", "http://localhost:9000"}, // React dev servers
+		AllowOrigins: []string{
+			"http://localhost:9000",
+			"http://localhost:9001",
+			"http://localhost:9002",
+			"http://localhost:9003",
+			"http://localhost:9004",
+			"http://localhost:9005",
+			"http://localhost:9006",
+			"http://localhost:9007",
+			"http://localhost:9008",
+			"http://localhost:9009",
+			"http://localhost:9010",
+		}, // React dev servers
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization", "X-Requested-With"},
 		ExposeHeaders:    []string{"Content-Length", "X-Total-Count"},

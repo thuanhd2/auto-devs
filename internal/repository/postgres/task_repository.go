@@ -61,7 +61,7 @@ func (r *taskRepository) GetByID(ctx context.Context, id uuid.UUID) (*entity.Tas
 func (r *taskRepository) GetByProjectID(ctx context.Context, projectID uuid.UUID) ([]*entity.Task, error) {
 	var tasks []entity.Task
 
-	result := r.db.WithContext(ctx).Where("project_id = ?", projectID).Order("created_at DESC").Find(&tasks)
+	result := r.db.WithContext(ctx).Preload("Plans").Where("project_id = ?", projectID).Order("created_at DESC").Find(&tasks)
 	if result.Error != nil {
 		return nil, fmt.Errorf("failed to get tasks by project: %w", result.Error)
 	}

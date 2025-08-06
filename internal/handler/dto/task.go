@@ -63,6 +63,7 @@ type TaskResponse struct {
 	WorktreePath *string              `json:"worktree_path,omitempty" example:"/tmp/worktrees/task-123"`
 	CreatedAt    time.Time            `json:"created_at" example:"2024-01-15T10:30:00Z"`
 	UpdatedAt    time.Time            `json:"updated_at" example:"2024-01-15T10:30:00Z"`
+	Plans        []PlanResponse       `json:"plans,omitempty"`
 }
 
 type TaskWithProjectResponse struct {
@@ -138,6 +139,10 @@ func (t *TaskResponse) FromEntity(task *entity.Task) {
 	t.WorktreePath = task.WorktreePath
 	t.CreatedAt = task.CreatedAt
 	t.UpdatedAt = task.UpdatedAt
+	t.Plans = make([]PlanResponse, len(task.Plans))
+	for i, plan := range task.Plans {
+		t.Plans[i].FromEntity(&plan)
+	}
 }
 
 func (t *TaskWithProjectResponse) FromEntity(task *entity.Task) {
