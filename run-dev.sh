@@ -38,6 +38,11 @@ cleanup() {
         kill $FRONTEND_PID 2>/dev/null
         print_status "Stopped React frontend (PID: $FRONTEND_PID)"
     fi
+
+    if [ ! -z "$WORKER_PID" ]; then
+        kill $WORKER_PID 2>/dev/null
+        print_status "Stopped worker (PID: $WORKER_PID)"
+    fi
     
     # Kill any remaining processes in our process group
     pkill -P $$ 2>/dev/null
@@ -91,6 +96,13 @@ start_server() {
     print_status "Server will be available at: http://localhost:8098"
 }
 
+start_worker() {
+    print_status "Starting worker..."
+    go run cmd/worker/main.go &
+    WORKER_PID=$!
+    print_success "Worker started (PID: $WORKER_PID)"
+}
+
 # Function to start the React frontend
 start_frontend() {
     print_status "Starting React frontend..."
@@ -134,6 +146,7 @@ monitor_processes() {
     print_status ""
     print_status "Available services:"
     print_status "  • Go Server:      http://localhost:8098"
+    print_status "  • Worker:         http://localhost:8098/worker"
     print_status "  • React Frontend: http://localhost:5173"
     print_status "  • Swagger UI:     http://localhost:8098/swagger/index.html"
     print_status ""
@@ -152,6 +165,12 @@ monitor_processes() {
             cleanup
         fi
         
+        # Check if worker process is still running
+        if ! kill -0 $WORKER_PID 2>/dev/null; then
+            print_error "Worker process died unexpectedly"
+            cleanup
+        fi
+
         sleep 2
     done
 }
@@ -161,8 +180,10 @@ main() {
     check_dependencies
     start_server
     sleep 2  # Give server a moment to start
-    start_frontend
+    start_worker
     sleep 2  # Give frontend a moment to start
+    start_frontend
+    sleep 2  # Give worker a moment to start
     monitor_processes
 }
 
