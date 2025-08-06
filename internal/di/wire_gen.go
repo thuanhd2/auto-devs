@@ -61,7 +61,7 @@ func InitializeApp() (*App, error) {
 	if err != nil {
 		return nil, err
 	}
-	processor := ProvideJobProcessor(taskUsecase, projectUsecase, worktreeUsecase, planningService, planRepository)
+	processor := ProvideJobProcessor(taskUsecase, projectUsecase, worktreeUsecase, planningService, executionService, planRepository)
 	app := NewApp(configConfig, gormDB, projectRepository, taskRepository, planRepository, worktreeRepository, auditRepository, auditUsecase, projectUsecase, taskUsecase, worktreeUsecase, notificationUsecase, cliManager, processManager, executionService, planningService, gitManager, worktreeManager, client, jobClientInterface, processor)
 	return app, nil
 }
@@ -280,7 +280,8 @@ func ProvideJobProcessor(
 	projectUsecase usecase.ProjectUsecase,
 	worktreeUsecase usecase.WorktreeUsecase,
 	planningService *ai.PlanningService,
+	executionService *ai.ExecutionService,
 	planRepo repository.PlanRepository,
 ) *jobs.Processor {
-	return jobs.NewProcessor(taskUsecase, projectUsecase, worktreeUsecase, planningService, planRepo)
+	return jobs.NewProcessor(taskUsecase, projectUsecase, worktreeUsecase, planningService, executionService, planRepo)
 }
