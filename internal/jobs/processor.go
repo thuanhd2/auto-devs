@@ -9,6 +9,7 @@ import (
 	"github.com/auto-devs/auto-devs/internal/repository"
 	"github.com/auto-devs/auto-devs/internal/service/ai"
 	"github.com/auto-devs/auto-devs/internal/usecase"
+	"github.com/auto-devs/auto-devs/internal/websocket"
 	"github.com/google/uuid"
 	"github.com/hibiken/asynq"
 )
@@ -21,6 +22,7 @@ type Processor struct {
 	planningService  *ai.PlanningService
 	executionService *ai.ExecutionService
 	planRepo         repository.PlanRepository
+	wsService        *websocket.Service
 	logger           *slog.Logger
 }
 
@@ -32,6 +34,7 @@ func NewProcessor(
 	planningService *ai.PlanningService,
 	executionService *ai.ExecutionService,
 	planRepo repository.PlanRepository,
+	wsService *websocket.Service,
 ) *Processor {
 	return &Processor{
 		taskUsecase:      taskUsecase,
@@ -40,6 +43,7 @@ func NewProcessor(
 		planningService:  planningService,
 		executionService: executionService,
 		planRepo:         planRepo,
+		wsService:        wsService,
 		logger:           slog.Default().With("component", "job-processor"),
 	}
 }
@@ -58,12 +62,26 @@ func (p *Processor) ProcessTaskPlanning(ctx context.Context, task *asynq.Task) e
 		"branch_name", payload.BranchName,
 		"project_id", payload.ProjectID)
 
-	// Step 1: Update task status to PLANNING
-	err = p.updateTaskStatus(ctx, payload.TaskID, entity.TaskStatusPLANNING)
+	// Step 1: Check current task status and update to PLANNING if needed
+	currentTask, err := p.taskUsecase.GetByID(ctx, payload.TaskID)
 	if err != nil {
-		p.logger.Error("Failed to update task status to PLANNING",
+		p.logger.Error("Failed to get task for status check",
 			"task_id", payload.TaskID, "error", err)
-		return fmt.Errorf("failed to update task status to PLANNING: %w", err)
+		return fmt.Errorf("failed to get task: %w", err)
+	}
+
+	// Only update status to PLANNING if it's not already PLANNING
+	// This handles cases where the status was already updated by the handler
+	if currentTask.Status != entity.TaskStatusPLANNING {
+		err = p.updateTaskStatus(ctx, payload.TaskID, entity.TaskStatusPLANNING)
+		if err != nil {
+			p.logger.Error("Failed to update task status to PLANNING",
+				"task_id", payload.TaskID, "error", err)
+			return fmt.Errorf("failed to update task status to PLANNING: %w", err)
+		}
+		p.logger.Info("Updated task status to PLANNING!!!!!!")
+	} else {
+		p.logger.Info("Task status is already PLANNING, skipping status update!!!!!!")
 	}
 
 	p.logger.Info("Updated task status to PLANNING!!!!!!")
@@ -156,12 +174,26 @@ func (p *Processor) ProcessTaskImplementation(ctx context.Context, task *asynq.T
 		"task_id", payload.TaskID,
 		"project_id", payload.ProjectID)
 
-	// Step 1: Update task status to IMPLEMENTING
-	err = p.updateTaskStatus(ctx, payload.TaskID, entity.TaskStatusIMPLEMENTING)
+	// Step 1: Check current task status and update to IMPLEMENTING if needed
+	currentTask, err := p.taskUsecase.GetByID(ctx, payload.TaskID)
 	if err != nil {
-		p.logger.Error("Failed to update task status to IMPLEMENTING",
+		p.logger.Error("Failed to get task for status check",
 			"task_id", payload.TaskID, "error", err)
-		return fmt.Errorf("failed to update task status to IMPLEMENTING: %w", err)
+		return fmt.Errorf("failed to get task: %w", err)
+	}
+
+	// Only update status to IMPLEMENTING if it's not already IMPLEMENTING
+	// This handles cases where the status was already updated by the handler
+	if currentTask.Status != entity.TaskStatusIMPLEMENTING {
+		err = p.updateTaskStatus(ctx, payload.TaskID, entity.TaskStatusIMPLEMENTING)
+		if err != nil {
+			p.logger.Error("Failed to update task status to IMPLEMENTING",
+				"task_id", payload.TaskID, "error", err)
+			return fmt.Errorf("failed to update task status to IMPLEMENTING: %w", err)
+		}
+		p.logger.Info("Updated task status to IMPLEMENTING")
+	} else {
+		p.logger.Info("Task status is already IMPLEMENTING, skipping status update")
 	}
 
 	p.logger.Info("Updated task status to IMPLEMENTING")
@@ -262,12 +294,66 @@ func (p *Processor) convertEntityPlanToAIPlan(plan *entity.Plan) *ai.Plan {
 	}
 }
 
-// updateTaskStatus updates the task status
+// updateTaskStatus updates the task status and broadcasts WebSocket notification
 func (p *Processor) updateTaskStatus(ctx context.Context, taskID uuid.UUID, status entity.TaskStatus) error {
 	p.logger.Info("Updating task status", "task_id", taskID, "status", status)
-	_, err := p.taskUsecase.UpdateStatus(ctx, taskID, status)
+	
+	// Get the current task to track the old status
+	currentTask, err := p.taskUsecase.GetByID(ctx, taskID)
+	if err != nil {
+		p.logger.Error("Failed to get current task", "task_id", taskID, "error", err)
+		return err
+	}
+	
+	oldStatus := currentTask.Status
+	
+	// Update the task status
+	task, err := p.taskUsecase.UpdateStatus(ctx, taskID, status)
+	if err != nil {
+		p.logger.Error("Failed to update task status", "task_id", taskID, "status", status, "error", err)
+		return err
+	}
+	
 	p.logger.Info("Updated task status", "task_id", taskID, "status", status)
-	return err
+	
+	// Send WebSocket notifications if status actually changed
+	if oldStatus != status {
+		// Create changes map for task update notification
+		changes := map[string]interface{}{
+			"status": map[string]interface{}{
+				"old": oldStatus,
+				"new": status,
+			},
+		}
+		
+		// Convert task to response format for WebSocket
+		// Note: In a real implementation, you might want to create a proper converter
+		taskResponse := map[string]interface{}{
+			"id":         task.ID.String(),
+			"project_id": task.ProjectID.String(),
+			"title":      task.Title,
+			"status":     string(task.Status),
+			"updated_at": task.UpdatedAt,
+		}
+		
+		// Send task updated notification
+		if err := p.wsService.NotifyTaskUpdated(task.ID, task.ProjectID, changes, taskResponse); err != nil {
+			p.logger.Error("Failed to send WebSocket task update notification", 
+				"task_id", taskID, "error", err)
+		}
+		
+		// Send status changed notification
+		if err := p.wsService.NotifyStatusChanged(task.ID, task.ProjectID, "task", 
+			string(oldStatus), string(status)); err != nil {
+			p.logger.Error("Failed to send WebSocket status change notification", 
+				"task_id", taskID, "error", err)
+		}
+		
+		p.logger.Info("Sent WebSocket notifications for status change", 
+			"task_id", taskID, "old_status", oldStatus, "new_status", status)
+	}
+	
+	return nil
 }
 
 // createWorktree creates a git worktree for the task
@@ -389,8 +475,8 @@ func (p *Processor) savePlanAndUpdateStatus(ctx context.Context, taskID uuid.UUI
 
 	p.logger.Info("Plan status updated to REVIEWING", "plan_id", plan.ID)
 
-	// Update task status to PLAN_REVIEWING
-	_, err = p.taskUsecase.UpdateStatus(ctx, taskID, entity.TaskStatusPLANREVIEWING)
+	// Update task status to PLAN_REVIEWING with WebSocket broadcast
+	err = p.updateTaskStatus(ctx, taskID, entity.TaskStatusPLANREVIEWING)
 	if err != nil {
 		p.logger.Error("Failed to update task status", "task_id", taskID, "error", err)
 		return fmt.Errorf("failed to update task status: %w", err)

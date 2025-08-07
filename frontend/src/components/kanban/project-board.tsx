@@ -87,6 +87,9 @@ export function ProjectBoard({ projectId }: ProjectBoardProps) {
   const handleTaskUpdated = useCallback(
     (task: Task, changes?: any) => {
       if (task.project_id === projectId) {
+        // Confirm any pending optimistic updates for this task
+        taskOptimisticUpdates.confirmTaskUpdate(task.id, task)
+        
         setLocalTasks((prev) => prev.map((t) => (t.id === task.id ? task : t)))
       }
     },
@@ -235,10 +238,32 @@ export function ProjectBoard({ projectId }: ProjectBoardProps) {
           }
         }}
         onStatusChange={(taskId, newStatus) => {
-          // Handle status change
-          setLocalTasks((prev) =>
-            prev.map((t) => (t.id === taskId ? { ...t, status: newStatus } : t))
-          )
+          // Find the task to apply optimistic update
+          const task = localTasks.find(t => t.id === taskId)
+          if (task) {
+            // Apply optimistic status change with WebSocket confirmation
+            taskOptimisticUpdates.updateTaskStatus(
+              taskId,
+              newStatus,
+              task,
+              (updatedTask) => {
+                setLocalTasks((prev) =>
+                  prev.map((t) => (t.id === taskId ? updatedTask : t))
+                )
+              },
+              (confirmedTask) => {
+                // Status change confirmed by WebSocket
+                console.log('Status change confirmed by WebSocket:', confirmedTask)
+              },
+              (originalTask) => {
+                // Revert status change if failed
+                setLocalTasks((prev) =>
+                  prev.map((t) => (t.id === taskId ? originalTask : t))
+                )
+                toast.error('Failed to update task status')
+              }
+            )
+          }
         }}
         onStartPlanning={handleStartPlanning}
         onApprovePlanAndStartImplement={handleApprovePlanAndStartImplement}
