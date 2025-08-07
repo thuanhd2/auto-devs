@@ -18,10 +18,10 @@ type AuthenticatedUser struct {
 	AvatarURL string `json:"avatar_url"`
 	Type      string `json:"type"`
 	Plan      struct {
-		Name         string `json:"name"`
-		Space        int    `json:"space"`
-		Collaborators int   `json:"collaborators"`
-		PrivateRepos int    `json:"private_repos"`
+		Name          string `json:"name"`
+		Space         int    `json:"space"`
+		Collaborators int    `json:"collaborators"`
+		PrivateRepos  int    `json:"private_repos"`
 	} `json:"plan"`
 }
 
@@ -37,73 +37,73 @@ type TokenInfo struct {
 
 // TokenScopes represents different GitHub token scopes
 var TokenScopes = struct {
-	Repo                string
-	RepoStatus          string
-	RepoDeployment      string
-	PublicRepo          string
-	RepoInvite          string
-	SecurityEvents      string
-	AdminRepoHook       string
-	WriteRepoHook       string
-	ReadRepoHook        string
-	AdminOrg            string
-	WriteOrg            string
-	ReadOrg             string
-	AdminPublicKey      string
-	WritePublicKey      string
-	ReadPublicKey       string
-	AdminOrgHook        string
-	Gist                string
-	Notifications       string
-	User                string
-	ReadUser            string
-	UserEmail           string
-	UserFollow          string
-	Project             string
-	ReadProject         string
-	DeleteRepo          string
-	WritePackages       string
-	ReadPackages        string
-	DeletePackages      string
-	AdminGPGKey         string
-	WriteGPGKey         string
-	ReadGPGKey          string
-	Codespace           string
-	Workflow            string
+	Repo           string
+	RepoStatus     string
+	RepoDeployment string
+	PublicRepo     string
+	RepoInvite     string
+	SecurityEvents string
+	AdminRepoHook  string
+	WriteRepoHook  string
+	ReadRepoHook   string
+	AdminOrg       string
+	WriteOrg       string
+	ReadOrg        string
+	AdminPublicKey string
+	WritePublicKey string
+	ReadPublicKey  string
+	AdminOrgHook   string
+	Gist           string
+	Notifications  string
+	User           string
+	ReadUser       string
+	UserEmail      string
+	UserFollow     string
+	Project        string
+	ReadProject    string
+	DeleteRepo     string
+	WritePackages  string
+	ReadPackages   string
+	DeletePackages string
+	AdminGPGKey    string
+	WriteGPGKey    string
+	ReadGPGKey     string
+	Codespace      string
+	Workflow       string
 }{
-	Repo:                "repo",
-	RepoStatus:          "repo:status",
-	RepoDeployment:      "repo_deployment",
-	PublicRepo:          "public_repo",
-	RepoInvite:          "repo:invite",
-	SecurityEvents:      "security_events",
-	AdminRepoHook:       "admin:repo_hook",
-	WriteRepoHook:       "write:repo_hook",
-	ReadRepoHook:        "read:repo_hook",
-	AdminOrg:            "admin:org",
-	WriteOrg:            "write:org",
-	ReadOrg:             "read:org",
-	AdminPublicKey:      "admin:public_key",
-	WritePublicKey:      "write:public_key",
-	ReadPublicKey:       "read:public_key",
-	AdminOrgHook:        "admin:org_hook",
-	Gist:                "gist",
-	Notifications:       "notifications",
-	User:                "user",
-	ReadUser:            "read:user",
-	UserEmail:           "user:email",
-	UserFollow:          "user:follow",
-	Project:             "project",
-	ReadProject:         "read:project",
-	DeleteRepo:          "delete_repo",
-	WritePackages:       "write:packages",
-	ReadPackages:        "read:packages",
-	DeletePackages:      "delete:packages",
-	AdminGPGKey:         "admin:gpg_key",
-	WriteGPGKey:         "write:gpg_key",
-	ReadGPGKey:          "read:gpg_key",
-	Codespace:           "codespace",
-	Workflow:            "workflow",
+	Repo:           "repo",
+	RepoStatus:     "repo:status",
+	RepoDeployment: "repo_deployment",
+	PublicRepo:     "public_repo",
+	RepoInvite:     "repo:invite",
+	SecurityEvents: "security_events",
+	AdminRepoHook:  "admin:repo_hook",
+	WriteRepoHook:  "write:repo_hook",
+	ReadRepoHook:   "read:repo_hook",
+	AdminOrg:       "admin:org",
+	WriteOrg:       "write:org",
+	ReadOrg:        "read:org",
+	AdminPublicKey: "admin:public_key",
+	WritePublicKey: "write:public_key",
+	ReadPublicKey:  "read:public_key",
+	AdminOrgHook:   "admin:org_hook",
+	Gist:           "gist",
+	Notifications:  "notifications",
+	User:           "user",
+	ReadUser:       "read:user",
+	UserEmail:      "user:email",
+	UserFollow:     "user:follow",
+	Project:        "project",
+	ReadProject:    "read:project",
+	DeleteRepo:     "delete_repo",
+	WritePackages:  "write:packages",
+	ReadPackages:   "read:packages",
+	DeletePackages: "delete:packages",
+	AdminGPGKey:    "admin:gpg_key",
+	WriteGPGKey:    "write:gpg_key",
+	ReadGPGKey:     "read:gpg_key",
+	Codespace:      "codespace",
+	Workflow:       "workflow",
 }
 
 // RequiredScopes defines the minimum scopes required for different operations
@@ -184,7 +184,7 @@ func (gs *GitHubService) GetAuthenticatedUser(ctx context.Context) (*Authenticat
 
 // ValidateTokenScopes checks if the token has the required scopes for the operation
 func (gs *GitHubService) ValidateTokenScopes(ctx context.Context, operation string) error {
-	requiredScopes, exists := RequiredScopes[operation]
+	_, exists := RequiredScopes[operation]
 	if !exists {
 		return &ValidationError{
 			Field:   "operation",
@@ -223,7 +223,7 @@ func (gs *GitHubService) validateTokenFormat(token string) error {
 	// GitHub Apps user access tokens start with 'ghu_'
 	// Fine-grained personal access tokens start with 'github_pat_'
 	validPrefixes := []string{"ghp_", "ghs_", "ghu_", "github_pat_"}
-	
+
 	hasValidPrefix := false
 	for _, prefix := range validPrefixes {
 		if strings.HasPrefix(token, prefix) {
