@@ -89,13 +89,21 @@ func (m *MockWorktreeService) GetWorktreeByTaskID(ctx context.Context, taskID uu
 	return args.Get(0).(*entity.Worktree), args.Error(1)
 }
 
-// GitHubServiceInterface for testing
-type GitHubServiceInterface interface {
-	GetPullRequest(ctx context.Context, repo string, prNumber int) (*entity.PullRequest, error)
-}
-
 type MockGitHubServiceForPR struct {
 	mock.Mock
+}
+
+func (m *MockGitHubServiceForPR) CreatePullRequest(ctx context.Context, repo, base, head, title, body string) (*entity.PullRequest, error) {
+	args := m.Called(ctx, repo, base, head, title, body)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*entity.PullRequest), args.Error(1)
+}
+
+func (m *MockGitHubServiceForPR) UpdatePullRequest(ctx context.Context, repo string, prNumber int, updates map[string]interface{}) error {
+	args := m.Called(ctx, repo, prNumber, updates)
+	return args.Error(0)
 }
 
 func (m *MockGitHubServiceForPR) GetPullRequest(ctx context.Context, repo string, prNumber int) (*entity.PullRequest, error) {
@@ -324,7 +332,7 @@ func TestHandlePRMerge(t *testing.T) {
 }
 
 func TestMonitorAllActivePRs(t *testing.T) {
-	monitor, _, _, taskRepo, _, _ := createPRMonitor(t)
+	monitor, _, prRepo, taskRepo, _, _ := createPRMonitor(t)
 
 	pr1 := createTestPR()
 	pr2 := createTestPR()
