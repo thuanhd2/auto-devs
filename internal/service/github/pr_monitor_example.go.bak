@@ -1,0 +1,235 @@
+package github
+
+import (
+	"context"
+	"log"
+	"log/slog"
+	"os"
+	"time"
+
+	"github.com/auto-devs/auto-devs/internal/entity"
+	"github.com/auto-devs/auto-devs/internal/repository/postgres"
+	"github.com/auto-devs/auto-devs/internal/websocket"
+	"gorm.io/gorm"
+)
+
+// ExamplePRMonitorUsage demonstrates how to use the PR monitoring service
+func ExamplePRMonitorUsage() {
+	// This example shows how to set up and use the PR monitoring service
+	// in your application
+
+	// 1. Setup dependencies (normally injected via DI)
+	var db *gorm.DB // Your database connection
+	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
+
+	// Create repositories
+	prRepo := postgres.NewPullRequestRepository(db)
+	// taskRepo := postgres.NewTaskRepository(db) // Would need proper database wrapper
+
+	// Create services (these would be injected)
+	githubService := &GitHubService{} // Your GitHub service instance
+	websocketSvc := &websocket.Service{} // Your WebSocket service
+	var worktreeService WorktreeService // Your worktree service
+
+	// 2. Configure PR monitoring
+	config := &PRMonitorConfig{
+		PollInterval:        5 * time.Minute,  // Check GitHub every 5 minutes
+		MaxRetries:          3,                // Retry failed requests 3 times
+		RetryDelay:          30 * time.Second, // Wait 30s between retries
+		ConcurrentMonitors:  10,               // Monitor up to 10 PRs concurrently
+		NotificationTimeout: 10 * time.Second, // Timeout for notifications
+	}
+
+	// 3. Create PR monitor service
+	// prMonitor := NewPRMonitor(
+	//     githubService,
+	//     prRepo,
+	//     taskRepo, // Would need proper repository implementation
+	//     worktreeService,
+	//     websocketSvc,
+	//     config,
+	//     logger,
+	// )
+
+	// 4. Start monitoring all active PRs (typically done at application startup)
+	// ctx := context.Background()
+	// if err := prMonitor.StartMonitoring(ctx); err != nil {
+		log.Printf("Failed to start PR monitoring: %v", err)
+		return
+	}
+
+	// 5. Monitor a new PR (typically called when a PR is created)
+	// pr := &entity.PullRequest{
+	//     GitHubPRNumber: 123,
+	//     Repository:     "owner/repo", 
+	//     Status:         entity.PullRequestStatusOpen,
+	// }
+	// 
+	// if err := prMonitor.MonitorPR(pr); err != nil {
+	//     log.Printf("Failed to start monitoring PR: %v", err)
+	// }
+
+	// 6. Handle PR events manually (if needed)
+	// This is typically called from webhooks or manual triggers
+	
+	// PR status change
+	// if err := prMonitor.HandlePRStatusChange(pr, string(entity.PullRequestStatusMerged)); err != nil {
+	//     log.Printf("Failed to handle PR status change: %v", err)
+	// }
+
+	// PR merge
+	// if err := prMonitor.HandlePRMerge(pr); err != nil {
+	//     log.Printf("Failed to handle PR merge: %v", err)
+	// }
+
+	// PR review
+	// review := &entity.PullRequestReview{
+	//     PullRequestID: pr.ID,
+	//     Reviewer:      "reviewer-username",
+	//     State:         "APPROVED",
+	//     Body:          stringPtr("Looks good to me!"),
+	//     SubmittedAt:   timePtr(time.Now()),
+	// }
+	// 
+	// if err := prMonitor.HandlePRReview(pr, review); err != nil {
+	//     log.Printf("Failed to handle PR review: %v", err)
+	// }
+
+	// 7. Get monitoring statistics
+	// stats := prMonitor.GetMonitoringStats()
+	// log.Printf("Monitoring stats: %+v", stats)
+
+	// 8. Manually refresh a PR (force immediate check)
+	// if err := prMonitor.RefreshPR(pr.ID); err != nil {
+	//     log.Printf("Failed to refresh PR: %v", err)
+	// }
+
+	// 9. Stop monitoring (typically done at application shutdown)
+	// if err := prMonitor.Stop(); err != nil {
+	//     log.Printf("Failed to stop PR monitoring: %v", err)
+	// }
+}
+
+// ExampleIntegrationWithTaskWorkflow shows how to integrate PR monitoring
+// with the task workflow
+func ExampleIntegrationWithTaskWorkflow() {
+	_ = "prMonitor" // Your PR monitor instance would be used here
+
+	// When a task moves to IMPLEMENTING status and a PR is created
+	_ = "task-uuid"
+	// pr := &entity.PullRequest{
+	//     // ... PR details
+	// }
+
+	// Start monitoring the PR
+	// if err := prMonitor.MonitorPR(pr); err != nil {
+	//     log.Printf("Failed to start PR monitoring: %v", err)
+	// }
+
+	// The monitor will automatically:
+	// 1. Poll GitHub API every 5 minutes (configurable)
+	// 2. Detect when PR status changes (open -> merged/closed)
+	// 3. Update task status accordingly:
+	//    - PR open -> Task CODE_REVIEWING
+	//    - PR merged -> Task DONE + trigger cleanup
+	//    - PR closed -> Task CANCELLED
+	// 4. Send WebSocket notifications to frontend
+	// 5. Trigger worktree cleanup when PR is merged
+
+	// log.Printf("PR monitoring started for task %s", taskID)
+}
+
+// ExampleWebhookIntegration shows how to integrate with GitHub webhooks
+// for real-time updates instead of polling
+func ExampleWebhookIntegration() {
+	_ = "prMonitor" // Your PR monitor instance would be used here
+
+	// GitHub webhook handler  
+	handleGitHubWebhook := func(payload map[string]interface{}) {
+		action, ok := payload["action"].(string)
+		if !ok {
+			return
+		}
+
+		prData, ok := payload["pull_request"].(map[string]interface{})
+		if !ok {
+			return
+		}
+
+		// Extract PR information from webhook
+		prNumber := int(prData["number"].(float64))
+		repository := prData["base"].(map[string]interface{})["repo"].(map[string]interface{})["full_name"].(string)
+
+		// Find the PR in our database
+		ctx := context.Background()
+		// pr := findPRByGitHubInfo(ctx, repository, prNumber)
+
+		switch action {
+		case "opened":
+			// PR was opened - might need to start monitoring
+			log.Printf("PR opened: %s #%d", repository, prNumber)
+
+		case "closed":
+			// PR was closed or merged
+			merged := prData["merged"].(bool)
+			if merged {
+				log.Printf("PR merged: %s #%d", repository, prNumber)
+				// Handle merge immediately instead of waiting for polling
+				// prMonitor.HandlePRMerge(pr)
+			} else {
+				log.Printf("PR closed: %s #%d", repository, prNumber)
+				// Handle close immediately
+				// prMonitor.HandlePRStatusChange(pr, "CLOSED")
+			}
+
+		case "review_submitted":
+			// PR review was submitted
+			log.Printf("PR review submitted: %s #%d", repository, prNumber)
+			// Handle review immediately
+			// review := parseReviewFromWebhook(payload)
+			// prMonitor.HandlePRReview(pr, review)
+		}
+	}
+
+	// Use webhook handler in your HTTP router
+	_ = handleGitHubWebhook
+}
+
+// ExampleMonitoringDashboard shows how to create a monitoring dashboard
+func ExampleMonitoringDashboard() {
+	_ = "prMonitor" // Your PR monitor instance would be used here
+
+	// Get comprehensive monitoring statistics
+	// stats := prMonitor.GetMonitoringStats()
+	// 
+	// log.Printf("=== PR Monitoring Dashboard ===")
+	// log.Printf("Active Monitors: %d", stats["active_monitors"])
+	// 
+	// monitors := stats["monitors"].([]map[string]interface{})
+	// for _, monitor := range monitors {
+	//     log.Printf("PR #%v (Task: %v, Repo: %v, Status: %v, Last Poll: %v, Retries: %v)",
+	//         monitor["pr_number"],
+	//         monitor["task_id"], 
+	//         monitor["repository"],
+	//         monitor["status"],
+	//         monitor["last_poll"],
+	//         monitor["retries"],
+	//     )
+	// }
+
+	// Health check
+	// if len(monitors) > 0 {
+	//     log.Printf("✅ PR monitoring is active")
+	// } else {
+	//     log.Printf("⚠️  No active PR monitors")
+	// }
+}
+
+// Helper functions
+func stringPtr(s string) *string {
+	return &s
+}
+
+func timePtr(t time.Time) *time.Time {
+	return &t
+}
