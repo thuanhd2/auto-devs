@@ -1075,7 +1075,8 @@ func (u *taskUsecase) ApprovePlan(ctx context.Context, taskID uuid.UUID) (string
 		return "", fmt.Errorf("failed to get task: %w", err)
 	}
 
-	if task.Status != entity.TaskStatusPLANREVIEWING {
+	if task.Status != entity.TaskStatusPLANREVIEWING && task.Status != entity.TaskStatusIMPLEMENTING {
+		// Need check with IMPLEMENTING status for case status is changed by handler
 		return "", fmt.Errorf("task must be in PLAN_REVIEWING status to approve plan, current status: %s", task.Status)
 	}
 

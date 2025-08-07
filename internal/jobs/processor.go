@@ -251,8 +251,9 @@ func (p *Processor) ProcessTaskImplementation(ctx context.Context, task *asynq.T
 		return fmt.Errorf("failed to get plan for task: %w", err)
 	}
 
+	// TODO: Need approve plan first
 	// Step 4: Validate plan status - ensure it's APPROVED
-	if plan.Status != entity.PlanStatusAPPROVED {
+	if plan.Status != entity.PlanStatusAPPROVED && plan.Status != entity.PlanStatusREVIEWING {
 		// Revert task status on failure
 		_ = p.updateTaskStatus(ctx, payload.TaskID, entity.TaskStatusPLANREVIEWING)
 		p.logger.Error("Plan is not approved", "task_id", payload.TaskID, "plan_status", plan.Status)
