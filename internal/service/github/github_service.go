@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/thuanhd2/auto-devs/internal/entity"
+	"github.com/auto-devs/auto-devs/internal/entity"
 )
 
 // GitHubConfig holds the configuration for GitHub API integration
