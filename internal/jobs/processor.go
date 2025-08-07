@@ -153,7 +153,7 @@ func (p *Processor) ProcessTaskImplementation(ctx context.Context, task *asynq.T
 		"task_id", payload.TaskID,
 		"project_id", payload.ProjectID)
 
-	// TODO: call ai executor to implement the task
+	// TODO: call ai execution service to implement the task
 
 	return nil
 }
