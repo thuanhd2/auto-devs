@@ -56,18 +56,24 @@ func NewHub(node *centrifuge.Node) *Hub {
 	return hub
 }
 
-func generatePrivateChannel(userID *string, projectID *uuid.UUID) string {
-	hardCodeUserID := "123"
-	theUserID := hardCodeUserID
-	if userID != nil {
-		theUserID = *userID
+func generatePrivateChannel(_ *string, projectID *uuid.UUID) string {
+	// hardCodeUserID := "123"
+	// theUserID := hardCodeUserID
+	// if userID != nil {
+	// 	theUserID = *userID
+	// }
+	// if projectID != nil {
+	// 	// $:<user_id>
+	// 	return fmt.Sprintf("$:%s", theUserID)
+	// }
+	// // $:<user_id>:project:<project_id>
+	// return fmt.Sprintf("$:%s:project:%s", theUserID, projectID)
+	if projectID == nil {
+		// TODO: do nothing now
+		log.Printf("No project ID provided, skipping broadcast")
+		return "dummy_channel"
 	}
-	if projectID != nil {
-		// $:<user_id>
-		return fmt.Sprintf("$:%s", theUserID)
-	}
-	// $:<user_id>:project:<project_id>
-	return fmt.Sprintf("$:%s:project:%s", theUserID, projectID)
+	return fmt.Sprintf("project:%s", projectID)
 }
 
 // Broadcast sends a message to all relevant connections
