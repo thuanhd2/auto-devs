@@ -92,8 +92,10 @@ func NewConnection(conn *websocket.Conn, hub *Hub) *Connection {
 
 // Start begins the connection's read and write pumps
 func (c *Connection) Start() {
+	log.Printf("Starting connection pumps for: %s", c.ID)
 	go c.writePump()
 	go c.readPump()
+	log.Printf("Connection pumps started for: %s", c.ID)
 }
 
 // Close closes the connection and cleans up resources
@@ -225,7 +227,9 @@ func (c *Connection) SafeClose() {
 
 // readPump pumps messages from the WebSocket connection to the hub
 func (c *Connection) readPump() {
+	log.Printf("readPump started for connection: %s", c.ID)
 	defer func() {
+		log.Printf("readPump defer ---------------- for connection: %s", c.ID)
 		c.hub.Unregister(c)
 		c.SafeClose()
 	}()
@@ -245,6 +249,7 @@ func (c *Connection) readPump() {
 		default:
 			_, messageBytes, err := c.conn.ReadMessage()
 			if err != nil {
+				log.Printf("ReadMessage error xxxxxxxxxxxxx: %v", err)
 				if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
 					log.Printf("WebSocket error: %v", err)
 				}
@@ -259,8 +264,10 @@ func (c *Connection) readPump() {
 
 // writePump pumps messages from the hub to the WebSocket connection
 func (c *Connection) writePump() {
+	log.Printf("writePump started for connection: %s", c.ID)
 	ticker := time.NewTicker(pingPeriod)
 	defer func() {
+		log.Printf("writePump defer for connection: %s", c.ID)
 		ticker.Stop()
 		c.SafeClose()
 	}()
@@ -316,6 +323,7 @@ func (c *Connection) handleIncomingMessage(messageBytes []byte) {
 	case Ping:
 		c.handlePing()
 	case AuthRequired:
+		log.Printf("AuthRequired message: %v", message)
 		c.handleAuth(message)
 	default:
 		// Forward to hub for processing

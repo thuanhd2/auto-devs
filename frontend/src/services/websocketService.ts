@@ -118,13 +118,14 @@ export class WebSocketService {
           this.handleMessage(message)
         } catch (error) {
           console.error('Failed to parse WebSocket message:', error)
+          console.error('WebSocket message:', event.data)
         }
       }
 
       this.ws.onclose = (event) => {
         clearTimeout(connectTimeout)
         this.stopHeartbeat()
-        
+
         this.updateConnectionState({
           status: 'disconnected',
           disconnectedAt: new Date(),
@@ -138,7 +139,7 @@ export class WebSocketService {
       this.ws.onerror = (error) => {
         clearTimeout(connectTimeout)
         console.error('WebSocket error:', error)
-        
+
         this.updateConnectionState({
           status: 'error',
           lastError: 'Connection error occurred',
@@ -169,9 +170,17 @@ export class WebSocketService {
     })
   }
 
+  isConnectionReadyToSend(): boolean {
+    return (
+      this.connectionState.status === 'connected' &&
+      this.ws &&
+      this.ws.readyState !== WebSocket.CONNECTING
+    )
+  }
+
   send(message: any): Promise<void> {
     return new Promise((resolve, reject) => {
-      if (this.connectionState.status !== 'connected' || !this.ws) {
+      if (!this.isConnectionReadyToSend()) {
         // Queue message for later delivery
         if (this.messageQueue.length < this.config.maxQueueSize) {
           this.messageQueue.push({
@@ -231,6 +240,11 @@ export class WebSocketService {
   }
 
   subscribeToProject(projectId: string): Promise<void> {
+    // check if projectId is already subscribed
+    if (this.subscriptions.has(projectId)) {
+      return Promise.resolve()
+    }
+
     this.subscriptions.add(projectId)
     return this.send({
       type: 'subscription',
@@ -348,7 +362,7 @@ export class WebSocketService {
     }
 
     const backoffDelay = this.calculateBackoffDelay()
-    
+
     this.updateConnectionState({
       isReconnecting: true,
       reconnectAttempts: this.connectionState.reconnectAttempts + 1,
@@ -373,10 +387,11 @@ export class WebSocketService {
   private calculateBackoffDelay(): number {
     // Exponential backoff with jitter
     const baseDelay = this.config.reconnectInterval
-    const exponentialDelay = baseDelay * Math.pow(2, this.connectionState.reconnectAttempts)
+    const exponentialDelay =
+      baseDelay * Math.pow(2, this.connectionState.reconnectAttempts)
     const maxDelay = 30000 // 30 seconds max
     const delay = Math.min(exponentialDelay, maxDelay)
-    
+
     // Add jitter (±25%)
     const jitter = delay * 0.25 * (Math.random() - 0.5)
     return Math.max(1000, delay + jitter) // Minimum 1 second

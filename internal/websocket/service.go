@@ -2,6 +2,8 @@ package websocket
 
 import (
 	"log"
+	"log/slog"
+	"os"
 	"time"
 
 	"github.com/google/uuid"
@@ -18,6 +20,7 @@ type Service struct {
 	statusProcessor   *StatusEventProcessor
 	presenceProcessor *UserPresenceProcessor
 	authService       AuthService
+	logger            *slog.Logger
 }
 
 // NewService creates a new WebSocket service
@@ -46,6 +49,8 @@ func NewService() *Service {
 		hub.RegisterProcessor(msgType, processor)
 	}
 
+	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
+
 	service := &Service{
 		handler:           handler,
 		hub:               hub,
@@ -56,6 +61,7 @@ func NewService() *Service {
 		statusProcessor:   statusProcessor,
 		presenceProcessor: presenceProcessor,
 		authService:       authService,
+		logger:            logger,
 	}
 
 	return service
@@ -90,6 +96,7 @@ func (s *Service) NotifyTaskUpdated(taskID, projectID uuid.UUID, changes map[str
 
 // NotifyTaskDeleted notifies about a task deletion
 func (s *Service) NotifyTaskDeleted(taskID, projectID uuid.UUID) error {
+	s.logger.Info("NotifyTaskDeleted", "taskID", taskID, "projectID", projectID)
 	return s.taskProcessor.BroadcastTaskDeleted(taskID, projectID, nil)
 }
 

@@ -248,8 +248,8 @@ func (p *Processor) ProcessTaskImplementation(ctx context.Context, task *asynq.T
 		return fmt.Errorf("failed to start AI execution: %w", err)
 	}
 
-	p.logger.Info("AI execution started successfully", 
-		"task_id", payload.TaskID, 
+	p.logger.Info("AI execution started successfully",
+		"task_id", payload.TaskID,
 		"execution_id", execution.ID,
 		"execution_status", execution.Status)
 
@@ -279,7 +279,7 @@ func (p *Processor) convertEntityPlanToAIPlan(plan *entity.Plan) *ai.Plan {
 				Description: "Execute implementation based on plan content",
 				Action:      "implement",
 				Parameters: map[string]string{
-					"content":        plan.Content,
+					"content":       plan.Content,
 					"worktree_path": "", // Will be set by execution service
 				},
 				Order: 1,
@@ -297,25 +297,25 @@ func (p *Processor) convertEntityPlanToAIPlan(plan *entity.Plan) *ai.Plan {
 // updateTaskStatus updates the task status and broadcasts WebSocket notification
 func (p *Processor) updateTaskStatus(ctx context.Context, taskID uuid.UUID, status entity.TaskStatus) error {
 	p.logger.Info("Updating task status", "task_id", taskID, "status", status)
-	
+
 	// Get the current task to track the old status
 	currentTask, err := p.taskUsecase.GetByID(ctx, taskID)
 	if err != nil {
 		p.logger.Error("Failed to get current task", "task_id", taskID, "error", err)
 		return err
 	}
-	
+
 	oldStatus := currentTask.Status
-	
+
 	// Update the task status
 	task, err := p.taskUsecase.UpdateStatus(ctx, taskID, status)
 	if err != nil {
 		p.logger.Error("Failed to update task status", "task_id", taskID, "status", status, "error", err)
 		return err
 	}
-	
+
 	p.logger.Info("Updated task status", "task_id", taskID, "status", status)
-	
+
 	// Send WebSocket notifications if status actually changed
 	if oldStatus != status {
 		// Create changes map for task update notification
@@ -325,7 +325,7 @@ func (p *Processor) updateTaskStatus(ctx context.Context, taskID uuid.UUID, stat
 				"new": status,
 			},
 		}
-		
+
 		// Convert task to response format for WebSocket
 		// Note: In a real implementation, you might want to create a proper converter
 		taskResponse := map[string]interface{}{
@@ -335,24 +335,24 @@ func (p *Processor) updateTaskStatus(ctx context.Context, taskID uuid.UUID, stat
 			"status":     string(task.Status),
 			"updated_at": task.UpdatedAt,
 		}
-		
+
 		// Send task updated notification
 		if err := p.wsService.NotifyTaskUpdated(task.ID, task.ProjectID, changes, taskResponse); err != nil {
-			p.logger.Error("Failed to send WebSocket task update notification", 
+			p.logger.Error("Failed to send WebSocket task update notification",
 				"task_id", taskID, "error", err)
 		}
-		
+
 		// Send status changed notification
-		if err := p.wsService.NotifyStatusChanged(task.ID, task.ProjectID, "task", 
+		if err := p.wsService.NotifyStatusChanged(task.ID, task.ProjectID, "task",
 			string(oldStatus), string(status)); err != nil {
-			p.logger.Error("Failed to send WebSocket status change notification", 
+			p.logger.Error("Failed to send WebSocket status change notification",
 				"task_id", taskID, "error", err)
 		}
-		
-		p.logger.Info("Sent WebSocket notifications for status change", 
+
+		p.logger.Info("Sent WebSocket notifications for status change",
 			"task_id", taskID, "old_status", oldStatus, "new_status", status)
 	}
-	
+
 	return nil
 }
 
