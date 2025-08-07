@@ -324,7 +324,7 @@ func TestPRCreator_SanitizeForGitHub(t *testing.T) {
 		{
 			name:     "Text with null bytes",
 			input:    "text\x00with\x00nulls",
-			expected: "textwithulls", // null bytes removed
+			expected: "textwithnulls", // null bytes removed
 		},
 	}
 

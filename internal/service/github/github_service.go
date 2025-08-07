@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"strconv"
 	"strings"
 	"time"
 
@@ -24,8 +23,8 @@ type GitHubConfig struct {
 
 // GitHubService provides GitHub API integration capabilities
 type GitHubService struct {
-	config     *GitHubConfig
-	httpClient *http.Client
+	config      *GitHubConfig
+	httpClient  *http.Client
 	rateLimiter *RateLimiter
 }
 
@@ -52,35 +51,35 @@ func NewGitHubService(config *GitHubConfig) *GitHubService {
 
 // GitHubPullRequest represents a GitHub pull request response
 type GitHubPullRequest struct {
-	Number      int                    `json:"number"`
-	Title       string                 `json:"title"`
-	Body        *string                `json:"body"`
-	State       string                 `json:"state"`
-	Head        GitHubBranch           `json:"head"`
-	Base        GitHubBranch           `json:"base"`
-	HTMLURL     string                 `json:"html_url"`
-	MergeCommitSHA *string             `json:"merge_commit_sha"`
-	MergedAt    *time.Time             `json:"merged_at"`
-	ClosedAt    *time.Time             `json:"closed_at"`
-	Draft       bool                   `json:"draft"`
-	Mergeable   *bool                  `json:"mergeable"`
-	MergeableState *string             `json:"mergeable_state"`
-	Additions   *int                   `json:"additions"`
-	Deletions   *int                   `json:"deletions"`
-	ChangedFiles *int                  `json:"changed_files"`
-	User        GitHubUser             `json:"user"`
-	MergedBy    *GitHubUser            `json:"merged_by"`
-	Assignees   []GitHubUser           `json:"assignees"`
-	RequestedReviewers []GitHubUser    `json:"requested_reviewers"`
-	Labels      []GitHubLabel          `json:"labels"`
-	CreatedAt   time.Time              `json:"created_at"`
-	UpdatedAt   time.Time              `json:"updated_at"`
+	Number             int           `json:"number"`
+	Title              string        `json:"title"`
+	Body               *string       `json:"body"`
+	State              string        `json:"state"`
+	Head               GitHubBranch  `json:"head"`
+	Base               GitHubBranch  `json:"base"`
+	HTMLURL            string        `json:"html_url"`
+	MergeCommitSHA     *string       `json:"merge_commit_sha"`
+	MergedAt           *time.Time    `json:"merged_at"`
+	ClosedAt           *time.Time    `json:"closed_at"`
+	Draft              bool          `json:"draft"`
+	Mergeable          *bool         `json:"mergeable"`
+	MergeableState     *string       `json:"mergeable_state"`
+	Additions          *int          `json:"additions"`
+	Deletions          *int          `json:"deletions"`
+	ChangedFiles       *int          `json:"changed_files"`
+	User               GitHubUser    `json:"user"`
+	MergedBy           *GitHubUser   `json:"merged_by"`
+	Assignees          []GitHubUser  `json:"assignees"`
+	RequestedReviewers []GitHubUser  `json:"requested_reviewers"`
+	Labels             []GitHubLabel `json:"labels"`
+	CreatedAt          time.Time     `json:"created_at"`
+	UpdatedAt          time.Time     `json:"updated_at"`
 }
 
 // GitHubBranch represents a GitHub branch
 type GitHubBranch struct {
-	Ref  string          `json:"ref"`
-	SHA  string          `json:"sha"`
+	Ref  string           `json:"ref"`
+	SHA  string           `json:"sha"`
 	Repo GitHubRepository `json:"repo"`
 }
 
@@ -99,9 +98,9 @@ type GitHubLabel struct {
 
 // GitHubRepository represents a GitHub repository
 type GitHubRepository struct {
-	ID       int    `json:"id"`
-	Name     string `json:"name"`
-	FullName string `json:"full_name"`
+	ID       int        `json:"id"`
+	Name     string     `json:"name"`
+	FullName string     `json:"full_name"`
 	Owner    GitHubUser `json:"owner"`
 }
 
@@ -243,7 +242,7 @@ func (gs *GitHubService) UpdatePullRequest(ctx context.Context, repo string, prN
 	}
 
 	reqBody := UpdatePullRequestRequest{}
-	
+
 	if title, ok := updates["title"].(string); ok {
 		reqBody.Title = &title
 	}
@@ -387,7 +386,7 @@ func (gs *GitHubService) handleErrorResponse(resp *http.Response) error {
 	var errorResp struct {
 		Message          string `json:"message"`
 		DocumentationURL string `json:"documentation_url"`
-		Errors          []struct {
+		Errors           []struct {
 			Message string `json:"message"`
 			Code    string `json:"code"`
 		} `json:"errors"`

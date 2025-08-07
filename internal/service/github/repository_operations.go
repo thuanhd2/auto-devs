@@ -11,11 +11,11 @@ import (
 
 // GitHubCommit represents a GitHub commit
 type GitHubCommit struct {
-	SHA     string     `json:"sha"`
-	Message string     `json:"message"`
-	Author  GitHubUser `json:"author"`
+	SHA       string     `json:"sha"`
+	Message   string     `json:"message"`
+	Author    GitHubUser `json:"author"`
 	Committer GitHubUser `json:"committer"`
-	Tree    struct {
+	Tree      struct {
 		SHA string `json:"sha"`
 	} `json:"tree"`
 	Parents []struct {
@@ -25,7 +25,7 @@ type GitHubCommit struct {
 
 // GitHubTree represents a GitHub tree
 type GitHubTree struct {
-	SHA  string `json:"sha"`
+	SHA  string            `json:"sha"`
 	Tree []GitHubTreeEntry `json:"tree"`
 }
 
@@ -324,12 +324,12 @@ func (gs *GitHubService) GetFile(ctx context.Context, repo string, filePath stri
 		return nil, fmt.Errorf("rate limit error: %w", err)
 	}
 
-	url := fmt.Sprintf("%s/repos/%s/contents/%s", gs.config.BaseURL, repo, url.PathEscape(filePath))
+	repoURL := fmt.Sprintf("%s/repos/%s/contents/%s", gs.config.BaseURL, repo, url.PathEscape(filePath))
 	if ref != "" {
-		url += "?ref=" + url.QueryEscape(ref)
+		repoURL += "?ref=" + url.QueryEscape(ref)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", repoURL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
