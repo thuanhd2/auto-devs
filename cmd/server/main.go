@@ -16,6 +16,7 @@ import (
 )
 
 func main() {
+	gin.SetMode(gin.DebugMode)
 	// Initialize application with Wire dependency injection
 	app, err := di.InitializeApp()
 	if err != nil {

@@ -15,6 +15,7 @@ import (
 	"github.com/auto-devs/auto-devs/internal/service/git"
 	"github.com/auto-devs/auto-devs/internal/service/worktree"
 	"github.com/auto-devs/auto-devs/internal/usecase"
+	"github.com/auto-devs/auto-devs/internal/websocket"
 	"github.com/auto-devs/auto-devs/pkg/database"
 	"github.com/google/wire"
 	"time"
@@ -50,6 +51,7 @@ func InitializeApp() (*App, error) {
 	client := ProvideJobClient(configConfig)
 	jobClientInterface := ProvideJobClientAdapter(client)
 	taskUsecase := ProvideTaskUsecase(taskRepository, projectRepository, notificationUsecase, worktreeUsecase, jobClientInterface)
+	service := ProvideWebSocketService()
 	cliManager, err := ProvideCLIManager()
 	if err != nil {
 		return nil, err
@@ -61,8 +63,8 @@ func InitializeApp() (*App, error) {
 	if err != nil {
 		return nil, err
 	}
-	processor := ProvideJobProcessor(taskUsecase, projectUsecase, worktreeUsecase, planningService, executionService, planRepository)
-	app := NewApp(configConfig, gormDB, projectRepository, taskRepository, planRepository, worktreeRepository, auditRepository, auditUsecase, projectUsecase, taskUsecase, worktreeUsecase, notificationUsecase, cliManager, processManager, executionService, planningService, gitManager, worktreeManager, client, jobClientInterface, processor)
+	processor := ProvideJobProcessor(taskUsecase, projectUsecase, worktreeUsecase, planningService, executionService, planRepository, service)
+	app := NewApp(configConfig, gormDB, projectRepository, taskRepository, planRepository, worktreeRepository, auditRepository, auditUsecase, projectUsecase, taskUsecase, worktreeUsecase, notificationUsecase, service, cliManager, processManager, executionService, planningService, gitManager, worktreeManager, client, jobClientInterface, processor)
 	return app, nil
 }
 
@@ -73,6 +75,8 @@ var ProviderSet = wire.NewSet(config.Load, ProvideGormDB, postgres.NewProjectRep
 	ProvideProjectGitService,
 	ProvideIntegratedWorktreeService,
 	ProvideWorktreeManager,
+
+	ProvideWebSocketService,
 
 	ProvideCLIManager,
 	ProvideProcessManager,
@@ -101,6 +105,8 @@ type App struct {
 	TaskUsecase         usecase.TaskUsecase
 	WorktreeUsecase     usecase.WorktreeUsecase
 	NotificationUsecase usecase.NotificationUsecase
+	// WebSocket Service
+	WebSocketService *websocket.Service
 	// AI Services
 	CLIManager       *ai.CLIManager
 	ProcessManager   *ai.ProcessManager
@@ -129,6 +135,7 @@ func NewApp(
 	taskUsecase usecase.TaskUsecase,
 	worktreeUsecase usecase.WorktreeUsecase,
 	notificationUsecase usecase.NotificationUsecase,
+	wsService *websocket.Service,
 	cliManager *ai.CLIManager,
 	processManager *ai.ProcessManager,
 	executionService *ai.ExecutionService,
@@ -152,6 +159,7 @@ func NewApp(
 		TaskUsecase:         taskUsecase,
 		WorktreeUsecase:     worktreeUsecase,
 		NotificationUsecase: notificationUsecase,
+		WebSocketService:    wsService,
 		CLIManager:          cliManager,
 		ProcessManager:      processManager,
 		ExecutionService:    executionService,
@@ -282,6 +290,12 @@ func ProvideJobProcessor(
 	planningService *ai.PlanningService,
 	executionService *ai.ExecutionService,
 	planRepo repository.PlanRepository,
+	wsService *websocket.Service,
 ) *jobs.Processor {
-	return jobs.NewProcessor(taskUsecase, projectUsecase, worktreeUsecase, planningService, executionService, planRepo)
+	return jobs.NewProcessor(taskUsecase, projectUsecase, worktreeUsecase, planningService, executionService, planRepo, wsService)
+}
+
+// ProvideWebSocketService provides a WebSocket service instance
+func ProvideWebSocketService() *websocket.Service {
+	return websocket.NewService()
 }

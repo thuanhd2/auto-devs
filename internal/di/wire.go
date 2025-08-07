@@ -14,6 +14,7 @@ import (
 	"github.com/auto-devs/auto-devs/internal/service/git"
 	worktreesvc "github.com/auto-devs/auto-devs/internal/service/worktree"
 	"github.com/auto-devs/auto-devs/internal/usecase"
+	"github.com/auto-devs/auto-devs/internal/websocket"
 	"github.com/auto-devs/auto-devs/pkg/database"
 	"github.com/google/wire"
 )
@@ -33,6 +34,8 @@ var ProviderSet = wire.NewSet(
 	ProvideProjectGitService,
 	ProvideIntegratedWorktreeService,
 	ProvideWorktreeManager,
+	// WebSocket service provider
+	ProvideWebSocketService,
 	// AI Service providers
 	ProvideCLIManager,
 	ProvideProcessManager,
@@ -73,6 +76,8 @@ type App struct {
 	TaskUsecase         usecase.TaskUsecase
 	WorktreeUsecase     usecase.WorktreeUsecase
 	NotificationUsecase usecase.NotificationUsecase
+	// WebSocket Service
+	WebSocketService *websocket.Service
 	// AI Services
 	CLIManager       *ai.CLIManager
 	ProcessManager   *ai.ProcessManager
@@ -101,6 +106,7 @@ func NewApp(
 	taskUsecase usecase.TaskUsecase,
 	worktreeUsecase usecase.WorktreeUsecase,
 	notificationUsecase usecase.NotificationUsecase,
+	wsService *websocket.Service,
 	cliManager *ai.CLIManager,
 	processManager *ai.ProcessManager,
 	executionService *ai.ExecutionService,
@@ -124,6 +130,7 @@ func NewApp(
 		TaskUsecase:         taskUsecase,
 		WorktreeUsecase:     worktreeUsecase,
 		NotificationUsecase: notificationUsecase,
+		WebSocketService:    wsService,
 		CLIManager:          cliManager,
 		ProcessManager:      processManager,
 		ExecutionService:    executionService,
@@ -254,6 +261,39 @@ func ProvideJobProcessor(
 	planningService *ai.PlanningService,
 	executionService *ai.ExecutionService,
 	planRepo repository.PlanRepository,
+	wsService *websocket.Service,
 ) *jobs.Processor {
-	return jobs.NewProcessor(taskUsecase, projectUsecase, worktreeUsecase, planningService, executionService, planRepo)
+	return jobs.NewProcessor(taskUsecase, projectUsecase, worktreeUsecase, planningService, executionService, planRepo, wsService)
+}
+
+// ProvideWebSocketService provides a WebSocket service instance
+func ProvideWebSocketService(cfg *config.Config) *websocket.Service {
+	// Use Redis broker if Redis is configured
+	if cfg.Redis.Host != "" {
+		redisAddr := cfg.Redis.Host + ":" + cfg.Redis.Port
+		return websocket.NewServiceWithRedisBroker(redisAddr, cfg.Redis.Password, cfg.Redis.DB)
+	}
+
+	// Fallback to in-memory service
+	return websocket.NewService()
+}
+
+// ProvideRedisBrokerClient provides a Redis broker client for worker
+func ProvideRedisBrokerClient(cfg *config.Config) *jobs.RedisBrokerClient {
+	redisAddr := cfg.Redis.Host + ":" + cfg.Redis.Port
+	return jobs.NewRedisBrokerClient(redisAddr, cfg.Redis.Password, cfg.Redis.DB)
+}
+
+// ProvideJobProcessorWithRedisBroker provides a Processor instance with Redis broker
+func ProvideJobProcessorWithRedisBroker(
+	taskUsecase usecase.TaskUsecase,
+	projectUsecase usecase.ProjectUsecase,
+	worktreeUsecase usecase.WorktreeUsecase,
+	planningService *ai.PlanningService,
+	executionService *ai.ExecutionService,
+	planRepo repository.PlanRepository,
+	wsService *websocket.Service,
+	redisBroker *jobs.RedisBrokerClient,
+) *jobs.Processor {
+	return jobs.NewProcessorWithRedisBroker(taskUsecase, projectUsecase, worktreeUsecase, planningService, executionService, planRepo, wsService, redisBroker)
 }

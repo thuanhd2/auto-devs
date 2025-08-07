@@ -309,6 +309,8 @@ func (h *TaskHandler) DeleteTask(c *gin.Context) {
 		return
 	}
 
+	// Notify task deleted
+
 	c.Status(http.StatusNoContent)
 }
 

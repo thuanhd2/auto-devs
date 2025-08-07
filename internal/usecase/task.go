@@ -106,7 +106,7 @@ type TaskUsecase interface {
 
 	// Planning workflow
 	StartPlanning(ctx context.Context, taskID uuid.UUID, branchName string) (string, error) // returns job ID
-	ApprovePlan(ctx context.Context, taskID uuid.UUID) (string, error) // returns job ID
+	ApprovePlan(ctx context.Context, taskID uuid.UUID) (string, error)                      // returns job ID
 	ListGitBranches(ctx context.Context, projectID uuid.UUID) ([]GitBranch, error)
 }
 
@@ -1039,13 +1039,18 @@ func (u *taskUsecase) StartPlanning(ctx context.Context, taskID uuid.UUID, branc
 		return "", fmt.Errorf("failed to get task: %w", err)
 	}
 
-	if task.Status != entity.TaskStatusTODO {
-		return "", fmt.Errorf("task must be in TODO status to start planning, current status: %s", task.Status)
+	if task.Status != entity.TaskStatusTODO && task.Status != entity.TaskStatusPLANNING {
+		// Need check with PLANNING status for case status is changed by handler
+		return "", fmt.Errorf("task must be in TODO or PLANNING status to start planning, current status: %s", task.Status)
 	}
 
-	u.Update(ctx, taskID, UpdateTaskRequest{
+	// Update task with branch name
+	_, err = u.Update(ctx, taskID, UpdateTaskRequest{
 		BranchName: &branchName,
 	})
+	if err != nil {
+		return "", fmt.Errorf("failed to update task with branch name: %w", err)
+	}
 
 	// Enqueue the planning job using asynq client
 	payload := &TaskPlanningPayload{
@@ -1074,10 +1079,8 @@ func (u *taskUsecase) ApprovePlan(ctx context.Context, taskID uuid.UUID) (string
 		return "", fmt.Errorf("task must be in PLAN_REVIEWING status to approve plan, current status: %s", task.Status)
 	}
 
-	// Update task status to IMPLEMENTING
-	if err := u.taskRepo.UpdateStatus(ctx, taskID, entity.TaskStatusIMPLEMENTING); err != nil {
-		return "", fmt.Errorf("failed to update task status to IMPLEMENTING: %w", err)
-	}
+	// Note: Status update to IMPLEMENTING is now handled by the WebSocket handler
+	// to provide immediate UI feedback with WebSocket notifications
 
 	// Enqueue the implementation job using asynq client
 	payload := &TaskImplementationPayload{

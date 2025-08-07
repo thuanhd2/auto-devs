@@ -10,6 +10,7 @@ This package provides comprehensive WebSocket infrastructure for real-time commu
 - **Authentication and authorization** with token-based security
 - **Rate limiting** and error handling middleware
 - **Message persistence** for offline delivery
+- **Cross-process messaging** via Redis Pub/Sub broker
 - **Comprehensive testing** with unit and integration tests
 
 ## Architecture
@@ -21,6 +22,7 @@ This package provides comprehensive WebSocket infrastructure for real-time commu
 - **Message** (`message.go`): Message protocol and data structures
 - **Service** (`service.go`): High-level WebSocket service interface
 - **Handler** (`handler.go`): HTTP/WebSocket upgrade handling
+- **RedisBroker** (`redis_broker.go`): Redis Pub/Sub for cross-process messaging
 
 ### Middleware
 
@@ -33,6 +35,144 @@ This package provides comprehensive WebSocket infrastructure for real-time commu
 
 - **Processors** (`processors.go`): Message-type specific handlers
 - **Persistence** (`persistence.go`): Offline message storage and delivery
+
+## Cross-Process Messaging with Redis
+
+### Problem
+
+WebSocket Hub is **in-memory managed**, meaning it only exists in the server process. When worker processes need to send messages to WebSocket clients, they can't directly access the Hub.
+
+### Solution
+
+Redis Pub/Sub broker enables cross-process messaging:
+
+```
+┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
+│   Frontend  │    │    Server   │    │   Worker    │    │    Redis    │
+│   Client    │    │             │    │             │    │    Broker   │
+└─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
+       │                   │                   │                   │
+       │ 1. WebSocket      │                   │                   │
+       │    Connection     │                   │                   │
+       │ ──────────────────►│                   │                   │
+       │                   │                   │                   │
+       │                   │ 2. Job Enqueued   │                   │
+       │                   │ ─────────────────────────────────────►│
+       │                   │                   │                   │
+       │                   │                   │ 3. Process Job    │
+       │                   │                   │ ◄─────────────────│
+       │                   │                   │                   │
+       │                   │                   │ 4. Update DB      │
+       │                   │                   │                   │
+       │                   │                   │ 5. Redis Pub      │
+       │                   │                   │ ──────────────────►│
+       │                   │                   │                   │
+       │                   │ 6. Redis Sub      │                   │
+       │                   │ ◄─────────────────│                   │
+       │                   │                   │                   │
+       │ 7. Real-time      │                   │                   │
+       │    Update         │                   │                   │
+       │ ◄─────────────────│                   │                   │
+       │                   │                   │                   │
+```
+
+### Implementation
+
+#### Server Setup
+
+```go
+// Create WebSocket service with Redis broker
+wsService := websocket.NewServiceWithRedisBroker("localhost:6379", "", 0)
+
+// Start Redis broker
+if err := wsService.StartRedisBroker(); err != nil {
+    log.Fatal("Failed to start Redis broker:", err)
+}
+defer wsService.StopRedisBroker()
+
+// Setup routes
+handler.SetupRoutes(router, wsService)
+```
+
+#### Worker Setup
+
+```go
+// Create Redis broker client
+redisClient := jobs.NewRedisBrokerClient("localhost:6379", "", 0)
+defer redisClient.Close()
+
+// Test connection
+if err := redisClient.TestConnection(); err != nil {
+    log.Fatal("Failed to connect to Redis:", err)
+}
+
+// Create processor with Redis broker
+processor := jobs.NewProcessorWithRedisBroker(
+    taskUsecase,
+    projectUsecase,
+    worktreeUsecase,
+    planningService,
+    executionService,
+    planRepo,
+    wsService,
+    redisClient,
+)
+```
+
+#### Message Publishing
+
+```go
+// Worker publishes task update
+changes := map[string]interface{}{
+    "status": map[string]interface{}{
+        "old": "TODO",
+        "new": "IN_PROGRESS",
+    },
+}
+
+taskResponse := map[string]interface{}{
+    "id":         taskID.String(),
+    "project_id": projectID.String(),
+    "title":      "Task title",
+    "status":     "IN_PROGRESS",
+    "updated_at": time.Now(),
+}
+
+// Publish via Redis broker
+err := redisClient.PublishTaskUpdated(taskID, projectID, changes, taskResponse)
+if err != nil {
+    log.Error("Failed to publish task update:", err)
+}
+```
+
+### Message Format
+
+Redis broker messages follow this JSON structure:
+
+```json
+{
+  "type": "task_updated",
+  "data": {
+    "task_id": "uuid",
+    "project_id": "uuid",
+    "changes": {
+      "status": {
+        "old": "TODO",
+        "new": "IN_PROGRESS"
+      }
+    },
+    "task": {
+      "id": "uuid",
+      "title": "Task title",
+      "status": "IN_PROGRESS"
+    }
+  },
+  "project_id": "uuid",
+  "timestamp": "2023-12-01T10:00:00Z",
+  "message_id": "uuid",
+  "source": "worker"
+}
+```
 
 ## Message Protocol
 
@@ -50,21 +190,26 @@ All WebSocket messages follow this JSON structure:
 ### Message Types
 
 #### Task Events
+
 - `task_created`: New task creation
 - `task_updated`: Task modifications
 - `task_deleted`: Task removal
 
 #### Project Events
+
 - `project_updated`: Project modifications
 
 #### Status Events
+
 - `status_changed`: Entity status transitions
 
 #### User Presence
+
 - `user_joined`: User joins project
 - `user_left`: User leaves project
 
 #### System Messages
+
 - `ping`/`pong`: Connection health checks
 - `auth_required`/`auth_success`/`auth_failed`: Authentication flow
 - `error`: Error notifications
@@ -110,22 +255,26 @@ err := wsService.SendProjectMessage(projectID, websocket.ProjectUpdated, project
 
 ```javascript
 // Connect to WebSocket
-const ws = new WebSocket('ws://localhost:8098/ws/connect?token=your-auth-token');
+const ws = new WebSocket(
+  "ws://localhost:8098/ws/connect?token=your-auth-token"
+);
 
 // Handle messages
 ws.onmessage = (event) => {
-    const message = JSON.parse(event.data);
-    console.log('Received:', message.type, message.data);
+  const message = JSON.parse(event.data);
+  console.log("Received:", message.type, message.data);
 };
 
 // Subscribe to project
-ws.send(JSON.stringify({
-    type: 'subscription',
+ws.send(
+  JSON.stringify({
+    type: "subscription",
     data: {
-        action: 'subscribe',
-        project_id: 'project-uuid'
-    }
-}));
+      action: "subscribe",
+      project_id: "project-uuid",
+    },
+  })
+);
 ```
 
 ## Configuration
@@ -137,6 +286,7 @@ ws.send(JSON.stringify({
 - **Ping Interval**: 54 seconds
 - **Max Message Size**: 512 bytes
 - **Message Persistence**: 1000 messages, 24-hour TTL
+- **Redis Channel**: `websocket:broadcast`
 
 ### Custom Configuration
 
@@ -153,143 +303,23 @@ config := &websocket.ServiceConfig{
 wsService := websocket.NewServiceWithConfig(config)
 ```
 
-## Monitoring
+## Examples
 
-### Health Checks
+See `examples/redis_broker_example.go` for complete examples of:
 
-```bash
-# WebSocket service health
-GET /api/v1/websocket/health
+- Server setup with Redis broker
+- Worker setup with Redis broker client
+- Cross-process messaging
+- Integration patterns
 
-# Connection metrics
-GET /api/v1/websocket/metrics
+## Error Handling
 
-# Connection counts
-GET /api/v1/websocket/connections/count
-GET /api/v1/websocket/projects/{id}/connections/count
-GET /api/v1/websocket/users/{id}/connections/count
-```
+The system includes comprehensive error handling:
 
-### Metrics
+1. **Connection failures** are logged but don't stop job processing
+2. **Message sending failures** are logged with fallback options
+3. **Automatic reconnection** for Redis connections
+4. **Graceful degradation** when Redis is unavailable
+5. **Fallback to in-memory** when Redis broker fails
 
-The service provides comprehensive metrics:
-
-```json
-{
-  "hub": {
-    "active_connections": 42,
-    "total_connections": 150,
-    "messages_sent": 1234,
-    "messages_received": 890,
-    "broadcasts_sent": 67
-  },
-  "middleware": {
-    "rate_limiter": {
-      "active_limiters": 42,
-      "requests_per_second": 10.0
-    },
-    "error_handler": {
-      "connections_with_errors": 3,
-      "total_errors": 12
-    }
-  },
-  "offline_messages": {
-    "total_messages": 15,
-    "users_with_messages": 5
-  }
-}
-```
-
-## Security
-
-### Authentication
-
-- Token-based authentication via query parameter or Authorization header
-- User association with connections
-- Role-based access control for admin endpoints
-
-### Rate Limiting
-
-- Per-connection request throttling
-- Configurable limits and burst allowances
-- Automatic cleanup of inactive limiters
-
-### Error Handling
-
-- Connection-specific error tracking
-- Automatic disconnection after error threshold
-- Graceful degradation and recovery
-
-## Testing
-
-Run the comprehensive test suite:
-
-```bash
-# Run all WebSocket tests
-go test ./internal/websocket -v
-
-# Run with coverage
-go test ./internal/websocket -v -cover
-
-# Run benchmarks
-go test ./internal/websocket -bench=.
-```
-
-### Test Coverage
-
-- Message creation and parsing
-- Hub registration and broadcasting
-- Connection management
-- Rate limiting
-- Error handling
-- Message persistence
-- Authentication flows
-
-## Integration Examples
-
-See `example_usage.go` for comprehensive usage examples including:
-
-- Basic service usage
-- Custom message types
-- Message handling patterns
-- Connection management
-- Error handling strategies
-- HTTP handler integration
-
-## WebSocket Routes
-
-### Connection
-- `GET /ws/connect` - WebSocket upgrade endpoint
-
-### Management API
-- `GET /api/v1/websocket/connections` - List active connections
-- `GET /api/v1/websocket/metrics` - Service metrics
-- `POST /api/v1/websocket/broadcast` - Broadcast message
-- `GET /api/v1/websocket/health` - Health status
-- `GET /api/v1/websocket/stats` - Statistics
-
-### Administrative
-- `POST /api/v1/websocket/users/{id}/disconnect` - Disconnect user
-- `POST /api/v1/websocket/projects/{id}/disconnect` - Disconnect project
-- `POST /api/v1/websocket/users/{id}/message` - Send direct message
-- `POST /api/v1/websocket/projects/{id}/message` - Send project message
-
-## Error Codes
-
-Common WebSocket error codes:
-
-- `invalid_message`: Malformed message format
-- `rate_limited`: Too many requests
-- `unauthorized`: Authentication required
-- `processing_error`: Message processing failed
-- `connection_closed`: Connection terminated
-
-## Future Enhancements
-
-- Database-backed message persistence
-- Horizontal scaling with Redis pub/sub
-- Message acknowledgment and delivery guarantees
-- Advanced presence tracking
-- Message history and replay
-- File upload support
-- Custom message compression
+This provides a robust, fault-tolerant system for real-time notifications across multiple processes.

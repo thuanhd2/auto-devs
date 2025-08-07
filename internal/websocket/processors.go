@@ -299,6 +299,7 @@ type SubscriptionMessage struct {
 
 // ProcessMessage processes subscription messages
 func (p *SubscriptionProcessor) ProcessMessage(conn *Connection, message *Message) error {
+	log.Printf("ProcessMessage from Client!!!!!: %v", message)
 	var subMsg SubscriptionMessage
 	if err := message.ParseData(&subMsg); err != nil {
 		return err

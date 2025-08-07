@@ -49,6 +49,7 @@ func (h *Handler) HandleWebSocket(c *gin.Context) {
 
 	// Create new connection
 	wsConn := NewConnection(conn, h.hub)
+	log.Printf("NewConnection ++++++++++++++++++++++: %v", wsConn.ID)
 
 	// Register with hub
 	h.hub.Register(wsConn)

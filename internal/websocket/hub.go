@@ -73,8 +73,8 @@ func NewHub() *Hub {
 		projectConnections: make(map[uuid.UUID]map[*Connection]bool),
 		userConnections:    make(map[string]map[*Connection]bool),
 		broadcast:          make(chan *BroadcastMessage, 256),
-		register:           make(chan *Connection),
-		unregister:         make(chan *Connection),
+		register:           make(chan *Connection, 100), // Add buffer
+		unregister:         make(chan *Connection, 100), // Add buffer
 		processors:         make(map[MessageType]MessageProcessor),
 		metrics:            &HubMetrics{},
 		cleanupTicker:      time.NewTicker(30 * time.Second),
@@ -106,7 +106,13 @@ func (h *Hub) Run() {
 
 // Register registers a new connection with the hub
 func (h *Hub) Register(conn *Connection) {
-	h.register <- conn
+	log.Printf("Register ++++++++++++++++++++++: %v", conn.ID)
+	select {
+	case h.register <- conn:
+		// Successfully sent to register channel
+	case <-time.After(5 * time.Second):
+		log.Printf("ERROR: Timeout registering connection %s - hub may be blocked", conn.ID)
+	}
 }
 
 // Unregister unregisters a connection from the hub

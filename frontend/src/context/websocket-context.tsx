@@ -209,6 +209,17 @@ export function WebSocketProvider({
       {
         type: 'task_deleted',
         handler: createTaskDeletedHandler((taskId) => {
+          // Check for optimistic update confirmation
+          const pendingUpdates = optimisticUpdateManager.getAllPendingUpdates()
+          const matchingUpdate = pendingUpdates.find(
+            (update) =>
+              update.entityType === 'task' && update.entityId === taskId
+          )
+
+          if (matchingUpdate) {
+            optimisticUpdateManager.confirmUpdate(matchingUpdate.id, taskId)
+          }
+
           onTaskDeleted?.(taskId)
         }),
       },

@@ -1,4 +1,4 @@
-import { websocketService } from './websocketService'
+// Removed unused websocketService import
 
 export interface OptimisticUpdate<T = any> {
   id: string
@@ -391,10 +391,166 @@ export class ConflictResolver {
   }
 }
 
-// Export singleton instances
-export const optimisticUpdateManager = new OptimisticUpdateManager()
-export const taskOptimisticUpdates = new TaskOptimisticUpdates(
+// WebSocket Integration for optimistic updates
+export class WebSocketOptimisticUpdateIntegrator {
+  private updateManager: OptimisticUpdateManager
+  private entityToUpdateMap: Map<string, Set<string>> = new Map() // entityId -> updateIds
+
+  constructor(updateManager: OptimisticUpdateManager) {
+    this.updateManager = updateManager
+  }
+
+  // Register an optimistic update for WebSocket confirmation
+  registerForConfirmation(
+    entityType: string,
+    entityId: string,
+    updateId: string
+  ): void {
+    const key = `${entityType}:${entityId}`
+    if (!this.entityToUpdateMap.has(key)) {
+      this.entityToUpdateMap.set(key, new Set())
+    }
+    this.entityToUpdateMap.get(key)!.add(updateId)
+  }
+
+  // Confirm updates when WebSocket message arrives
+  confirmByWebSocket(
+    entityType: string,
+    entityId: string,
+    serverData: any
+  ): void {
+    const key = `${entityType}:${entityId}`
+    const updateIds = this.entityToUpdateMap.get(key)
+    
+    if (updateIds && updateIds.size > 0) {
+      // Confirm all pending updates for this entity
+      updateIds.forEach(updateId => {
+        this.updateManager.confirmUpdate(updateId, serverData)
+      })
+      
+      // Clear the confirmed updates
+      updateIds.clear()
+    }
+  }
+
+  // Handle conflicts when WebSocket data doesn't match optimistic data
+  handleConflict(
+    entityType: string,
+    entityId: string,
+    serverData: any,
+    strategy: 'revert' | 'merge' | 'ignore' = 'revert'
+  ): void {
+    const key = `${entityType}:${entityId}`
+    const updateIds = this.entityToUpdateMap.get(key)
+    
+    if (updateIds && updateIds.size > 0) {
+      updateIds.forEach(updateId => {
+        const update = this.updateManager.getUpdate(updateId)
+        if (update) {
+          switch (strategy) {
+            case 'revert':
+              this.updateManager.revertUpdate(updateId, 'conflict')
+              break
+            case 'merge':
+              // Apply merge logic and confirm with merged data
+              const mergedData = ConflictResolver.resolveTaskConflict(
+                update.data,
+                serverData,
+                'merge-latest'
+              )
+              this.updateManager.confirmUpdate(updateId, mergedData)
+              break
+            case 'ignore':
+              // Just confirm with server data
+              this.updateManager.confirmUpdate(updateId, serverData)
+              break
+          }
+        }
+      })
+      
+      updateIds.clear()
+    }
+  }
+
+  // Cleanup stale registrations
+  cleanupStaleRegistrations(): void {
+    const keysToDelete: string[] = []
+    
+    this.entityToUpdateMap.forEach((updateIds, key) => {
+      // Remove confirmed or expired updates
+      const validUpdateIds = Array.from(updateIds).filter(updateId => 
+        this.updateManager.getUpdate(updateId) !== undefined
+      )
+      
+      if (validUpdateIds.length === 0) {
+        keysToDelete.push(key)
+      } else {
+        this.entityToUpdateMap.set(key, new Set(validUpdateIds))
+      }
+    })
+    
+    keysToDelete.forEach(key => this.entityToUpdateMap.delete(key))
+  }
+}
+
+// Enhanced Task optimistic updates with WebSocket integration
+export class EnhancedTaskOptimisticUpdates extends TaskOptimisticUpdates {
+  private integrator: WebSocketOptimisticUpdateIntegrator
+
+  constructor(
+    updateManager: OptimisticUpdateManager,
+    integrator: WebSocketOptimisticUpdateIntegrator
+  ) {
+    super(updateManager)
+    this.integrator = integrator
+  }
+
+  updateTaskStatus(
+    taskId: string,
+    newStatus: string,
+    originalTask: any,
+    onLocalUpdate: (updatedTask: any) => void,
+    onConfirm?: (confirmedTask: any) => void,
+    onRevert?: (originalTask: any) => void
+  ): string {
+    const updateId = super.updateTaskStatus(
+      taskId,
+      newStatus,
+      originalTask,
+      onLocalUpdate,
+      onConfirm,
+      onRevert
+    )
+    
+    // Register for WebSocket confirmation
+    this.integrator.registerForConfirmation('task', taskId, updateId)
+    
+    return updateId
+  }
+
+  // Handle WebSocket task update confirmation
+  confirmTaskUpdate(taskId: string, serverTask: any): void {
+    this.integrator.confirmByWebSocket('task', taskId, serverTask)
+  }
+
+  // Handle WebSocket task update conflicts
+  handleTaskConflict(
+    taskId: string, 
+    serverTask: any, 
+    strategy: 'revert' | 'merge' | 'ignore' = 'revert'
+  ): void {
+    this.integrator.handleConflict('task', taskId, serverTask, strategy)
+  }
+}
+
+// Export enhanced singleton instances
+export const optimisticUpdateManager = new OptimisticUpdateManager(15000) // Increase timeout to 15s
+export const wsOptimisticIntegrator = new WebSocketOptimisticUpdateIntegrator(
   optimisticUpdateManager
+)
+export const taskOptimisticUpdates = new EnhancedTaskOptimisticUpdates(
+  optimisticUpdateManager,
+  wsOptimisticIntegrator
 )
 export const projectOptimisticUpdates = new ProjectOptimisticUpdates(
   optimisticUpdateManager

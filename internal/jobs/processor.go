@@ -9,6 +9,7 @@ import (
 	"github.com/auto-devs/auto-devs/internal/repository"
 	"github.com/auto-devs/auto-devs/internal/service/ai"
 	"github.com/auto-devs/auto-devs/internal/usecase"
+	"github.com/auto-devs/auto-devs/internal/websocket"
 	"github.com/google/uuid"
 	"github.com/hibiken/asynq"
 )
@@ -21,6 +22,8 @@ type Processor struct {
 	planningService  *ai.PlanningService
 	executionService *ai.ExecutionService
 	planRepo         repository.PlanRepository
+	wsService        *websocket.Service
+	redisBroker      *RedisBrokerClient // Redis broker client for cross-process messaging
 	logger           *slog.Logger
 }
 
@@ -32,6 +35,7 @@ func NewProcessor(
 	planningService *ai.PlanningService,
 	executionService *ai.ExecutionService,
 	planRepo repository.PlanRepository,
+	wsService *websocket.Service,
 ) *Processor {
 	return &Processor{
 		taskUsecase:      taskUsecase,
@@ -40,6 +44,31 @@ func NewProcessor(
 		planningService:  planningService,
 		executionService: executionService,
 		planRepo:         planRepo,
+		wsService:        wsService,
+		logger:           slog.Default().With("component", "job-processor"),
+	}
+}
+
+// NewProcessorWithRedisBroker creates a new job processor with Redis broker
+func NewProcessorWithRedisBroker(
+	taskUsecase usecase.TaskUsecase,
+	projectUsecase usecase.ProjectUsecase,
+	worktreeUsecase usecase.WorktreeUsecase,
+	planningService *ai.PlanningService,
+	executionService *ai.ExecutionService,
+	planRepo repository.PlanRepository,
+	wsService *websocket.Service,
+	redisBroker *RedisBrokerClient,
+) *Processor {
+	return &Processor{
+		taskUsecase:      taskUsecase,
+		projectUsecase:   projectUsecase,
+		worktreeUsecase:  worktreeUsecase,
+		planningService:  planningService,
+		executionService: executionService,
+		planRepo:         planRepo,
+		wsService:        wsService,
+		redisBroker:      redisBroker,
 		logger:           slog.Default().With("component", "job-processor"),
 	}
 }
@@ -58,12 +87,26 @@ func (p *Processor) ProcessTaskPlanning(ctx context.Context, task *asynq.Task) e
 		"branch_name", payload.BranchName,
 		"project_id", payload.ProjectID)
 
-	// Step 1: Update task status to PLANNING
-	err = p.updateTaskStatus(ctx, payload.TaskID, entity.TaskStatusPLANNING)
+	// Step 1: Check current task status and update to PLANNING if needed
+	currentTask, err := p.taskUsecase.GetByID(ctx, payload.TaskID)
 	if err != nil {
-		p.logger.Error("Failed to update task status to PLANNING",
+		p.logger.Error("Failed to get task for status check",
 			"task_id", payload.TaskID, "error", err)
-		return fmt.Errorf("failed to update task status to PLANNING: %w", err)
+		return fmt.Errorf("failed to get task: %w", err)
+	}
+
+	// Only update status to PLANNING if it's not already PLANNING
+	// This handles cases where the status was already updated by the handler
+	if currentTask.Status != entity.TaskStatusPLANNING {
+		err = p.updateTaskStatus(ctx, payload.TaskID, entity.TaskStatusPLANNING)
+		if err != nil {
+			p.logger.Error("Failed to update task status to PLANNING",
+				"task_id", payload.TaskID, "error", err)
+			return fmt.Errorf("failed to update task status to PLANNING: %w", err)
+		}
+		p.logger.Info("Updated task status to PLANNING!!!!!!")
+	} else {
+		p.logger.Info("Task status is already PLANNING, skipping status update!!!!!!")
 	}
 
 	p.logger.Info("Updated task status to PLANNING!!!!!!")
@@ -156,12 +199,26 @@ func (p *Processor) ProcessTaskImplementation(ctx context.Context, task *asynq.T
 		"task_id", payload.TaskID,
 		"project_id", payload.ProjectID)
 
-	// Step 1: Update task status to IMPLEMENTING
-	err = p.updateTaskStatus(ctx, payload.TaskID, entity.TaskStatusIMPLEMENTING)
+	// Step 1: Check current task status and update to IMPLEMENTING if needed
+	currentTask, err := p.taskUsecase.GetByID(ctx, payload.TaskID)
 	if err != nil {
-		p.logger.Error("Failed to update task status to IMPLEMENTING",
+		p.logger.Error("Failed to get task for status check",
 			"task_id", payload.TaskID, "error", err)
-		return fmt.Errorf("failed to update task status to IMPLEMENTING: %w", err)
+		return fmt.Errorf("failed to get task: %w", err)
+	}
+
+	// Only update status to IMPLEMENTING if it's not already IMPLEMENTING
+	// This handles cases where the status was already updated by the handler
+	if currentTask.Status != entity.TaskStatusIMPLEMENTING {
+		err = p.updateTaskStatus(ctx, payload.TaskID, entity.TaskStatusIMPLEMENTING)
+		if err != nil {
+			p.logger.Error("Failed to update task status to IMPLEMENTING",
+				"task_id", payload.TaskID, "error", err)
+			return fmt.Errorf("failed to update task status to IMPLEMENTING: %w", err)
+		}
+		p.logger.Info("Updated task status to IMPLEMENTING")
+	} else {
+		p.logger.Info("Task status is already IMPLEMENTING, skipping status update")
 	}
 
 	p.logger.Info("Updated task status to IMPLEMENTING")
@@ -216,8 +273,8 @@ func (p *Processor) ProcessTaskImplementation(ctx context.Context, task *asynq.T
 		return fmt.Errorf("failed to start AI execution: %w", err)
 	}
 
-	p.logger.Info("AI execution started successfully", 
-		"task_id", payload.TaskID, 
+	p.logger.Info("AI execution started successfully",
+		"task_id", payload.TaskID,
 		"execution_id", execution.ID,
 		"execution_status", execution.Status)
 
@@ -247,7 +304,7 @@ func (p *Processor) convertEntityPlanToAIPlan(plan *entity.Plan) *ai.Plan {
 				Description: "Execute implementation based on plan content",
 				Action:      "implement",
 				Parameters: map[string]string{
-					"content":        plan.Content,
+					"content":       plan.Content,
 					"worktree_path": "", // Will be set by execution service
 				},
 				Order: 1,
@@ -262,12 +319,89 @@ func (p *Processor) convertEntityPlanToAIPlan(plan *entity.Plan) *ai.Plan {
 	}
 }
 
-// updateTaskStatus updates the task status
+// updateTaskStatus updates the task status and broadcasts WebSocket notification
 func (p *Processor) updateTaskStatus(ctx context.Context, taskID uuid.UUID, status entity.TaskStatus) error {
 	p.logger.Info("Updating task status", "task_id", taskID, "status", status)
-	_, err := p.taskUsecase.UpdateStatus(ctx, taskID, status)
+
+	// Get the current task to track the old status
+	currentTask, err := p.taskUsecase.GetByID(ctx, taskID)
+	if err != nil {
+		p.logger.Error("Failed to get current task", "task_id", taskID, "error", err)
+		return err
+	}
+
+	oldStatus := currentTask.Status
+
+	// Update the task status
+	task, err := p.taskUsecase.UpdateStatus(ctx, taskID, status)
+	if err != nil {
+		p.logger.Error("Failed to update task status", "task_id", taskID, "status", status, "error", err)
+		return err
+	}
+
 	p.logger.Info("Updated task status", "task_id", taskID, "status", status)
-	return err
+
+	// Send WebSocket notifications if status actually changed
+	if oldStatus != status {
+		// Create changes map for task update notification
+		changes := map[string]interface{}{
+			"status": map[string]interface{}{
+				"old": oldStatus,
+				"new": status,
+			},
+		}
+
+		// Convert task to response format for WebSocket
+		taskResponse := map[string]interface{}{
+			"id":         task.ID.String(),
+			"project_id": task.ProjectID.String(),
+			"title":      task.Title,
+			"status":     string(task.Status),
+			"updated_at": task.UpdatedAt,
+		}
+
+		// Try Redis broker first, then fallback to WebSocket service
+		var notificationErr error
+
+		if p.redisBroker != nil {
+			// Use Redis broker for cross-process messaging
+			if err := p.redisBroker.PublishTaskUpdated(task.ID, task.ProjectID, changes, taskResponse); err != nil {
+				p.logger.Warn("Failed to publish via Redis broker, falling back to WebSocket service",
+					"task_id", taskID, "error", err)
+				notificationErr = err
+			} else {
+				p.logger.Debug("Published task update via Redis broker", "task_id", taskID)
+			}
+
+			// Send status changed notification via Redis broker
+			if err := p.redisBroker.PublishStatusChanged(task.ID, task.ProjectID, "task",
+				string(oldStatus), string(status)); err != nil {
+				p.logger.Warn("Failed to publish status change via Redis broker",
+					"task_id", taskID, "error", err)
+			}
+		}
+
+		// Fallback to WebSocket service if Redis broker failed or not available
+		if p.redisBroker == nil || notificationErr != nil {
+			// Send task updated notification via service
+			if err := p.wsService.NotifyTaskUpdated(task.ID, task.ProjectID, changes, taskResponse); err != nil {
+				p.logger.Error("Failed to send WebSocket task update notification",
+					"task_id", taskID, "error", err)
+			}
+
+			// Send status changed notification via service
+			if err := p.wsService.NotifyStatusChanged(task.ID, task.ProjectID, "task",
+				string(oldStatus), string(status)); err != nil {
+				p.logger.Error("Failed to send WebSocket status change notification",
+					"task_id", taskID, "error", err)
+			}
+		}
+
+		p.logger.Info("Sent WebSocket notifications for status change",
+			"task_id", taskID, "old_status", oldStatus, "new_status", status)
+	}
+
+	return nil
 }
 
 // createWorktree creates a git worktree for the task
@@ -389,8 +523,8 @@ func (p *Processor) savePlanAndUpdateStatus(ctx context.Context, taskID uuid.UUI
 
 	p.logger.Info("Plan status updated to REVIEWING", "plan_id", plan.ID)
 
-	// Update task status to PLAN_REVIEWING
-	_, err = p.taskUsecase.UpdateStatus(ctx, taskID, entity.TaskStatusPLANREVIEWING)
+	// Update task status to PLAN_REVIEWING with WebSocket broadcast
+	err = p.updateTaskStatus(ctx, taskID, entity.TaskStatusPLANREVIEWING)
 	if err != nil {
 		p.logger.Error("Failed to update task status", "task_id", taskID, "error", err)
 		return fmt.Errorf("failed to update task status: %w", err)

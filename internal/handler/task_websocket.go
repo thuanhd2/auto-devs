@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/auto-devs/auto-devs/internal/entity"
 	"github.com/auto-devs/auto-devs/internal/handler/dto"
 	"github.com/auto-devs/auto-devs/internal/usecase"
 	"github.com/auto-devs/auto-devs/internal/websocket"
@@ -208,4 +209,144 @@ func (h *TaskHandlerWithWebSocket) DeleteTask(c *gin.Context) {
 	}
 
 	c.Status(http.StatusNoContent)
+}
+
+// StartPlanning starts planning for a task with immediate status update and WebSocket notification
+func (h *TaskHandlerWithWebSocket) StartPlanning(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, dto.NewErrorResponse(err, http.StatusBadRequest, "Invalid task ID"))
+		return
+	}
+
+	var req dto.StartPlanningRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, dto.NewErrorResponse(err, http.StatusBadRequest, "Invalid request data"))
+		return
+	}
+
+	// Get the original task to track changes
+	originalTask, err := h.taskUsecase.GetByID(c.Request.Context(), id)
+	if err != nil {
+		c.JSON(http.StatusNotFound, dto.NewErrorResponse(err, http.StatusNotFound, "Task not found"))
+		return
+	}
+
+	if originalTask.Status != entity.TaskStatusTODO {
+		c.JSON(http.StatusBadRequest, dto.NewErrorResponse(nil, http.StatusBadRequest, "Task must be in TODO status to start planning"))
+		return
+	}
+
+	// Immediately update task status to PLANNING to provide instant UI feedback
+	updatedTask, err := h.taskUsecase.UpdateStatus(c.Request.Context(), id, entity.TaskStatusPLANNING)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, dto.NewErrorResponse(err, http.StatusInternalServerError, "Failed to update task status"))
+		return
+	}
+
+	response := dto.TaskResponseFromEntity(updatedTask)
+
+	// Send WebSocket notifications for status change
+	changes := map[string]interface{}{
+		"status": map[string]interface{}{
+			"old": originalTask.Status,
+			"new": updatedTask.Status,
+		},
+	}
+
+	// Send task updated notification
+	if err := h.wsService.NotifyTaskUpdated(updatedTask.ID, updatedTask.ProjectID, changes, response); err != nil {
+		log.Printf("Failed to send WebSocket notification for task update: %v", err)
+	}
+
+	// Send status changed notification
+	if err := h.wsService.NotifyStatusChanged(updatedTask.ID, updatedTask.ProjectID, "task", string(originalTask.Status), string(updatedTask.Status)); err != nil {
+		log.Printf("Failed to send WebSocket notification for status change: %v", err)
+	}
+
+	// Start the background planning job using the usecase
+	jobID, err := h.TaskHandler.taskUsecase.StartPlanning(c.Request.Context(), id, req.BranchName)
+	if err != nil {
+		// Revert status if job enqueueing fails
+		_, revertErr := h.taskUsecase.UpdateStatus(c.Request.Context(), id, entity.TaskStatusTODO)
+		if revertErr != nil {
+			log.Printf("Failed to revert task status after job enqueueing failed: %v", revertErr)
+		}
+		c.JSON(http.StatusInternalServerError, dto.NewErrorResponse(err, http.StatusInternalServerError, "Failed to start planning"))
+		return
+	}
+
+	planningResponse := dto.StartPlanningResponse{
+		Message: "Planning started successfully",
+		JobID:   jobID,
+	}
+	c.JSON(http.StatusOK, planningResponse)
+}
+
+// ApprovePlan approves a plan and starts implementation with WebSocket notification
+func (h *TaskHandlerWithWebSocket) ApprovePlan(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, dto.NewErrorResponse(err, http.StatusBadRequest, "Invalid task ID"))
+		return
+	}
+
+	// Get the original task to track changes
+	originalTask, err := h.taskUsecase.GetByID(c.Request.Context(), id)
+	if err != nil {
+		c.JSON(http.StatusNotFound, dto.NewErrorResponse(err, http.StatusNotFound, "Task not found"))
+		return
+	}
+
+	if originalTask.Status != entity.TaskStatusPLANREVIEWING {
+		c.JSON(http.StatusBadRequest, dto.NewErrorResponse(nil, http.StatusBadRequest, "Task must be in PLAN_REVIEWING status to approve plan"))
+		return
+	}
+
+	// Immediately update task status to IMPLEMENTING to provide instant UI feedback
+	updatedTask, err := h.taskUsecase.UpdateStatus(c.Request.Context(), id, entity.TaskStatusIMPLEMENTING)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, dto.NewErrorResponse(err, http.StatusInternalServerError, "Failed to update task status"))
+		return
+	}
+
+	response := dto.TaskResponseFromEntity(updatedTask)
+
+	// Send WebSocket notifications for status change
+	changes := map[string]interface{}{
+		"status": map[string]interface{}{
+			"old": originalTask.Status,
+			"new": updatedTask.Status,
+		},
+	}
+
+	// Send task updated notification
+	if err := h.wsService.NotifyTaskUpdated(updatedTask.ID, updatedTask.ProjectID, changes, response); err != nil {
+		log.Printf("Failed to send WebSocket notification for task update: %v", err)
+	}
+
+	// Send status changed notification
+	if err := h.wsService.NotifyStatusChanged(updatedTask.ID, updatedTask.ProjectID, "task", string(originalTask.Status), string(updatedTask.Status)); err != nil {
+		log.Printf("Failed to send WebSocket notification for status change: %v", err)
+	}
+
+	// Start the background implementation job using the usecase
+	jobID, err := h.TaskHandler.taskUsecase.ApprovePlan(c.Request.Context(), id)
+	if err != nil {
+		// Revert status if job enqueueing fails
+		_, revertErr := h.taskUsecase.UpdateStatus(c.Request.Context(), id, entity.TaskStatusPLANREVIEWING)
+		if revertErr != nil {
+			log.Printf("Failed to revert task status after job enqueueing failed: %v", revertErr)
+		}
+		c.JSON(http.StatusInternalServerError, dto.NewErrorResponse(err, http.StatusInternalServerError, "Failed to approve plan and start implementation"))
+		return
+	}
+
+	planningResponse := dto.StartPlanningResponse{
+		Message: "Plan approved and implementation started successfully",
+		JobID:   jobID,
+	}
+	c.JSON(http.StatusOK, planningResponse)
 }
