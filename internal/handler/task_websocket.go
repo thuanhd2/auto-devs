@@ -15,11 +15,11 @@ import (
 // TaskHandlerWithWebSocket extends the basic task handler with WebSocket notifications
 type TaskHandlerWithWebSocket struct {
 	*TaskHandler
-	wsService *websocket.Service
+	wsService *websocket.EnhancedService
 }
 
 // NewTaskHandlerWithWebSocket creates a new task handler with WebSocket support
-func NewTaskHandlerWithWebSocket(taskUsecase usecase.TaskUsecase, wsService *websocket.Service) *TaskHandlerWithWebSocket {
+func NewTaskHandlerWithWebSocket(taskUsecase usecase.TaskUsecase, wsService *websocket.EnhancedService) *TaskHandlerWithWebSocket {
 	return &TaskHandlerWithWebSocket{
 		TaskHandler: NewTaskHandler(taskUsecase),
 		wsService:   wsService,

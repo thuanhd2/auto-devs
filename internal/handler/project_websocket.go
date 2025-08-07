@@ -14,11 +14,11 @@ import (
 // ProjectHandlerWithWebSocket extends the basic project handler with WebSocket notifications
 type ProjectHandlerWithWebSocket struct {
 	*ProjectHandler
-	wsService *websocket.Service
+	wsService *websocket.EnhancedService
 }
 
 // NewProjectHandlerWithWebSocket creates a new project handler with WebSocket support
-func NewProjectHandlerWithWebSocket(projectUsecase usecase.ProjectUsecase, wsService *websocket.Service) *ProjectHandlerWithWebSocket {
+func NewProjectHandlerWithWebSocket(projectUsecase usecase.ProjectUsecase, wsService *websocket.EnhancedService) *ProjectHandlerWithWebSocket {
 	return &ProjectHandlerWithWebSocket{
 		ProjectHandler: NewProjectHandler(projectUsecase),
 		wsService:      wsService,

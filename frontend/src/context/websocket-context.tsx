@@ -26,10 +26,10 @@ import {
   projectOptimisticUpdates,
 } from '@/services/optimisticUpdates'
 import {
-  websocketService,
+  enhancedWebSocketService,
   WebSocketMessage,
   ConnectionState,
-} from '@/services/websocketService'
+} from '@/services/enhancedWebSocketService'
 
 export interface WebSocketContextValue {
   // Connection state
@@ -135,7 +135,7 @@ export function WebSocketProvider({
   onAuthRequired,
 }: WebSocketProviderProps) {
   const [connectionState, setConnectionState] = useState<ConnectionState>(
-    websocketService.getConnectionState()
+    enhancedWebSocketService.getConnectionState()
   )
   const [queuedMessageCount, setQueuedMessageCount] = useState(0)
   const [optimisticUpdateCount, setOptimisticUpdateCount] = useState(0)
@@ -316,7 +316,7 @@ export function WebSocketProvider({
       messageHandlerRegistry.handle(message)
     }
 
-    websocketService.subscribe('*', messageListener)
+    enhancedWebSocketService.subscribe('*', messageListener)
 
     return () => {
       // Cleanup handlers
@@ -324,7 +324,7 @@ export function WebSocketProvider({
         messageHandlerRegistry.unregister(type, handler)
       })
       messageHandlerRegistry.unregister('*', wildcardHandler)
-      websocketService.unsubscribe('*', messageListener)
+      enhancedWebSocketService.unsubscribe('*', messageListener)
     }
   }, [
     currentProjectId,
@@ -343,11 +343,11 @@ export function WebSocketProvider({
   // Set up connection state listener
   useEffect(() => {
     connectionListenerRef.current = handleConnectionStateChange
-    websocketService.subscribeToConnectionState(handleConnectionStateChange)
+    enhancedWebSocketService.subscribeToConnectionState(handleConnectionStateChange)
 
     return () => {
       if (connectionListenerRef.current) {
-        websocketService.unsubscribeFromConnectionState(
+        enhancedWebSocketService.unsubscribeFromConnectionState(
           connectionListenerRef.current
         )
       }
@@ -356,20 +356,20 @@ export function WebSocketProvider({
 
   // Set up auth token
   useEffect(() => {
-    websocketService.setAuthToken(authToken || null)
+    enhancedWebSocketService.setAuthToken(authToken || null)
   }, [authToken])
 
   // Auto-connect
   useEffect(() => {
     if (autoConnect && authToken) {
-      websocketService.connect().catch(console.error)
+      enhancedWebSocketService.connect().catch(console.error)
     }
   }, [autoConnect, authToken])
 
   // Set up periodic state checks
   useEffect(() => {
     const updateCounts = () => {
-      setQueuedMessageCount(websocketService.getQueuedMessageCount())
+      setQueuedMessageCount(enhancedWebSocketService.getQueuedMessageCount())
       setOptimisticUpdateCount(optimisticUpdateManager.getPendingCount())
     }
 
@@ -388,7 +388,7 @@ export function WebSocketProvider({
     async (projectId: string | null) => {
       if (currentProjectId && currentProjectId !== projectId) {
         try {
-          await websocketService.unsubscribeFromProject(currentProjectId)
+          await enhancedWebSocketService.unsubscribeFromProject(currentProjectId)
         } catch (error) {
           console.error('Failed to unsubscribe from previous project:', error)
         }
@@ -399,7 +399,7 @@ export function WebSocketProvider({
 
       if (projectId && connectionState.status === 'connected') {
         try {
-          await websocketService.subscribeToProject(projectId)
+          await enhancedWebSocketService.subscribeToProject(projectId)
         } catch (error) {
           console.error('Failed to subscribe to new project:', error)
         }
@@ -411,48 +411,48 @@ export function WebSocketProvider({
   // Auto-subscribe to project when connected
   useEffect(() => {
     if (currentProjectId && connectionState.status === 'connected') {
-      websocketService.subscribeToProject(currentProjectId).catch(console.error)
+      enhancedWebSocketService.subscribeToProject(currentProjectId).catch(console.error)
     }
   }, [currentProjectId, connectionState.status])
 
   // API methods
   const connect = useCallback(async () => {
-    await websocketService.connect()
+    await enhancedWebSocketService.connect()
   }, [])
 
   const disconnect = useCallback(() => {
-    websocketService.disconnect()
+    enhancedWebSocketService.disconnect()
   }, [])
 
   const reconnect = useCallback(async () => {
-    websocketService.disconnect()
-    await websocketService.connect()
+    enhancedWebSocketService.disconnect()
+    await enhancedWebSocketService.connect()
   }, [])
 
   const send = useCallback(async (message: any) => {
-    await websocketService.send(message)
+    await enhancedWebSocketService.send(message)
   }, [])
 
   const subscribe = useCallback(
     (messageType: string, handler: (message: WebSocketMessage) => void) => {
-      websocketService.subscribe(messageType, handler)
+      enhancedWebSocketService.subscribe(messageType, handler)
     },
     []
   )
 
   const unsubscribe = useCallback(
     (messageType: string, handler: (message: WebSocketMessage) => void) => {
-      websocketService.unsubscribe(messageType, handler)
+      enhancedWebSocketService.unsubscribe(messageType, handler)
     },
     []
   )
 
   const subscribeToProject = useCallback(async (projectId: string) => {
-    await websocketService.subscribeToProject(projectId)
+    await enhancedWebSocketService.subscribeToProject(projectId)
   }, [])
 
   const unsubscribeFromProject = useCallback(async (projectId: string) => {
-    await websocketService.unsubscribeFromProject(projectId)
+    await enhancedWebSocketService.unsubscribeFromProject(projectId)
   }, [])
 
   const clearOptimisticUpdates = useCallback(() => {
@@ -461,7 +461,7 @@ export function WebSocketProvider({
   }, [])
 
   const clearMessageQueue = useCallback(() => {
-    websocketService.clearMessageQueue()
+    enhancedWebSocketService.clearMessageQueue()
     setQueuedMessageCount(0)
   }, [])
 

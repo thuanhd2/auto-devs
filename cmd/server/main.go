@@ -36,9 +36,12 @@ func main() {
 	// 	log.Printf("Warning: Failed to run migrations: %v", err)
 	// }
 
-	// Initialize WebSocket service
-	wsService := websocket.NewService()
-	log.Printf("WebSocket service initialized")
+	// Initialize Enhanced WebSocket service
+	wsService, err := websocket.NewEnhancedService(&app.Config.Centrifuge)
+	if err != nil {
+		log.Fatal("Failed to initialize WebSocket service:", err)
+	}
+	log.Printf("Enhanced WebSocket service initialized")
 
 	// Setup Gin router
 	router := gin.Default()

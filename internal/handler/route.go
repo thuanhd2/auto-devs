@@ -11,7 +11,7 @@ import (
 )
 
 // SetupRoutes configures all API routes and middleware
-func SetupRoutes(router *gin.Engine, projectUsecase usecase.ProjectUsecase, taskUsecase usecase.TaskUsecase, db *database.GormDB, wsService *websocket.Service) {
+func SetupRoutes(router *gin.Engine, projectUsecase usecase.ProjectUsecase, taskUsecase usecase.TaskUsecase, db *database.GormDB, wsService *websocket.EnhancedService) {
 	// Initialize handlers
 	projectHandler := NewProjectHandlerWithWebSocket(projectUsecase, wsService)
 	taskHandler := NewTaskHandlerWithWebSocket(taskUsecase, wsService)

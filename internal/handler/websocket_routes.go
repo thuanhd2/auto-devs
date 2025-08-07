@@ -1,23 +1,47 @@
 package handler
 
 import (
+	"fmt"
 	"net/http"
+	"os"
+	"strconv"
 
 	"github.com/auto-devs/auto-devs/internal/websocket"
 	"github.com/gin-gonic/gin"
 )
 
-// SetupWebSocketRoutes configures WebSocket routes
-func SetupWebSocketRoutes(router *gin.Engine, wsHandler *websocket.Handler, wsService *websocket.Service) {
+// SetupWebSocketRoutes configures WebSocket routes with support for both legacy and Centrifuge backends
+func SetupWebSocketRoutes(router *gin.Engine, wsHandler *websocket.Handler, wsService *websocket.EnhancedService) {
+	// Create debug handler for testing
+	debugHandler := NewWebSocketDebugHandler(wsService)
+	// Check if we should use legacy WebSocket (via environment variable)
+	useLegacy := true // Default to legacy for safety
+	if legacyStr := os.Getenv("WEBSOCKET_USE_LEGACY"); legacyStr != "" {
+		if parsed, err := strconv.ParseBool(legacyStr); err == nil {
+			useLegacy = parsed
+		}
+	}
 	// WebSocket upgrade endpoint
 	ws := router.Group("/ws")
 	{
-		// Apply WebSocket-specific middleware
-		ws.Use(websocket.WebSocketMiddleware())
-		ws.Use(websocket.WebSocketAuthMiddleware(wsService.GetAuthService()))
-		
-		// WebSocket connection endpoint
-		ws.GET("/connect", wsHandler.HandleWebSocket)
+		if useLegacy {
+			// Legacy WebSocket implementation
+			ws.Use(websocket.WebSocketMiddleware())
+			ws.Use(websocket.WebSocketAuthMiddleware(wsService.GetAuthService()))
+			ws.GET("/connect", wsHandler.HandleWebSocket)
+		} else {
+			// Centrifuge WebSocket implementation
+			// Create Centrifuge handler (we'll implement this integration)
+			centrifugeHandler, err := createCentrifugeHandler(wsService)
+			if err != nil {
+				// Fallback to legacy if Centrifuge setup fails
+				ws.Use(websocket.WebSocketMiddleware())
+				ws.Use(websocket.WebSocketAuthMiddleware(wsService.GetAuthService()))
+				ws.GET("/connect", wsHandler.HandleWebSocket)
+			} else {
+				ws.GET("/connect", centrifugeHandler.HandleWebSocket)
+			}
+		}
 	}
 	
 	// WebSocket management API (for monitoring/admin)
@@ -83,6 +107,22 @@ func SetupWebSocketRoutes(router *gin.Engine, wsHandler *websocket.Handler, wsSe
 			})
 		})
 		
+		// Backend information endpoint
+		wsAPI.GET("/backend", func(c *gin.Context) {
+			backend := "legacy"
+			if !useLegacy {
+				backend = "centrifuge"
+			}
+			c.JSON(http.StatusOK, gin.H{
+				"backend":    backend,
+				"use_legacy": useLegacy,
+			})
+		})
+		
+		// Debug endpoints for testing enhanced service
+		wsAPI.GET("/debug/backend-info", debugHandler.GetBackendInfo)
+		wsAPI.POST("/debug/test-switch", debugHandler.TestBackendSwitch)
+
 		// Administrative endpoints
 		wsAPI.POST("/users/:userId/disconnect", websocket.RequireRole("admin"), func(c *gin.Context) {
 			userID := c.Param("userId")
@@ -166,4 +206,15 @@ func SetupWebSocketRoutes(router *gin.Engine, wsHandler *websocket.Handler, wsSe
 			})
 		})
 	}
+}
+
+// createCentrifugeHandler creates a Centrifuge WebSocket handler
+func createCentrifugeHandler(wsService *websocket.EnhancedService) (*websocket.CentrifugeHandler, error) {
+	// Use the Centrifuge handler from the enhanced service if available
+	if centrifugeHandler := wsService.GetCentrifugeHandler(); centrifugeHandler != nil {
+		return centrifugeHandler, nil
+	}
+	
+	// If not available, return an error to fall back to legacy
+	return nil, fmt.Errorf("Centrifuge handler not available in enhanced service")
 }
