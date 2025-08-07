@@ -3,6 +3,7 @@ package ai
 import (
 	"context"
 	"fmt"
+	"log"
 	"strings"
 	"sync"
 	"time"
@@ -36,10 +37,12 @@ type Execution struct {
 	Result      *ExecutionResult `json:"result,omitempty"`
 
 	// Internal fields
-	processID string
-	ctx       context.Context
-	cancel    context.CancelFunc
-	mu        sync.RWMutex
+	processID     string
+	ctx           context.Context
+	cancel        context.CancelFunc
+	mu            sync.RWMutex
+	stdoutChannel chan string
+	stderrChannel chan string
 }
 
 // ExecutionResult represents the result of an execution
@@ -106,13 +109,31 @@ func (es *ExecutionService) StartExecution(taskID string, plan Plan) (*Execution
 	es.executions[executionID] = execution
 	es.mu.Unlock()
 
-	// Send initial update
-	es.sendUpdate(executionID, ExecutionStatusPending, 0.0, "Execution started", "")
-
-	// Start execution in background
-	go es.runExecution(execution)
-
 	return execution, nil
+}
+
+func (es *ExecutionService) RunExecution(execution *Execution) (*Execution, error) {
+	go es.runExecution(execution)
+	return execution, nil
+}
+
+// RegisterStdoutChannel registers a channel for stdout output
+func (exe *Execution) RegisterStdoutChannel(channel chan string) {
+	exe.mu.Lock()
+	defer exe.mu.Unlock()
+	exe.stdoutChannel = channel
+}
+
+// RegisterStderrChannel registers a channel for stderr output
+func (exe *Execution) RegisterStderrChannel(channel chan string) {
+	exe.mu.Lock()
+	defer exe.mu.Unlock()
+	exe.stderrChannel = channel
+}
+
+// Get execution context Done channel
+func (exe *Execution) GetContextDoneChannel() <-chan struct{} {
+	return exe.ctx.Done()
 }
 
 // GetExecution retrieves an execution by ID
@@ -221,20 +242,14 @@ func (es *ExecutionService) runExecution(execution *Execution) {
 	execution.Status = ExecutionStatusRunning
 	execution.mu.Unlock()
 
-	es.sendUpdate(execution.ID, ExecutionStatusRunning, 0.0, "Starting AI execution", "")
-
 	// Step 1: Prepare CLI command
-	es.addLog(execution, "Preparing CLI command...")
 	command, err := es.buildCommandFromPlan(execution.Plan)
 	if err != nil {
 		es.handleExecutionError(execution, fmt.Sprintf("Failed to build command: %v", err))
 		return
 	}
 
-	es.updateProgress(execution, 0.1)
-
 	// Step 2: Start process
-	es.addLog(execution, "Starting AI process...")
 	process, err := es.processManager.SpawnProcess(command, "")
 	if err != nil {
 		es.handleExecutionError(execution, fmt.Sprintf("Failed to start process: %v", err))
@@ -245,13 +260,11 @@ func (es *ExecutionService) runExecution(execution *Execution) {
 	execution.processID = process.ID
 	execution.mu.Unlock()
 
-	es.updateProgress(execution, 0.2)
-
 	// Step 3: Monitor process
-	es.addLog(execution, "Monitoring execution progress...")
-
 	// Monitor process output
 	go es.monitorProcessOutput(execution, process)
+
+	defer es.handleExecutionCompletion(execution, process)
 
 	// Wait for process completion
 	select {
@@ -264,18 +277,22 @@ func (es *ExecutionService) runExecution(execution *Execution) {
 			time.Sleep(100 * time.Millisecond)
 			select {
 			case <-execution.ctx.Done():
+				log.Println("Execution cancelled", execution.ID)
+				return
+			case <-process.ctx.Done():
+				log.Println("Process cancelled", process.ID)
 				return
 			default:
 			}
 		}
-		es.handleExecutionCompletion(execution, process)
 	}
 }
 
 // buildCommandFromPlan builds a CLI command from a plan
 func (es *ExecutionService) buildCommandFromPlan(plan Plan) (string, error) {
 	// Simple command building - in a real implementation this would be more sophisticated
-	command := fmt.Sprintf("claude-code --plan '%s' --task-id '%s'", plan.ID, plan.TaskID)
+	// command := fmt.Sprintf("claude-code --plan '%s' --task-id '%s'", plan.ID, plan.TaskID)
+	command := "echo 'Hello, world!' | /Users/thuanho/Documents/personal/auto-devs/fake-cli/fake.sh"
 	return command, nil
 }
 
@@ -298,18 +315,20 @@ func (es *ExecutionService) monitorProcessOutput(execution *Execution, process *
 			stdout, stderr := process.GetOutput()
 			if len(stdout) > 0 {
 				output := string(stdout)
-				es.addLog(execution, output)
+				// es.addLog(execution, output)
 
-				// Update progress based on output patterns
-				progress := es.estimateProgress(output)
-				if progress > execution.Progress {
-					es.updateProgress(execution, progress)
-				}
+				// // Update progress based on output patterns
+				// progress := es.estimateProgress(output)
+				// if progress > execution.Progress {
+				// 	es.updateProgress(execution, progress)
+				// }
+				execution.stdoutChannel <- output
 			}
 
 			if len(stderr) > 0 {
 				errorOutput := string(stderr)
-				es.addLog(execution, fmt.Sprintf("Error: %s", errorOutput))
+				// es.addLog(execution, fmt.Sprintf("Error: %s", errorOutput))
+				execution.stderrChannel <- errorOutput
 			}
 		}
 	}
@@ -334,7 +353,10 @@ func (es *ExecutionService) estimateProgress(output string) float64 {
 
 // handleExecutionCompletion handles successful execution completion
 func (es *ExecutionService) handleExecutionCompletion(execution *Execution, process *Process) {
+	log.Println("handleExecutionCompletion", execution.ID)
 	execution.mu.Lock()
+	log.Println("handleExecutionCompletion lock", execution.ID)
+	defer execution.cancel()
 	defer execution.mu.Unlock()
 
 	now := time.Now()
@@ -345,6 +367,7 @@ func (es *ExecutionService) handleExecutionCompletion(execution *Execution, proc
 
 	// Check if process completed successfully
 	if process.ExitCode != nil && *process.ExitCode == 0 {
+		log.Println("handleExecutionCompletion completed", execution.ID)
 		execution.Status = ExecutionStatusCompleted
 		execution.Progress = 1.0
 
@@ -357,9 +380,8 @@ func (es *ExecutionService) handleExecutionCompletion(execution *Execution, proc
 		}
 		execution.Result = result
 
-		es.addLog(execution, "Execution completed successfully")
-		es.sendUpdate(execution.ID, ExecutionStatusCompleted, 1.0, "Execution completed successfully", "")
 	} else {
+		log.Println("handleExecutionCompletion failed", execution.ID)
 		exitCode := -1
 		if process.ExitCode != nil {
 			exitCode = *process.ExitCode
@@ -381,17 +403,15 @@ func (es *ExecutionService) handleExecutionError(execution *Execution, errorMsg 
 	execution.CompletedAt = &now
 	execution.Status = ExecutionStatusFailed
 	execution.Error = errorMsg
-
-	es.addLog(execution, fmt.Sprintf("Execution failed: %s", errorMsg))
-	es.sendUpdate(execution.ID, ExecutionStatusFailed, execution.Progress, "", errorMsg)
 }
 
 // addLog adds a log entry to the execution
 func (es *ExecutionService) addLog(execution *Execution, message string) {
 	execution.mu.Lock()
 	defer execution.mu.Unlock()
-
-	execution.Logs = append(execution.Logs, fmt.Sprintf("[%s] %s", time.Now().Format("15:04:05"), message))
+	logMessage := fmt.Sprintf("[%s] %s", time.Now().Format("15:04:05"), message)
+	log.Println("addLog", execution.ID, logMessage)
+	execution.Logs = append(execution.Logs, logMessage)
 }
 
 // updateProgress updates the execution progress

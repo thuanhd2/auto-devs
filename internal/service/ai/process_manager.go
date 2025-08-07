@@ -130,6 +130,8 @@ func (pm *ProcessManager) SpawnProcess(command string, workDir string) (*Process
 
 // MonitorProcess monitors the status and resource usage of a process
 func (pm *ProcessManager) MonitorProcess(process *Process) error {
+	defer process.cancel()
+
 	// Wait for process to complete
 	err := process.cmd.Wait()
 

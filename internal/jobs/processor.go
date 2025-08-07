@@ -274,6 +274,28 @@ func (p *Processor) ProcessTaskImplementation(ctx context.Context, task *asynq.T
 		return fmt.Errorf("failed to start AI execution: %w", err)
 	}
 
+	stdoutChannel := make(chan string)
+	stderrChannel := make(chan string)
+	execution.RegisterStdoutChannel(stdoutChannel)
+	execution.RegisterStderrChannel(stderrChannel)
+
+	p.executionService.RunExecution(execution)
+
+	go func() {
+		for {
+			select {
+			case <-execution.GetContextDoneChannel():
+				p.logger.Info("AI execution completed", "task_id", payload.TaskID, "execution_id", execution.ID)
+				_ = p.updateTaskStatus(context.Background(), payload.TaskID, entity.TaskStatusCODEREVIEWING)
+				return
+			case stdout := <-stdoutChannel:
+				p.logger.Info("AI execution stdout", "task_id", payload.TaskID, "execution_id", execution.ID, "stdout", stdout)
+			case stderr := <-stderrChannel:
+				p.logger.Error("AI execution stderr", "task_id", payload.TaskID, "execution_id", execution.ID, "stderr", stderr)
+			}
+		}
+	}()
+
 	p.logger.Info("AI execution started successfully",
 		"task_id", payload.TaskID,
 		"execution_id", execution.ID,
