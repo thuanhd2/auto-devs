@@ -1,6 +1,7 @@
 package websocket
 
 import (
+	"fmt"
 	"log"
 	"log/slog"
 	"os"
@@ -20,6 +21,7 @@ type Service struct {
 	statusProcessor   *StatusEventProcessor
 	presenceProcessor *UserPresenceProcessor
 	authService       AuthService
+	redisBroker       *RedisBroker // Redis broker for cross-process messaging
 	logger            *slog.Logger
 }
 
@@ -67,6 +69,54 @@ func NewService() *Service {
 	return service
 }
 
+// NewServiceWithRedisBroker creates a new WebSocket service with Redis broker
+func NewServiceWithRedisBroker(redisAddr, redisPassword string, redisDB int) *Service {
+	// Create core components
+	handler := NewHandler()
+	hub := handler.GetHub()
+	middlewareManager := NewMiddlewareManager()
+
+	// Create persistence for offline messages
+	persistence := NewInMemoryPersistence(1000, 24*time.Hour)
+	offlineManager := NewOfflineMessageManager(persistence, hub)
+
+	// Create processors
+	taskProcessor := NewTaskEventProcessor(hub)
+	projectProcessor := NewProjectEventProcessor(hub)
+	statusProcessor := NewStatusEventProcessor(hub)
+	presenceProcessor := NewUserPresenceProcessor(hub)
+
+	// Create auth service
+	authService := NewMockAuthService()
+
+	// Register processors with hub
+	processors := GetEventProcessors(hub)
+	for msgType, processor := range processors {
+		hub.RegisterProcessor(msgType, processor)
+	}
+
+	// Create Redis broker
+	redisBroker := NewRedisBroker(redisAddr, redisPassword, redisDB, hub)
+
+	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
+
+	service := &Service{
+		handler:           handler,
+		hub:               hub,
+		middlewareManager: middlewareManager,
+		offlineManager:    offlineManager,
+		taskProcessor:     taskProcessor,
+		projectProcessor:  projectProcessor,
+		statusProcessor:   statusProcessor,
+		presenceProcessor: presenceProcessor,
+		authService:       authService,
+		redisBroker:       redisBroker,
+		logger:            logger,
+	}
+
+	return service
+}
+
 // GetHandler returns the WebSocket handler
 func (s *Service) GetHandler() *Handler {
 	return s.handler
@@ -82,6 +132,34 @@ func (s *Service) GetAuthService() AuthService {
 	return s.authService
 }
 
+// StartRedisBroker starts the Redis broker if configured
+func (s *Service) StartRedisBroker() error {
+	if s.redisBroker == nil {
+		return fmt.Errorf("Redis broker not configured")
+	}
+
+	s.logger.Info("Starting Redis broker")
+	return s.redisBroker.Start()
+}
+
+// StopRedisBroker stops the Redis broker
+func (s *Service) StopRedisBroker() error {
+	if s.redisBroker == nil {
+		return nil
+	}
+
+	s.logger.Info("Stopping Redis broker")
+	return s.redisBroker.Stop()
+}
+
+// IsRedisBrokerRunning returns true if Redis broker is running
+func (s *Service) IsRedisBrokerRunning() bool {
+	if s.redisBroker == nil {
+		return false
+	}
+	return s.redisBroker.IsRunning()
+}
+
 // Task event methods
 
 // NotifyTaskCreated notifies about a task creation
@@ -91,6 +169,17 @@ func (s *Service) NotifyTaskCreated(task interface{}, projectID uuid.UUID) error
 
 // NotifyTaskUpdated notifies about a task update
 func (s *Service) NotifyTaskUpdated(taskID, projectID uuid.UUID, changes map[string]interface{}, task interface{}) error {
+	// Try Redis broker first if available
+	if s.redisBroker != nil && s.redisBroker.IsRunning() {
+		if err := s.redisBroker.PublishTaskUpdated(taskID, projectID, changes, task); err != nil {
+			s.logger.Warn("Failed to publish via Redis broker, falling back to direct broadcast", "error", err)
+		} else {
+			s.logger.Debug("Published task update via Redis broker", "task_id", taskID)
+			return nil
+		}
+	}
+
+	// Fallback to direct broadcast
 	return s.taskProcessor.BroadcastTaskUpdated(taskID, projectID, changes, task, nil)
 }
 
@@ -111,6 +200,17 @@ func (s *Service) NotifyProjectUpdated(projectID uuid.UUID, changes map[string]i
 
 // NotifyStatusChanged notifies about a status change
 func (s *Service) NotifyStatusChanged(entityID, projectID uuid.UUID, entityType, oldStatus, newStatus string) error {
+	// Try Redis broker first if available
+	if s.redisBroker != nil && s.redisBroker.IsRunning() {
+		if err := s.redisBroker.PublishStatusChanged(entityID, projectID, entityType, oldStatus, newStatus); err != nil {
+			s.logger.Warn("Failed to publish via Redis broker, falling back to direct broadcast", "error", err)
+		} else {
+			s.logger.Debug("Published status change via Redis broker", "entity_id", entityID)
+			return nil
+		}
+	}
+
+	// Fallback to direct broadcast
 	return s.statusProcessor.BroadcastStatusChanged(entityID, projectID, entityType, oldStatus, newStatus, nil)
 }
 

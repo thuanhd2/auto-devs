@@ -23,6 +23,7 @@ type Processor struct {
 	executionService *ai.ExecutionService
 	planRepo         repository.PlanRepository
 	wsService        *websocket.Service
+	redisBroker      *RedisBrokerClient // Redis broker client for cross-process messaging
 	logger           *slog.Logger
 }
 
@@ -44,6 +45,30 @@ func NewProcessor(
 		executionService: executionService,
 		planRepo:         planRepo,
 		wsService:        wsService,
+		logger:           slog.Default().With("component", "job-processor"),
+	}
+}
+
+// NewProcessorWithRedisBroker creates a new job processor with Redis broker
+func NewProcessorWithRedisBroker(
+	taskUsecase usecase.TaskUsecase,
+	projectUsecase usecase.ProjectUsecase,
+	worktreeUsecase usecase.WorktreeUsecase,
+	planningService *ai.PlanningService,
+	executionService *ai.ExecutionService,
+	planRepo repository.PlanRepository,
+	wsService *websocket.Service,
+	redisBroker *RedisBrokerClient,
+) *Processor {
+	return &Processor{
+		taskUsecase:      taskUsecase,
+		projectUsecase:   projectUsecase,
+		worktreeUsecase:  worktreeUsecase,
+		planningService:  planningService,
+		executionService: executionService,
+		planRepo:         planRepo,
+		wsService:        wsService,
+		redisBroker:      redisBroker,
 		logger:           slog.Default().With("component", "job-processor"),
 	}
 }
@@ -327,7 +352,6 @@ func (p *Processor) updateTaskStatus(ctx context.Context, taskID uuid.UUID, stat
 		}
 
 		// Convert task to response format for WebSocket
-		// Note: In a real implementation, you might want to create a proper converter
 		taskResponse := map[string]interface{}{
 			"id":         task.ID.String(),
 			"project_id": task.ProjectID.String(),
@@ -336,17 +360,41 @@ func (p *Processor) updateTaskStatus(ctx context.Context, taskID uuid.UUID, stat
 			"updated_at": task.UpdatedAt,
 		}
 
-		// Send task updated notification
-		if err := p.wsService.NotifyTaskUpdated(task.ID, task.ProjectID, changes, taskResponse); err != nil {
-			p.logger.Error("Failed to send WebSocket task update notification",
-				"task_id", taskID, "error", err)
+		// Try Redis broker first, then fallback to WebSocket service
+		var notificationErr error
+
+		if p.redisBroker != nil {
+			// Use Redis broker for cross-process messaging
+			if err := p.redisBroker.PublishTaskUpdated(task.ID, task.ProjectID, changes, taskResponse); err != nil {
+				p.logger.Warn("Failed to publish via Redis broker, falling back to WebSocket service",
+					"task_id", taskID, "error", err)
+				notificationErr = err
+			} else {
+				p.logger.Debug("Published task update via Redis broker", "task_id", taskID)
+			}
+
+			// Send status changed notification via Redis broker
+			if err := p.redisBroker.PublishStatusChanged(task.ID, task.ProjectID, "task",
+				string(oldStatus), string(status)); err != nil {
+				p.logger.Warn("Failed to publish status change via Redis broker",
+					"task_id", taskID, "error", err)
+			}
 		}
 
-		// Send status changed notification
-		if err := p.wsService.NotifyStatusChanged(task.ID, task.ProjectID, "task",
-			string(oldStatus), string(status)); err != nil {
-			p.logger.Error("Failed to send WebSocket status change notification",
-				"task_id", taskID, "error", err)
+		// Fallback to WebSocket service if Redis broker failed or not available
+		if p.redisBroker == nil || notificationErr != nil {
+			// Send task updated notification via service
+			if err := p.wsService.NotifyTaskUpdated(task.ID, task.ProjectID, changes, taskResponse); err != nil {
+				p.logger.Error("Failed to send WebSocket task update notification",
+					"task_id", taskID, "error", err)
+			}
+
+			// Send status changed notification via service
+			if err := p.wsService.NotifyStatusChanged(task.ID, task.ProjectID, "task",
+				string(oldStatus), string(status)); err != nil {
+				p.logger.Error("Failed to send WebSocket status change notification",
+					"task_id", taskID, "error", err)
+			}
 		}
 
 		p.logger.Info("Sent WebSocket notifications for status change",
