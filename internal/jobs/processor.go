@@ -15,12 +15,13 @@ import (
 
 // Processor handles background job processing
 type Processor struct {
-	taskUsecase     usecase.TaskUsecase
-	projectUsecase  usecase.ProjectUsecase
-	worktreeUsecase usecase.WorktreeUsecase
-	planningService *ai.PlanningService
-	planRepo        repository.PlanRepository
-	logger          *slog.Logger
+	taskUsecase      usecase.TaskUsecase
+	projectUsecase   usecase.ProjectUsecase
+	worktreeUsecase  usecase.WorktreeUsecase
+	planningService  *ai.PlanningService
+	executionService *ai.ExecutionService
+	planRepo         repository.PlanRepository
+	logger           *slog.Logger
 }
 
 // NewProcessor creates a new job processor
@@ -29,15 +30,17 @@ func NewProcessor(
 	projectUsecase usecase.ProjectUsecase,
 	worktreeUsecase usecase.WorktreeUsecase,
 	planningService *ai.PlanningService,
+	executionService *ai.ExecutionService,
 	planRepo repository.PlanRepository,
 ) *Processor {
 	return &Processor{
-		taskUsecase:     taskUsecase,
-		projectUsecase:  projectUsecase,
-		worktreeUsecase: worktreeUsecase,
-		planningService: planningService,
-		planRepo:        planRepo,
-		logger:          slog.Default().With("component", "job-processor"),
+		taskUsecase:      taskUsecase,
+		projectUsecase:   projectUsecase,
+		worktreeUsecase:  worktreeUsecase,
+		planningService:  planningService,
+		executionService: executionService,
+		planRepo:         planRepo,
+		logger:           slog.Default().With("component", "job-processor"),
 	}
 }
 
@@ -153,8 +156,74 @@ func (p *Processor) ProcessTaskImplementation(ctx context.Context, task *asynq.T
 		"task_id", payload.TaskID,
 		"project_id", payload.ProjectID)
 
-	// TODO: call ai execution service to implement the task
+	// Step 1: Update task status to IMPLEMENTING
+	err = p.updateTaskStatus(ctx, payload.TaskID, entity.TaskStatusIMPLEMENTING)
+	if err != nil {
+		p.logger.Error("Failed to update task status to IMPLEMENTING",
+			"task_id", payload.TaskID, "error", err)
+		return fmt.Errorf("failed to update task status to IMPLEMENTING: %w", err)
+	}
 
+	// Step 2: Get task details and check for worktree
+	projectTask, err := p.taskUsecase.GetByID(ctx, payload.TaskID)
+	if err != nil {
+		// Revert task status on failure
+		_ = p.updateTaskStatus(ctx, payload.TaskID, entity.TaskStatusPLANREVIEWING)
+		p.logger.Error("Failed to get task details",
+			"task_id", payload.TaskID, "error", err)
+		return fmt.Errorf("failed to get task details: %w", err)
+	}
+
+	// Validate that task has a worktree
+	if projectTask.WorktreePath == nil || *projectTask.WorktreePath == "" {
+		// Revert task status on failure
+		_ = p.updateTaskStatus(ctx, payload.TaskID, entity.TaskStatusPLANREVIEWING)
+		p.logger.Error("Task has no worktree path",
+			"task_id", payload.TaskID)
+		return fmt.Errorf("task has no worktree path configured")
+	}
+
+	// Step 3: Get the approved plan for the task
+	plan, err := p.planRepo.GetByTaskID(ctx, payload.TaskID)
+	if err != nil {
+		// Revert task status on failure
+		_ = p.updateTaskStatus(ctx, payload.TaskID, entity.TaskStatusPLANREVIEWING)
+		p.logger.Error("Failed to get plan for task",
+			"task_id", payload.TaskID, "error", err)
+		return fmt.Errorf("failed to get plan for task: %w", err)
+	}
+
+	// Step 4: Validate plan status is APPROVED
+	if plan.Status != entity.PlanStatusAPPROVED {
+		// Revert task status on failure
+		_ = p.updateTaskStatus(ctx, payload.TaskID, entity.TaskStatusPLANREVIEWING)
+		p.logger.Error("Plan is not approved",
+			"task_id", payload.TaskID, "plan_status", plan.Status)
+		return fmt.Errorf("plan is not approved, current status: %s", plan.Status)
+	}
+
+	// Step 5: Convert entity.Plan to ai.Plan format
+	aiPlan := p.convertEntityPlanToAIPlan(plan)
+
+	// Step 6: Start AI execution
+	execution, err := p.executionService.StartExecution(payload.TaskID.String(), *aiPlan)
+	if err != nil {
+		// Revert task status on failure
+		_ = p.updateTaskStatus(ctx, payload.TaskID, entity.TaskStatusPLANREVIEWING)
+		p.logger.Error("Failed to start AI execution",
+			"task_id", payload.TaskID, "error", err)
+		return fmt.Errorf("failed to start AI execution: %w", err)
+	}
+
+	p.logger.Info("Started AI execution successfully",
+		"task_id", payload.TaskID,
+		"execution_id", execution.ID)
+
+	// Step 7: Monitor execution progress (this is handled by the ExecutionService callbacks)
+	// The ExecutionService will handle progress updates and completion notifications
+	// For now, we return success as the execution is started and will continue asynchronously
+
+	p.logger.Info("Task implementation process initiated successfully", "task_id", payload.TaskID)
 	return nil
 }
 
@@ -294,4 +363,40 @@ func (p *Processor) savePlanAndUpdateStatus(ctx context.Context, taskID uuid.UUI
 
 	p.logger.Info("Task status updated to PLAN_REVIEWING", "task_id", taskID)
 	return nil
+}
+
+// convertEntityPlanToAIPlan converts a database Plan entity to AI service Plan format
+func (p *Processor) convertEntityPlanToAIPlan(entityPlan *entity.Plan) *ai.Plan {
+	return &ai.Plan{
+		ID:          entityPlan.ID.String(),
+		TaskID:      entityPlan.TaskID.String(),
+		Description: fmt.Sprintf("Implementation plan for task"),
+		Steps:       p.parsePlanStepsFromContent(entityPlan.Content),
+		Context: map[string]string{
+			"plan_status":  string(entityPlan.Status),
+			"created_at":   entityPlan.CreatedAt.String(),
+			"content":      entityPlan.Content,
+		},
+		CreatedAt: entityPlan.CreatedAt,
+	}
+}
+
+// parsePlanStepsFromContent extracts steps from markdown content
+// This is a simplified version - in production this would be more sophisticated
+func (p *Processor) parsePlanStepsFromContent(content string) []ai.PlanStep {
+	// For now, create a single step with the full content
+	// In a real implementation, this would parse the markdown and extract structured steps
+	steps := []ai.PlanStep{
+		{
+			ID:          uuid.New().String(),
+			Description: "Execute implementation plan",
+			Action:      "implement",
+			Parameters: map[string]string{
+				"content": content,
+			},
+			Order: 1,
+		},
+	}
+	
+	return steps
 }

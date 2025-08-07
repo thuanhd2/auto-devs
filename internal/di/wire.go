@@ -252,7 +252,8 @@ func ProvideJobProcessor(
 	projectUsecase usecase.ProjectUsecase,
 	worktreeUsecase usecase.WorktreeUsecase,
 	planningService *ai.PlanningService,
+	executionService *ai.ExecutionService,
 	planRepo repository.PlanRepository,
 ) *jobs.Processor {
-	return jobs.NewProcessor(taskUsecase, projectUsecase, worktreeUsecase, planningService, planRepo)
+	return jobs.NewProcessor(taskUsecase, projectUsecase, worktreeUsecase, planningService, executionService, planRepo)
 }
