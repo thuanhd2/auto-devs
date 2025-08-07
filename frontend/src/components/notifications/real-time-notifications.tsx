@@ -1,8 +1,8 @@
 import { useEffect, useRef } from 'react'
-import { toast } from 'sonner'
-import { useWebSocketContext } from '@/context/websocket-context'
-import { useTaskAnimations } from '@/utils/animations'
 import type { Task } from '@/types/task'
+import { toast } from 'sonner'
+import { useTaskAnimations } from '@/utils/animations'
+import { useWebSocketContext } from '@/context/websocket-context'
 
 interface RealTimeNotificationsProps {
   projectId?: string
@@ -53,8 +53,16 @@ export function RealTimeNotifications({
     }
   }
 
-  const showBrowserNotification = (title: string, body: string, icon?: string) => {
-    if (enableBrowserNotifications && 'Notification' in window && Notification.permission === 'granted') {
+  const showBrowserNotification = (
+    title: string,
+    body: string,
+    icon?: string
+  ) => {
+    if (
+      enableBrowserNotifications &&
+      'Notification' in window &&
+      Notification.permission === 'granted'
+    ) {
       new Notification(title, {
         body,
         icon: icon || '/favicon.ico',
@@ -65,7 +73,10 @@ export function RealTimeNotifications({
     }
   }
 
-  const showToastNotification = (message: string, type: 'success' | 'info' | 'warning' | 'error' = 'info') => {
+  const showToastNotification = (
+    message: string,
+    type: 'success' | 'info' | 'warning' | 'error' = 'info'
+  ) => {
     if (enableToastNotifications) {
       toast[type](message)
     }
@@ -75,11 +86,11 @@ export function RealTimeNotifications({
   const handleTaskCreated = (task: Task) => {
     if (!projectId || task.project_id === projectId) {
       const message = `New task created: "${task.title}"`
-      
+
       showToastNotification(message, 'success')
       showBrowserNotification('New Task', message)
       playNotificationSound()
-      
+
       // Animate the new task
       setTimeout(() => {
         animateTaskCreated(task.id, {
@@ -92,18 +103,19 @@ export function RealTimeNotifications({
 
   // Handle task updated
   const handleTaskUpdated = (task: Task, changes?: any) => {
+    console.log('handleTaskUpdated !!!!!!!!', task, changes)
     if (!projectId || task.project_id === projectId) {
       let message = `Task "${task.title}" updated`
-      
+
       if (changes?.status) {
         const { old: oldStatus, new: newStatus } = changes.status
         message = `Task "${task.title}" moved from ${oldStatus} to ${newStatus}`
-        
+
         showToastNotification(message, 'info')
         animateTaskStatusChanged(task.id, newStatus, {
           showToast: false,
         })
-        
+
         // Update column counts
         animateColumnCountUpdate(oldStatus)
         animateColumnCountUpdate(newStatus)
@@ -113,7 +125,7 @@ export function RealTimeNotifications({
           showToast: false,
         })
       }
-      
+
       showBrowserNotification('Task Updated', message)
       playNotificationSound()
     }
@@ -122,11 +134,11 @@ export function RealTimeNotifications({
   // Handle task deleted
   const handleTaskDeleted = (taskId: string) => {
     const message = 'Task deleted'
-    
+
     showToastNotification(message, 'info')
     showBrowserNotification('Task Deleted', message)
     playNotificationSound()
-    
+
     // Animate task removal
     animateTaskDeleted(taskId, {
       showToast: false,
@@ -137,7 +149,7 @@ export function RealTimeNotifications({
   const handleProjectUpdated = (project: any, changes?: any) => {
     if (!projectId || project.id === projectId) {
       const message = `Project "${project.name}" updated`
-      
+
       showToastNotification(message, 'info')
       showBrowserNotification('Project Updated', message)
       playNotificationSound()
@@ -145,18 +157,26 @@ export function RealTimeNotifications({
   }
 
   // Handle user presence
-  const handleUserJoined = (userId: string, username: string, userProjectId: string) => {
+  const handleUserJoined = (
+    userId: string,
+    username: string,
+    userProjectId: string
+  ) => {
     if (!projectId || userProjectId === projectId) {
       const message = `${username} joined the project`
-      
+
       showToastNotification(message, 'info')
     }
   }
 
-  const handleUserLeft = (userId: string, username: string, userProjectId: string) => {
+  const handleUserLeft = (
+    userId: string,
+    username: string,
+    userProjectId: string
+  ) => {
     if (!projectId || userProjectId === projectId) {
       const message = `${username} left the project`
-      
+
       showToastNotification(message, 'info')
     }
   }
@@ -168,7 +188,10 @@ export function RealTimeNotifications({
 
   // Handle auth failures
   const handleAuthRequired = () => {
-    showToastNotification('Authentication required. Please log in again.', 'warning')
+    showToastNotification(
+      'Authentication required. Please log in again.',
+      'warning'
+    )
   }
 
   return (
@@ -217,27 +240,41 @@ function WebSocketNotificationHandler({
       },
       {
         type: 'task_updated',
-        handler: (message: any) => onTaskUpdated?.(message.data.task, message.data.changes),
+        handler: (message: any) =>
+          onTaskUpdated?.(message.data.task, message.data.changes),
       },
       {
         type: 'task_deleted',
-        handler: (message: any) => onTaskDeleted?.(message.data.task_id || message.data.id),
+        handler: (message: any) =>
+          onTaskDeleted?.(message.data.task_id || message.data.id),
       },
       {
         type: 'project_updated',
-        handler: (message: any) => onProjectUpdated?.(message.data.project, message.data.changes),
+        handler: (message: any) =>
+          onProjectUpdated?.(message.data.project, message.data.changes),
       },
       {
         type: 'user_joined',
-        handler: (message: any) => onUserJoined?.(message.data.user_id, message.data.username, message.data.project_id),
+        handler: (message: any) =>
+          onUserJoined?.(
+            message.data.user_id,
+            message.data.username,
+            message.data.project_id
+          ),
       },
       {
         type: 'user_left',
-        handler: (message: any) => onUserLeft?.(message.data.user_id, message.data.username, message.data.project_id),
+        handler: (message: any) =>
+          onUserLeft?.(
+            message.data.user_id,
+            message.data.username,
+            message.data.project_id
+          ),
       },
       {
         type: 'error',
-        handler: (message: any) => onConnectionError?.(message.data.message || message.data.error),
+        handler: (message: any) =>
+          onConnectionError?.(message.data.message || message.data.error),
       },
       {
         type: 'auth_required',
@@ -260,7 +297,18 @@ function WebSocketNotificationHandler({
         unsubscribe(type, handler)
       })
     }
-  }, [subscribe, unsubscribe, onTaskCreated, onTaskUpdated, onTaskDeleted, onProjectUpdated, onUserJoined, onUserLeft, onConnectionError, onAuthRequired])
+  }, [
+    subscribe,
+    unsubscribe,
+    onTaskCreated,
+    onTaskUpdated,
+    onTaskDeleted,
+    onProjectUpdated,
+    onUserJoined,
+    onUserLeft,
+    onConnectionError,
+    onAuthRequired,
+  ])
 
   return null
 }

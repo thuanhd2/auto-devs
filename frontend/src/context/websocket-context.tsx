@@ -180,6 +180,7 @@ export function WebSocketProvider({
         case 'task_updated':
           // Check for optimistic update confirmation
           confirmOptimisticPendingUpdates('task', message.data.task.id)
+          console.log('task_updated !!!!!!!!', message.data)
           onTaskUpdated?.(message.data.task, message.data.changes)
           break
         case 'task_deleted':
@@ -192,6 +193,7 @@ export function WebSocketProvider({
         case 'status_changed':
           const { entity_type, entity_id, old_status, new_status } =
             message.data
+          console.log('task status_changed !!!!!!!!', message.data)
           onStatusChanged?.(entity_type, entity_id, old_status, new_status)
           break
         case 'user_joined':

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { taskOptimisticUpdates } from '@/services/optimisticUpdates'
+import { CentrifugeMessage } from '@/services/websocketService'
 import type { Task, TaskFilters } from '@/types/task'
 import { toast } from 'sonner'
 import {
@@ -52,7 +53,35 @@ export function ProjectBoard({ projectId }: ProjectBoardProps) {
   const approvePlanAndStartImplementMutation = useApprovePlan()
   // WebSocket integration
   const { setCurrentProjectId } = useWebSocketProject(projectId)
-  const { isConnected } = useWebSocketContext()
+  const { isConnected, subscribe, unsubscribe } = useWebSocketContext()
+  const onTaskUpdated = useCallback((message: CentrifugeMessage) => {
+    const { task_id: taskId, project_id: projectId, changes } = message.data
+    // do nothing if current project id is not the same as the task's project id
+    if (projectId !== projectId) {
+      return
+    }
+    // update the task in the local tasks array
+    setLocalTasks((prev) =>
+      prev.map((t) => {
+        if (t.id !== taskId) {
+          return t
+        }
+        const changedValues = {}
+        for (const key in changes) {
+          if (t[key] !== changes[key].new) {
+            changedValues[key] = changes[key].new
+          }
+        }
+        return { ...t, ...changedValues }
+      })
+    )
+  }, [])
+  useEffect(() => {
+    subscribe('task_updated', onTaskUpdated)
+    return () => {
+      unsubscribe('task_updated', onTaskUpdated)
+    }
+  }, [subscribe, unsubscribe, onTaskUpdated])
 
   // Keep local tasks in sync with server data
   useEffect(() => {
@@ -89,7 +118,7 @@ export function ProjectBoard({ projectId }: ProjectBoardProps) {
       if (task.project_id === projectId) {
         // Confirm any pending optimistic updates for this task
         taskOptimisticUpdates.confirmTaskUpdate(task.id, task)
-        
+
         setLocalTasks((prev) => prev.map((t) => (t.id === task.id ? task : t)))
       }
     },
@@ -239,7 +268,7 @@ export function ProjectBoard({ projectId }: ProjectBoardProps) {
         }}
         onStatusChange={(taskId, newStatus) => {
           // Find the task to apply optimistic update
-          const task = localTasks.find(t => t.id === taskId)
+          const task = localTasks.find((t) => t.id === taskId)
           if (task) {
             // Apply optimistic status change with WebSocket confirmation
             taskOptimisticUpdates.updateTaskStatus(
@@ -253,7 +282,10 @@ export function ProjectBoard({ projectId }: ProjectBoardProps) {
               },
               (confirmedTask) => {
                 // Status change confirmed by WebSocket
-                console.log('Status change confirmed by WebSocket:', confirmedTask)
+                console.log(
+                  'Status change confirmed by WebSocket:',
+                  confirmedTask
+                )
               },
               (originalTask) => {
                 // Revert status change if failed
