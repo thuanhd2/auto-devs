@@ -1,19 +1,23 @@
 import { API_CONFIG } from '@/config/api'
+import {
+  Centrifuge,
+  PublicationContext,
+  SubscriptionDataContext,
+} from 'centrifuge'
 
-export interface WebSocketMessage {
+export interface CentrifugeMessage {
   type: string
   data: any
   timestamp: string
   message_id: string
 }
 
-export interface WebSocketConfig {
+export interface CentrifugeConfig {
   url: string
-  reconnectInterval: number
-  maxReconnectAttempts: number
-  heartbeatInterval: number
-  messageTimeout: number
-  maxQueueSize: number
+  token?: string
+  debug: boolean
+  maxReconnectDelay: number
+  timeout: number
 }
 
 export interface ConnectionState {
@@ -25,36 +29,24 @@ export interface ConnectionState {
   disconnectedAt?: Date
 }
 
-export interface QueuedMessage {
-  id: string
-  message: any
-  timestamp: Date
-  attempts: number
-}
-
-type EventListener = (message: WebSocketMessage) => void
+type EventListener = (message: CentrifugeMessage) => void
 type ConnectionListener = (state: ConnectionState) => void
 
-export class WebSocketService {
-  private ws: WebSocket | null = null
-  private config: WebSocketConfig
+export class CentrifugeService {
+  private centrifuge: Centrifuge | null = null
+  private config: CentrifugeConfig
   private connectionState: ConnectionState
   private eventListeners: Map<string, Set<EventListener>> = new Map()
   private connectionListeners: Set<ConnectionListener> = new Set()
-  private messageQueue: QueuedMessage[] = []
-  private reconnectTimer: NodeJS.Timeout | null = null
-  private heartbeatTimer: NodeJS.Timeout | null = null
-  private subscriptions: Set<string> = new Set()
+  private subscriptions: Map<string, any> = new Map() // channel -> subscription
   private authToken: string | null = null
 
-  constructor(config?: Partial<WebSocketConfig>) {
+  constructor(config?: Partial<CentrifugeConfig>) {
     this.config = {
-      url: API_CONFIG.WS_URL,
-      reconnectInterval: 1000,
-      maxReconnectAttempts: 10,
-      heartbeatInterval: 30000,
-      messageTimeout: 5000,
-      maxQueueSize: 100,
+      url: API_CONFIG.WS_URL.replace('ws://', '').replace('wss://', ''), // Remove protocol prefix
+      debug: process.env.NODE_ENV === 'development',
+      maxReconnectDelay: 30000,
+      timeout: 5000,
       ...config,
     }
 
@@ -67,8 +59,9 @@ export class WebSocketService {
 
   setAuthToken(token: string | null) {
     this.authToken = token
-    if (this.ws && this.connectionState.status === 'connected') {
-      // Reconnect with new token
+
+    // If connected and token changes, reconnect
+    if (this.centrifuge && this.connectionState.status === 'connected') {
       this.disconnect()
       this.connect()
     }
@@ -76,7 +69,7 @@ export class WebSocketService {
 
   connect(): Promise<void> {
     return new Promise((resolve, reject) => {
-      if (this.ws && this.connectionState.status === 'connected') {
+      if (this.centrifuge && this.connectionState.status === 'connected') {
         resolve()
         return
       }
@@ -86,18 +79,32 @@ export class WebSocketService {
         isReconnecting: this.connectionState.reconnectAttempts > 0,
       })
 
-      const wsUrl = this.buildWebSocketUrl()
-      this.ws = new WebSocket(wsUrl)
+      // Build WebSocket URL
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+      const wsUrl = `${protocol}//${this.config.url}/connect`
 
-      const connectTimeout = setTimeout(() => {
-        if (this.ws && this.ws.readyState === WebSocket.CONNECTING) {
-          this.ws.close()
-          reject(new Error('Connection timeout'))
+      // Create Centrifuge instance
+      this.centrifuge = new Centrifuge(wsUrl, {
+        token: this.authToken || undefined,
+        debug: this.config.debug,
+        timeout: this.config.timeout,
+        maxReconnectDelay: this.config.maxReconnectDelay,
+      })
+
+      // Set up event handlers
+      this.centrifuge.on('connecting', (ctx) => {
+        if (this.config.debug) {
+          console.log('Centrifuge connecting:', ctx)
         }
-      }, this.config.messageTimeout)
+        this.updateConnectionState({
+          status: 'connecting',
+        })
+      })
 
-      this.ws.onopen = () => {
-        clearTimeout(connectTimeout)
+      this.centrifuge.on('connected', (ctx) => {
+        if (this.config.debug) {
+          console.log('Centrifuge connected:', ctx)
+        }
         this.updateConnectionState({
           status: 'connected',
           isReconnecting: false,
@@ -105,63 +112,42 @@ export class WebSocketService {
           connectedAt: new Date(),
           lastError: undefined,
         })
-
-        this.startHeartbeat()
-        this.resubscribeToTopics()
-        this.processMessageQueue()
+        this.resubscribeToChannels()
         resolve()
-      }
+      })
 
-      this.ws.onmessage = (event) => {
-        try {
-          const message: WebSocketMessage = JSON.parse(event.data)
-          this.handleMessage(message)
-        } catch (error) {
-          console.error('Failed to parse WebSocket message:', error)
-          console.error('WebSocket message:', event.data)
+      this.centrifuge.on('disconnected', (ctx) => {
+        if (this.config.debug) {
+          console.log('Centrifuge disconnected:', ctx)
         }
-      }
-
-      this.ws.onclose = (event) => {
-        clearTimeout(connectTimeout)
-        this.stopHeartbeat()
-
         this.updateConnectionState({
           status: 'disconnected',
           disconnectedAt: new Date(),
         })
+      })
 
-        if (!event.wasClean && this.shouldReconnect()) {
-          this.scheduleReconnect()
-        }
-      }
-
-      this.ws.onerror = (error) => {
-        clearTimeout(connectTimeout)
-        console.error('WebSocket error:', error)
-
+      this.centrifuge.on('error', (ctx) => {
+        console.error('Centrifuge error:', ctx)
         this.updateConnectionState({
           status: 'error',
-          lastError: 'Connection error occurred',
+          lastError: ctx.error?.message || 'Connection error occurred',
         })
+        reject(ctx.error)
+      })
 
-        reject(error)
-      }
+      // Start connection
+      this.centrifuge.connect()
     })
   }
 
   disconnect() {
-    if (this.reconnectTimer) {
-      clearTimeout(this.reconnectTimer)
-      this.reconnectTimer = null
+    if (this.centrifuge) {
+      this.centrifuge.disconnect()
+      this.centrifuge = null
     }
 
-    this.stopHeartbeat()
-
-    if (this.ws) {
-      this.ws.close(1000, 'Client disconnect')
-      this.ws = null
-    }
+    // Clear all subscriptions
+    this.subscriptions.clear()
 
     this.updateConnectionState({
       status: 'disconnected',
@@ -170,63 +156,33 @@ export class WebSocketService {
     })
   }
 
-  isConnectionReadyToSend(): boolean {
+  isConnected(): boolean {
     return (
-      this.connectionState.status === 'connected' &&
-      this.ws &&
-      this.ws.readyState !== WebSocket.CONNECTING
+      this.connectionState.status === 'connected' && this.centrifuge !== null
     )
   }
 
-  send(message: any): Promise<void> {
-    return new Promise((resolve, reject) => {
-      if (!this.isConnectionReadyToSend()) {
-        // Queue message for later delivery
-        if (this.messageQueue.length < this.config.maxQueueSize) {
-          this.messageQueue.push({
-            id: this.generateMessageId(),
-            message,
-            timestamp: new Date(),
-            attempts: 0,
-          })
-          resolve()
-        } else {
-          reject(new Error('Message queue is full'))
-        }
-        return
-      }
-
-      try {
-        this.ws.send(JSON.stringify(message))
-        resolve()
-      } catch (error) {
-        // Queue message and trigger reconnection
-        if (this.messageQueue.length < this.config.maxQueueSize) {
-          this.messageQueue.push({
-            id: this.generateMessageId(),
-            message,
-            timestamp: new Date(),
-            attempts: 0,
-          })
-        }
-        reject(error)
-      }
-    })
-  }
-
-  subscribe(messageType: string, listener: EventListener) {
-    if (!this.eventListeners.has(messageType)) {
-      this.eventListeners.set(messageType, new Set())
+  // Channel subscription methods
+  subscribe(channel: string, listener: EventListener) {
+    if (!this.eventListeners.has(channel)) {
+      this.eventListeners.set(channel, new Set())
     }
-    this.eventListeners.get(messageType)!.add(listener)
+    this.eventListeners.get(channel)!.add(listener)
+
+    // If we're connected, subscribe to the channel immediately
+    if (this.isConnected()) {
+      this.subscribeToChannel(channel)
+    }
   }
 
-  unsubscribe(messageType: string, listener: EventListener) {
-    const listeners = this.eventListeners.get(messageType)
+  unsubscribe(channel: string, listener: EventListener) {
+    const listeners = this.eventListeners.get(channel)
     if (listeners) {
       listeners.delete(listener)
       if (listeners.size === 0) {
-        this.eventListeners.delete(messageType)
+        this.eventListeners.delete(channel)
+        // Unsubscribe from the channel if no more listeners
+        this.unsubscribeFromChannel(channel)
       }
     }
   }
@@ -239,30 +195,38 @@ export class WebSocketService {
     this.connectionListeners.delete(listener)
   }
 
+  // Project-specific methods for backward compatibility
   subscribeToProject(projectId: string): Promise<void> {
-    // check if projectId is already subscribed
-    if (this.subscriptions.has(projectId)) {
-      return Promise.resolve()
-    }
-
-    this.subscriptions.add(projectId)
-    return this.send({
-      type: 'subscription',
-      data: {
-        action: 'subscribe',
-        project_id: projectId,
-      },
-    })
+    return this.subscribeToChannel(`project:${projectId}`)
   }
 
   unsubscribeFromProject(projectId: string): Promise<void> {
-    this.subscriptions.delete(projectId)
-    return this.send({
-      type: 'subscription',
-      data: {
-        action: 'unsubscribe',
-        project_id: projectId,
-      },
+    return this.unsubscribeFromChannel(`project:${projectId}`)
+  }
+
+  // Send message (for compatibility - Centrifuge uses RPC)
+  send(message: any): Promise<void> {
+    return new Promise((resolve, reject) => {
+      if (!this.centrifuge || !this.isConnected()) {
+        reject(new Error('Not connected'))
+        return
+      }
+
+      // Convert legacy subscription messages to RPC calls
+      if (message.type === 'subscription') {
+        const { action, project_id } = message.data
+        const method =
+          action === 'subscribe' ? 'subscribe_project' : 'unsubscribe_project'
+
+        this.centrifuge
+          .rpc(method, { project_id })
+          .then(() => resolve())
+          .catch(reject)
+      } else {
+        // For other message types, we don't send them directly in Centrifuge
+        // The server handles all publishing
+        resolve()
+      }
     })
   }
 
@@ -270,52 +234,99 @@ export class WebSocketService {
     return { ...this.connectionState }
   }
 
-  getQueuedMessageCount(): number {
-    return this.messageQueue.length
+  // Make this method public for enhanced service
+  subscribeToChannel(channel: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+      if (!this.centrifuge || !this.isConnected()) {
+        reject(new Error('Not connected'))
+        return
+      }
+
+      if (this.subscriptions.has(channel)) {
+        resolve()
+        return
+      }
+
+      try {
+        const subscription = this.centrifuge.newSubscription(channel)
+
+        subscription.on('publication', (ctx: PublicationContext) => {
+          if (this.config.debug) {
+            console.log('Received message on channel', channel, ':', ctx.data)
+          }
+
+          // Parse the message
+          let message: CentrifugeMessage
+          try {
+            // The data might already be parsed or might be a string
+            if (typeof ctx.data === 'string') {
+              message = JSON.parse(ctx.data)
+            } else {
+              message = ctx.data as CentrifugeMessage
+            }
+
+            this.handleMessage(channel, message)
+          } catch (error) {
+            console.error('Failed to parse message:', error, ctx.data)
+          }
+        })
+
+        subscription.on('subscribing', (ctx: SubscriptionDataContext) => {
+          if (this.config.debug) {
+            console.log('Subscribing to channel:', channel, ctx)
+          }
+        })
+
+        subscription.on('subscribed', (ctx: SubscriptionDataContext) => {
+          if (this.config.debug) {
+            console.log('Subscribed to channel:', channel, ctx)
+          }
+          resolve()
+        })
+
+        subscription.on('unsubscribed', (ctx: SubscriptionDataContext) => {
+          if (this.config.debug) {
+            console.log('Unsubscribed from channel:', channel, ctx)
+          }
+          this.subscriptions.delete(channel)
+        })
+
+        subscription.on('error', (ctx) => {
+          console.error('Subscription error for channel', channel, ':', ctx)
+          reject(ctx.error)
+        })
+
+        this.subscriptions.set(channel, subscription)
+        subscription.subscribe()
+      } catch (error) {
+        reject(error)
+      }
+    })
   }
 
-  clearMessageQueue() {
-    this.messageQueue = []
+  private unsubscribeFromChannel(channel: string): Promise<void> {
+    return new Promise((resolve) => {
+      const subscription = this.subscriptions.get(channel)
+      if (subscription) {
+        subscription.unsubscribe()
+        this.subscriptions.delete(channel)
+      }
+      resolve()
+    })
   }
 
-  private buildWebSocketUrl(): string {
-    const url = new URL(this.config.url + '/connect')
-    if (this.authToken) {
-      url.searchParams.set('token', this.authToken)
-    }
-    return url.toString()
-  }
-
-  private handleMessage(message: WebSocketMessage) {
-    // Handle system messages
-    if (message.type === 'pong') {
-      // Heartbeat response
-      return
-    }
-
-    if (message.type === 'auth_required') {
-      this.updateConnectionState({
-        status: 'error',
-        lastError: 'Authentication required',
+  private resubscribeToChannels() {
+    // Resubscribe to all channels that have listeners
+    for (const channel of this.eventListeners.keys()) {
+      this.subscribeToChannel(channel).catch((error) => {
+        console.error('Failed to resubscribe to channel:', channel, error)
       })
-      return
     }
+  }
 
-    if (message.type === 'auth_failed') {
-      this.updateConnectionState({
-        status: 'error',
-        lastError: 'Authentication failed',
-      })
-      return
-    }
-
-    if (message.type === 'error') {
-      console.error('WebSocket server error:', message.data)
-      return
-    }
-
-    // Dispatch to registered listeners
-    const listeners = this.eventListeners.get(message.type)
+  private handleMessage(channel: string, message: CentrifugeMessage) {
+    // Handle specific channel messages
+    const listeners = this.eventListeners.get(channel)
     if (listeners) {
       listeners.forEach((listener) => {
         try {
@@ -326,7 +337,7 @@ export class WebSocketService {
       })
     }
 
-    // Also dispatch to wildcard listeners
+    // Also handle wildcard listeners (for backward compatibility)
     const wildcardListeners = this.eventListeners.get('*')
     if (wildcardListeners) {
       wildcardListeners.forEach((listener) => {
@@ -350,111 +361,30 @@ export class WebSocketService {
     })
   }
 
-  private shouldReconnect(): boolean {
-    return (
-      this.connectionState.reconnectAttempts < this.config.maxReconnectAttempts
-    )
+  // Compatibility methods for migration
+  getQueuedMessageCount(): number {
+    // Centrifuge handles queuing internally
+    return 0
   }
 
-  private scheduleReconnect() {
-    if (this.reconnectTimer) {
-      clearTimeout(this.reconnectTimer)
+  clearMessageQueue() {
+    // No-op for Centrifuge
+  }
+
+  // Debug methods
+  getActiveSubscriptions(): string[] {
+    return Array.from(this.subscriptions.keys())
+  }
+
+  getConnectionInfo(): object {
+    return {
+      backend: 'centrifuge',
+      status: this.connectionState.status,
+      subscriptions: this.getActiveSubscriptions(),
+      timestamp: new Date().toISOString(),
     }
-
-    const backoffDelay = this.calculateBackoffDelay()
-
-    this.updateConnectionState({
-      isReconnecting: true,
-      reconnectAttempts: this.connectionState.reconnectAttempts + 1,
-    })
-
-    this.reconnectTimer = setTimeout(() => {
-      this.connect().catch((error) => {
-        console.error('Reconnection failed:', error)
-        if (this.shouldReconnect()) {
-          this.scheduleReconnect()
-        } else {
-          this.updateConnectionState({
-            status: 'error',
-            isReconnecting: false,
-            lastError: 'Max reconnection attempts reached',
-          })
-        }
-      })
-    }, backoffDelay)
-  }
-
-  private calculateBackoffDelay(): number {
-    // Exponential backoff with jitter
-    const baseDelay = this.config.reconnectInterval
-    const exponentialDelay =
-      baseDelay * Math.pow(2, this.connectionState.reconnectAttempts)
-    const maxDelay = 30000 // 30 seconds max
-    const delay = Math.min(exponentialDelay, maxDelay)
-
-    // Add jitter (±25%)
-    const jitter = delay * 0.25 * (Math.random() - 0.5)
-    return Math.max(1000, delay + jitter) // Minimum 1 second
-  }
-
-  private startHeartbeat() {
-    if (this.heartbeatTimer) {
-      clearInterval(this.heartbeatTimer)
-    }
-
-    this.heartbeatTimer = setInterval(() => {
-      if (this.connectionState.status === 'connected' && this.ws) {
-        this.send({ type: 'ping' }).catch((error) => {
-          console.error('Failed to send heartbeat:', error)
-        })
-      }
-    }, this.config.heartbeatInterval)
-  }
-
-  private stopHeartbeat() {
-    if (this.heartbeatTimer) {
-      clearInterval(this.heartbeatTimer)
-      this.heartbeatTimer = null
-    }
-  }
-
-  private resubscribeToTopics() {
-    // Resubscribe to all previously subscribed projects
-    this.subscriptions.forEach((projectId) => {
-      this.subscribeToProject(projectId).catch((error) => {
-        console.error('Failed to resubscribe to project:', projectId, error)
-      })
-    })
-  }
-
-  private processMessageQueue() {
-    if (this.connectionState.status !== 'connected' || !this.ws) {
-      return
-    }
-
-    const messagesToProcess = [...this.messageQueue]
-    this.messageQueue = []
-
-    messagesToProcess.forEach((queuedMessage) => {
-      if (queuedMessage.attempts < 3) {
-        this.send(queuedMessage.message).catch((error) => {
-          console.error('Failed to send queued message:', error)
-          // Re-queue with increased attempt count
-          if (this.messageQueue.length < this.config.maxQueueSize) {
-            this.messageQueue.push({
-              ...queuedMessage,
-              attempts: queuedMessage.attempts + 1,
-            })
-          }
-        })
-      }
-    })
-  }
-
-  private generateMessageId(): string {
-    return `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
   }
 }
 
 // Export singleton instance
-export const websocketService = new WebSocketService()
+export const websocketService = new CentrifugeService()

@@ -11,7 +11,6 @@ import (
 
 	"github.com/auto-devs/auto-devs/internal/di"
 	"github.com/auto-devs/auto-devs/internal/handler"
-	"github.com/auto-devs/auto-devs/internal/websocket"
 	"github.com/gin-gonic/gin"
 )
 
@@ -37,14 +36,13 @@ func main() {
 	// }
 
 	// Initialize WebSocket service
-	wsService := websocket.NewService()
 	log.Printf("WebSocket service initialized")
 
 	// Setup Gin router
 	router := gin.Default()
 
 	// Setup all routes with middleware
-	handler.SetupRoutes(router, app.ProjectUsecase, app.TaskUsecase, app.GormDB, wsService)
+	handler.SetupRoutes(router, app.ProjectUsecase, app.TaskUsecase, app.GormDB, app.WebSocketService)
 
 	// Start server
 	port := app.Config.Server.Port
@@ -77,7 +75,7 @@ func main() {
 	defer cancel()
 
 	// Shutdown WebSocket connections gracefully
-	if wsHandler := wsService.GetHandler(); wsHandler != nil {
+	if wsHandler := app.WebSocketService.GetHandler(); wsHandler != nil {
 		wsHandler.Shutdown()
 	}
 

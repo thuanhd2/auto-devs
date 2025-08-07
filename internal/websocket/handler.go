@@ -4,24 +4,23 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/centrifugal/centrifuge"
 	"github.com/gin-gonic/gin"
 )
 
 // Handler manages WebSocket connections and routing
 type Handler struct {
-	hub *Hub
+	hub    *Hub
+	server *Server
 }
 
 // NewHandler creates a new WebSocket handler
-func NewHandler() *Handler {
-	hub := NewHub()
-
+func NewHandler(server *Server) *Handler {
+	hub := NewHub(server.node)
 	handler := &Handler{
-		hub: hub,
+		hub:    hub,
+		server: server,
 	}
-
-	// Start the hub
-	go hub.Run()
 
 	return handler
 }
@@ -38,35 +37,15 @@ func (h *Handler) Shutdown() {
 }
 
 // HandleWebSocket handles WebSocket upgrade requests
-func (h *Handler) HandleWebSocket(c *gin.Context) {
-	// Upgrade HTTP connection to WebSocket
-	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
-	if err != nil {
-		log.Printf("Failed to upgrade connection: %v", err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to upgrade to WebSocket"})
-		return
+func (h *Handler) GetWebSocketHandler() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		Handler := centrifuge.NewWebsocketHandler(h.server.node, centrifuge.WebsocketConfig{
+			CheckOrigin: func(r *http.Request) bool {
+				return true
+			},
+		})
+		Handler.ServeHTTP(c.Writer, c.Request)
 	}
-
-	// Create new connection
-	wsConn := NewConnection(conn, h.hub)
-	log.Printf("NewConnection ++++++++++++++++++++++: %v", wsConn.ID)
-
-	// Register with hub
-	h.hub.Register(wsConn)
-
-	// Start connection pumps
-	wsConn.Start()
-
-	log.Printf("WebSocket connection established: %s", wsConn.ID)
-}
-
-// GetConnections returns information about all connections
-func (h *Handler) GetConnections(c *gin.Context) {
-	connections := h.hub.GetConnectionsInfo()
-	c.JSON(http.StatusOK, gin.H{
-		"connections": connections,
-		"total":       len(connections),
-	})
 }
 
 // GetMetrics returns hub metrics

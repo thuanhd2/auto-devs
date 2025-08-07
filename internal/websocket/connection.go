@@ -230,7 +230,7 @@ func (c *Connection) readPump() {
 	log.Printf("readPump started for connection: %s", c.ID)
 	defer func() {
 		log.Printf("readPump defer ---------------- for connection: %s", c.ID)
-		c.hub.Unregister(c)
+		// c.hub.Unregister(c)
 		c.SafeClose()
 	}()
 
@@ -327,7 +327,7 @@ func (c *Connection) handleIncomingMessage(messageBytes []byte) {
 		c.handleAuth(message)
 	default:
 		// Forward to hub for processing
-		c.hub.ProcessMessage(c, message)
+		// c.hub.ProcessMessage(c, message)
 	}
 }
 

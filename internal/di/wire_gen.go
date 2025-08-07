@@ -7,6 +7,8 @@
 package di
 
 import (
+	"time"
+
 	"github.com/auto-devs/auto-devs/config"
 	"github.com/auto-devs/auto-devs/internal/jobs"
 	"github.com/auto-devs/auto-devs/internal/repository"
@@ -18,7 +20,6 @@ import (
 	"github.com/auto-devs/auto-devs/internal/websocket"
 	"github.com/auto-devs/auto-devs/pkg/database"
 	"github.com/google/wire"
-	"time"
 )
 
 // Injectors from wire.go:
@@ -51,7 +52,7 @@ func InitializeApp() (*App, error) {
 	client := ProvideJobClient(configConfig)
 	jobClientInterface := ProvideJobClientAdapter(client)
 	taskUsecase := ProvideTaskUsecase(taskRepository, projectRepository, notificationUsecase, worktreeUsecase, jobClientInterface)
-	service := ProvideWebSocketService()
+	service := ProvideWebSocketService(configConfig)
 	cliManager, err := ProvideCLIManager()
 	if err != nil {
 		return nil, err
@@ -296,6 +297,6 @@ func ProvideJobProcessor(
 }
 
 // ProvideWebSocketService provides a WebSocket service instance
-func ProvideWebSocketService() *websocket.Service {
-	return websocket.NewService()
+func ProvideWebSocketService(cfg *config.Config) *websocket.Service {
+	return websocket.NewService(&cfg.CentrifugeRedisBroker)
 }

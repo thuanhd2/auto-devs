@@ -9,10 +9,11 @@ import (
 )
 
 type Config struct {
-	Server   ServerConfig
-	Database DatabaseConfig
-	Worktree WorktreeConfig
-	Redis    RedisConfig
+	Server                ServerConfig
+	Database              DatabaseConfig
+	Worktree              WorktreeConfig
+	Redis                 RedisConfig
+	CentrifugeRedisBroker CentrifugeRedisBrokerConfig
 }
 
 type ServerConfig struct {
@@ -40,6 +41,12 @@ type WorktreeConfig struct {
 type RedisConfig struct {
 	Host     string
 	Port     string
+	Password string
+	DB       int
+}
+
+type CentrifugeRedisBrokerConfig struct {
+	Address  string
 	Password string
 	DB       int
 }
@@ -75,6 +82,11 @@ func Load() *Config {
 			Port:     getEnv("REDIS_PORT", "6379"),
 			Password: getEnv("REDIS_PASSWORD", ""),
 			DB:       getEnvAsInt("REDIS_DB", 0),
+		},
+		CentrifugeRedisBroker: CentrifugeRedisBrokerConfig{
+			Address:  getEnv("CENTRIFUGE_REDIS_ADDRESS", "localhost:6379"),
+			Password: getEnv("CENTRIFUGE_REDIS_PASSWORD", ""),
+			DB:       getEnvAsInt("CENTRIFUGE_REDIS_DB", 2),
 		},
 	}
 }

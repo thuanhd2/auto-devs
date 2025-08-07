@@ -1,12 +1,12 @@
 package websocket
 
 import (
-	"fmt"
 	"log"
 	"log/slog"
 	"os"
 	"time"
 
+	"github.com/auto-devs/auto-devs/config"
 	"github.com/google/uuid"
 )
 
@@ -15,26 +15,25 @@ type Service struct {
 	handler           *Handler
 	hub               *Hub
 	middlewareManager *MiddlewareManager
-	offlineManager    *OfflineMessageManager
+
 	taskProcessor     *TaskEventProcessor
 	projectProcessor  *ProjectEventProcessor
 	statusProcessor   *StatusEventProcessor
 	presenceProcessor *UserPresenceProcessor
-	authService       AuthService
 	redisBroker       *RedisBroker // Redis broker for cross-process messaging
 	logger            *slog.Logger
 }
 
 // NewService creates a new WebSocket service
-func NewService() *Service {
+func NewService(appConfig *config.CentrifugeRedisBrokerConfig) *Service {
+	server, err := NewServer(appConfig)
+	if err != nil {
+		log.Fatalf("Failed to create WebSocket server: %v", err)
+	}
 	// Create core components
-	handler := NewHandler()
+	handler := NewHandler(server)
 	hub := handler.GetHub()
 	middlewareManager := NewMiddlewareManager()
-
-	// Create persistence for offline messages
-	persistence := NewInMemoryPersistence(1000, 24*time.Hour) // Store up to 1000 messages for 24 hours
-	offlineManager := NewOfflineMessageManager(persistence, hub)
 
 	// Create processors
 	taskProcessor := NewTaskEventProcessor(hub)
@@ -42,75 +41,16 @@ func NewService() *Service {
 	statusProcessor := NewStatusEventProcessor(hub)
 	presenceProcessor := NewUserPresenceProcessor(hub)
 
-	// Create auth service
-	authService := NewMockAuthService()
-
-	// Register processors with hub
-	processors := GetEventProcessors(hub)
-	for msgType, processor := range processors {
-		hub.RegisterProcessor(msgType, processor)
-	}
-
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 
 	service := &Service{
 		handler:           handler,
 		hub:               hub,
 		middlewareManager: middlewareManager,
-		offlineManager:    offlineManager,
 		taskProcessor:     taskProcessor,
 		projectProcessor:  projectProcessor,
 		statusProcessor:   statusProcessor,
 		presenceProcessor: presenceProcessor,
-		authService:       authService,
-		logger:            logger,
-	}
-
-	return service
-}
-
-// NewServiceWithRedisBroker creates a new WebSocket service with Redis broker
-func NewServiceWithRedisBroker(redisAddr, redisPassword string, redisDB int) *Service {
-	// Create core components
-	handler := NewHandler()
-	hub := handler.GetHub()
-	middlewareManager := NewMiddlewareManager()
-
-	// Create persistence for offline messages
-	persistence := NewInMemoryPersistence(1000, 24*time.Hour)
-	offlineManager := NewOfflineMessageManager(persistence, hub)
-
-	// Create processors
-	taskProcessor := NewTaskEventProcessor(hub)
-	projectProcessor := NewProjectEventProcessor(hub)
-	statusProcessor := NewStatusEventProcessor(hub)
-	presenceProcessor := NewUserPresenceProcessor(hub)
-
-	// Create auth service
-	authService := NewMockAuthService()
-
-	// Register processors with hub
-	processors := GetEventProcessors(hub)
-	for msgType, processor := range processors {
-		hub.RegisterProcessor(msgType, processor)
-	}
-
-	// Create Redis broker
-	redisBroker := NewRedisBroker(redisAddr, redisPassword, redisDB, hub)
-
-	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
-
-	service := &Service{
-		handler:           handler,
-		hub:               hub,
-		middlewareManager: middlewareManager,
-		offlineManager:    offlineManager,
-		taskProcessor:     taskProcessor,
-		projectProcessor:  projectProcessor,
-		statusProcessor:   statusProcessor,
-		presenceProcessor: presenceProcessor,
-		authService:       authService,
-		redisBroker:       redisBroker,
 		logger:            logger,
 	}
 
@@ -125,39 +65,6 @@ func (s *Service) GetHandler() *Handler {
 // GetHub returns the WebSocket hub
 func (s *Service) GetHub() *Hub {
 	return s.hub
-}
-
-// GetAuthService returns the authentication service
-func (s *Service) GetAuthService() AuthService {
-	return s.authService
-}
-
-// StartRedisBroker starts the Redis broker if configured
-func (s *Service) StartRedisBroker() error {
-	if s.redisBroker == nil {
-		return fmt.Errorf("Redis broker not configured")
-	}
-
-	s.logger.Info("Starting Redis broker")
-	return s.redisBroker.Start()
-}
-
-// StopRedisBroker stops the Redis broker
-func (s *Service) StopRedisBroker() error {
-	if s.redisBroker == nil {
-		return nil
-	}
-
-	s.logger.Info("Stopping Redis broker")
-	return s.redisBroker.Stop()
-}
-
-// IsRedisBrokerRunning returns true if Redis broker is running
-func (s *Service) IsRedisBrokerRunning() bool {
-	if s.redisBroker == nil {
-		return false
-	}
-	return s.redisBroker.IsRunning()
 }
 
 // Task event methods
@@ -228,25 +135,10 @@ func (s *Service) NotifyUserLeft(userID string, projectID uuid.UUID) error {
 
 // Connection management methods
 
-// GetConnectionsInfo returns information about all connections
-func (s *Service) GetConnectionsInfo() []map[string]interface{} {
-	return s.hub.GetConnectionsInfo()
-}
-
 // GetConnectionCount returns the total number of active connections
 func (s *Service) GetConnectionCount() int64 {
 	metrics := s.hub.GetMetrics()
 	return metrics.ActiveConnections
-}
-
-// GetProjectConnectionCount returns the number of connections for a specific project
-func (s *Service) GetProjectConnectionCount(projectID uuid.UUID) int {
-	return s.hub.GetProjectConnectionCount(projectID)
-}
-
-// GetUserConnectionCount returns the number of connections for a specific user
-func (s *Service) GetUserConnectionCount(userID string) int {
-	return s.hub.GetUserConnectionCount(userID)
 }
 
 // Metrics and monitoring
@@ -255,13 +147,11 @@ func (s *Service) GetUserConnectionCount(userID string) int {
 func (s *Service) GetMetrics() map[string]interface{} {
 	hubMetrics := s.hub.GetMetrics()
 	middlewareStats := s.middlewareManager.GetMiddlewareStats()
-	offlineStats := s.offlineManager.GetStats()
 
 	return map[string]interface{}{
-		"hub":              hubMetrics,
-		"middleware":       middlewareStats,
-		"offline_messages": offlineStats,
-		"timestamp":        time.Now(),
+		"hub":        hubMetrics,
+		"middleware": middlewareStats,
+		"timestamp":  time.Now(),
 	}
 }
 
@@ -351,13 +241,6 @@ func DefaultServiceConfig() *ServiceConfig {
 		PongTimeout:        60 * time.Second,
 		MaxMessageSize:     512,
 	}
-}
-
-// NewServiceWithConfig creates a new WebSocket service with custom configuration
-func NewServiceWithConfig(config *ServiceConfig) *Service {
-	// This would use the config to customize the service components
-	// For now, we'll use the default service
-	return NewService()
 }
 
 // Utility methods for integration
