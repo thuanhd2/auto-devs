@@ -7,27 +7,10 @@ import React, {
   useState,
   ReactNode,
 } from 'react'
-import {
-  messageHandlerRegistry,
-  messageAggregator,
-  createTaskCreatedHandler,
-  createTaskUpdatedHandler,
-  createTaskDeletedHandler,
-  createProjectUpdatedHandler,
-  createStatusChangedHandler,
-  createUserJoinedHandler,
-  createUserLeftHandler,
-  createErrorHandler,
-  createAuthFailedHandler,
-} from '@/services/messageHandlers'
-import {
-  optimisticUpdateManager,
-  taskOptimisticUpdates,
-  projectOptimisticUpdates,
-} from '@/services/optimisticUpdates'
+import { optimisticUpdateManager } from '@/services/optimisticUpdates'
 import {
   websocketService,
-  WebSocketMessage,
+  CentrifugeMessage,
   ConnectionState,
 } from '@/services/websocketService'
 
@@ -38,42 +21,33 @@ export interface WebSocketContextValue {
   isConnecting: boolean
   isReconnecting: boolean
   lastError: string | undefined
-  queuedMessageCount: number
 
   // Connection control
   connect: () => Promise<void>
   disconnect: () => void
   reconnect: () => Promise<void>
 
-  // Messaging
-  send: (message: any) => Promise<void>
+  // Project subscription
+  currentProjectId: string | null
+  setCurrentProjectId: (projectId: string | null) => void
+  subscribeToProject: (projectId: string) => Promise<void>
+  unsubscribeFromProject: (projectId: string) => Promise<void>
+
+  // Message handling
   subscribe: (
     messageType: string,
-    handler: (message: WebSocketMessage) => void
+    handler: (message: CentrifugeMessage) => void
   ) => void
   unsubscribe: (
     messageType: string,
-    handler: (message: WebSocketMessage) => void
+    handler: (message: CentrifugeMessage) => void
   ) => void
-
-  // Project subscriptions
-  subscribeToProject: (projectId: string) => Promise<void>
-  unsubscribeFromProject: (projectId: string) => Promise<void>
-  currentProjectId: string | null
-  setCurrentProjectId: (projectId: string | null) => void
-
-  // Optimistic updates
-  optimisticUpdateCount: number
-  clearOptimisticUpdates: () => void
-
-  // Message queue
-  clearMessageQueue: () => void
 
   // User presence
   onlineUsers: Map<string, { username: string; joinedAt: Date }>
   userCount: number
 
-  // Event handlers (can be overridden by components)
+  // Event handlers
   onTaskCreated?: (task: any) => void
   onTaskUpdated?: (task: any, changes?: any) => void
   onTaskDeleted?: (taskId: string) => void
@@ -90,7 +64,7 @@ export interface WebSocketContextValue {
   onAuthRequired?: () => void
 
   // Debugging
-  messageHistory: WebSocketMessage[]
+  messageHistory: CentrifugeMessage[]
   clearMessageHistory: () => void
   isDebugMode: boolean
   setDebugMode: (enabled: boolean) => void
@@ -137,18 +111,17 @@ export function WebSocketProvider({
   const [connectionState, setConnectionState] = useState<ConnectionState>(
     websocketService.getConnectionState()
   )
-  const [queuedMessageCount, setQueuedMessageCount] = useState(0)
-  const [optimisticUpdateCount, setOptimisticUpdateCount] = useState(0)
   const [currentProjectId, setCurrentProjectId] = useState<string | null>(null)
   const [onlineUsers, setOnlineUsers] = useState<
     Map<string, { username: string; joinedAt: Date }>
   >(new Map())
-  const [messageHistory, setMessageHistory] = useState<WebSocketMessage[]>([])
+  const [messageHistory, setMessageHistory] = useState<CentrifugeMessage[]>([])
   const [isDebugMode, setDebugMode] = useState(false)
 
   const connectionListenerRef = useRef<(state: ConnectionState) => void>()
-  const queueCheckIntervalRef = useRef<NodeJS.Timeout>()
-  const optimisticCheckIntervalRef = useRef<NodeJS.Timeout>()
+  const messageHandlersRef = useRef<
+    Map<string, Set<(message: CentrifugeMessage) => void>>
+  >(new Map())
 
   // Connection state management
   const handleConnectionStateChange = useCallback(
@@ -164,7 +137,7 @@ export function WebSocketProvider({
 
   // Message history management
   const addToMessageHistory = useCallback(
-    (message: WebSocketMessage) => {
+    (message: CentrifugeMessage) => {
       if (isDebugMode) {
         setMessageHistory((prev) => {
           const newHistory = [...prev, message]
@@ -179,166 +152,107 @@ export function WebSocketProvider({
     setMessageHistory([])
   }, [])
 
-  // Set up message handlers
-  useEffect(() => {
-    const handlers = [
-      // Task handlers
-      {
-        type: 'task_created',
-        handler: createTaskCreatedHandler((task) => {
-          onTaskCreated?.(task)
-        }),
-      },
-      {
-        type: 'task_updated',
-        handler: createTaskUpdatedHandler((task, changes) => {
+  const confirmOptimisticPendingUpdates = useCallback(
+    (entityType: string, entityId: string) => {
+      const pendingUpdates = optimisticUpdateManager.getAllPendingUpdates()
+      const matchingUpdate = pendingUpdates.find(
+        (update) =>
+          update.entityType === entityType && update.entityId === entityId
+      )
+      if (matchingUpdate) {
+        optimisticUpdateManager.confirmUpdate(matchingUpdate.id, entityId)
+      }
+    },
+    []
+  )
+
+  // Message handling
+  const handleMessage = useCallback(
+    (message: CentrifugeMessage) => {
+      // Add to message history if debug mode is enabled
+      addToMessageHistory(message)
+
+      // Call specific event handlers based on message type
+      switch (message.type) {
+        case 'task_created':
+          onTaskCreated?.(message.data)
+          break
+        case 'task_updated':
           // Check for optimistic update confirmation
-          const pendingUpdates = optimisticUpdateManager.getAllPendingUpdates()
-          const matchingUpdate = pendingUpdates.find(
-            (update) =>
-              update.entityType === 'task' && update.entityId === task.id
-          )
-
-          if (matchingUpdate) {
-            optimisticUpdateManager.confirmUpdate(matchingUpdate.id, task)
-          }
-
-          onTaskUpdated?.(task, changes)
-        }),
-      },
-      {
-        type: 'task_deleted',
-        handler: createTaskDeletedHandler((taskId) => {
-          // Check for optimistic update confirmation
-          const pendingUpdates = optimisticUpdateManager.getAllPendingUpdates()
-          const matchingUpdate = pendingUpdates.find(
-            (update) =>
-              update.entityType === 'task' && update.entityId === taskId
-          )
-
-          if (matchingUpdate) {
-            optimisticUpdateManager.confirmUpdate(matchingUpdate.id, taskId)
-          }
-
-          onTaskDeleted?.(taskId)
-        }),
-      },
-
-      // Project handlers
-      {
-        type: 'project_updated',
-        handler: createProjectUpdatedHandler((project, changes) => {
-          // Check for optimistic update confirmation
-          const pendingUpdates = optimisticUpdateManager.getAllPendingUpdates()
-          const matchingUpdate = pendingUpdates.find(
-            (update) =>
-              update.entityType === 'project' && update.entityId === project.id
-          )
-
-          if (matchingUpdate) {
-            optimisticUpdateManager.confirmUpdate(matchingUpdate.id, project)
-          }
-
-          onProjectUpdated?.(project, changes)
-        }),
-      },
-
-      // Status handlers
-      {
-        type: 'status_changed',
-        handler: createStatusChangedHandler(
-          (entityType, entityId, oldStatus, newStatus) => {
-            onStatusChanged?.(entityType, entityId, oldStatus, newStatus)
-          }
-        ),
-      },
-
-      // User presence handlers
-      {
-        type: 'user_joined',
-        handler: createUserJoinedHandler((userId, username, projectId) => {
-          if (projectId === currentProjectId) {
+          confirmOptimisticPendingUpdates('task', message.data.task.id)
+          onTaskUpdated?.(message.data.task, message.data.changes)
+          break
+        case 'task_deleted':
+          confirmOptimisticPendingUpdates('task', message.data.task_id)
+          onTaskDeleted?.(message.data.task_id)
+          break
+        case 'project_updated':
+          onProjectUpdated?.(message.data.project, message.data.changes)
+          break
+        case 'status_changed':
+          const { entity_type, entity_id, old_status, new_status } =
+            message.data
+          onStatusChanged?.(entity_type, entity_id, old_status, new_status)
+          break
+        case 'user_joined':
+          const { user_id, username, project_id } = message.data
+          if (project_id === currentProjectId) {
             setOnlineUsers((prev) =>
-              new Map(prev).set(userId, { username, joinedAt: new Date() })
+              new Map(prev).set(user_id, { username, joinedAt: new Date() })
             )
           }
-          onUserJoined?.(userId, username, projectId)
-        }),
-      },
-      {
-        type: 'user_left',
-        handler: createUserLeftHandler((userId, username, projectId) => {
-          if (projectId === currentProjectId) {
+          onUserJoined?.(user_id, username, project_id)
+          break
+        case 'user_left':
+          const {
+            user_id: leftUserId,
+            username: leftUsername,
+            project_id: leftProjectId,
+          } = message.data
+          if (leftProjectId === currentProjectId) {
             setOnlineUsers((prev) => {
               const newMap = new Map(prev)
-              newMap.delete(userId)
+              newMap.delete(leftUserId)
               return newMap
             })
           }
-          onUserLeft?.(userId, username, projectId)
-        }),
-      },
+          onUserLeft?.(leftUserId, leftUsername, leftProjectId)
+          break
+        case 'error':
+          onConnectionError?.(message.data.error)
+          break
+        case 'auth_failed':
+        case 'auth_required':
+          onAuthRequired?.()
+          break
+      }
 
-      // System handlers
-      {
-        type: 'error',
-        handler: createErrorHandler((error) => {
-          onConnectionError?.(error)
-        }),
-      },
-      {
-        type: 'auth_failed',
-        handler: createAuthFailedHandler(() => {
-          onAuthRequired?.()
-        }),
-      },
-      {
-        type: 'auth_required',
-        handler: createAuthFailedHandler(() => {
-          onAuthRequired?.()
-        }),
-      },
+      // Call registered message handlers
+      const handlers = messageHandlersRef.current.get(message.type)
+      if (handlers) {
+        handlers.forEach((handler) => handler(message))
+      }
+
+      // Call wildcard handlers
+      const wildcardHandlers = messageHandlersRef.current.get('*')
+      if (wildcardHandlers) {
+        wildcardHandlers.forEach((handler) => handler(message))
+      }
+    },
+    [
+      addToMessageHistory,
+      currentProjectId,
+      onTaskCreated,
+      onTaskUpdated,
+      onTaskDeleted,
+      onProjectUpdated,
+      onStatusChanged,
+      onUserJoined,
+      onUserLeft,
+      onConnectionError,
+      onAuthRequired,
     ]
-
-    // Register all handlers
-    handlers.forEach(({ type, handler }) => {
-      messageHandlerRegistry.register(type, handler)
-    })
-
-    // Register wildcard handler for message history
-    const wildcardHandler = (message: WebSocketMessage) => {
-      addToMessageHistory(message)
-    }
-    messageHandlerRegistry.register('*', wildcardHandler)
-
-    // Set up message processing
-    const messageListener = (message: WebSocketMessage) => {
-      messageHandlerRegistry.handle(message)
-    }
-
-    websocketService.subscribe('*', messageListener)
-
-    return () => {
-      // Cleanup handlers
-      handlers.forEach(({ type, handler }) => {
-        messageHandlerRegistry.unregister(type, handler)
-      })
-      messageHandlerRegistry.unregister('*', wildcardHandler)
-      websocketService.unsubscribe('*', messageListener)
-    }
-  }, [
-    currentProjectId,
-    onTaskCreated,
-    onTaskUpdated,
-    onTaskDeleted,
-    onProjectUpdated,
-    onStatusChanged,
-    onUserJoined,
-    onUserLeft,
-    onConnectionError,
-    onAuthRequired,
-    addToMessageHistory,
-  ])
+  )
 
   // Set up connection state listener
   useEffect(() => {
@@ -365,23 +279,6 @@ export function WebSocketProvider({
       websocketService.connect().catch(console.error)
     }
   }, [autoConnect, authToken])
-
-  // Set up periodic state checks
-  useEffect(() => {
-    const updateCounts = () => {
-      setQueuedMessageCount(websocketService.getQueuedMessageCount())
-      setOptimisticUpdateCount(optimisticUpdateManager.getPendingCount())
-    }
-
-    updateCounts()
-    queueCheckIntervalRef.current = setInterval(updateCounts, 1000)
-
-    return () => {
-      if (queueCheckIntervalRef.current) {
-        clearInterval(queueCheckIntervalRef.current)
-      }
-    }
-  }, [])
 
   // Project subscription management
   const handleSetCurrentProjectId = useCallback(
@@ -415,6 +312,18 @@ export function WebSocketProvider({
     }
   }, [currentProjectId, connectionState.status])
 
+  // Subscribe to project channel messages
+  useEffect(() => {
+    if (currentProjectId && connectionState.status === 'connected') {
+      const channel = `project:${currentProjectId}`
+      websocketService.subscribe(channel, handleMessage)
+
+      return () => {
+        websocketService.unsubscribe(channel, handleMessage)
+      }
+    }
+  }, [currentProjectId, connectionState.status, handleMessage])
+
   // API methods
   const connect = useCallback(async () => {
     await websocketService.connect()
@@ -429,24 +338,6 @@ export function WebSocketProvider({
     await websocketService.connect()
   }, [])
 
-  const send = useCallback(async (message: any) => {
-    await websocketService.send(message)
-  }, [])
-
-  const subscribe = useCallback(
-    (messageType: string, handler: (message: WebSocketMessage) => void) => {
-      websocketService.subscribe(messageType, handler)
-    },
-    []
-  )
-
-  const unsubscribe = useCallback(
-    (messageType: string, handler: (message: WebSocketMessage) => void) => {
-      websocketService.unsubscribe(messageType, handler)
-    },
-    []
-  )
-
   const subscribeToProject = useCallback(async (projectId: string) => {
     await websocketService.subscribeToProject(projectId)
   }, [])
@@ -455,15 +346,28 @@ export function WebSocketProvider({
     await websocketService.unsubscribeFromProject(projectId)
   }, [])
 
-  const clearOptimisticUpdates = useCallback(() => {
-    optimisticUpdateManager.clearAll()
-    setOptimisticUpdateCount(0)
-  }, [])
+  const subscribe = useCallback(
+    (messageType: string, handler: (message: CentrifugeMessage) => void) => {
+      if (!messageHandlersRef.current.has(messageType)) {
+        messageHandlersRef.current.set(messageType, new Set())
+      }
+      messageHandlersRef.current.get(messageType)!.add(handler)
+    },
+    []
+  )
 
-  const clearMessageQueue = useCallback(() => {
-    websocketService.clearMessageQueue()
-    setQueuedMessageCount(0)
-  }, [])
+  const unsubscribe = useCallback(
+    (messageType: string, handler: (message: CentrifugeMessage) => void) => {
+      const handlers = messageHandlersRef.current.get(messageType)
+      if (handlers) {
+        handlers.delete(handler)
+        if (handlers.size === 0) {
+          messageHandlersRef.current.delete(messageType)
+        }
+      }
+    },
+    []
+  )
 
   const contextValue: WebSocketContextValue = {
     // Connection state
@@ -472,30 +376,21 @@ export function WebSocketProvider({
     isConnecting: connectionState.status === 'connecting',
     isReconnecting: connectionState.isReconnecting,
     lastError: connectionState.lastError,
-    queuedMessageCount,
 
     // Connection control
     connect,
     disconnect,
     reconnect,
 
-    // Messaging
-    send,
-    subscribe,
-    unsubscribe,
-
-    // Project subscriptions
+    // Project subscription
     subscribeToProject,
     unsubscribeFromProject,
     currentProjectId,
     setCurrentProjectId: handleSetCurrentProjectId,
 
-    // Optimistic updates
-    optimisticUpdateCount,
-    clearOptimisticUpdates,
-
-    // Message queue
-    clearMessageQueue,
+    // Message handling
+    subscribe,
+    unsubscribe,
 
     // User presence
     onlineUsers,
@@ -547,8 +442,6 @@ export function useWebSocketConnection() {
     disconnect,
     reconnect,
     lastError,
-    queuedMessageCount,
-    clearMessageQueue,
   } = useWebSocketContext()
 
   return {
@@ -560,8 +453,6 @@ export function useWebSocketConnection() {
     disconnect,
     reconnect,
     lastError,
-    queuedMessageCount,
-    clearMessageQueue,
   }
 }
 
@@ -592,21 +483,13 @@ export function useWebSocketProject(projectId?: string) {
 }
 
 export function useWebSocketDebug() {
-  const {
-    messageHistory,
-    clearMessageHistory,
-    isDebugMode,
-    setDebugMode,
-    optimisticUpdateCount,
-    clearOptimisticUpdates,
-  } = useWebSocketContext()
+  const { messageHistory, clearMessageHistory, isDebugMode, setDebugMode } =
+    useWebSocketContext()
 
   return {
     messageHistory,
     clearMessageHistory,
     isDebugMode,
     setDebugMode,
-    optimisticUpdateCount,
-    clearOptimisticUpdates,
   }
 }
