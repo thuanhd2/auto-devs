@@ -1,6 +1,6 @@
-import { Plus } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { Plus, BrushCleaning } from 'lucide-react'
 import type { KanbanColumn } from '@/lib/kanban'
+import { Button } from '@/components/ui/button'
 
 interface EmptyColumnProps {
   column: KanbanColumn
@@ -8,26 +8,28 @@ interface EmptyColumnProps {
   canCreateTask?: boolean
 }
 
-export function EmptyColumn({ column, onCreateTask, canCreateTask = true }: EmptyColumnProps) {
+export function EmptyColumn({
+  column,
+  onCreateTask,
+  canCreateTask = true,
+}: EmptyColumnProps) {
   return (
-    <div className="flex flex-col items-center justify-center py-8 text-center">
-      <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mb-3">
-        <div className="w-6 h-6 rounded bg-gray-300" />
+    <div className='flex flex-col items-center justify-center py-8 text-center'>
+      <div className='mb-3 flex h-12 w-12 items-center justify-center rounded-full'>
+        <BrushCleaning className='h-6 w-6' />
       </div>
-      
-      <h3 className="font-medium text-gray-900 mb-1">No tasks</h3>
-      <p className="text-sm text-gray-500 mb-4 max-w-40">
-        {column.description}
-      </p>
-      
+
+      <h3 className='mb-1 font-medium'>No tasks</h3>
+      <p className='mb-4 max-w-40 text-sm'>{column.description}</p>
+
       {canCreateTask && column.id === 'TODO' && (
         <Button
-          variant="outline"
-          size="sm"
+          variant='outline'
+          size='sm'
           onClick={onCreateTask}
-          className="text-xs"
+          className='text-xs'
         >
-          <Plus className="h-3 w-3 mr-1" />
+          <Plus className='mr-1 h-3 w-3' />
           Add Task
         </Button>
       )}

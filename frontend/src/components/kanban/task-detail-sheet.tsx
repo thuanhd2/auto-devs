@@ -86,10 +86,8 @@ export function TaskDetailSheet({
             {/* Description */}
             {task.description && (
               <div>
-                <h4 className='mb-2 text-sm font-medium text-gray-700'>
-                  Description
-                </h4>
-                <p className='rounded border bg-gray-50 p-3 text-sm whitespace-pre-wrap text-gray-600'>
+                <h4 className='mb-2 text-sm font-medium'>Description</h4>
+                <p className='rounded border p-3 text-sm whitespace-pre-wrap'>
                   {task.description}
                 </p>
               </div>
@@ -97,9 +95,7 @@ export function TaskDetailSheet({
 
             {/* Status Actions */}
             <div>
-              <h4 className='mb-3 text-sm font-medium text-gray-700'>
-                Actions
-              </h4>
+              <h4 className='mb-3 text-sm font-medium'>Actions</h4>
               <TaskActions
                 task={task}
                 onEdit={handleEdit}
@@ -116,9 +112,7 @@ export function TaskDetailSheet({
 
             {/* Plan Review */}
             <div>
-              <h4 className='mb-3 text-sm font-medium text-gray-700'>
-                Implementation Plan
-              </h4>
+              <h4 className='mb-3 text-sm font-medium'>Implementation Plan</h4>
               <PlanReview
                 task={task}
                 onPlanUpdate={onEdit}

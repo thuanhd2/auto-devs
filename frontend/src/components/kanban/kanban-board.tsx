@@ -192,7 +192,7 @@ export function KanbanBoard({
             {KANBAN_COLUMNS.map((column) => (
               <div
                 key={column.id}
-                className='w-80 flex-shrink-0 rounded-lg border bg-gray-50 shadow-sm'
+                className='w-80 flex-shrink-0 rounded-lg border shadow-sm'
               >
                 <KanbanColumn
                   column={column}

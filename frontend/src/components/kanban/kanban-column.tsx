@@ -1,19 +1,19 @@
+import type { Task } from '@/types/task'
 import { useDroppable } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { Plus, MoreHorizontal } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import type { KanbanColumn } from '@/lib/kanban'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { TaskCard } from './task-card'
-import { EmptyColumn } from './empty-column'
 import { DraggableTaskCard } from './draggable-task-card'
-import type { Task } from '@/types/task'
-import type { KanbanColumn } from '@/lib/kanban'
+import { EmptyColumn } from './empty-column'
+import { TaskCard } from './task-card'
 
 interface KanbanColumnProps {
   column: KanbanColumn
@@ -42,49 +42,49 @@ export function KanbanColumn({
     id: column.id,
   })
 
-  const taskIds = tasks.map(task => task.id)
+  const taskIds = tasks.map((task) => task.id)
 
   return (
-    <div 
-      className={`flex flex-col h-full ${isSelectedColumn ? 'ring-2 ring-blue-500 ring-opacity-50' : ''}`}
+    <div
+      className={`flex h-full flex-col ${isSelectedColumn ? 'ring-opacity-50 ring-2 ring-blue-500' : ''}`}
       data-column={column.id}
     >
       {/* Column Header */}
-      <div className="flex items-center justify-between p-4 border-b bg-white">
-        <div className="flex items-center gap-2">
-          <h2 className="font-semibold text-gray-900">{column.title}</h2>
-          <Badge 
-            variant="secondary" 
-            className="text-xs task-count transition-transform duration-200"
+      <div className='flex items-center justify-between border-b p-4'>
+        <div className='flex items-center gap-2'>
+          <h2 className='font-semibold'>{column.title}</h2>
+          <Badge
+            variant='secondary'
+            className='task-count text-xs transition-transform duration-200'
             data-testid={`${column.id}-count`}
           >
             {tasks.length}
           </Badge>
         </div>
-        
-        <div className="flex items-center gap-1">
+
+        <div className='flex items-center gap-1'>
           {column.id === 'TODO' && (
             <Button
-              variant="ghost"
-              size="sm"
+              variant='ghost'
+              size='sm'
               onClick={onCreateTask}
-              className="h-7 w-7 p-0 hover:scale-105 transition-transform duration-200"
+              className='h-7 w-7 p-0 transition-transform duration-200 hover:scale-105'
             >
-              <Plus className="h-3 w-3" />
+              <Plus className='h-3 w-3' />
             </Button>
           )}
-          
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 w-7 p-0 hover:scale-105 transition-transform duration-200"
+                variant='ghost'
+                size='sm'
+                className='h-7 w-7 p-0 transition-transform duration-200 hover:scale-105'
               >
-                <MoreHorizontal className="h-3 w-3" />
+                <MoreHorizontal className='h-3 w-3' />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
+            <DropdownMenuContent align='end'>
               <DropdownMenuItem>Sort by Date</DropdownMenuItem>
               <DropdownMenuItem>Sort by Title</DropdownMenuItem>
               <DropdownMenuItem>Filter Tasks</DropdownMenuItem>
@@ -96,11 +96,7 @@ export function KanbanColumn({
       {/* Column Content */}
       <div
         ref={setNodeRef}
-        className={`
-          flex-1 p-4 space-y-3 overflow-y-auto min-h-96
-          ${isOver ? 'bg-blue-50 border-blue-200' : ''} 
-          transition-all duration-200 ease-out
-        `}
+        className={`min-h-96 flex-1 space-y-3 overflow-y-auto p-4 ${isOver ? 'border-blue-200 bg-blue-50' : ''} transition-all duration-200 ease-out`}
         data-column-content={column.id}
       >
         {tasks.length === 0 ? (
@@ -110,8 +106,11 @@ export function KanbanColumn({
             canCreateTask={column.id === 'TODO'}
           />
         ) : (
-          <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
-            <div className="space-y-3">
+          <SortableContext
+            items={taskIds}
+            strategy={verticalListSortingStrategy}
+          >
+            <div className='space-y-3'>
               {tasks.map((task) => (
                 <DraggableTaskCard
                   key={task.id}

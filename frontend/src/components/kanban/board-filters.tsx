@@ -1,8 +1,11 @@
 import { useState } from 'react'
+import type { TaskFilters, TaskStatus, TaskGitStatus } from '@/types/task'
 import { Filter, Search, X } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { KANBAN_COLUMNS } from '@/lib/kanban'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Input } from '@/components/ui/input'
 import {
   Popover,
   PopoverContent,
@@ -15,11 +18,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Checkbox } from '@/components/ui/checkbox'
 import { Separator } from '@/components/ui/separator'
-import { KANBAN_COLUMNS } from '@/lib/kanban'
 import { GitStatusBadge, getGitStatusLabel } from './git-status-badge'
-import type { TaskFilters, TaskStatus, TaskGitStatus } from '@/types/task'
 
 const GIT_STATUS_OPTIONS: { id: TaskGitStatus; title: string }[] = [
   { id: 'NO_GIT', title: 'No Git' },
@@ -62,19 +62,22 @@ export function BoardFilters({
     const currentStatuses = filters.status || []
     const newStatuses = checked
       ? [...currentStatuses, status]
-      : currentStatuses.filter(s => s !== status)
-    
+      : currentStatuses.filter((s) => s !== status)
+
     onFiltersChange({
       ...filters,
       status: newStatuses.length > 0 ? newStatuses : undefined,
     })
   }
-  const handleGitStatusToggle = (gitStatus: TaskGitStatus, checked: boolean) => {
+  const handleGitStatusToggle = (
+    gitStatus: TaskGitStatus,
+    checked: boolean
+  ) => {
     const currentGitStatuses = filters.git_status || []
     const newGitStatuses = checked
       ? [...currentGitStatuses, gitStatus]
-      : currentGitStatuses.filter(s => s !== gitStatus)
-    
+      : currentGitStatuses.filter((s) => s !== gitStatus)
+
     onFiltersChange({
       ...filters,
       git_status: newGitStatuses.length > 0 ? newGitStatuses : undefined,
@@ -108,27 +111,30 @@ export function BoardFilters({
     onSearchChange('')
   }
 
-  const hasActiveFilters = activeFilterCount > 0 || searchQuery.length > 0 || (filters.branch_search && filters.branch_search.length > 0)
+  const hasActiveFilters =
+    activeFilterCount > 0 ||
+    searchQuery.length > 0 ||
+    (filters.branch_search && filters.branch_search.length > 0)
 
   return (
-    <div className="flex items-center gap-3 p-4 bg-white border-b">
+    <div className='flex items-center gap-3 border-b p-4'>
       {/* Search */}
-      <div className="relative flex-1 max-w-md">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+      <div className='relative max-w-md flex-1'>
+        <Search className='absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform' />
         <Input
-          placeholder="Search tasks..."
+          placeholder='Search tasks...'
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
-          className="pl-10"
+          className='pl-10'
         />
         {searchQuery && (
           <Button
-            variant="ghost"
-            size="sm"
+            variant='ghost'
+            size='sm'
             onClick={() => onSearchChange('')}
-            className="absolute right-1 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0"
+            className='absolute top-1/2 right-1 h-6 w-6 -translate-y-1/2 transform p-0'
           >
-            <X className="h-3 w-3" />
+            <X className='h-3 w-3' />
           </Button>
         )}
       </div>
@@ -136,26 +142,26 @@ export function BoardFilters({
       {/* Filters */}
       <Popover open={isFilterOpen} onOpenChange={setIsFilterOpen}>
         <PopoverTrigger asChild>
-          <Button variant="outline" className="relative">
-            <Filter className="h-4 w-4 mr-2" />
+          <Button variant='outline' className='relative'>
+            <Filter className='mr-2 h-4 w-4' />
             Filters
             {activeFilterCount > 0 && (
               <Badge
-                variant="secondary"
-                className="ml-2 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs"
+                variant='secondary'
+                className='ml-2 flex h-5 w-5 items-center justify-center rounded-full p-0 text-xs'
               >
                 {activeFilterCount}
               </Badge>
             )}
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-80" align="end">
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h4 className="font-medium">Filters</h4>
+        <PopoverContent className='w-80' align='end'>
+          <div className='space-y-4'>
+            <div className='flex items-center justify-between'>
+              <h4 className='font-medium'>Filters</h4>
               <Button
-                variant="ghost"
-                size="sm"
+                variant='ghost'
+                size='sm'
                 onClick={clearAllFilters}
                 disabled={!hasActiveFilters}
               >
@@ -167,10 +173,10 @@ export function BoardFilters({
 
             {/* Status Filter */}
             <div>
-              <h5 className="text-sm font-medium mb-2">Status</h5>
-              <div className="space-y-2">
+              <h5 className='mb-2 text-sm font-medium'>Status</h5>
+              <div className='space-y-2'>
                 {KANBAN_COLUMNS.map((column) => (
-                  <div key={column.id} className="flex items-center space-x-2">
+                  <div key={column.id} className='flex items-center space-x-2'>
                     <Checkbox
                       id={column.id}
                       checked={filters.status?.includes(column.id) || false}
@@ -180,7 +186,7 @@ export function BoardFilters({
                     />
                     <label
                       htmlFor={column.id}
-                      className="text-sm font-normal cursor-pointer flex-1"
+                      className='flex-1 cursor-pointer text-sm font-normal'
                     >
                       {column.title}
                     </label>
@@ -193,28 +199,28 @@ export function BoardFilters({
 
             {/* Sort */}
             <div>
-              <h5 className="text-sm font-medium mb-2">Sort by</h5>
-              <div className="flex gap-2">
+              <h5 className='mb-2 text-sm font-medium'>Sort by</h5>
+              <div className='flex gap-2'>
                 <Select
                   value={filters.sortBy || ''}
                   onValueChange={handleSortChange}
                 >
-                  <SelectTrigger className="flex-1">
-                    <SelectValue placeholder="Select..." />
+                  <SelectTrigger className='flex-1'>
+                    <SelectValue placeholder='Select...' />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="created_at">Created Date</SelectItem>
-                    <SelectItem value="updated_at">Updated Date</SelectItem>
-                    <SelectItem value="title">Title</SelectItem>
+                    <SelectItem value='created_at'>Created Date</SelectItem>
+                    <SelectItem value='updated_at'>Updated Date</SelectItem>
+                    <SelectItem value='title'>Title</SelectItem>
                   </SelectContent>
                 </Select>
-                
+
                 {filters.sortBy && (
                   <Button
-                    variant="outline"
-                    size="sm"
+                    variant='outline'
+                    size='sm'
                     onClick={handleSortOrderToggle}
-                    className="px-3"
+                    className='px-3'
                   >
                     {filters.sortOrder === 'asc' ? '↑' : '↓'}
                   </Button>
@@ -226,40 +232,40 @@ export function BoardFilters({
       </Popover>
 
       {/* Task Count */}
-      <div className="text-sm text-gray-500">
+      <div className='text-sm text-gray-500'>
         {taskCount} task{taskCount !== 1 ? 's' : ''}
       </div>
 
       {/* Active Filter Tags */}
       {hasActiveFilters && (
-        <div className="flex items-center gap-2">
+        <div className='flex items-center gap-2'>
           {filters.status?.map((status) => {
-            const column = KANBAN_COLUMNS.find(col => col.id === status)
+            const column = KANBAN_COLUMNS.find((col) => col.id === status)
             return (
-              <Badge key={status} variant="secondary" className="text-xs">
+              <Badge key={status} variant='secondary' className='text-xs'>
                 {column?.title}
                 <Button
-                  variant="ghost"
-                  size="sm"
+                  variant='ghost'
+                  size='sm'
                   onClick={() => handleStatusToggle(status, false)}
-                  className="ml-1 h-3 w-3 p-0 hover:bg-transparent"
+                  className='ml-1 h-3 w-3 p-0 hover:bg-transparent'
                 >
-                  <X className="h-2 w-2" />
+                  <X className='h-2 w-2' />
                 </Button>
               </Badge>
             )
           })}
-          
+
           {searchQuery && (
-            <Badge variant="secondary" className="text-xs">
+            <Badge variant='secondary' className='text-xs'>
               "{searchQuery}"
               <Button
-                variant="ghost"
-                size="sm"
+                variant='ghost'
+                size='sm'
                 onClick={() => onSearchChange('')}
-                className="ml-1 h-3 w-3 p-0 hover:bg-transparent"
+                className='ml-1 h-3 w-3 p-0 hover:bg-transparent'
               >
-                <X className="h-2 w-2" />
+                <X className='h-2 w-2' />
               </Button>
             </Badge>
           )}
