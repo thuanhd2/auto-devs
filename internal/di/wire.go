@@ -268,32 +268,5 @@ func ProvideJobProcessor(
 
 // ProvideWebSocketService provides a WebSocket service instance
 func ProvideWebSocketService(cfg *config.Config) *websocket.Service {
-	// Use Redis broker if Redis is configured
-	if cfg.Redis.Host != "" {
-		redisAddr := cfg.Redis.Host + ":" + cfg.Redis.Port
-		return websocket.NewServiceWithRedisBroker(redisAddr, cfg.Redis.Password, cfg.Redis.DB)
-	}
-
-	// Fallback to in-memory service
-	return websocket.NewService()
-}
-
-// ProvideRedisBrokerClient provides a Redis broker client for worker
-func ProvideRedisBrokerClient(cfg *config.Config) *jobs.RedisBrokerClient {
-	redisAddr := cfg.Redis.Host + ":" + cfg.Redis.Port
-	return jobs.NewRedisBrokerClient(redisAddr, cfg.Redis.Password, cfg.Redis.DB)
-}
-
-// ProvideJobProcessorWithRedisBroker provides a Processor instance with Redis broker
-func ProvideJobProcessorWithRedisBroker(
-	taskUsecase usecase.TaskUsecase,
-	projectUsecase usecase.ProjectUsecase,
-	worktreeUsecase usecase.WorktreeUsecase,
-	planningService *ai.PlanningService,
-	executionService *ai.ExecutionService,
-	planRepo repository.PlanRepository,
-	wsService *websocket.Service,
-	redisBroker *jobs.RedisBrokerClient,
-) *jobs.Processor {
-	return jobs.NewProcessorWithRedisBroker(taskUsecase, projectUsecase, worktreeUsecase, planningService, executionService, planRepo, wsService, redisBroker)
+	return websocket.NewService(&cfg.CentrifugeRedisBroker)
 }

@@ -22,6 +22,7 @@ func NewHandler(server *Server) *Handler {
 		server: server,
 	}
 
+	log.Printf("WebSocket handler created successfully")
 	return handler
 }
 
@@ -39,11 +40,26 @@ func (h *Handler) Shutdown() {
 // HandleWebSocket handles WebSocket upgrade requests
 func (h *Handler) GetWebSocketHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		log.Printf("WebSocket connection request from %s", c.ClientIP())
+
+		// Check if server is ready
+		if h.server == nil || h.server.node == nil {
+			log.Printf("WebSocket server not ready")
+			c.JSON(503, gin.H{"error": "WebSocket server not ready"})
+			return
+		}
+
+		// Create Centrifuge WebSocket handler
 		Handler := centrifuge.NewWebsocketHandler(h.server.node, centrifuge.WebsocketConfig{
 			CheckOrigin: func(r *http.Request) bool {
+				// Allow all origins for now - in production, implement proper origin checking
+				log.Printf("Checking origin: %s", r.Header.Get("Origin"))
 				return true
 			},
 		})
+
+		// Serve the WebSocket request
+		log.Printf("Serving WebSocket request for %s", c.ClientIP())
 		Handler.ServeHTTP(c.Writer, c.Request)
 	}
 }

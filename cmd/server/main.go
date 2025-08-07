@@ -38,6 +38,13 @@ func main() {
 	// Initialize WebSocket service
 	log.Printf("WebSocket service initialized")
 
+	// Start WebSocket service
+	if err := app.WebSocketService.Start(); err != nil {
+		log.Printf("Warning: Failed to start WebSocket service: %v", err)
+	} else {
+		log.Printf("WebSocket service started successfully")
+	}
+
 	// Setup Gin router
 	router := gin.Default()
 

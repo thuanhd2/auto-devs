@@ -7,8 +7,6 @@
 package di
 
 import (
-	"time"
-
 	"github.com/auto-devs/auto-devs/config"
 	"github.com/auto-devs/auto-devs/internal/jobs"
 	"github.com/auto-devs/auto-devs/internal/repository"
@@ -20,6 +18,7 @@ import (
 	"github.com/auto-devs/auto-devs/internal/websocket"
 	"github.com/auto-devs/auto-devs/pkg/database"
 	"github.com/google/wire"
+	"time"
 )
 
 // Injectors from wire.go:

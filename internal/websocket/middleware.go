@@ -5,7 +5,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"golang.org/x/time/rate"
 )
 
@@ -307,23 +306,4 @@ func (mm *MiddlewareManager) GetMiddlewareStats() map[string]interface{} {
 		"rate_limiter":  mm.rateLimiter.GetStats(),
 		"error_handler": mm.errorHandler.GetErrorStats(),
 	}
-}
-
-// WebSocketMiddleware provides HTTP middleware for WebSocket endpoints
-func WebSocketMiddleware() gin.HandlerFunc {
-	return gin.HandlerFunc(func(c *gin.Context) {
-		// Set CORS headers for WebSocket
-		c.Header("Access-Control-Allow-Origin", "*")
-		c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-		c.Header("Access-Control-Allow-Headers", "Content-Type, Authorization, Upgrade, Connection, Sec-WebSocket-Key, Sec-WebSocket-Version, Sec-WebSocket-Protocol")
-		c.Header("Access-Control-Allow-Credentials", "true")
-
-		// Handle preflight requests
-		if c.Request.Method == "OPTIONS" {
-			c.AbortWithStatus(204)
-			return
-		}
-
-		c.Next()
-	})
 }

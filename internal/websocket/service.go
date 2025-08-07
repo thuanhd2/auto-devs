@@ -30,6 +30,7 @@ func NewService(appConfig *config.CentrifugeRedisBrokerConfig) *Service {
 	if err != nil {
 		log.Fatalf("Failed to create WebSocket server: %v", err)
 	}
+
 	// Create core components
 	handler := NewHandler(server)
 	hub := handler.GetHub()
@@ -54,7 +55,24 @@ func NewService(appConfig *config.CentrifugeRedisBrokerConfig) *Service {
 		logger:            logger,
 	}
 
+	log.Printf("WebSocket service created successfully")
 	return service
+}
+
+// Start starts the WebSocket service
+func (s *Service) Start() error {
+	if s.handler != nil && s.handler.server != nil {
+		log.Printf("Starting WebSocket service...")
+		err := s.handler.server.Start()
+		if err != nil {
+			log.Printf("Failed to start WebSocket service: %v", err)
+			return err
+		}
+		log.Printf("WebSocket service started successfully")
+		return nil
+	}
+	log.Printf("WebSocket service not ready to start")
+	return nil
 }
 
 // GetHandler returns the WebSocket handler
