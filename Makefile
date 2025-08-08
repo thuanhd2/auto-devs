@@ -172,3 +172,56 @@ deps: ## Download dependencies
 	@go mod download
 	@go mod tidy
 	@echo "Dependencies updated"
+
+.PHONY: test-e2e
+test-e2e: ## Run end-to-end tests
+	@echo "Running end-to-end tests..."
+	@./scripts/run-e2e-tests.sh
+	@echo "E2E tests completed"
+
+.PHONY: test-e2e-happy
+test-e2e-happy: ## Run happy path E2E tests
+	@echo "Running happy path E2E tests..."
+	@./scripts/run-e2e-tests.sh -s happy-path
+	@echo "Happy path E2E tests completed"
+
+.PHONY: test-e2e-error
+test-e2e-error: ## Run error scenario E2E tests
+	@echo "Running error scenario E2E tests..."
+	@./scripts/run-e2e-tests.sh -s error-scenarios
+	@echo "Error scenario E2E tests completed"
+
+.PHONY: test-e2e-perf
+test-e2e-perf: ## Run performance E2E tests
+	@echo "Running performance E2E tests..."
+	@./scripts/run-e2e-tests.sh -s performance -t 45m
+	@echo "Performance E2E tests completed"
+
+.PHONY: test-e2e-edge
+test-e2e-edge: ## Run edge case E2E tests
+	@echo "Running edge case E2E tests..."
+	@./scripts/run-e2e-tests.sh -s edge-cases
+	@echo "Edge case E2E tests completed"
+
+.PHONY: test-e2e-setup
+test-e2e-setup: ## Setup E2E test environment only
+	@echo "Setting up E2E test environment..."
+	@./scripts/run-e2e-tests.sh --setup-only
+	@echo "E2E test environment setup completed"
+
+.PHONY: test-e2e-cleanup
+test-e2e-cleanup: ## Cleanup E2E test resources
+	@echo "Cleaning up E2E test resources..."
+	@./scripts/run-e2e-tests.sh --cleanup-only
+	@echo "E2E test cleanup completed"
+
+.PHONY: test-all
+test-all: test test-e2e ## Run all tests (unit + E2E)
+	@echo "All tests completed"
+
+.PHONY: test-ci
+test-ci: ## Run tests in CI mode (unit + essential E2E)
+	@echo "Running CI tests..."
+	@go test ./... -v
+	@./scripts/run-e2e-tests.sh -s happy-path -s error-scenarios
+	@echo "CI tests completed"

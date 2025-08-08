@@ -1,0 +1,514 @@
+name: E2E Tests
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  schedule:
+    # Run nightly at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      test_suite:
+        description: 'Test suite to run'
+        required: false
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - happy-path
+          - error-scenarios
+          - performance
+          - edge-cases
+
+env:
+  GO_VERSION: '1.24'
+  NODE_VERSION: '20'
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    outputs:
+      test-matrix: ${{ steps.test-matrix.outputs.matrix }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup test matrix
+        id: test-matrix
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            case "${{ github.event.inputs.test_suite }}" in
+              happy-path)
+                matrix='["happy-path"]'
+                ;;
+              error-scenarios)
+                matrix='["error-scenarios"]'
+                ;;
+              performance)
+                matrix='["performance"]'
+                ;;
+              edge-cases)
+                matrix='["edge-cases"]'
+                ;;
+              *)
+                matrix='["happy-path", "error-scenarios", "edge-cases", "performance"]'
+                ;;
+            esac
+          elif [[ "${{ github.event_name }}" == "schedule" ]]; then
+            # Full suite for nightly runs
+            matrix='["happy-path", "error-scenarios", "edge-cases", "performance"]'
+          else
+            # PR/push: run essential tests
+            matrix='["happy-path", "error-scenarios"]'
+          fi
+          echo "matrix=$matrix" >> $GITHUB_OUTPUT
+
+  e2e-tests:
+    needs: setup
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        test-suite: ${{ fromJson(needs.setup.outputs.test-matrix) }}
+        go-version: [1.24]
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: autodevs_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis:7
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install Go dependencies
+        run: |
+          go mod download
+          go mod verify
+
+      - name: Install frontend dependencies
+        run: |
+          cd frontend
+          npm ci
+
+      - name: Install migration tool
+        run: |
+          go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
+
+      - name: Setup test environment
+        run: |
+          # Create test environment file
+          cp .env.test.example .env.test
+          
+          # Set test database configuration
+          cat << EOF >> .env.test
+          DB_HOST=localhost
+          DB_PORT=5432
+          DB_USERNAME=postgres
+          DB_PASSWORD=postgres
+          DB_NAME=autodevs_test
+          
+          REDIS_HOST=localhost
+          REDIS_PORT=6379
+          
+          # Test-specific settings
+          TEST_TIMEOUT=30m
+          LOG_LEVEL=debug
+          EOF
+
+      - name: Run database migrations
+        run: |
+          make migrate-up
+        env:
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_USERNAME: postgres
+          DB_PASSWORD: postgres
+          DB_NAME: autodevs_test
+
+      - name: Build backend
+        run: |
+          make build
+
+      - name: Build frontend
+        run: |
+          cd frontend
+          npm run build
+
+      - name: Generate mocks
+        run: |
+          make mocks
+
+      - name: Run linting
+        run: |
+          make lint
+
+      - name: Run unit tests
+        run: |
+          make test
+        env:
+          DB_HOST: localhost
+          DB_USERNAME: postgres
+          DB_PASSWORD: postgres
+          DB_NAME: autodevs_test
+
+      - name: Run E2E tests - ${{ matrix.test-suite }}
+        run: |
+          case "${{ matrix.test-suite }}" in
+            happy-path)
+              go test -v -timeout 30m ./internal/e2e_test -run TestCompleteTaskAutomationFlow -run TestMultiTaskProjectWorkflow -run TestPlanGenerationAndApproval -run TestImplementationExecution -run TestPRCreationAndMonitoring -run TestWebSocketRealTimeUpdates
+              ;;
+            error-scenarios)
+              go test -v -timeout 30m ./internal/e2e_test -run TestPlanningServiceFailure -run TestImplementationServiceFailure -run TestGitOperationFailures -run TestGitHubAPIFailures -run TestDatabaseConnectionFailures -run TestConcurrencyIssues -run TestResourceExhaustion
+              ;;
+            edge-cases)
+              go test -v -timeout 30m ./internal/e2e_test -run TestEdgeCasesTaskStates -run TestLargeDataHandling -run TestSystemLimits -run TestDataConsistency
+              ;;
+            performance)
+              go test -v -timeout 45m ./internal/e2e_test -run TestHighVolumeTaskProcessing -run TestWebSocketPerformance -run BenchmarkTaskOperations
+              ;;
+          esac
+        env:
+          DB_HOST: localhost
+          DB_USERNAME: postgres
+          DB_PASSWORD: postgres
+          DB_NAME: autodevs_test
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
+
+      - name: Generate test report
+        if: always()
+        run: |
+          # Convert test results to JUnit format for better CI integration
+          go install github.com/jstemmer/go-junit-report/v2@latest
+          
+          # Re-run tests with JSON output for reporting
+          mkdir -p test-results
+          
+          case "${{ matrix.test-suite }}" in
+            happy-path)
+              go test -json -timeout 30m ./internal/e2e_test -run TestCompleteTaskAutomationFlow -run TestMultiTaskProjectWorkflow -run TestPlanGenerationAndApproval -run TestImplementationExecution -run TestPRCreationAndMonitoring -run TestWebSocketRealTimeUpdates > test-results/happy-path.json 2>&1 || true
+              cat test-results/happy-path.json | go-junit-report -set-exit-code > test-results/happy-path.xml
+              ;;
+            error-scenarios)
+              go test -json -timeout 30m ./internal/e2e_test -run TestPlanningServiceFailure -run TestImplementationServiceFailure -run TestGitOperationFailures -run TestGitHubAPIFailures -run TestDatabaseConnectionFailures -run TestConcurrencyIssues -run TestResourceExhaustion > test-results/error-scenarios.json 2>&1 || true
+              cat test-results/error-scenarios.json | go-junit-report -set-exit-code > test-results/error-scenarios.xml
+              ;;
+            edge-cases)
+              go test -json -timeout 30m ./internal/e2e_test -run TestEdgeCasesTaskStates -run TestLargeDataHandling -run TestSystemLimits -run TestDataConsistency > test-results/edge-cases.json 2>&1 || true
+              cat test-results/edge-cases.json | go-junit-report -set-exit-code > test-results/edge-cases.xml
+              ;;
+            performance)
+              go test -json -timeout 45m ./internal/e2e_test -run TestHighVolumeTaskProcessing -run TestWebSocketPerformance -run BenchmarkTaskOperations > test-results/performance.json 2>&1 || true
+              cat test-results/performance.json | go-junit-report -set-exit-code > test-results/performance.xml
+              ;;
+          esac
+        env:
+          DB_HOST: localhost
+          DB_USERNAME: postgres
+          DB_PASSWORD: postgres
+          DB_NAME: autodevs_test
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ matrix.test-suite }}-${{ matrix.go-version }}
+          path: |
+            test-results/
+            coverage.out
+          retention-days: 30
+
+      - name: Publish test results
+        if: always()
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        with:
+          files: test-results/*.xml
+          check_name: E2E Tests (${{ matrix.test-suite }})
+          comment_mode: off
+
+  performance-analysis:
+    if: contains(fromJson(needs.setup.outputs.test-matrix), 'performance')
+    needs: [setup, e2e-tests]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download performance test results
+        uses: actions/download-artifact@v4
+        with:
+          pattern: test-results-performance-*
+          merge-multiple: true
+          path: performance-results/
+
+      - name: Analyze performance results
+        run: |
+          # Create performance analysis script
+          cat << 'EOF' > analyze_performance.py
+          #!/usr/bin/env python3
+          import json
+          import sys
+          import os
+          import re
+          
+          def parse_performance_results(file_path):
+              results = {
+                  'task_throughput': 0,
+                  'query_performance': 0,
+                  'memory_usage': 0,
+                  'websocket_connections': 0
+              }
+              
+              if not os.path.exists(file_path):
+                  return results
+                  
+              with open(file_path, 'r') as f:
+                  content = f.read()
+                  
+                  # Extract performance metrics from test output
+                  throughput_match = re.search(r'Task creation throughput: ([\d.]+) tasks/second', content)
+                  if throughput_match:
+                      results['task_throughput'] = float(throughput_match.group(1))
+                  
+                  query_match = re.search(r'Query returned \d+ tasks in ([\d.]+\w+)', content)
+                  if query_match:
+                      duration_str = query_match.group(1)
+                      # Convert to milliseconds for comparison
+                      if 'ms' in duration_str:
+                          results['query_performance'] = float(duration_str.replace('ms', ''))
+                      elif 's' in duration_str:
+                          results['query_performance'] = float(duration_str.replace('s', '')) * 1000
+                  
+                  memory_match = re.search(r'Memory used: (\d+) bytes', content)
+                  if memory_match:
+                      results['memory_usage'] = int(memory_match.group(1)) / (1024 * 1024)  # Convert to MB
+                  
+                  ws_match = re.search(r'Created (\d+) WebSocket connections', content)
+                  if ws_match:
+                      results['websocket_connections'] = int(ws_match.group(1))
+              
+              return results
+          
+          def generate_performance_report(results):
+              report = f"""
+          # Performance Test Report
+          
+          ## Key Metrics
+          
+          - **Task Throughput**: {results['task_throughput']:.2f} tasks/second
+          - **Database Query Performance**: {results['query_performance']:.2f} ms
+          - **Memory Usage**: {results['memory_usage']:.2f} MB
+          - **WebSocket Connections**: {results['websocket_connections']} concurrent connections
+          
+          ## Performance Thresholds
+          
+          | Metric | Current | Threshold | Status |
+          |--------|---------|-----------|---------|
+          | Task Throughput | {results['task_throughput']:.2f} tasks/sec | ≥ 10 tasks/sec | {'✅ PASS' if results['task_throughput'] >= 10 else '❌ FAIL'} |
+          | Query Performance | {results['query_performance']:.2f} ms | ≤ 1000 ms | {'✅ PASS' if results['query_performance'] <= 1000 else '❌ FAIL'} |
+          | Memory Usage | {results['memory_usage']:.2f} MB | ≤ 500 MB | {'✅ PASS' if results['memory_usage'] <= 500 else '❌ FAIL'} |
+          | WebSocket Connections | {results['websocket_connections']} | ≥ 40 | {'✅ PASS' if results['websocket_connections'] >= 40 else '❌ FAIL'} |
+          
+          ## Recommendations
+          
+          """
+              
+              if results['task_throughput'] < 10:
+                  report += "- ⚠️ Task throughput is below threshold. Consider optimizing database operations or adding indexing.\n"
+              
+              if results['query_performance'] > 1000:
+                  report += "- ⚠️ Database queries are slow. Review query patterns and consider adding indexes.\n"
+              
+              if results['memory_usage'] > 500:
+                  report += "- ⚠️ High memory usage detected. Review memory leaks and optimize data structures.\n"
+              
+              if results['websocket_connections'] < 40:
+                  report += "- ⚠️ WebSocket connection capacity is low. Review connection handling and resource limits.\n"
+              
+              return report
+          
+          # Main execution
+          if __name__ == "__main__":
+              results_file = "performance-results/performance.json"
+              results = parse_performance_results(results_file)
+              
+              report = generate_performance_report(results)
+              
+              with open("performance-report.md", "w") as f:
+                  f.write(report)
+              
+              print(report)
+              
+              # Set exit code based on thresholds
+              failed_checks = 0
+              if results['task_throughput'] < 10:
+                  failed_checks += 1
+              if results['query_performance'] > 1000:
+                  failed_checks += 1
+              if results['memory_usage'] > 500:
+                  failed_checks += 1
+              if results['websocket_connections'] < 40:
+                  failed_checks += 1
+              
+              if failed_checks > 0:
+                  print(f"\n❌ {failed_checks} performance checks failed")
+                  sys.exit(1)
+              else:
+                  print("\n✅ All performance checks passed")
+          EOF
+          
+          python3 analyze_performance.py
+
+      - name: Upload performance report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: performance-report
+          path: performance-report.md
+          retention-days: 30
+
+      - name: Comment performance results on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            
+            if (fs.existsSync('performance-report.md')) {
+              const report = fs.readFileSync('performance-report.md', 'utf8');
+              
+              await github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: '## 🚀 Performance Test Results\n\n' + report
+              });
+            }
+
+  test-summary:
+    if: always()
+    needs: [setup, e2e-tests]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all test results
+        uses: actions/download-artifact@v4
+        with:
+          pattern: test-results-*
+          merge-multiple: true
+          path: all-results/
+
+      - name: Generate test summary
+        run: |
+          echo "# E2E Test Summary" > test-summary.md
+          echo "" >> test-summary.md
+          echo "## Test Execution Results" >> test-summary.md
+          echo "" >> test-summary.md
+          
+          total_tests=0
+          passed_tests=0
+          failed_tests=0
+          
+          for xml_file in all-results/*.xml; do
+            if [[ -f "$xml_file" ]]; then
+              suite_name=$(basename "$xml_file" .xml)
+              echo "### $suite_name" >> test-summary.md
+              
+              # Parse XML for basic stats (simplified)
+              if command -v xmllint >/dev/null 2>&1; then
+                tests=$(xmllint --xpath "count(//testcase)" "$xml_file" 2>/dev/null || echo "0")
+                failures=$(xmllint --xpath "count(//failure)" "$xml_file" 2>/dev/null || echo "0")
+                errors=$(xmllint --xpath "count(//error)" "$xml_file" 2>/dev/null || echo "0")
+                
+                suite_total=$(echo "$tests" | bc 2>/dev/null || echo "0")
+                suite_failed=$(echo "$failures + $errors" | bc 2>/dev/null || echo "0")
+                suite_passed=$(echo "$suite_total - $suite_failed" | bc 2>/dev/null || echo "0")
+                
+                total_tests=$((total_tests + suite_total))
+                passed_tests=$((passed_tests + suite_passed))
+                failed_tests=$((failed_tests + suite_failed))
+                
+                if [[ $suite_failed -eq 0 ]]; then
+                  echo "✅ **Passed**: $suite_passed/$suite_total tests" >> test-summary.md
+                else
+                  echo "❌ **Failed**: $suite_failed/$suite_total tests failed" >> test-summary.md
+                fi
+              else
+                echo "📋 Test results available in artifacts" >> test-summary.md
+              fi
+              echo "" >> test-summary.md
+            fi
+          done
+          
+          echo "## Overall Summary" >> test-summary.md
+          echo "" >> test-summary.md
+          echo "- **Total Tests**: $total_tests" >> test-summary.md
+          echo "- **Passed**: $passed_tests" >> test-summary.md
+          echo "- **Failed**: $failed_tests" >> test-summary.md
+          echo "- **Success Rate**: $(( passed_tests * 100 / (total_tests == 0 ? 1 : total_tests) ))%" >> test-summary.md
+          
+          cat test-summary.md
+
+      - name: Upload test summary
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-summary
+          path: test-summary.md
+          retention-days: 30
+
+  notify-slack:
+    if: always() && (github.event_name == 'schedule' || github.ref == 'refs/heads/main')
+    needs: [e2e-tests, test-summary]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notify Slack on failure
+        if: needs.e2e-tests.result == 'failure'
+        uses: 8398a7/action-slack@v3
+        with:
+          status: failure
+          text: 'E2E tests failed on ${{ github.ref }}'
+          webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+      - name: Notify Slack on success
+        if: needs.e2e-tests.result == 'success' && github.event_name == 'schedule'
+        uses: 8398a7/action-slack@v3
+        with:
+          status: success
+          text: 'Nightly E2E tests passed successfully'
+          webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
