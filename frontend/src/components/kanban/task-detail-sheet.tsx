@@ -3,6 +3,7 @@ import type { Task } from '@/types/task'
 import { getStatusColor, getStatusTitle } from '@/lib/kanban'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import {
   Sheet,
   SheetContent,
@@ -110,24 +111,30 @@ export function TaskDetailSheet({
 
             <Separator />
 
-            {/* Plan Review */}
-            <div>
-              <h4 className='mb-3 text-sm font-medium'>Implementation Plan</h4>
-              <PlanReview
-                task={task}
-                onPlanUpdate={onEdit}
-                onStatusChange={onStatusChange}
-              />
-            </div>
-
-            <Separator />
-            {/* Metadata */}
-            <TaskMetadata
-              task={task}
-              showGitInfo={true}
-              showTimestamps={true}
-              showStatusHistory={true}
-            />
+            {/* Tabs for Plan Review and Metadata */}
+            <Tabs defaultValue="plan-review" className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="plan-review">Plan Review</TabsTrigger>
+                <TabsTrigger value="metadata">Metadata</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="plan-review" className="mt-4">
+                <PlanReview
+                  task={task}
+                  onPlanUpdate={onEdit}
+                  onStatusChange={onStatusChange}
+                />
+              </TabsContent>
+              
+              <TabsContent value="metadata" className="mt-4">
+                <TaskMetadata
+                  task={task}
+                  showGitInfo={true}
+                  showTimestamps={true}
+                  showStatusHistory={true}
+                />
+              </TabsContent>
+            </Tabs>
           </div>
         </SheetContent>
       </Sheet>
