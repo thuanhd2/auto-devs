@@ -49,7 +49,7 @@ func main() {
 	router := gin.Default()
 
 	// Setup all routes with middleware
-	handler.SetupRoutes(router, app.ProjectUsecase, app.TaskUsecase, app.GormDB, app.WebSocketService)
+	handler.SetupRoutes(router, app.ProjectUsecase, app.TaskUsecase, app.ExecutionUsecase, app.GormDB, app.WebSocketService)
 
 	// Start server
 	port := app.Config.Server.Port

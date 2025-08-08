@@ -15,12 +15,12 @@ import (
 type ExecutionStatus string
 
 const (
-	ExecutionStatusPending   ExecutionStatus = "pending"
-	ExecutionStatusRunning   ExecutionStatus = "running"
-	ExecutionStatusPaused    ExecutionStatus = "paused"
-	ExecutionStatusCompleted ExecutionStatus = "completed"
-	ExecutionStatusFailed    ExecutionStatus = "failed"
-	ExecutionStatusCancelled ExecutionStatus = "cancelled"
+	ExecutionStatusPending   ExecutionStatus = "PENDING"
+	ExecutionStatusRunning   ExecutionStatus = "RUNNING"
+	ExecutionStatusPaused    ExecutionStatus = "PAUSED"
+	ExecutionStatusCompleted ExecutionStatus = "COMPLETED"
+	ExecutionStatusFailed    ExecutionStatus = "FAILED"
+	ExecutionStatusCancelled ExecutionStatus = "CANCELLED"
 )
 
 // Execution represents an AI execution instance

@@ -20,17 +20,17 @@ type ExecutionUpdateRequest struct {
 
 // Execution response DTOs
 type ExecutionResponse struct {
-	ID          uuid.UUID                `json:"id" example:"123e4567-e89b-12d3-a456-426614174000"`
-	TaskID      uuid.UUID                `json:"task_id" example:"123e4567-e89b-12d3-a456-426614174000"`
-	Status      entity.ExecutionStatus   `json:"status" example:"running"`
-	StartedAt   time.Time                `json:"started_at" example:"2024-01-01T00:00:00Z"`
-	CompletedAt *time.Time               `json:"completed_at,omitempty" example:"2024-01-01T01:00:00Z"`
-	Error       string                   `json:"error,omitempty" example:"Process failed"`
-	Progress    float64                  `json:"progress" example:"0.75"`
-	Result      *entity.ExecutionResult  `json:"result,omitempty"`
-	Duration    *time.Duration           `json:"duration,omitempty" example:"3600000000000"`
-	CreatedAt   time.Time                `json:"created_at" example:"2024-01-01T00:00:00Z"`
-	UpdatedAt   time.Time                `json:"updated_at" example:"2024-01-01T00:00:00Z"`
+	ID          uuid.UUID               `json:"id" example:"123e4567-e89b-12d3-a456-426614174000"`
+	TaskID      uuid.UUID               `json:"task_id" example:"123e4567-e89b-12d3-a456-426614174000"`
+	Status      entity.ExecutionStatus  `json:"status" example:"running"`
+	StartedAt   time.Time               `json:"started_at" example:"2024-01-01T00:00:00Z"`
+	CompletedAt *time.Time              `json:"completed_at,omitempty" example:"2024-01-01T01:00:00Z"`
+	Error       string                  `json:"error,omitempty" example:"Process failed"`
+	Progress    float64                 `json:"progress" example:"0.75"`
+	Result      *entity.ExecutionResult `json:"result,omitempty"`
+	Duration    *time.Duration          `json:"duration,omitempty" example:"3600000000000"`
+	CreatedAt   time.Time               `json:"created_at" example:"2024-01-01T00:00:00Z"`
+	UpdatedAt   time.Time               `json:"updated_at" example:"2024-01-01T00:00:00Z"`
 }
 
 type ExecutionWithLogsResponse struct {
@@ -45,15 +45,15 @@ type ExecutionListResponse struct {
 
 // Execution log response DTOs
 type ExecutionLogResponse struct {
-	ID          uuid.UUID      `json:"id" example:"123e4567-e89b-12d3-a456-426614174000"`
-	ExecutionID uuid.UUID      `json:"execution_id" example:"123e4567-e89b-12d3-a456-426614174000"`
-	ProcessID   *uuid.UUID     `json:"process_id,omitempty" example:"123e4567-e89b-12d3-a456-426614174000"`
+	ID          uuid.UUID       `json:"id" example:"123e4567-e89b-12d3-a456-426614174000"`
+	ExecutionID uuid.UUID       `json:"execution_id" example:"123e4567-e89b-12d3-a456-426614174000"`
+	ProcessID   *uuid.UUID      `json:"process_id,omitempty" example:"123e4567-e89b-12d3-a456-426614174000"`
 	Level       entity.LogLevel `json:"level" example:"info"`
-	Message     string         `json:"message" example:"Process started successfully"`
-	Timestamp   time.Time      `json:"timestamp" example:"2024-01-01T00:00:00Z"`
-	Source      string         `json:"source" example:"stdout"`
-	Metadata    interface{}    `json:"metadata,omitempty"`
-	CreatedAt   time.Time      `json:"created_at" example:"2024-01-01T00:00:00Z"`
+	Message     string          `json:"message" example:"Process started successfully"`
+	Timestamp   time.Time       `json:"timestamp" example:"2024-01-01T00:00:00Z"`
+	Source      string          `json:"source" example:"stdout"`
+	Metadata    interface{}     `json:"metadata,omitempty"`
+	CreatedAt   time.Time       `json:"created_at" example:"2024-01-01T00:00:00Z"`
 }
 
 type ExecutionLogListResponse struct {
@@ -64,26 +64,26 @@ type ExecutionLogListResponse struct {
 // Filter and query DTOs
 type ExecutionFilterQuery struct {
 	PaginationQuery
-	Status       *string    `form:"status" binding:"omitempty,oneof=pending running paused completed failed cancelled" example:"running"`
-	Statuses     []string   `form:"statuses" example:"running,completed"`
-	StartedAfter *time.Time `form:"started_after" example:"2024-01-01T00:00:00Z"`
+	Status        *string    `form:"status" binding:"omitempty,oneof=pending running paused completed failed cancelled" example:"running"`
+	Statuses      []string   `form:"statuses" example:"running,completed"`
+	StartedAfter  *time.Time `form:"started_after" example:"2024-01-01T00:00:00Z"`
 	StartedBefore *time.Time `form:"started_before" example:"2024-12-31T23:59:59Z"`
-	WithErrors   *bool      `form:"with_errors" example:"true"`
-	OrderBy      *string    `form:"order_by" binding:"omitempty,oneof=started_at completed_at progress status" example:"started_at"`
-	OrderDir     *string    `form:"order_dir" binding:"omitempty,oneof=asc desc" example:"desc"`
+	WithErrors    *bool      `form:"with_errors" example:"true"`
+	OrderBy       *string    `form:"order_by" binding:"omitempty,oneof=started_at completed_at progress status" example:"started_at"`
+	OrderDir      *string    `form:"order_dir" binding:"omitempty,oneof=asc desc" example:"desc"`
 }
 
 type ExecutionLogFilterQuery struct {
 	PaginationQuery
-	Level        *string    `form:"level" binding:"omitempty,oneof=debug info warn error" example:"info"`
-	Levels       []string   `form:"levels" example:"info,error"`
-	Source       *string    `form:"source" example:"stdout"`
-	Sources      []string   `form:"sources" example:"stdout,stderr"`
-	Search       *string    `form:"search" example:"error"`
-	TimeAfter    *time.Time `form:"time_after" example:"2024-01-01T00:00:00Z"`
-	TimeBefore   *time.Time `form:"time_before" example:"2024-12-31T23:59:59Z"`
-	OrderBy      *string    `form:"order_by" binding:"omitempty,oneof=timestamp level source" example:"timestamp"`
-	OrderDir     *string    `form:"order_dir" binding:"omitempty,oneof=asc desc" example:"desc"`
+	Level      *string    `form:"level" binding:"omitempty,oneof=debug info warn error" example:"info"`
+	Levels     []string   `form:"levels" example:"info,error"`
+	Source     *string    `form:"source" example:"stdout"`
+	Sources    []string   `form:"sources" example:"stdout,stderr"`
+	Search     *string    `form:"search" example:"error"`
+	TimeAfter  *time.Time `form:"time_after" example:"2024-01-01T00:00:00Z"`
+	TimeBefore *time.Time `form:"time_before" example:"2024-12-31T23:59:59Z"`
+	OrderBy    *string    `form:"order_by" binding:"omitempty,oneof=timestamp level source" example:"timestamp"`
+	OrderDir   *string    `form:"order_dir" binding:"omitempty,oneof=asc desc" example:"desc"`
 }
 
 // Conversion functions
@@ -93,7 +93,7 @@ func ToExecutionResponse(execution *entity.Execution) ExecutionResponse {
 		TaskID:    execution.TaskID,
 		Status:    execution.Status,
 		StartedAt: execution.StartedAt,
-		Error:     execution.Error,
+		Error:     execution.ErrorMessage,
 		Progress:  execution.Progress,
 		CreatedAt: execution.CreatedAt,
 		UpdatedAt: execution.UpdatedAt,
@@ -117,14 +117,14 @@ func ToExecutionResponse(execution *entity.Execution) ExecutionResponse {
 	return response
 }
 
-func ToExecutionWithLogsResponse(execution *entity.Execution, logs []*entity.ExecutionLog) ExecutionWithLogsResponse {
+func ToExecutionWithLogsResponse(execution *entity.Execution, logs []entity.ExecutionLog) ExecutionWithLogsResponse {
 	response := ExecutionWithLogsResponse{
 		ExecutionResponse: ToExecutionResponse(execution),
 		Logs:              make([]ExecutionLogResponse, len(logs)),
 	}
 
 	for i, log := range logs {
-		response.Logs[i] = ToExecutionLogResponse(log)
+		response.Logs[i] = ToExecutionLogResponse(&log)
 	}
 
 	return response

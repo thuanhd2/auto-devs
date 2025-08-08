@@ -3,6 +3,7 @@ package usecase
 import (
 	"context"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/auto-devs/auto-devs/internal/entity"
@@ -49,10 +50,10 @@ type CreateExecutionRequest struct {
 }
 
 type UpdateExecutionRequest struct {
-	Status   *entity.ExecutionStatus  `json:"status,omitempty"`
-	Progress *float64                 `json:"progress,omitempty"`
-	Error    *string                  `json:"error,omitempty"`
-	Result   *entity.ExecutionResult  `json:"result,omitempty"`
+	Status   *entity.ExecutionStatus `json:"status,omitempty"`
+	Progress *float64                `json:"progress,omitempty"`
+	Error    *string                 `json:"error,omitempty"`
+	Result   *entity.ExecutionResult `json:"result,omitempty"`
 }
 
 type GetExecutionsFilterRequest struct {
@@ -68,25 +69,25 @@ type GetExecutionsFilterRequest struct {
 }
 
 type GetExecutionLogsRequest struct {
-	Levels       []entity.LogLevel
-	Sources      []string
-	SearchTerm   *string
-	TimeAfter    *time.Time
-	TimeBefore   *time.Time
-	Limit        int
-	Offset       int
-	OrderBy      string
-	OrderDir     string
+	Levels     []entity.LogLevel
+	Sources    []string
+	SearchTerm *string
+	TimeAfter  *time.Time
+	TimeBefore *time.Time
+	Limit      int
+	Offset     int
+	OrderBy    string
+	OrderDir   string
 }
 
 type AddExecutionLogRequest struct {
-	ExecutionID uuid.UUID        `json:"execution_id"`
-	ProcessID   *uuid.UUID       `json:"process_id,omitempty"`
-	Level       entity.LogLevel  `json:"level"`
-	Message     string           `json:"message"`
-	Source      string           `json:"source"`
-	Metadata    string           `json:"metadata,omitempty"`
-	Timestamp   *time.Time       `json:"timestamp,omitempty"`
+	ExecutionID uuid.UUID       `json:"execution_id"`
+	ProcessID   *uuid.UUID      `json:"process_id,omitempty"`
+	Level       entity.LogLevel `json:"level"`
+	Message     string          `json:"message"`
+	Source      string          `json:"source"`
+	Metadata    string          `json:"metadata,omitempty"`
+	Timestamp   *time.Time      `json:"timestamp,omitempty"`
 }
 
 // ExecutionUsecaseImpl implements ExecutionUsecase
@@ -162,7 +163,7 @@ func (u *ExecutionUsecaseImpl) Update(ctx context.Context, id uuid.UUID, req Upd
 		execution.Progress = *req.Progress
 	}
 	if req.Error != nil {
-		execution.Error = *req.Error
+		execution.ErrorMessage = *req.Error
 	}
 
 	if err := u.executionRepo.Update(ctx, execution); err != nil {
@@ -259,6 +260,8 @@ func (u *ExecutionUsecaseImpl) GetByStatusFiltered(ctx context.Context, req GetE
 		OrderBy:       &req.OrderBy,
 		OrderDir:      &req.OrderDir,
 	}
+
+	log.Println("filters", filters)
 
 	// For now, return simple implementation
 	// In a real implementation, you'd extend the repository interface to support filters

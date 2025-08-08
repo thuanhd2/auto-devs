@@ -1,4 +1,9 @@
-import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query'
+import {
+  useQuery,
+  useMutation,
+  useQueryClient,
+  useInfiniteQuery,
+} from '@tanstack/react-query'
 import type {
   Execution,
   ExecutionListResponse,
@@ -22,34 +27,45 @@ export function useTaskExecutions(taskId: string, filters?: ExecutionFilters) {
     enabled: !!taskId,
     refetchInterval: (_data) => {
       // Auto-refetch every 5 seconds if there are any active executions
-      const hasActiveExecution = data?.data.some(execution => 
-        execution.status === 'running' || execution.status === 'pending'
-      )
-      return hasActiveExecution ? 5000 : false
+      // const hasActiveExecution = data?.data.some(execution =>
+      //   execution.status === 'running' || execution.status === 'pending'
+      // )
+      // return hasActiveExecution ? 5000 : false
+      return false
     },
   })
 }
 
 // Get single execution by ID
-export function useExecution(executionId: string, includeLogs: boolean = false, logLimit: number = 100) {
+export function useExecution(
+  executionId: string,
+  includeLogs: boolean = false,
+  logLimit: number = 100
+) {
   return useQuery({
     queryKey: [EXECUTIONS_QUERY_KEY, executionId, { includeLogs, logLimit }],
-    queryFn: () => executionsApi.getExecution(executionId, includeLogs, logLimit),
+    queryFn: () =>
+      executionsApi.getExecution(executionId, includeLogs, logLimit),
     enabled: !!executionId,
     refetchInterval: (_data) => {
       // Auto-refetch every 3 seconds if execution is active
-      const execution = _data as Execution
-      const isActive = execution?.status === 'running' || execution?.status === 'pending'
-      return isActive ? 3000 : false
+      // const execution = _data as Execution
+      // const isActive =
+      //   execution?.status === 'running' || execution?.status === 'pending'
+      // return isActive ? 3000 : false
+      return false
     },
   })
 }
 
 // Get execution logs with infinite query for pagination
-export function useExecutionLogs(executionId: string, filters?: ExecutionLogFilters) {
+export function useExecutionLogs(
+  executionId: string,
+  filters?: ExecutionLogFilters
+) {
   return useInfiniteQuery({
     queryKey: [EXECUTION_LOGS_QUERY_KEY, executionId, filters],
-    queryFn: ({ pageParam = 1 }) => 
+    queryFn: ({ pageParam = 1 }) =>
       executionsApi.getExecutionLogs(executionId, {
         ...filters,
         page: pageParam,
@@ -65,7 +81,10 @@ export function useExecutionLogs(executionId: string, filters?: ExecutionLogFilt
 }
 
 // Get execution logs with standard query (for simpler cases)
-export function useExecutionLogsSimple(executionId: string, filters?: ExecutionLogFilters) {
+export function useExecutionLogsSimple(
+  executionId: string,
+  filters?: ExecutionLogFilters
+) {
   return useQuery({
     queryKey: [EXECUTION_LOGS_QUERY_KEY, executionId, filters],
     queryFn: () => executionsApi.getExecutionLogs(executionId, filters),
@@ -73,7 +92,7 @@ export function useExecutionLogsSimple(executionId: string, filters?: ExecutionL
     refetchInterval: (_data) => {
       // Auto-refetch every 2 seconds for logs when execution is active
       // This would typically be handled by WebSocket in production
-      return 2000
+      return false
     },
   })
 }
@@ -102,7 +121,7 @@ export function useCreateExecution() {
       queryClient.invalidateQueries({
         queryKey: [EXECUTIONS_QUERY_KEY, 'task', _variables.task_id],
       })
-      
+
       // Invalidate execution stats
       queryClient.invalidateQueries({
         queryKey: [EXECUTION_STATS_QUERY_KEY],
@@ -111,9 +130,11 @@ export function useCreateExecution() {
       toast.success('Execution started successfully')
     },
     onError: (error: unknown) => {
-      const errorMessage = error instanceof Error 
-        ? error.message 
-        : (error as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to start execution'
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : (error as { response?: { data?: { message?: string } } })?.response
+              ?.data?.message || 'Failed to start execution'
       toast.error(errorMessage)
     },
   })
@@ -124,28 +145,44 @@ export function useUpdateExecution() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ executionId, data }: { executionId: string; data: UpdateExecutionRequest }) =>
-      executionsApi.updateExecution(executionId, data),
+    mutationFn: ({
+      executionId,
+      data,
+    }: {
+      executionId: string
+      data: UpdateExecutionRequest
+    }) => executionsApi.updateExecution(executionId, data),
     onMutate: async ({ executionId, data }) => {
       // Cancel outgoing refetches
-      await queryClient.cancelQueries({ queryKey: [EXECUTIONS_QUERY_KEY, executionId] })
+      await queryClient.cancelQueries({
+        queryKey: [EXECUTIONS_QUERY_KEY, executionId],
+      })
 
       // Snapshot previous value
-      const previousExecution = queryClient.getQueryData([EXECUTIONS_QUERY_KEY, executionId])
+      const previousExecution = queryClient.getQueryData([
+        EXECUTIONS_QUERY_KEY,
+        executionId,
+      ])
 
       // Optimistically update
-      queryClient.setQueryData([EXECUTIONS_QUERY_KEY, executionId], (old: Execution) => ({
-        ...old,
-        ...data,
-        updated_at: new Date().toISOString(),
-      }))
+      queryClient.setQueryData(
+        [EXECUTIONS_QUERY_KEY, executionId],
+        (old: Execution) => ({
+          ...old,
+          ...data,
+          updated_at: new Date().toISOString(),
+        })
+      )
 
       return { previousExecution, executionId }
     },
     onSuccess: (updatedExecution, { executionId }) => {
       // Update the execution query
-      queryClient.setQueryData([EXECUTIONS_QUERY_KEY, executionId], updatedExecution)
-      
+      queryClient.setQueryData(
+        [EXECUTIONS_QUERY_KEY, executionId],
+        updatedExecution
+      )
+
       // Invalidate task executions list
       queryClient.invalidateQueries({
         queryKey: [EXECUTIONS_QUERY_KEY, 'task', updatedExecution.task_id],
@@ -166,9 +203,11 @@ export function useUpdateExecution() {
           context.previousExecution
         )
       }
-      const errorMessage = error instanceof Error 
-        ? error.message 
-        : (error as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to update execution'
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : (error as { response?: { data?: { message?: string } } })?.response
+              ?.data?.message || 'Failed to update execution'
       toast.error(errorMessage)
     },
   })
@@ -182,16 +221,19 @@ export function useDeleteExecution() {
     mutationFn: executionsApi.deleteExecution,
     onMutate: async (executionId) => {
       // Get the execution to know which task to invalidate
-      const execution = queryClient.getQueryData([EXECUTIONS_QUERY_KEY, executionId]) as Execution
-      
+      const execution = queryClient.getQueryData([
+        EXECUTIONS_QUERY_KEY,
+        executionId,
+      ]) as Execution
+
       // Optimistically remove from task executions
       if (execution) {
         queryClient.setQueryData(
           [EXECUTIONS_QUERY_KEY, 'task', execution.task_id],
           (old: ExecutionListResponse) => ({
             ...old,
-            data: old.data.filter(e => e.id !== executionId),
-            meta: { ...old.meta, total: old.meta.total - 1 }
+            data: old.data.filter((e) => e.id !== executionId),
+            meta: { ...old.meta, total: old.meta.total - 1 },
           })
         )
       }
@@ -200,9 +242,13 @@ export function useDeleteExecution() {
     },
     onSuccess: (_, executionId, context) => {
       // Remove from individual execution cache
-      queryClient.removeQueries({ queryKey: [EXECUTIONS_QUERY_KEY, executionId] })
-      queryClient.removeQueries({ queryKey: [EXECUTION_LOGS_QUERY_KEY, executionId] })
-      
+      queryClient.removeQueries({
+        queryKey: [EXECUTIONS_QUERY_KEY, executionId],
+      })
+      queryClient.removeQueries({
+        queryKey: [EXECUTION_LOGS_QUERY_KEY, executionId],
+      })
+
       // Invalidate task executions if we have the task ID
       if (context?.execution) {
         queryClient.invalidateQueries({
@@ -224,9 +270,11 @@ export function useDeleteExecution() {
           queryKey: [EXECUTIONS_QUERY_KEY, 'task', context.execution.task_id],
         })
       }
-      const errorMessage = error instanceof Error 
-        ? error.message 
-        : (error as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to delete execution'
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : (error as { response?: { data?: { message?: string } } })?.response
+              ?.data?.message || 'Failed to delete execution'
       toast.error(errorMessage)
     },
   })
@@ -244,7 +292,10 @@ export function useExecutionRealTime(executionId: string) {
       return executionsApi.subscribeToExecutionUpdates(
         executionId,
         (updatedExecution) => {
-          queryClient.setQueryData([EXECUTIONS_QUERY_KEY, executionId], updatedExecution)
+          queryClient.setQueryData(
+            [EXECUTIONS_QUERY_KEY, executionId],
+            updatedExecution
+          )
         },
         (_error) => {
           // console.error('WebSocket error:', error)
@@ -262,7 +313,7 @@ export function useExecutionRealTime(executionId: string) {
             (old: ExecutionLogListResponse) => ({
               ...old,
               data: [newLog, ...old.data],
-              meta: { ...old.meta, total: old.meta.total + 1 }
+              meta: { ...old.meta, total: old.meta.total + 1 },
             })
           )
         },
@@ -270,7 +321,7 @@ export function useExecutionRealTime(executionId: string) {
           // console.error('Log WebSocket error:', error)
         }
       )
-    }
+    },
   }
 }
 
@@ -278,26 +329,28 @@ export function useExecutionRealTime(executionId: string) {
 export function useActiveExecutions(taskId?: string) {
   return useQuery({
     queryKey: [EXECUTIONS_QUERY_KEY, 'active', taskId],
-    queryFn: () => executionsApi.getTaskExecutions(taskId || '', {
-      statuses: ['running', 'pending'],
-      page: 1,
-      page_size: 100,
-    }),
+    queryFn: () =>
+      executionsApi.getTaskExecutions(taskId || '', {
+        statuses: ['running', 'pending'],
+        page: 1,
+        page_size: 100,
+      }),
     enabled: !!taskId,
-    refetchInterval: 5000, // Check active executions every 5 seconds
+    refetchInterval: false, // Check active executions every 5 seconds
   })
 }
 
 export function useExecutionHistory(taskId: string, limit: number = 10) {
   return useQuery({
     queryKey: [EXECUTIONS_QUERY_KEY, 'history', taskId, limit],
-    queryFn: () => executionsApi.getTaskExecutions(taskId, {
-      statuses: ['completed', 'failed', 'cancelled'],
-      page: 1,
-      page_size: limit,
-      order_by: 'completed_at',
-      order_dir: 'desc',
-    }),
+    queryFn: () =>
+      executionsApi.getTaskExecutions(taskId, {
+        statuses: ['completed', 'failed', 'cancelled'],
+        page: 1,
+        page_size: limit,
+        order_by: 'completed_at',
+        order_dir: 'desc',
+      }),
     enabled: !!taskId,
   })
 }

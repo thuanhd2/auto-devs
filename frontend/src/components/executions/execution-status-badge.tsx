@@ -1,15 +1,15 @@
-import { Badge } from '@/components/ui/badge'
-import { cn } from '@/lib/utils'
 import type { ExecutionStatus } from '@/types/execution'
 import { EXECUTION_STATUS_COLORS } from '@/types/execution'
-import { 
-  Clock, 
-  Play, 
-  Pause, 
-  CheckCircle, 
-  XCircle, 
-  StopCircle 
+import {
+  Clock,
+  Play,
+  Pause,
+  CheckCircle,
+  XCircle,
+  StopCircle,
 } from 'lucide-react'
+import { cn } from '@/lib/utils'
+import { Badge } from '@/components/ui/badge'
 
 interface ExecutionStatusBadgeProps {
   status: ExecutionStatus
@@ -18,13 +18,16 @@ interface ExecutionStatusBadgeProps {
   className?: string
 }
 
-const statusIcons: Record<ExecutionStatus, React.ComponentType<{ className?: string }>> = {
-  pending: Clock,
-  running: Play,
-  paused: Pause,
-  completed: CheckCircle,
-  failed: XCircle,
-  cancelled: StopCircle,
+const statusIcons: Record<
+  ExecutionStatus,
+  React.ComponentType<{ className?: string }>
+> = {
+  PENDING: Clock,
+  RUNNING: Play,
+  PAUSED: Pause,
+  COMPLETED: CheckCircle,
+  FAILED: XCircle,
+  CANCELLED: StopCircle,
 }
 
 const sizeClasses = {
@@ -45,12 +48,13 @@ export function ExecutionStatusBadge({
   showIcon = true,
   className,
 }: ExecutionStatusBadgeProps) {
+  console.log('status', status)
   const Icon = statusIcons[status]
   const colorClasses = EXECUTION_STATUS_COLORS[status]
 
   return (
-    <Badge 
-      variant="secondary"
+    <Badge
+      variant='secondary'
       className={cn(
         'inline-flex items-center gap-1 font-medium',
         sizeClasses[size],
@@ -58,12 +62,8 @@ export function ExecutionStatusBadge({
         className
       )}
     >
-      {showIcon && (
-        <Icon className={cn(iconSizes[size])} />
-      )}
-      <span className="capitalize">
-        {status}
-      </span>
+      {showIcon && <Icon className={cn(iconSizes[size])} />}
+      <span className='capitalize'>{status}</span>
     </Badge>
   )
 }

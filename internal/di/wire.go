@@ -53,6 +53,7 @@ var ProviderSet = wire.NewSet(
 	ProvideProjectUsecase,
 	ProvideWorktreeUsecase,
 	ProvideTaskUsecase,
+	ProvideExecutionUsecase,
 )
 
 // InitializeApp builds the entire dependency tree
@@ -80,6 +81,7 @@ type App struct {
 	TaskUsecase         usecase.TaskUsecase
 	WorktreeUsecase     usecase.WorktreeUsecase
 	NotificationUsecase usecase.NotificationUsecase
+	ExecutionUsecase    usecase.ExecutionUsecase
 	// WebSocket Service
 	WebSocketService *websocket.Service
 	// AI Services
@@ -112,6 +114,7 @@ func NewApp(
 	taskUsecase usecase.TaskUsecase,
 	worktreeUsecase usecase.WorktreeUsecase,
 	notificationUsecase usecase.NotificationUsecase,
+	executionUsecase usecase.ExecutionUsecase,
 	wsService *websocket.Service,
 	cliManager *ai.CLIManager,
 	processManager *ai.ProcessManager,
@@ -138,6 +141,7 @@ func NewApp(
 		TaskUsecase:         taskUsecase,
 		WorktreeUsecase:     worktreeUsecase,
 		NotificationUsecase: notificationUsecase,
+		ExecutionUsecase:    executionUsecase,
 		WebSocketService:    wsService,
 		CLIManager:          cliManager,
 		ProcessManager:      processManager,
@@ -279,4 +283,8 @@ func ProvideJobProcessor(
 // ProvideWebSocketService provides a WebSocket service instance
 func ProvideWebSocketService(cfg *config.Config) *websocket.Service {
 	return websocket.NewService(&cfg.CentrifugeRedisBroker)
+}
+
+func ProvideExecutionUsecase(executionRepo repository.ExecutionRepository, executionLogRepo repository.ExecutionLogRepository, taskRepo repository.TaskRepository) usecase.ExecutionUsecase {
+	return usecase.NewExecutionUsecase(executionRepo, executionLogRepo, taskRepo)
 }

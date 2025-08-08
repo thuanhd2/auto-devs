@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 
 	"github.com/auto-devs/auto-devs/config"
@@ -16,6 +17,9 @@ import (
 )
 
 func main() {
+	savePidToFile()
+	defer removePidFromFile()
+
 	// Parse command line flags
 	var (
 		workerName = flag.String("worker", "default", "Worker name for identification")
@@ -88,4 +92,19 @@ func main() {
 	logger.Info("Shutting down job worker...")
 	server.Stop()
 	logger.Info("Job worker stopped")
+}
+
+var pidsFolder = "/private/var/folders/tv/531lt6yx3ss28h1b7bcpb1900000gn/T/autodevs"
+
+func savePidToFile() {
+	pid := os.Getpid()
+	pidFile := fmt.Sprintf("%s/worker_%d.pid", pidsFolder, pid)
+	// create the file
+	os.WriteFile(pidFile, []byte(strconv.Itoa(pid)), 0o644)
+}
+
+func removePidFromFile() {
+	pid := os.Getpid()
+	pidFile := fmt.Sprintf("%s/worker_%d.pid", pidsFolder, pid)
+	os.Remove(pidFile)
 }
