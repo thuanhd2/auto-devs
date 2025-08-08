@@ -66,7 +66,7 @@ export function TaskDetailSheet({
   return (
     <>
       <Sheet open={open} onOpenChange={onOpenChange}>
-        <SheetContent className='w-[600px] overflow-y-auto sm:w-[700px]'>
+        <SheetContent className='overflow-y-auto sm:w-[400px] sm:max-w-[400px] lg:w-[800px] lg:max-w-none'>
           <SheetHeader className='pb-4'>
             <div className='flex items-start justify-between gap-4'>
               <div className='flex-1'>

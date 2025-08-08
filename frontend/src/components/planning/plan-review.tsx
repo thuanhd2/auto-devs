@@ -76,8 +76,8 @@ export function PlanReview({
           Review the plan for this task and approve it for implementation.
         </CardDescription>
       </CardHeader>
-      <CardContent className='flex flex-col items-center justify-center py-8'>
-        <PlanPreview content={planContent} />
+      <CardContent className='flex flex-col items-center justify-center'>
+        <PlanPreview content={planContent} className='w-full' />
       </CardContent>
     </Card>
   )
