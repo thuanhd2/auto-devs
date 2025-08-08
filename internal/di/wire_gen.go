@@ -53,6 +53,7 @@ func InitializeApp() (*App, error) {
 	client := ProvideJobClient(configConfig)
 	jobClientInterface := ProvideJobClientAdapter(client)
 	taskUsecase := ProvideTaskUsecase(taskRepository, projectRepository, notificationUsecase, worktreeUsecase, jobClientInterface)
+	executionUsecase := ProvideExecutionUsecase(executionRepository, executionLogRepository, taskRepository)
 	service := ProvideWebSocketService(configConfig)
 	cliManager, err := ProvideCLIManager()
 	if err != nil {
@@ -66,7 +67,7 @@ func InitializeApp() (*App, error) {
 		return nil, err
 	}
 	processor := ProvideJobProcessor(taskUsecase, projectUsecase, worktreeUsecase, planningService, executionService, planRepository, executionRepository, executionLogRepository, service)
-	app := NewApp(configConfig, gormDB, projectRepository, taskRepository, planRepository, worktreeRepository, auditRepository, executionRepository, executionLogRepository, auditUsecase, projectUsecase, taskUsecase, worktreeUsecase, notificationUsecase, service, cliManager, processManager, executionService, planningService, gitManager, worktreeManager, client, jobClientInterface, processor)
+	app := NewApp(configConfig, gormDB, projectRepository, taskRepository, planRepository, worktreeRepository, auditRepository, executionRepository, executionLogRepository, auditUsecase, projectUsecase, taskUsecase, worktreeUsecase, notificationUsecase, executionUsecase, service, cliManager, processManager, executionService, planningService, gitManager, worktreeManager, client, jobClientInterface, processor)
 	return app, nil
 }
 
@@ -91,6 +92,7 @@ var ProviderSet = wire.NewSet(config.Load, ProvideGormDB, postgres.NewProjectRep
 	ProvideProjectUsecase,
 	ProvideWorktreeUsecase,
 	ProvideTaskUsecase,
+	ProvideExecutionUsecase,
 )
 
 // App represents the initialized application with all dependencies
@@ -109,6 +111,7 @@ type App struct {
 	TaskUsecase         usecase.TaskUsecase
 	WorktreeUsecase     usecase.WorktreeUsecase
 	NotificationUsecase usecase.NotificationUsecase
+	ExecutionUsecase    usecase.ExecutionUsecase
 	// WebSocket Service
 	WebSocketService *websocket.Service
 	// AI Services
@@ -141,6 +144,7 @@ func NewApp(
 	taskUsecase usecase.TaskUsecase,
 	worktreeUsecase usecase.WorktreeUsecase,
 	notificationUsecase usecase.NotificationUsecase,
+	executionUsecase usecase.ExecutionUsecase,
 	wsService *websocket.Service,
 	cliManager *ai.CLIManager,
 	processManager *ai.ProcessManager,
@@ -167,6 +171,7 @@ func NewApp(
 		TaskUsecase:         taskUsecase,
 		WorktreeUsecase:     worktreeUsecase,
 		NotificationUsecase: notificationUsecase,
+		ExecutionUsecase:    executionUsecase,
 		WebSocketService:    wsService,
 		CLIManager:          cliManager,
 		ProcessManager:      processManager,
@@ -308,4 +313,8 @@ func ProvideJobProcessor(
 // ProvideWebSocketService provides a WebSocket service instance
 func ProvideWebSocketService(cfg *config.Config) *websocket.Service {
 	return websocket.NewService(&cfg.CentrifugeRedisBroker)
+}
+
+func ProvideExecutionUsecase(executionRepo repository.ExecutionRepository, executionLogRepo repository.ExecutionLogRepository, taskRepo repository.TaskRepository) usecase.ExecutionUsecase {
+	return usecase.NewExecutionUsecase(executionRepo, executionLogRepo, taskRepo)
 }

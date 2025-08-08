@@ -11,10 +11,11 @@ import (
 )
 
 // SetupRoutes configures all API routes and middleware
-func SetupRoutes(router *gin.Engine, projectUsecase usecase.ProjectUsecase, taskUsecase usecase.TaskUsecase, db *database.GormDB, wsService *websocket.Service) {
+func SetupRoutes(router *gin.Engine, projectUsecase usecase.ProjectUsecase, taskUsecase usecase.TaskUsecase, executionUsecase usecase.ExecutionUsecase, db *database.GormDB, wsService *websocket.Service) {
 	// Initialize handlers
 	projectHandler := NewProjectHandlerWithWebSocket(projectUsecase, wsService)
 	taskHandler := NewTaskHandlerWithWebSocket(taskUsecase, wsService)
+	executionHandler := NewExecutionHandler(executionUsecase)
 	wsHandler := wsService.GetHandler()
 
 	// Global middleware
@@ -88,6 +89,20 @@ func SetupRoutes(router *gin.Engine, projectUsecase usecase.ProjectUsecase, task
 			// Planning workflow endpoints
 			tasks.POST("/:id/start-planning", taskHandler.StartPlanning)
 			tasks.POST("/:id/approve-plan", taskHandler.ApprovePlan)
+
+			// Execution endpoints for tasks
+			tasks.GET("/:id/executions", executionHandler.GetTaskExecutions)
+		}
+
+		// Execution routes
+		executions := v1.Group("/executions")
+		{
+			executions.POST("", executionHandler.CreateExecution)
+			executions.GET("/stats", executionHandler.GetExecutionStats)
+			executions.GET("/:id", executionHandler.GetExecutionByID)
+			executions.PUT("/:id", executionHandler.UpdateExecution)
+			executions.DELETE("/:id", executionHandler.DeleteExecution)
+			executions.GET("/:id/logs", executionHandler.GetExecutionLogs)
 		}
 	}
 }

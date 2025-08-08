@@ -1,0 +1,185 @@
+export type ExecutionStatus = 
+  | 'pending'
+  | 'running' 
+  | 'paused'
+  | 'completed'
+  | 'failed'
+  | 'cancelled'
+
+export type LogLevel = 
+  | 'debug'
+  | 'info'
+  | 'warn'
+  | 'error'
+
+export interface ExecutionResult {
+  output: string
+  files: string[]
+  metrics: Record<string, unknown>
+  duration: number // in nanoseconds
+}
+
+export interface Execution {
+  id: string
+  task_id: string
+  status: ExecutionStatus
+  started_at: string
+  completed_at?: string
+  error?: string
+  progress: number // 0.0 to 1.0
+  result?: ExecutionResult
+  duration?: number // in nanoseconds
+  created_at: string
+  updated_at: string
+}
+
+export interface ExecutionLog {
+  id: string
+  execution_id: string
+  process_id?: string
+  level: LogLevel
+  message: string
+  timestamp: string
+  source: string
+  metadata?: unknown
+  created_at: string
+}
+
+export interface ExecutionWithLogs extends Execution {
+  logs: ExecutionLog[]
+}
+
+export interface ExecutionStats {
+  total_executions: number
+  completed_executions: number
+  failed_executions: number
+  average_progress: number
+  average_duration: number
+  status_distribution: Record<ExecutionStatus, number>
+  recent_activity: Execution[]
+}
+
+export interface LogStats {
+  total_logs: number
+  logs_by_level: Record<LogLevel, number>
+  logs_by_source: Record<string, number>
+  error_count: number
+  warning_count: number
+  first_log_time?: string
+  last_log_time?: string
+  recent_error_logs: ExecutionLog[]
+  log_size_bytes: number
+}
+
+// Request types
+export interface CreateExecutionRequest {
+  task_id: string
+}
+
+export interface UpdateExecutionRequest {
+  status?: ExecutionStatus
+  progress?: number
+  error?: string
+}
+
+// Filter types
+export interface ExecutionFilters {
+  status?: ExecutionStatus
+  statuses?: ExecutionStatus[]
+  started_after?: string
+  started_before?: string
+  with_errors?: boolean
+  page?: number
+  page_size?: number
+  order_by?: 'started_at' | 'completed_at' | 'progress' | 'status'
+  order_dir?: 'asc' | 'desc'
+}
+
+export interface ExecutionLogFilters {
+  level?: LogLevel
+  levels?: LogLevel[]
+  source?: string
+  sources?: string[]
+  search?: string
+  time_after?: string
+  time_before?: string
+  page?: number
+  page_size?: number
+  order_by?: 'timestamp' | 'level' | 'source'
+  order_dir?: 'asc' | 'desc'
+}
+
+// Response types
+export interface ExecutionListResponse {
+  data: Execution[]
+  meta: {
+    page: number
+    page_size: number
+    total: number
+    total_pages: number
+  }
+}
+
+export interface ExecutionLogListResponse {
+  data: ExecutionLog[]
+  meta: {
+    page: number
+    page_size: number
+    total: number
+    total_pages: number
+  }
+}
+
+// UI-specific types
+export interface ExecutionStatusBadgeProps {
+  status: ExecutionStatus
+  size?: 'sm' | 'md' | 'lg'
+  showIcon?: boolean
+}
+
+export interface ExecutionProgressProps {
+  progress: number
+  status: ExecutionStatus
+  size?: 'sm' | 'md' | 'lg'
+  showPercentage?: boolean
+}
+
+export interface ExecutionDurationProps {
+  startedAt: string
+  completedAt?: string
+  showIcon?: boolean
+}
+
+// Utility types for sorting and filtering
+export const EXECUTION_STATUS_ORDER: Record<ExecutionStatus, number> = {
+  running: 1,
+  pending: 2,
+  paused: 3,
+  completed: 4,
+  failed: 5,
+  cancelled: 6,
+}
+
+export const LOG_LEVEL_ORDER: Record<LogLevel, number> = {
+  error: 1,
+  warn: 2,
+  info: 3,
+  debug: 4,
+}
+
+// Status colors for UI
+export const EXECUTION_STATUS_COLORS: Record<ExecutionStatus, string> = {
+  pending: 'bg-gray-100 text-gray-800',
+  running: 'bg-blue-100 text-blue-800',
+  paused: 'bg-yellow-100 text-yellow-800',
+  completed: 'bg-green-100 text-green-800',
+  failed: 'bg-red-100 text-red-800',
+  cancelled: 'bg-gray-100 text-gray-600',
+}
+
+export const LOG_LEVEL_COLORS: Record<LogLevel, string> = {
+  debug: 'bg-gray-100 text-gray-600',
+  info: 'bg-blue-100 text-blue-600',
+  warn: 'bg-yellow-100 text-yellow-600',
+  error: 'bg-red-100 text-red-600',
+}

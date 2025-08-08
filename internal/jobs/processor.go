@@ -17,17 +17,17 @@ import (
 
 // Processor handles background job processing
 type Processor struct {
-	taskUsecase        usecase.TaskUsecase
-	projectUsecase     usecase.ProjectUsecase
-	worktreeUsecase    usecase.WorktreeUsecase
-	planningService    *ai.PlanningService
-	executionService   *ai.ExecutionService
-	planRepo           repository.PlanRepository
-	executionRepo      repository.ExecutionRepository
-	executionLogRepo   repository.ExecutionLogRepository
-	wsService          *websocket.Service
-	redisBroker        *RedisBrokerClient // Redis broker client for cross-process messaging
-	logger             *slog.Logger
+	taskUsecase      usecase.TaskUsecase
+	projectUsecase   usecase.ProjectUsecase
+	worktreeUsecase  usecase.WorktreeUsecase
+	planningService  *ai.PlanningService
+	executionService *ai.ExecutionService
+	planRepo         repository.PlanRepository
+	executionRepo    repository.ExecutionRepository
+	executionLogRepo repository.ExecutionLogRepository
+	wsService        *websocket.Service
+	redisBroker      *RedisBrokerClient // Redis broker client for cross-process messaging
+	logger           *slog.Logger
 }
 
 // NewProcessor creates a new job processor
@@ -43,16 +43,16 @@ func NewProcessor(
 	wsService *websocket.Service,
 ) *Processor {
 	return &Processor{
-		taskUsecase:        taskUsecase,
-		projectUsecase:     projectUsecase,
-		worktreeUsecase:    worktreeUsecase,
-		planningService:    planningService,
-		executionService:   executionService,
-		planRepo:           planRepo,
-		executionRepo:      executionRepo,
-		executionLogRepo:   executionLogRepo,
-		wsService:          wsService,
-		logger:             slog.Default().With("component", "job-processor"),
+		taskUsecase:      taskUsecase,
+		projectUsecase:   projectUsecase,
+		worktreeUsecase:  worktreeUsecase,
+		planningService:  planningService,
+		executionService: executionService,
+		planRepo:         planRepo,
+		executionRepo:    executionRepo,
+		executionLogRepo: executionLogRepo,
+		wsService:        wsService,
+		logger:           slog.Default().With("component", "job-processor"),
 	}
 }
 
@@ -70,17 +70,17 @@ func NewProcessorWithRedisBroker(
 	redisBroker *RedisBrokerClient,
 ) *Processor {
 	return &Processor{
-		taskUsecase:        taskUsecase,
-		projectUsecase:     projectUsecase,
-		worktreeUsecase:    worktreeUsecase,
-		planningService:    planningService,
-		executionService:   executionService,
-		planRepo:           planRepo,
-		executionRepo:      executionRepo,
-		executionLogRepo:   executionLogRepo,
-		wsService:          wsService,
-		redisBroker:        redisBroker,
-		logger:             slog.Default().With("component", "job-processor"),
+		taskUsecase:      taskUsecase,
+		projectUsecase:   projectUsecase,
+		worktreeUsecase:  worktreeUsecase,
+		planningService:  planningService,
+		executionService: executionService,
+		planRepo:         planRepo,
+		executionRepo:    executionRepo,
+		executionLogRepo: executionLogRepo,
+		wsService:        wsService,
+		redisBroker:      redisBroker,
+		logger:           slog.Default().With("component", "job-processor"),
 	}
 }
 
@@ -291,6 +291,7 @@ func (p *Processor) ProcessTaskImplementation(ctx context.Context, task *asynq.T
 		Status:    entity.ExecutionStatus(execution.Status),
 		StartedAt: execution.StartedAt,
 		Progress:  execution.Progress,
+		Result:    "{}",
 	}
 
 	err = p.executionRepo.Create(ctx, dbExecution)
@@ -319,18 +320,18 @@ func (p *Processor) ProcessTaskImplementation(ctx context.Context, task *asynq.T
 			select {
 			case <-execution.GetContextDoneChannel():
 				completedAt := time.Now()
-				
+
 				// Check if execution completed successfully or failed
 				if execution.Error != "" {
 					p.logger.Error("AI execution failed", "task_id", payload.TaskID, "execution_id", execution.ID, "error", execution.Error)
 					_ = p.updateTaskStatus(context.Background(), payload.TaskID, entity.TaskStatusIMPLEMENTING) // Keep in implementing for retry
-					
+
 					// Mark execution as failed
 					err := p.executionRepo.MarkFailed(context.Background(), dbExecution.ID, completedAt, execution.Error)
 					if err != nil {
 						p.logger.Error("Failed to mark execution as failed", "error", err, "execution_id", dbExecution.ID)
 					}
-					
+
 					// Create failure log entry
 					failureLog := &entity.ExecutionLog{
 						ExecutionID: dbExecution.ID,
@@ -345,13 +346,13 @@ func (p *Processor) ProcessTaskImplementation(ctx context.Context, task *asynq.T
 				} else {
 					p.logger.Info("AI execution completed successfully", "task_id", payload.TaskID, "execution_id", execution.ID)
 					_ = p.updateTaskStatus(context.Background(), payload.TaskID, entity.TaskStatusCODEREVIEWING)
-					
+
 					// Update execution status to COMPLETED
 					err := p.executionRepo.MarkCompleted(context.Background(), dbExecution.ID, completedAt, nil)
 					if err != nil {
 						p.logger.Error("Failed to mark execution as completed", "error", err, "execution_id", dbExecution.ID)
 					}
-					
+
 					// Create completion log entry
 					completionLog := &entity.ExecutionLog{
 						ExecutionID: dbExecution.ID,

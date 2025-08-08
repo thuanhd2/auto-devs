@@ -15,6 +15,8 @@ import { TaskActions } from './task-actions'
 import { TaskEditForm } from './task-edit-form'
 import { TaskHistory } from './task-history'
 import { TaskMetadata } from './task-metadata'
+import { ExecutionList } from '../executions'
+import { useTaskExecutions } from '@/hooks/use-executions'
 
 interface TaskDetailSheetProps {
   open: boolean
@@ -111,10 +113,11 @@ export function TaskDetailSheet({
 
             <Separator />
 
-            {/* Tabs for Plan Review and Metadata */}
+            {/* Tabs for Plan Review, Executions, and Metadata */}
             <Tabs defaultValue="plan-review" className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
+              <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="plan-review">Plan Review</TabsTrigger>
+                <TabsTrigger value="executions">Executions</TabsTrigger>
                 <TabsTrigger value="metadata">Metadata</TabsTrigger>
               </TabsList>
               
@@ -124,6 +127,10 @@ export function TaskDetailSheet({
                   onPlanUpdate={onEdit}
                   onStatusChange={onStatusChange}
                 />
+              </TabsContent>
+              
+              <TabsContent value="executions" className="mt-4">
+                <TaskExecutions taskId={task.id} />
               </TabsContent>
               
               <TabsContent value="metadata" className="mt-4">
@@ -158,5 +165,71 @@ export function TaskDetailSheet({
         />
       )}
     </>
+  )
+}
+
+// TaskExecutions component for the executions tab
+function TaskExecutions({ taskId }: { taskId: string }) {
+  const { 
+    data: executionsData, 
+    isLoading, 
+    error, 
+    refetch 
+  } = useTaskExecutions(taskId, { 
+    page: 1, 
+    page_size: 20,
+    order_by: 'started_at',
+    order_dir: 'desc'
+  })
+
+  const executions = executionsData?.data || []
+
+  const handleCreateExecution = () => {
+    // This would typically open a dialog or trigger execution creation
+    // TODO: Implement execution creation dialog
+  }
+
+  const handleUpdateExecution = (executionId: string, updates: Record<string, unknown>) => {
+    // This would typically call the update mutation
+    // TODO: Implement execution update functionality
+    void executionId
+    void updates
+  }
+
+  const handleDeleteExecution = (executionId: string) => {
+    // This would typically call the delete mutation
+    // TODO: Implement execution deletion
+    void executionId
+  }
+
+  const handleViewLogs = (executionId: string) => {
+    // This would typically open a logs modal or navigate to logs page
+    // TODO: Implement logs modal
+    void executionId
+  }
+
+  const handleViewDetails = (executionId: string) => {
+    // This would typically open an execution details modal
+    // TODO: Implement execution details modal
+    void executionId
+  }
+
+  return (
+    <ExecutionList
+      executions={executions}
+      loading={isLoading}
+      error={error?.message}
+      onRefresh={refetch}
+      onCreateExecution={handleCreateExecution}
+      onUpdateExecution={handleUpdateExecution}
+      onDeleteExecution={handleDeleteExecution}
+      onViewLogs={handleViewLogs}
+      onViewDetails={handleViewDetails}
+      compact={true}
+      expandable={true}
+      showCreateButton={true}
+      showFilters={false}
+      className="max-h-96 overflow-y-auto"
+    />
   )
 }
