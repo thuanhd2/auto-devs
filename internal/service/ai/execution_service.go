@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/auto-devs/auto-devs/internal/entity"
 	"github.com/google/uuid"
 )
 
@@ -35,6 +36,9 @@ type Execution struct {
 	Progress    float64          `json:"progress"` // 0.0 to 1.0
 	Logs        []string         `json:"logs"`
 	Result      *ExecutionResult `json:"result,omitempty"`
+	Command     string           `json:"command"`
+	Input       string           `json:"input"`
+	WorkingDir  string           `json:"working_dir"`
 
 	// Internal fields
 	processID     string
@@ -88,21 +92,45 @@ func (es *ExecutionService) SetUpdateCallback(callback func(update ExecutionUpda
 	es.onUpdate = callback
 }
 
+type AiCodingCli interface {
+	GetPlanningCommand(context.Context, *entity.Task) (string, string, error)
+	GetImplementationCommand(context.Context, *entity.Task) (string, string, error)
+}
+
 // StartExecution starts a new AI execution
-func (es *ExecutionService) StartExecution(taskID string, plan Plan) (*Execution, error) {
+func (es *ExecutionService) StartExecution(task *entity.Task, cli AiCodingCli, isForPlanning bool) (*Execution, error) {
 	executionID := uuid.New().String()
 	ctx, cancel := context.WithCancel(context.Background())
 
+	var command, input string
+	var err error
+	if isForPlanning {
+		command, input, err = cli.GetPlanningCommand(ctx, task)
+	} else {
+		command, input, err = cli.GetImplementationCommand(ctx, task)
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	if task.WorktreePath == nil {
+		return nil, fmt.Errorf("worktree path is not set")
+	}
+
+	workingDir := *task.WorktreePath
+
 	execution := &Execution{
-		ID:        executionID,
-		TaskID:    taskID,
-		Plan:      plan,
-		Status:    ExecutionStatusPending,
-		StartedAt: time.Now(),
-		Progress:  0.0,
-		Logs:      make([]string, 0),
-		ctx:       ctx,
-		cancel:    cancel,
+		ID:         executionID,
+		TaskID:     task.ID.String(),
+		Status:     ExecutionStatusPending,
+		StartedAt:  time.Now(),
+		Progress:   0.0,
+		Logs:       make([]string, 0),
+		ctx:        ctx,
+		cancel:     cancel,
+		Command:    command,
+		Input:      input,
+		WorkingDir: workingDir,
 	}
 
 	es.mu.Lock()
@@ -243,14 +271,10 @@ func (es *ExecutionService) runExecution(execution *Execution) {
 	execution.mu.Unlock()
 
 	// Step 1: Prepare CLI command
-	command, err := es.buildCommandFromPlan(execution.Plan)
-	if err != nil {
-		es.handleExecutionError(execution, fmt.Sprintf("Failed to build command: %v", err))
-		return
-	}
+	command := execution.Command
 
 	// Step 2: Start process
-	process, err := es.processManager.SpawnProcess(command, "")
+	process, err := es.processManager.SpawnProcess(command, execution.WorkingDir, execution.Input)
 	if err != nil {
 		es.handleExecutionError(execution, fmt.Sprintf("Failed to start process: %v", err))
 		return

@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"time"
 
+	aiexecutors "github.com/auto-devs/auto-devs/internal/ai-executors"
 	"github.com/auto-devs/auto-devs/internal/entity"
 	"github.com/auto-devs/auto-devs/internal/repository"
 	"github.com/auto-devs/auto-devs/internal/service/ai"
@@ -140,62 +141,127 @@ func (p *Processor) ProcessTaskPlanning(ctx context.Context, task *asynq.Task) e
 		return fmt.Errorf("failed to get task: %w", err)
 	}
 
-	worktree, err := p.createWorktree(ctx, project, projectTask)
-	if err != nil {
-		// Update task status back to TODO on failure
-		_ = p.updateTaskStatus(ctx, payload.TaskID, entity.TaskStatusTODO)
-		p.logger.Error("Failed to create worktree",
-			"task_id", payload.TaskID, "error", err)
-		return fmt.Errorf("failed to create worktree: %w", err)
+	// DO not create worktree if it already exists
+	if projectTask.WorktreePath == nil || *projectTask.WorktreePath == "" {
+		worktree, err := p.createWorktree(ctx, project, projectTask)
+		if err != nil {
+			// Update task status back to TODO on failure
+			_ = p.updateTaskStatus(ctx, payload.TaskID, entity.TaskStatusTODO)
+			p.logger.Error("Failed to create worktree",
+				"task_id", payload.TaskID, "error", err)
+			return fmt.Errorf("failed to create worktree: %w", err)
+		}
+
+		p.logger.Info("Created worktree!!!!!!")
+
+		// Step 4: Update task with worktree path and branch name
+		err = p.updateTaskWithGitInfo(ctx, payload.TaskID, worktree.BranchName, worktree.WorktreePath)
+		if err != nil {
+			// Cleanup worktree on failure
+			_ = p.cleanupWorktree(ctx, worktree.WorktreePath)
+			_ = p.updateTaskStatus(ctx, payload.TaskID, entity.TaskStatusTODO)
+			p.logger.Error("Failed to update task with git info",
+				"task_id", payload.TaskID, "error", err)
+			return fmt.Errorf("failed to update task with git info: %w", err)
+		}
+
+		p.logger.Info("Updated task with git info!!!!!!")
 	}
-
-	p.logger.Info("Created worktree!!!!!!")
-
-	// Step 4: Update task with worktree path and branch name
-	err = p.updateTaskWithGitInfo(ctx, payload.TaskID, worktree.BranchName, worktree.WorktreePath)
-	if err != nil {
-		// Cleanup worktree on failure
-		_ = p.cleanupWorktree(ctx, worktree.WorktreePath)
-		_ = p.updateTaskStatus(ctx, payload.TaskID, entity.TaskStatusTODO)
-		p.logger.Error("Failed to update task with git info",
-			"task_id", payload.TaskID, "error", err)
-		return fmt.Errorf("failed to update task with git info: %w", err)
-	}
-
-	p.logger.Info("Updated task with git info!!!!!!")
-
 	// Step 5: Run AI executor for planning
-	planContent, err := p.runPlanningExecutor(ctx, payload.TaskID, worktree.WorktreePath)
+	// reload projectTask with new worktree path
+	projectTask, err = p.taskUsecase.GetByID(ctx, payload.TaskID)
 	if err != nil {
-		// On planning failure, revert task status but keep worktree for manual planning
-		revertErr := p.updateTaskStatus(ctx, payload.TaskID, entity.TaskStatusTODO)
-		if revertErr != nil {
-			p.logger.Error("Failed to revert task status after planning failure",
-				"task_id", payload.TaskID, "revert_error", revertErr)
-		}
-		p.logger.Error("Failed to run planning executor",
-			"task_id", payload.TaskID, "error", err)
-		return fmt.Errorf("failed to run planning executor: %w", err)
+		p.logger.Error("Failed to get task", "task_id", payload.TaskID, "error", err)
+		return fmt.Errorf("failed to get task: %w", err)
 	}
 
-	p.logger.Info("Ran planning executor!!!!!!")
-
-	// Step 6: Save plan and update status to PLAN_REVIEWING
-	err = p.savePlanAndUpdateStatus(ctx, payload.TaskID, planContent)
+	aiExecutor, err := p.getAiExecutor(ctx, projectTask)
 	if err != nil {
-		// If plan saving fails, revert task status to PLANNING so it can be retried
-		revertErr := p.updateTaskStatus(ctx, payload.TaskID, entity.TaskStatusPLANNING)
-		if revertErr != nil {
-			p.logger.Error("Failed to revert task status after plan save failure",
-				"task_id", payload.TaskID, "revert_error", revertErr)
-		}
-		p.logger.Error("Failed to save plan",
-			"task_id", payload.TaskID, "error", err)
-		return fmt.Errorf("failed to save plan: %w", err)
+		p.logger.Error("Failed to get AI executor", "task_id", payload.TaskID, "error", err)
+		return fmt.Errorf("failed to get AI executor: %w", err)
 	}
 
-	p.logger.Info("Task planning completed successfully", "task_id", payload.TaskID)
+	execution, err := p.executionService.StartExecution(projectTask, aiExecutor, true)
+	if err != nil {
+		p.logger.Error("Failed to start AI execution", "task_id", payload.TaskID, "error", err)
+		return fmt.Errorf("failed to start AI execution: %w", err)
+	}
+
+	// map execution to entity.Execution
+	dbExecution := &entity.Execution{
+		TaskID:    payload.TaskID,
+		Status:    entity.ExecutionStatus(execution.Status),
+		StartedAt: execution.StartedAt,
+		Progress:  execution.Progress,
+		Result:    "{}",
+	}
+
+	err = p.executionRepo.Create(ctx, dbExecution)
+	if err != nil {
+		p.logger.Error("Failed to save execution to database", "task_id", payload.TaskID, "execution_id", execution.ID, "error", err)
+		return fmt.Errorf("failed to save execution to database: %w", err)
+	}
+
+	stdoutChannel := make(chan string)
+	stderrChannel := make(chan string)
+	execution.RegisterStdoutChannel(stdoutChannel)
+	execution.RegisterStderrChannel(stderrChannel)
+
+	p.executionService.RunExecution(execution)
+
+	go func() {
+		for {
+			time.Sleep(1 * time.Second)
+			select {
+			case <-execution.GetContextDoneChannel():
+				backgroundCtx := context.Background()
+				completedAt := time.Now()
+
+				if execution.Error != "" {
+					p.logger.Error("AI Planning execution failed", "task_id", payload.TaskID, "execution_id", execution.ID, "error", execution.Error)
+					_ = p.updateTaskStatus(backgroundCtx, payload.TaskID, entity.TaskStatusTODO)
+					err := p.executionRepo.MarkFailed(backgroundCtx, dbExecution.ID, completedAt, execution.Error)
+					if err != nil {
+						p.logger.Error("Failed to mark execution as failed", "error", err, "execution_id", dbExecution.ID)
+					}
+				} else {
+					p.logger.Info("AI Planning execution completed successfully", "task_id", payload.TaskID, "execution_id", execution.ID)
+					_ = p.updateTaskStatus(backgroundCtx, payload.TaskID, entity.TaskStatusPLANREVIEWING)
+					err := p.executionRepo.MarkCompleted(backgroundCtx, dbExecution.ID, completedAt, nil)
+					if err != nil {
+						p.logger.Error("Failed to mark execution as completed", "error", err, "execution_id", dbExecution.ID)
+					}
+					result := execution.Result
+					p.logger.Info("AI Planning execution result", "task_id", payload.TaskID, "execution_id", execution.ID, "result", result)
+					if result != nil {
+						planContent := result.Output
+						err := p.savePlanAndUpdateStatus(backgroundCtx, payload.TaskID, planContent)
+						if err != nil {
+							p.logger.Error("Failed to save plan", "error", err, "execution_id", dbExecution.ID)
+						}
+					}
+				}
+				return
+			case stdout := <-stdoutChannel:
+				p.logger.Info("AI Planning execution stdout", "task_id", payload.TaskID, "execution_id", execution.ID, "stdout", stdout)
+			case stderr := <-stderrChannel:
+				p.logger.Error("AI Planning execution stderr", "task_id", payload.TaskID, "execution_id", execution.ID, "stderr", stderr)
+			}
+		}
+	}()
+
+	p.logger.Info("AI Planning execution started successfully",
+		"task_id", payload.TaskID,
+		"execution_id", execution.ID,
+		"execution_status", execution.Status)
+
+	p.logger.Info("Task planning is running background!", "task_id", payload.TaskID)
 	return nil
+}
+
+func (p *Processor) getAiExecutor(_ context.Context, _ *entity.Task) (ai.AiCodingCli, error) {
+	aiExecutor := aiexecutors.NewFakeCodeExecutor()
+	return aiExecutor, nil
 }
 
 func (p *Processor) ProcessTaskImplementation(ctx context.Context, task *asynq.Task) error {
@@ -273,11 +339,16 @@ func (p *Processor) ProcessTaskImplementation(ctx context.Context, task *asynq.T
 
 	p.logger.Info("Plan is approved and ready for implementation", "task_id", payload.TaskID, "plan_id", plan.ID)
 
-	// Step 5: Convert entity.Plan to ai.Plan format for the execution service
-	aiPlan := p.convertEntityPlanToAIPlan(plan)
+	// Step 5: inject plan to task
+	projectTask.Plans = []entity.Plan{*plan}
 
 	// Step 6: Start AI execution using executionService.StartExecution()
-	execution, err := p.executionService.StartExecution(payload.TaskID.String(), *aiPlan)
+	aiExecutor, err := p.getAiExecutor(ctx, projectTask)
+	if err != nil {
+		p.logger.Error("Failed to get AI executor", "task_id", payload.TaskID, "error", err)
+		return fmt.Errorf("failed to get AI executor: %w", err)
+	}
+	execution, err := p.executionService.StartExecution(projectTask, aiExecutor, false)
 	if err != nil {
 		// Revert task status on failure
 		_ = p.updateTaskStatus(ctx, payload.TaskID, entity.TaskStatusPLANREVIEWING)
@@ -316,7 +387,7 @@ func (p *Processor) ProcessTaskImplementation(ctx context.Context, task *asynq.T
 
 	go func() {
 		for {
-			// TODO:sleep 1 second to avoid busy loop
+			time.Sleep(1 * time.Second)
 			select {
 			case <-execution.GetContextDoneChannel():
 				completedAt := time.Now()
@@ -333,16 +404,16 @@ func (p *Processor) ProcessTaskImplementation(ctx context.Context, task *asynq.T
 					}
 
 					// Create failure log entry
-					failureLog := &entity.ExecutionLog{
-						ExecutionID: dbExecution.ID,
-						Level:       entity.LogLevelError,
-						Message:     fmt.Sprintf("Execution failed: %s", execution.Error),
-						Timestamp:   completedAt,
-						Source:      "system",
-					}
-					if err := p.executionLogRepo.Create(context.Background(), failureLog); err != nil {
-						p.logger.Error("Failed to save failure log", "error", err, "execution_id", dbExecution.ID)
-					}
+					// failureLog := &entity.ExecutionLog{
+					// 	ExecutionID: dbExecution.ID,
+					// 	Level:       entity.LogLevelError,
+					// 	Message:     fmt.Sprintf("Execution failed: %s", execution.Error),
+					// 	Timestamp:   completedAt,
+					// 	Source:      "system",
+					// }
+					// if err := p.executionLogRepo.Create(context.Background(), failureLog); err != nil {
+					// 	p.logger.Error("Failed to save failure log", "error", err, "execution_id", dbExecution.ID)
+					// }
 				} else {
 					p.logger.Info("AI execution completed successfully", "task_id", payload.TaskID, "execution_id", execution.ID)
 					_ = p.updateTaskStatus(context.Background(), payload.TaskID, entity.TaskStatusCODEREVIEWING)
@@ -353,45 +424,45 @@ func (p *Processor) ProcessTaskImplementation(ctx context.Context, task *asynq.T
 						p.logger.Error("Failed to mark execution as completed", "error", err, "execution_id", dbExecution.ID)
 					}
 
-					// Create completion log entry
-					completionLog := &entity.ExecutionLog{
-						ExecutionID: dbExecution.ID,
-						Level:       entity.LogLevelInfo,
-						Message:     "Execution completed successfully",
-						Timestamp:   completedAt,
-						Source:      "system",
-					}
-					if err := p.executionLogRepo.Create(context.Background(), completionLog); err != nil {
-						p.logger.Error("Failed to save completion log", "error", err, "execution_id", dbExecution.ID)
-					}
+					// // Create completion log entry
+					// completionLog := &entity.ExecutionLog{
+					// 	ExecutionID: dbExecution.ID,
+					// 	Level:       entity.LogLevelInfo,
+					// 	Message:     "Execution completed successfully",
+					// 	Timestamp:   completedAt,
+					// 	Source:      "system",
+					// }
+					// if err := p.executionLogRepo.Create(context.Background(), completionLog); err != nil {
+					// 	p.logger.Error("Failed to save completion log", "error", err, "execution_id", dbExecution.ID)
+					// }
 				}
 				return
 			case stdout := <-stdoutChannel:
 				p.logger.Info("AI execution stdout", "task_id", payload.TaskID, "execution_id", execution.ID, "stdout", stdout)
 				// Save stdout to execution database
-				stdoutLog := &entity.ExecutionLog{
-					ExecutionID: dbExecution.ID,
-					Level:       entity.LogLevelInfo,
-					Message:     stdout,
-					Timestamp:   time.Now(),
-					Source:      "stdout",
-				}
-				if err := p.executionLogRepo.Create(context.Background(), stdoutLog); err != nil {
-					p.logger.Error("Failed to save stdout log", "error", err, "execution_id", dbExecution.ID)
-				}
+				// stdoutLog := &entity.ExecutionLog{
+				// 	ExecutionID: dbExecution.ID,
+				// 	Level:       entity.LogLevelInfo,
+				// 	Message:     stdout,
+				// 	Timestamp:   time.Now(),
+				// 	Source:      "stdout",
+				// }
+				// if err := p.executionLogRepo.Create(context.Background(), stdoutLog); err != nil {
+				// 	p.logger.Error("Failed to save stdout log", "error", err, "execution_id", dbExecution.ID)
+				// }
 			case stderr := <-stderrChannel:
 				p.logger.Error("AI execution stderr", "task_id", payload.TaskID, "execution_id", execution.ID, "stderr", stderr)
 				// Save stderr to execution database
-				stderrLog := &entity.ExecutionLog{
-					ExecutionID: dbExecution.ID,
-					Level:       entity.LogLevelError,
-					Message:     stderr,
-					Timestamp:   time.Now(),
-					Source:      "stderr",
-				}
-				if err := p.executionLogRepo.Create(context.Background(), stderrLog); err != nil {
-					p.logger.Error("Failed to save stderr log", "error", err, "execution_id", dbExecution.ID)
-				}
+				// stderrLog := &entity.ExecutionLog{
+				// 	ExecutionID: dbExecution.ID,
+				// 	Level:       entity.LogLevelError,
+				// 	Message:     stderr,
+				// 	Timestamp:   time.Now(),
+				// 	Source:      "stderr",
+				// }
+				// if err := p.executionLogRepo.Create(context.Background(), stderrLog); err != nil {
+				// 	p.logger.Error("Failed to save stderr log", "error", err, "execution_id", dbExecution.ID)
+				// }
 			}
 		}
 	}()
@@ -585,36 +656,6 @@ func (p *Processor) cleanupWorktree(ctx context.Context, worktreePath string) er
 	// TODO: Implement actual worktree cleanup using git commands
 	p.logger.Warn("Worktree cleanup not implemented yet", "path", worktreePath)
 	return nil
-}
-
-// runPlanningExecutor runs the AI executor for planning
-func (p *Processor) runPlanningExecutor(ctx context.Context, taskID uuid.UUID, worktreePath string) (string, error) {
-	p.logger.Info("Running planning executor", "task_id", taskID, "worktree_path", worktreePath)
-
-	// Fetch the task from database
-	task, err := p.taskUsecase.GetByID(ctx, taskID)
-	if err != nil {
-		p.logger.Error("Failed to get task for planning", "task_id", taskID, "error", err)
-		return "", fmt.Errorf("failed to get task: %w", err)
-	}
-
-	p.logger.Info("Retrieved task for planning", "task_id", taskID, "title", task.Title)
-
-	// Use PlanningService to generate a structured plan
-	aiPlan, err := p.planningService.GeneratePlan(*task)
-	if err != nil {
-		p.logger.Error("Failed to generate AI plan", "task_id", taskID, "error", err)
-		return "", fmt.Errorf("failed to generate AI plan: %w", err)
-	}
-
-	p.logger.Info("Generated AI plan", "task_id", taskID, "plan_id", aiPlan.ID)
-
-	// Convert the plan to markdown using the service method
-	planMarkdown := p.planningService.GetPlanAsMarkdown(aiPlan)
-
-	p.logger.Info("Converted plan to markdown", "task_id", taskID, "content_length", len(planMarkdown))
-
-	return planMarkdown, nil
 }
 
 // savePlanAndUpdateStatus saves the generated plan and updates task status

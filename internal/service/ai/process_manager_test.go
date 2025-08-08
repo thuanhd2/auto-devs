@@ -19,7 +19,7 @@ func TestProcessManager_SpawnProcess(t *testing.T) {
 
 	// Test spawning a simple command
 	command := "echo 'Hello World'"
-	process, err := pm.SpawnProcess(command, tempDir)
+	process, err := pm.SpawnProcess(command, tempDir, "")
 	if err != nil {
 		t.Fatalf("Failed to spawn process: %v", err)
 	}
@@ -73,7 +73,7 @@ func TestProcessManager_GetProcess(t *testing.T) {
 	}
 	defer os.RemoveAll(tempDir)
 
-	process, err := pm.SpawnProcess("echo 'test'", tempDir)
+	process, err := pm.SpawnProcess("echo 'test'", tempDir, "")
 	if err != nil {
 		t.Fatalf("Failed to spawn process: %v", err)
 	}
@@ -105,7 +105,7 @@ func TestProcessManager_TerminateProcess(t *testing.T) {
 	defer os.RemoveAll(tempDir)
 
 	// Spawn a long-running process
-	process, err := pm.SpawnProcess("sleep 10", tempDir)
+	process, err := pm.SpawnProcess("sleep 10", tempDir, "")
 	if err != nil {
 		t.Fatalf("Failed to spawn process: %v", err)
 	}
@@ -138,7 +138,7 @@ func TestProcessManager_KillProcess(t *testing.T) {
 	defer os.RemoveAll(tempDir)
 
 	// Spawn a long-running process
-	process, err := pm.SpawnProcess("sleep 10", tempDir)
+	process, err := pm.SpawnProcess("sleep 10", tempDir, "")
 	if err != nil {
 		t.Fatalf("Failed to spawn process: %v", err)
 	}
@@ -172,7 +172,7 @@ func TestProcess_GetOutput(t *testing.T) {
 	defer os.RemoveAll(tempDir)
 
 	// Spawn a process that produces output
-	process, err := pm.SpawnProcess("echo 'stdout message' && echo 'stderr message' >&2", tempDir)
+	process, err := pm.SpawnProcess("echo 'stdout message' && echo 'stderr message' >&2", tempDir, "")
 	if err != nil {
 		t.Fatalf("Failed to spawn process: %v", err)
 	}
@@ -205,7 +205,7 @@ func TestProcess_GetDuration(t *testing.T) {
 	}
 	defer os.RemoveAll(tempDir)
 
-	process, err := pm.SpawnProcess("echo 'test'", tempDir)
+	process, err := pm.SpawnProcess("echo 'test'", tempDir, "")
 	if err != nil {
 		t.Fatalf("Failed to spawn process: %v", err)
 	}
@@ -233,7 +233,7 @@ func TestProcessManager_EnvironmentVariables(t *testing.T) {
 	defer os.RemoveAll(tempDir)
 
 	// Spawn a process that checks environment variables
-	process, err := pm.SpawnProcess("echo $AI_PROCESS_ID && echo $AI_WORK_DIR", tempDir)
+	process, err := pm.SpawnProcess("echo $AI_PROCESS_ID && echo $AI_WORK_DIR", tempDir, "")
 	if err != nil {
 		t.Fatalf("Failed to spawn process: %v", err)
 	}
@@ -272,7 +272,7 @@ func TestProcessManager_WorkingDirectory(t *testing.T) {
 	}
 
 	// Spawn a process that reads the file
-	process, err := pm.SpawnProcess("cat test.txt", tempDir)
+	process, err := pm.SpawnProcess("cat test.txt", tempDir, "")
 	if err != nil {
 		t.Fatalf("Failed to spawn process: %v", err)
 	}

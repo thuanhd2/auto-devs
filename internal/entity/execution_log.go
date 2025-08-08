@@ -31,17 +31,17 @@ func (ll LogLevel) IsValid() bool {
 type ExecutionLog struct {
 	ID          uuid.UUID `json:"id" gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
 	ExecutionID uuid.UUID `json:"execution_id" gorm:"type:uuid;not null;index"`
-	ProcessID   *uuid.UUID `json:"process_id,omitempty" gorm:"type:uuid;index"`
-	Level       LogLevel  `json:"level" gorm:"type:varchar(10);not null;index"`
-	Message     string    `json:"message" gorm:"type:text;not null"`
-	Timestamp   time.Time `json:"timestamp" gorm:"not null;index"`
-	Source      string    `json:"source" gorm:"type:varchar(50)"` // stdout, stderr, system, etc.
-	Metadata    string    `json:"metadata,omitempty" gorm:"type:jsonb"` // Additional metadata as JSON
-	CreatedAt   time.Time `json:"created_at" gorm:"autoCreateTime"`
+	// ProcessID   *uuid.UUID `json:"process_id,omitempty" gorm:"type:uuid;index"`
+	Level     LogLevel  `json:"level" gorm:"type:varchar(10);not null;index"`
+	Message   string    `json:"message" gorm:"type:text;not null"`
+	Timestamp time.Time `json:"timestamp" gorm:"not null;index"`
+	Source    string    `json:"source" gorm:"type:varchar(50)"`       // stdout, stderr, system, etc.
+	Metadata  string    `json:"metadata,omitempty" gorm:"type:jsonb"` // Additional metadata as JSON
+	CreatedAt time.Time `json:"created_at" gorm:"autoCreateTime"`
 
 	// Relationships
 	Execution *Execution `json:"execution,omitempty" gorm:"foreignKey:ExecutionID;references:ID"`
-	Process   *Process   `json:"process,omitempty" gorm:"foreignKey:ProcessID;references:ID"`
+	// Process   *Process   `json:"process,omitempty" gorm:"foreignKey:ProcessID;references:ID"`
 }
 
 // TableName returns the table name for GORM

@@ -1,9 +1,14 @@
 package ai
 
 import (
+	"context"
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
+	"github.com/auto-devs/auto-devs/internal/entity"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -22,6 +27,33 @@ func TestNewExecutionService(t *testing.T) {
 	assert.NotNil(t, es.executions)
 }
 
+type FakeAiCodingCli struct{}
+
+func (f *FakeAiCodingCli) GetPlanningCommand(ctx context.Context, task *entity.Task) (string, string, error) {
+	projectPath, err := os.Getwd()
+	if err != nil {
+		return "", "", err
+	}
+	projectRootPath := filepath.Join(projectPath, "../../../")
+	fakeCliPath := filepath.Join(projectRootPath, "fake-cli", "fake.sh")
+
+	return fakeCliPath, "hello world", nil
+}
+
+func (f *FakeAiCodingCli) GetImplementationCommand(ctx context.Context, task *entity.Task) (string, string, error) {
+	projectPath, err := os.Getwd()
+	if err != nil {
+		return "", "", err
+	}
+	projectRootPath := filepath.Join(projectPath, "../../../")
+	fakeCliPath := filepath.Join(projectRootPath, "fake-cli", "fake.sh")
+	return fakeCliPath, "hello world", nil
+}
+
+func NewFakeAiCodingCli() AiCodingCli {
+	return &FakeAiCodingCli{}
+}
+
 func TestExecutionService_StartExecution(t *testing.T) {
 	cliManager, err := NewCLIManager(DefaultCLIConfig())
 	require.NoError(t, err)
@@ -29,20 +61,15 @@ func TestExecutionService_StartExecution(t *testing.T) {
 	processManager := NewProcessManager()
 	es := NewExecutionService(cliManager, processManager)
 
-	plan := Plan{
-		ID:          "test-plan-1",
-		TaskID:      "test-task-1",
-		Description: "Test plan",
-		Steps:       []PlanStep{},
-		Context:     map[string]string{},
-		CreatedAt:   time.Now(),
+	task := entity.Task{
+		ID: uuid.New(),
 	}
 
-	execution, err := es.StartExecution("test-task-1", plan)
+	execution, err := es.StartExecution(&task, NewFakeAiCodingCli(), true)
 	require.NoError(t, err)
 
 	assert.NotNil(t, execution)
-	assert.Equal(t, "test-task-1", execution.TaskID)
+	assert.Equal(t, task.ID.String(), execution.TaskID)
 	assert.Equal(t, ExecutionStatusPending, execution.Status)
 	assert.Equal(t, 0.0, execution.Progress)
 	assert.NotEmpty(t, execution.ID)
@@ -77,16 +104,11 @@ func TestExecutionService_CancelExecution(t *testing.T) {
 	processManager := NewProcessManager()
 	es := NewExecutionService(cliManager, processManager)
 
-	plan := Plan{
-		ID:          "test-plan-2",
-		TaskID:      "test-task-2",
-		Description: "Test plan for cancellation",
-		Steps:       []PlanStep{},
-		Context:     map[string]string{},
-		CreatedAt:   time.Now(),
+	task := entity.Task{
+		ID: uuid.New(),
 	}
 
-	execution, err := es.StartExecution("test-task-2", plan)
+	execution, err := es.StartExecution(&task, NewFakeAiCodingCli(), true)
 	require.NoError(t, err)
 
 	// Wait a bit for execution to start
@@ -110,16 +132,11 @@ func TestExecutionService_PauseResumeExecution(t *testing.T) {
 	processManager := NewProcessManager()
 	es := NewExecutionService(cliManager, processManager)
 
-	plan := Plan{
-		ID:          "test-plan-3",
-		TaskID:      "test-task-3",
-		Description: "Test plan for pause/resume",
-		Steps:       []PlanStep{},
-		Context:     map[string]string{},
-		CreatedAt:   time.Now(),
+	task := entity.Task{
+		ID: uuid.New(),
 	}
 
-	execution, err := es.StartExecution("test-task-3", plan)
+	execution, err := es.StartExecution(&task, NewFakeAiCodingCli(), true)
 	require.NoError(t, err)
 
 	// Wait a bit for execution to start
@@ -150,28 +167,17 @@ func TestExecutionService_ListExecutions(t *testing.T) {
 	es := NewExecutionService(cliManager, processManager)
 
 	// Start multiple executions
-	plan1 := Plan{
-		ID:          "test-plan-4",
-		TaskID:      "test-task-4",
-		Description: "Test plan 1",
-		Steps:       []PlanStep{},
-		Context:     map[string]string{},
-		CreatedAt:   time.Now(),
+	task1 := entity.Task{
+		ID: uuid.New(),
+	}
+	task2 := entity.Task{
+		ID: uuid.New(),
 	}
 
-	plan2 := Plan{
-		ID:          "test-plan-5",
-		TaskID:      "test-task-5",
-		Description: "Test plan 2",
-		Steps:       []PlanStep{},
-		Context:     map[string]string{},
-		CreatedAt:   time.Now(),
-	}
-
-	execution1, err := es.StartExecution("test-task-4", plan1)
+	execution1, err := es.StartExecution(&task1, NewFakeAiCodingCli(), true)
 	require.NoError(t, err)
 
-	execution2, err := es.StartExecution("test-task-5", plan2)
+	execution2, err := es.StartExecution(&task2, NewFakeAiCodingCli(), true)
 	require.NoError(t, err)
 
 	// Wait a bit for executions to start
@@ -204,16 +210,11 @@ func TestExecutionService_RealTimeUpdates(t *testing.T) {
 		updates = append(updates, update)
 	})
 
-	plan := Plan{
-		ID:          "test-plan-6",
-		TaskID:      "test-task-6",
-		Description: "Test plan for real-time updates",
-		Steps:       []PlanStep{},
-		Context:     map[string]string{},
-		CreatedAt:   time.Now(),
+	task := entity.Task{
+		ID: uuid.New(),
 	}
 
-	execution, err := es.StartExecution("test-task-6", plan)
+	execution, err := es.StartExecution(&task, NewFakeAiCodingCli(), true)
 	require.NoError(t, err)
 
 	// Wait a bit for updates to be sent

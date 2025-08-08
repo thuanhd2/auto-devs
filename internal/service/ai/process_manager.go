@@ -4,8 +4,10 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"os/exec"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
@@ -58,7 +60,8 @@ func NewProcessManager() *ProcessManager {
 }
 
 // SpawnProcess creates and starts a new AI execution process
-func (pm *ProcessManager) SpawnProcess(command string, workDir string) (*Process, error) {
+func (pm *ProcessManager) SpawnProcess(command string, workDir string, input string) (*Process, error) {
+	log.Println("Spawning process", command, workDir, input)
 	// Generate unique process ID
 	processID := generateProcessID()
 
@@ -78,6 +81,7 @@ func (pm *ProcessManager) SpawnProcess(command string, workDir string) (*Process
 
 	// Parse command and arguments
 	cmd := exec.CommandContext(ctx, "sh", "-c", command)
+	cmd.Stdin = strings.NewReader(input)
 	cmd.Dir = workDir
 
 	// Setup environment variables

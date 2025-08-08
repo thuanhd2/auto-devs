@@ -327,12 +327,12 @@ func (u *ExecutionUsecaseImpl) AddExecutionLog(ctx context.Context, req AddExecu
 
 	log := &entity.ExecutionLog{
 		ExecutionID: req.ExecutionID,
-		ProcessID:   req.ProcessID,
-		Level:       req.Level,
-		Message:     req.Message,
-		Source:      req.Source,
-		Metadata:    req.Metadata,
-		Timestamp:   timestamp,
+		// ProcessID:   req.ProcessID,
+		Level:     req.Level,
+		Message:   req.Message,
+		Source:    req.Source,
+		Metadata:  req.Metadata,
+		Timestamp: timestamp,
 	}
 
 	if err := u.executionLogRepo.Create(ctx, log); err != nil {
@@ -353,12 +353,12 @@ func (u *ExecutionUsecaseImpl) BatchAddLogs(ctx context.Context, logReqs []AddEx
 
 		logs[i] = &entity.ExecutionLog{
 			ExecutionID: req.ExecutionID,
-			ProcessID:   req.ProcessID,
-			Level:       req.Level,
-			Message:     req.Message,
-			Source:      req.Source,
-			Metadata:    req.Metadata,
-			Timestamp:   timestamp,
+			// ProcessID:   req.ProcessID,
+			Level:     req.Level,
+			Message:   req.Message,
+			Source:    req.Source,
+			Metadata:  req.Metadata,
+			Timestamp: timestamp,
 		}
 	}
 

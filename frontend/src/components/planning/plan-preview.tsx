@@ -274,10 +274,6 @@ export function PlanPreview({
       {/* Content */}
       <div
         className={`prose prose-sm max-w-none ${printFriendly ? 'print:prose-print' : ''}`}
-        style={{
-          maxHeight: '300px',
-          overflowY: 'auto',
-        }}
       >
         <div
           className='leading-relaxed'

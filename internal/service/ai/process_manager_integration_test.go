@@ -30,7 +30,7 @@ func TestProcessManagerIntegration(t *testing.T) {
 				defer wg.Done()
 
 				command := fmt.Sprintf("echo 'Process %d' && sleep 0.1", index)
-				process, err := pm.SpawnProcess(command, tempDir)
+				process, err := pm.SpawnProcess(command, tempDir, "")
 				if err != nil {
 					t.Errorf("Failed to spawn process %d: %v", index, err)
 					return
@@ -70,7 +70,7 @@ func TestProcessManagerIntegration(t *testing.T) {
 
 		// Spawn process that reads and processes the file
 		command := "cat input.txt | tr '[:lower:]' '[:upper:]' > output.txt && cat output.txt"
-		process, err := pm.SpawnProcess(command, tempDir)
+		process, err := pm.SpawnProcess(command, tempDir, "")
 		if err != nil {
 			t.Fatalf("Failed to spawn process: %v", err)
 		}
@@ -108,7 +108,7 @@ echo "Custom Var: $CUSTOM_TEST_VAR"
 		// Set custom environment variable
 		os.Setenv("CUSTOM_TEST_VAR", "test_value")
 
-		process, err := pm.SpawnProcess("./env_test.sh", tempDir)
+		process, err := pm.SpawnProcess("./env_test.sh", tempDir, "")
 		if err != nil {
 			t.Fatalf("Failed to spawn process: %v", err)
 		}
@@ -135,7 +135,7 @@ echo "Custom Var: $CUSTOM_TEST_VAR"
 	// Test process termination and cleanup
 	t.Run("ProcessTerminationAndCleanup", func(t *testing.T) {
 		// Spawn a long-running process
-		process, err := pm.SpawnProcess("sleep 5", tempDir)
+		process, err := pm.SpawnProcess("sleep 5", tempDir, "")
 		if err != nil {
 			t.Fatalf("Failed to spawn process: %v", err)
 		}
@@ -189,7 +189,7 @@ echo "Custom Var: $CUSTOM_TEST_VAR"
 	// Test error handling
 	t.Run("ErrorHandling", func(t *testing.T) {
 		// Test with non-existent command
-		process, err := pm.SpawnProcess("nonexistent_command_12345", tempDir)
+		process, err := pm.SpawnProcess("nonexistent_command_12345", tempDir, "")
 		if err != nil {
 			t.Fatalf("Failed to spawn process: %v", err)
 		}
@@ -206,7 +206,7 @@ echo "Custom Var: $CUSTOM_TEST_VAR"
 		}
 
 		// Test with invalid working directory
-		process2, err := pm.SpawnProcess("echo 'test'", "/nonexistent/directory/12345")
+		process2, err := pm.SpawnProcess("echo 'test'", "/nonexistent/directory/12345", "")
 		if err != nil {
 			// This is expected behavior - process should fail to start
 			t.Logf("Process failed to start as expected: %v", err)
@@ -225,7 +225,7 @@ echo "Custom Var: $CUSTOM_TEST_VAR"
 		// Spawn multiple processes
 		var processes []*Process
 		for i := 0; i < 3; i++ {
-			process, err := pm.SpawnProcess("echo 'test'", tempDir)
+			process, err := pm.SpawnProcess("echo 'test'", tempDir, "")
 			if err != nil {
 				t.Fatalf("Failed to spawn process %d: %v", i, err)
 			}
@@ -270,7 +270,7 @@ func TestProcessManagerStress(t *testing.T) {
 			go func(index int) {
 				defer wg.Done()
 
-				process, err := pm.SpawnProcess("echo 'test'", tempDir)
+				process, err := pm.SpawnProcess("echo 'test'", tempDir, "")
 				if err != nil {
 					t.Errorf("Failed to spawn process %d: %v", index, err)
 					return
@@ -305,7 +305,7 @@ func TestProcessManagerStress(t *testing.T) {
 				defer wg.Done()
 
 				// Spawn process
-				process, err := pm.SpawnProcess("echo 'test'", tempDir)
+				process, err := pm.SpawnProcess("echo 'test'", tempDir, "")
 				if err != nil {
 					t.Errorf("Failed to spawn process %d: %v", index, err)
 					return
@@ -349,7 +349,7 @@ func TestProcessManagerEdgeCases(t *testing.T) {
 
 	// Test empty command
 	t.Run("EmptyCommand", func(t *testing.T) {
-		process, err := pm.SpawnProcess("", tempDir)
+		process, err := pm.SpawnProcess("", tempDir, "")
 		if err != nil {
 			t.Fatalf("Failed to spawn process: %v", err)
 		}
@@ -366,7 +366,7 @@ func TestProcessManagerEdgeCases(t *testing.T) {
 	// Test very long command
 	t.Run("VeryLongCommand", func(t *testing.T) {
 		longCommand := "echo 'test' && echo 'long command test'"
-		process, err := pm.SpawnProcess(longCommand, tempDir)
+		process, err := pm.SpawnProcess(longCommand, tempDir, "")
 		if err != nil {
 			t.Fatalf("Failed to spawn process: %v", err)
 		}
@@ -380,7 +380,7 @@ func TestProcessManagerEdgeCases(t *testing.T) {
 
 	// Test terminating already terminated process
 	t.Run("TerminateTerminatedProcess", func(t *testing.T) {
-		process, err := pm.SpawnProcess("echo 'test'", tempDir)
+		process, err := pm.SpawnProcess("echo 'test'", tempDir, "")
 		if err != nil {
 			t.Fatalf("Failed to spawn process: %v", err)
 		}
@@ -397,7 +397,7 @@ func TestProcessManagerEdgeCases(t *testing.T) {
 
 	// Test killing already killed process
 	t.Run("KillKilledProcess", func(t *testing.T) {
-		process, err := pm.SpawnProcess("sleep 10", tempDir)
+		process, err := pm.SpawnProcess("sleep 10", tempDir, "")
 		if err != nil {
 			t.Fatalf("Failed to spawn process: %v", err)
 		}
