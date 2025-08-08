@@ -12,7 +12,11 @@ import {
   XCircle,
   Trash2,
 } from 'lucide-react'
-import { useProject, useProjectStatistics, useDeleteProject } from '@/hooks/use-projects'
+import {
+  useProject,
+  useProjectStatistics,
+  useDeleteProject,
+} from '@/hooks/use-projects'
 import { useTasks } from '@/hooks/use-tasks'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -38,12 +42,12 @@ import { Main } from '@/components/layout/main'
 import { RealTimeNotifications } from '@/components/notifications/real-time-notifications'
 import { ProfileDropdown } from '@/components/profile-dropdown'
 import { Search as SearchComponent } from '@/components/search'
+import { SimpleConfirmDialog } from '@/components/simple-confirm-dialog'
 import {
   RealTimeProjectStats,
   CompactProjectStats,
 } from '@/components/stats/real-time-project-stats'
 import { ThemeSwitch } from '@/components/theme-switch'
-import { SimpleConfirmDialog } from '@/components/simple-confirm-dialog'
 
 const statusConfig = {
   TODO: { label: 'To Do', icon: Clock, color: 'bg-slate-500' },
@@ -176,12 +180,12 @@ export function ProjectDetail() {
               </Button>
             </Link>
             <SimpleConfirmDialog
-              title="Delete Project"
+              title='Delete Project'
               description={`Are you sure you want to delete "${project?.name}"? This action cannot be undone. The project will be moved to the trash and can be restored later.`}
               onConfirm={handleDeleteProject}
               destructive={true}
-              confirmText="Delete Project"
-              cancelText="Cancel"
+              confirmText='Delete Project'
+              cancelText='Cancel'
             >
               <Button variant='destructive'>
                 <Trash2 className='mr-2 h-4 w-4' />
@@ -194,11 +198,11 @@ export function ProjectDetail() {
         <div className='h-full space-y-6'>
           {/* Header */}
 
-          <Tabs defaultValue='overview' className='h-full'>
-            <TabsList>
+          <Tabs defaultValue='tasks' className='h-full'>
+            {/* <TabsList>
               <TabsTrigger value='overview'>Overview</TabsTrigger>
               <TabsTrigger value='tasks'>Tasks</TabsTrigger>
-            </TabsList>
+            </TabsList> */}
 
             <TabsContent value='overview' className='space-y-6'>
               {/* Real-time Project Statistics */}

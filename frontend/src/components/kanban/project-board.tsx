@@ -212,14 +212,14 @@ export function ProjectBoard({ projectId }: ProjectBoardProps) {
 
   return (
     <div className='flex h-full flex-col'>
-      <BoardToolbar
+      {/* <BoardToolbar
         onCreateTask={handleCreateTask}
         onRefresh={handleRefresh}
         isCompactView={isCompactView}
         onToggleCompactView={() => setIsCompactView(!isCompactView)}
         isLoading={isLoading}
         projectId={projectId}
-      />
+      /> */}
 
       <BoardFilters
         filters={filters}
