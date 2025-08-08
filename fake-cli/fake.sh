@@ -18,8 +18,8 @@ echo ""
 for i in {1..5}; do
     echo "$(date '+%H:%M:%S') - Input: $input"
     # create file dummy_code.txt with random content
-    echo "This is dummy code ${i}" > dummy_code_${i}.txt
-    echo "Created file dummy_code_${i}.txt with random content"
+    CONTENT_SEED_BY_TIME=$(date '+%H:%M:%S')
+    echo "This is dummy code ${CONTENT_SEED_BY_TIME}" > dummy_code_${i}.txt
     sleep 2
 done
 
