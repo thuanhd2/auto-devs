@@ -8,4 +8,5 @@ export const API_ENDPOINTS = {
   PROJECTS: '/projects',
   TASKS: '/tasks',
   EXECUTIONS: '/executions',
+  PULL_REQUESTS: '/pull-requests',
 } as const
