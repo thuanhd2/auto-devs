@@ -10,10 +10,11 @@ import (
 	"github.com/google/uuid"
 )
 
-// GitHubServiceInterface defines the interface for GitHub operations needed by PRCreator
+// GitHubServiceInterface defines the interface for GitHub operations needed by PRCreator and PRMonitor
 type GitHubServiceInterface interface {
 	CreatePullRequest(ctx context.Context, repo, base, head, title, body string) (*entity.PullRequest, error)
 	UpdatePullRequest(ctx context.Context, repo string, prNumber int, updates map[string]interface{}) error
+	GetPullRequest(ctx context.Context, repo string, prNumber int) (*entity.PullRequest, error)
 }
 
 // PRCreator handles automatic pull request creation from completed implementations
