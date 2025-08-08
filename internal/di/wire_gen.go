@@ -35,6 +35,8 @@ func InitializeApp() (*App, error) {
 	planRepository := postgres.NewPlanRepository(gormDB)
 	worktreeRepository := ProvideWorktreeRepository(gormDB)
 	auditRepository := postgres.NewAuditRepository(gormDB)
+	executionRepository := postgres.NewExecutionRepository(gormDB)
+	executionLogRepository := postgres.NewExecutionLogRepository(gormDB)
 	auditUsecase := ProvideAuditUsecase(auditRepository)
 	gitManager, err := ProvideGitManager(configConfig)
 	if err != nil {
@@ -63,15 +65,15 @@ func InitializeApp() (*App, error) {
 	if err != nil {
 		return nil, err
 	}
-	processor := ProvideJobProcessor(taskUsecase, projectUsecase, worktreeUsecase, planningService, executionService, planRepository, service)
-	app := NewApp(configConfig, gormDB, projectRepository, taskRepository, planRepository, worktreeRepository, auditRepository, auditUsecase, projectUsecase, taskUsecase, worktreeUsecase, notificationUsecase, service, cliManager, processManager, executionService, planningService, gitManager, worktreeManager, client, jobClientInterface, processor)
+	processor := ProvideJobProcessor(taskUsecase, projectUsecase, worktreeUsecase, planningService, executionService, planRepository, executionRepository, executionLogRepository, service)
+	app := NewApp(configConfig, gormDB, projectRepository, taskRepository, planRepository, worktreeRepository, auditRepository, executionRepository, executionLogRepository, auditUsecase, projectUsecase, taskUsecase, worktreeUsecase, notificationUsecase, service, cliManager, processManager, executionService, planningService, gitManager, worktreeManager, client, jobClientInterface, processor)
 	return app, nil
 }
 
 // wire.go:
 
 // ProviderSet is the Wire provider set for the entire application
-var ProviderSet = wire.NewSet(config.Load, ProvideGormDB, postgres.NewProjectRepository, postgres.NewTaskRepository, postgres.NewPlanRepository, ProvideWorktreeRepository, postgres.NewAuditRepository, ProvideGitManager,
+var ProviderSet = wire.NewSet(config.Load, ProvideGormDB, postgres.NewProjectRepository, postgres.NewTaskRepository, postgres.NewPlanRepository, ProvideWorktreeRepository, postgres.NewAuditRepository, postgres.NewExecutionRepository, postgres.NewExecutionLogRepository, ProvideGitManager,
 	ProvideProjectGitService,
 	ProvideIntegratedWorktreeService,
 	ProvideWorktreeManager,
@@ -100,6 +102,8 @@ type App struct {
 	PlanRepo            repository.PlanRepository
 	WorktreeRepo        repository.WorktreeRepository
 	AuditRepo           repository.AuditRepository
+	ExecutionRepo       repository.ExecutionRepository
+	ExecutionLogRepo    repository.ExecutionLogRepository
 	AuditUsecase        usecase.AuditUsecase
 	ProjectUsecase      usecase.ProjectUsecase
 	TaskUsecase         usecase.TaskUsecase
@@ -130,6 +134,8 @@ func NewApp(
 	planRepo repository.PlanRepository,
 	worktreeRepo repository.WorktreeRepository,
 	auditRepo repository.AuditRepository,
+	executionRepo repository.ExecutionRepository,
+	executionLogRepo repository.ExecutionLogRepository,
 	auditUsecase usecase.AuditUsecase,
 	projectUsecase usecase.ProjectUsecase,
 	taskUsecase usecase.TaskUsecase,
@@ -154,6 +160,8 @@ func NewApp(
 		PlanRepo:            planRepo,
 		WorktreeRepo:        worktreeRepo,
 		AuditRepo:           auditRepo,
+		ExecutionRepo:       executionRepo,
+		ExecutionLogRepo:    executionLogRepo,
 		AuditUsecase:        auditUsecase,
 		ProjectUsecase:      projectUsecase,
 		TaskUsecase:         taskUsecase,
@@ -290,9 +298,11 @@ func ProvideJobProcessor(
 	planningService *ai.PlanningService,
 	executionService *ai.ExecutionService,
 	planRepo repository.PlanRepository,
+	executionRepo repository.ExecutionRepository,
+	executionLogRepo repository.ExecutionLogRepository,
 	wsService *websocket.Service,
 ) *jobs.Processor {
-	return jobs.NewProcessor(taskUsecase, projectUsecase, worktreeUsecase, planningService, executionService, planRepo, wsService)
+	return jobs.NewProcessor(taskUsecase, projectUsecase, worktreeUsecase, planningService, executionService, planRepo, executionRepo, executionLogRepo, wsService)
 }
 
 // ProvideWebSocketService provides a WebSocket service instance

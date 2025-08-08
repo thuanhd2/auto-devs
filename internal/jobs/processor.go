@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"time"
 
 	"github.com/auto-devs/auto-devs/internal/entity"
 	"github.com/auto-devs/auto-devs/internal/repository"
@@ -16,15 +17,17 @@ import (
 
 // Processor handles background job processing
 type Processor struct {
-	taskUsecase      usecase.TaskUsecase
-	projectUsecase   usecase.ProjectUsecase
-	worktreeUsecase  usecase.WorktreeUsecase
-	planningService  *ai.PlanningService
-	executionService *ai.ExecutionService
-	planRepo         repository.PlanRepository
-	wsService        *websocket.Service
-	redisBroker      *RedisBrokerClient // Redis broker client for cross-process messaging
-	logger           *slog.Logger
+	taskUsecase        usecase.TaskUsecase
+	projectUsecase     usecase.ProjectUsecase
+	worktreeUsecase    usecase.WorktreeUsecase
+	planningService    *ai.PlanningService
+	executionService   *ai.ExecutionService
+	planRepo           repository.PlanRepository
+	executionRepo      repository.ExecutionRepository
+	executionLogRepo   repository.ExecutionLogRepository
+	wsService          *websocket.Service
+	redisBroker        *RedisBrokerClient // Redis broker client for cross-process messaging
+	logger             *slog.Logger
 }
 
 // NewProcessor creates a new job processor
@@ -35,17 +38,21 @@ func NewProcessor(
 	planningService *ai.PlanningService,
 	executionService *ai.ExecutionService,
 	planRepo repository.PlanRepository,
+	executionRepo repository.ExecutionRepository,
+	executionLogRepo repository.ExecutionLogRepository,
 	wsService *websocket.Service,
 ) *Processor {
 	return &Processor{
-		taskUsecase:      taskUsecase,
-		projectUsecase:   projectUsecase,
-		worktreeUsecase:  worktreeUsecase,
-		planningService:  planningService,
-		executionService: executionService,
-		planRepo:         planRepo,
-		wsService:        wsService,
-		logger:           slog.Default().With("component", "job-processor"),
+		taskUsecase:        taskUsecase,
+		projectUsecase:     projectUsecase,
+		worktreeUsecase:    worktreeUsecase,
+		planningService:    planningService,
+		executionService:   executionService,
+		planRepo:           planRepo,
+		executionRepo:      executionRepo,
+		executionLogRepo:   executionLogRepo,
+		wsService:          wsService,
+		logger:             slog.Default().With("component", "job-processor"),
 	}
 }
 
@@ -57,19 +64,23 @@ func NewProcessorWithRedisBroker(
 	planningService *ai.PlanningService,
 	executionService *ai.ExecutionService,
 	planRepo repository.PlanRepository,
+	executionRepo repository.ExecutionRepository,
+	executionLogRepo repository.ExecutionLogRepository,
 	wsService *websocket.Service,
 	redisBroker *RedisBrokerClient,
 ) *Processor {
 	return &Processor{
-		taskUsecase:      taskUsecase,
-		projectUsecase:   projectUsecase,
-		worktreeUsecase:  worktreeUsecase,
-		planningService:  planningService,
-		executionService: executionService,
-		planRepo:         planRepo,
-		wsService:        wsService,
-		redisBroker:      redisBroker,
-		logger:           slog.Default().With("component", "job-processor"),
+		taskUsecase:        taskUsecase,
+		projectUsecase:     projectUsecase,
+		worktreeUsecase:    worktreeUsecase,
+		planningService:    planningService,
+		executionService:   executionService,
+		planRepo:           planRepo,
+		executionRepo:      executionRepo,
+		executionLogRepo:   executionLogRepo,
+		wsService:          wsService,
+		redisBroker:        redisBroker,
+		logger:             slog.Default().With("component", "job-processor"),
 	}
 }
 
@@ -274,7 +285,26 @@ func (p *Processor) ProcessTaskImplementation(ctx context.Context, task *asynq.T
 		return fmt.Errorf("failed to start AI execution: %w", err)
 	}
 
-	// TODO: Map execution to entity.Execution and save to database
+	// Map AI execution to entity.Execution and save to database
+	dbExecution := &entity.Execution{
+		TaskID:    payload.TaskID,
+		Status:    entity.ExecutionStatus(execution.Status),
+		StartedAt: execution.StartedAt,
+		Progress:  execution.Progress,
+	}
+
+	err = p.executionRepo.Create(ctx, dbExecution)
+	if err != nil {
+		// Revert task status on failure
+		_ = p.updateTaskStatus(ctx, payload.TaskID, entity.TaskStatusPLANREVIEWING)
+		p.logger.Error("Failed to save execution to database", "task_id", payload.TaskID, "execution_id", execution.ID, "error", err)
+		return fmt.Errorf("failed to save execution to database: %w", err)
+	}
+
+	p.logger.Info("Execution saved to database",
+		"task_id", payload.TaskID,
+		"ai_execution_id", execution.ID,
+		"db_execution_id", dbExecution.ID)
 
 	stdoutChannel := make(chan string)
 	stderrChannel := make(chan string)
@@ -288,16 +318,79 @@ func (p *Processor) ProcessTaskImplementation(ctx context.Context, task *asynq.T
 			// TODO:sleep 1 second to avoid busy loop
 			select {
 			case <-execution.GetContextDoneChannel():
-				p.logger.Info("AI execution completed", "task_id", payload.TaskID, "execution_id", execution.ID)
-				_ = p.updateTaskStatus(context.Background(), payload.TaskID, entity.TaskStatusCODEREVIEWING)
-				// TODO: Update execution status to COMPLETED
+				completedAt := time.Now()
+				
+				// Check if execution completed successfully or failed
+				if execution.Error != "" {
+					p.logger.Error("AI execution failed", "task_id", payload.TaskID, "execution_id", execution.ID, "error", execution.Error)
+					_ = p.updateTaskStatus(context.Background(), payload.TaskID, entity.TaskStatusIMPLEMENTING) // Keep in implementing for retry
+					
+					// Mark execution as failed
+					err := p.executionRepo.MarkFailed(context.Background(), dbExecution.ID, completedAt, execution.Error)
+					if err != nil {
+						p.logger.Error("Failed to mark execution as failed", "error", err, "execution_id", dbExecution.ID)
+					}
+					
+					// Create failure log entry
+					failureLog := &entity.ExecutionLog{
+						ExecutionID: dbExecution.ID,
+						Level:       entity.LogLevelError,
+						Message:     fmt.Sprintf("Execution failed: %s", execution.Error),
+						Timestamp:   completedAt,
+						Source:      "system",
+					}
+					if err := p.executionLogRepo.Create(context.Background(), failureLog); err != nil {
+						p.logger.Error("Failed to save failure log", "error", err, "execution_id", dbExecution.ID)
+					}
+				} else {
+					p.logger.Info("AI execution completed successfully", "task_id", payload.TaskID, "execution_id", execution.ID)
+					_ = p.updateTaskStatus(context.Background(), payload.TaskID, entity.TaskStatusCODEREVIEWING)
+					
+					// Update execution status to COMPLETED
+					err := p.executionRepo.MarkCompleted(context.Background(), dbExecution.ID, completedAt, nil)
+					if err != nil {
+						p.logger.Error("Failed to mark execution as completed", "error", err, "execution_id", dbExecution.ID)
+					}
+					
+					// Create completion log entry
+					completionLog := &entity.ExecutionLog{
+						ExecutionID: dbExecution.ID,
+						Level:       entity.LogLevelInfo,
+						Message:     "Execution completed successfully",
+						Timestamp:   completedAt,
+						Source:      "system",
+					}
+					if err := p.executionLogRepo.Create(context.Background(), completionLog); err != nil {
+						p.logger.Error("Failed to save completion log", "error", err, "execution_id", dbExecution.ID)
+					}
+				}
 				return
 			case stdout := <-stdoutChannel:
 				p.logger.Info("AI execution stdout", "task_id", payload.TaskID, "execution_id", execution.ID, "stdout", stdout)
-				// TOOD: Save stdout to execution database
+				// Save stdout to execution database
+				stdoutLog := &entity.ExecutionLog{
+					ExecutionID: dbExecution.ID,
+					Level:       entity.LogLevelInfo,
+					Message:     stdout,
+					Timestamp:   time.Now(),
+					Source:      "stdout",
+				}
+				if err := p.executionLogRepo.Create(context.Background(), stdoutLog); err != nil {
+					p.logger.Error("Failed to save stdout log", "error", err, "execution_id", dbExecution.ID)
+				}
 			case stderr := <-stderrChannel:
 				p.logger.Error("AI execution stderr", "task_id", payload.TaskID, "execution_id", execution.ID, "stderr", stderr)
-				// TOOD: Save stdout to execution database
+				// Save stderr to execution database
+				stderrLog := &entity.ExecutionLog{
+					ExecutionID: dbExecution.ID,
+					Level:       entity.LogLevelError,
+					Message:     stderr,
+					Timestamp:   time.Now(),
+					Source:      "stderr",
+				}
+				if err := p.executionLogRepo.Create(context.Background(), stderrLog); err != nil {
+					p.logger.Error("Failed to save stderr log", "error", err, "execution_id", dbExecution.ID)
+				}
 			}
 		}
 	}()

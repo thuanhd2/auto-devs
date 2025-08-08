@@ -29,6 +29,8 @@ var ProviderSet = wire.NewSet(
 	postgres.NewPlanRepository,
 	ProvideWorktreeRepository,
 	postgres.NewAuditRepository,
+	postgres.NewExecutionRepository,
+	postgres.NewExecutionLogRepository,
 	// Service providers
 	ProvideGitManager,
 	ProvideProjectGitService,
@@ -71,6 +73,8 @@ type App struct {
 	PlanRepo            repository.PlanRepository
 	WorktreeRepo        repository.WorktreeRepository
 	AuditRepo           repository.AuditRepository
+	ExecutionRepo       repository.ExecutionRepository
+	ExecutionLogRepo    repository.ExecutionLogRepository
 	AuditUsecase        usecase.AuditUsecase
 	ProjectUsecase      usecase.ProjectUsecase
 	TaskUsecase         usecase.TaskUsecase
@@ -101,6 +105,8 @@ func NewApp(
 	planRepo repository.PlanRepository,
 	worktreeRepo repository.WorktreeRepository,
 	auditRepo repository.AuditRepository,
+	executionRepo repository.ExecutionRepository,
+	executionLogRepo repository.ExecutionLogRepository,
 	auditUsecase usecase.AuditUsecase,
 	projectUsecase usecase.ProjectUsecase,
 	taskUsecase usecase.TaskUsecase,
@@ -125,6 +131,8 @@ func NewApp(
 		PlanRepo:            planRepo,
 		WorktreeRepo:        worktreeRepo,
 		AuditRepo:           auditRepo,
+		ExecutionRepo:       executionRepo,
+		ExecutionLogRepo:    executionLogRepo,
 		AuditUsecase:        auditUsecase,
 		ProjectUsecase:      projectUsecase,
 		TaskUsecase:         taskUsecase,
@@ -261,9 +269,11 @@ func ProvideJobProcessor(
 	planningService *ai.PlanningService,
 	executionService *ai.ExecutionService,
 	planRepo repository.PlanRepository,
+	executionRepo repository.ExecutionRepository,
+	executionLogRepo repository.ExecutionLogRepository,
 	wsService *websocket.Service,
 ) *jobs.Processor {
-	return jobs.NewProcessor(taskUsecase, projectUsecase, worktreeUsecase, planningService, executionService, planRepo, wsService)
+	return jobs.NewProcessor(taskUsecase, projectUsecase, worktreeUsecase, planningService, executionService, planRepo, executionRepo, executionLogRepo, wsService)
 }
 
 // ProvideWebSocketService provides a WebSocket service instance
