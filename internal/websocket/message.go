@@ -36,6 +36,9 @@ const (
 	// Error messages
 	Error MessageType = "error"
 
+	// Pull Request related messages
+	MessageTypePRUpdate MessageType = "pr_update"
+
 	// Authentication messages
 	AuthRequired MessageType = "auth_required"
 	AuthSuccess  MessageType = "auth_success"
