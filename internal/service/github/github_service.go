@@ -18,7 +18,7 @@ type GitHubConfig struct {
 	Token     string
 	BaseURL   string
 	UserAgent string
-	Timeout   time.Duration
+	Timeout   int
 }
 
 // GitHubService provides GitHub API integration capabilities
@@ -37,13 +37,13 @@ func NewGitHubService(config *GitHubConfig) *GitHubService {
 		config.UserAgent = "auto-devs/1.0"
 	}
 	if config.Timeout == 0 {
-		config.Timeout = 30 * time.Second
+		config.Timeout = 30
 	}
 
 	return &GitHubService{
 		config: config,
 		httpClient: &http.Client{
-			Timeout: config.Timeout,
+			Timeout: time.Duration(config.Timeout) * time.Second,
 		},
 		rateLimiter: NewRateLimiter(),
 	}

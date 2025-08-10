@@ -68,7 +68,7 @@ func (prc *PRCreator) CreatePRFromImplementation(ctx context.Context, task entit
 	githubPR, err := prc.githubService.CreatePullRequest(
 		ctx,
 		repository,
-		"master",         // base branch - should be get from task.BaseBranchName
+		"master",         // base branch - should be get from tas
 		*task.BranchName, // head branch
 		title,
 		description,
@@ -77,12 +77,13 @@ func (prc *PRCreator) CreatePRFromImplementation(ctx context.Context, task entit
 		return nil, fmt.Errorf("failed to create GitHub pull request: %w", err)
 	}
 
+	githubPR.TaskID = task.ID
 	// Add task links to the created PR
-	if err := prc.AddTaskLinks(ctx, githubPR, task); err != nil {
-		// Log the error but don't fail the PR creation
-		// This could be handled with a logger in the future
-		_ = fmt.Errorf("failed to add task links to PR: %w", err)
-	}
+	// if err := prc.AddTaskLinks(ctx, githubPR, task); err != nil {
+	// 	// Log the error but don't fail the PR creation
+	// 	// This could be handled with a logger in the future
+	// 	_ = fmt.Errorf("failed to add task links to PR: %w", err)
+	// }
 
 	return githubPR, nil
 }

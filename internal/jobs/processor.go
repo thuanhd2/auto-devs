@@ -31,7 +31,6 @@ type Processor struct {
 	wsService        *websocket.Service
 	redisBroker      *RedisBrokerClient // Redis broker client for cross-process messaging
 	gitManager       *git.GitManager
-	githubService    *github.GitHubService
 	prCreator        *github.PRCreator
 	prRepo           repository.PullRequestRepository
 	logger           *slog.Logger
@@ -49,7 +48,6 @@ func NewProcessor(
 	executionLogRepo repository.ExecutionLogRepository,
 	wsService *websocket.Service,
 	gitManager *git.GitManager,
-	githubService *github.GitHubService,
 	prCreator *github.PRCreator,
 	prRepo repository.PullRequestRepository,
 ) *Processor {
@@ -64,7 +62,6 @@ func NewProcessor(
 		executionLogRepo: executionLogRepo,
 		wsService:        wsService,
 		gitManager:       gitManager,
-		githubService:    githubService,
 		prCreator:        prCreator,
 		prRepo:           prRepo,
 		logger:           slog.Default().With("component", "job-processor"),
@@ -84,7 +81,6 @@ func NewProcessorWithRedisBroker(
 	wsService *websocket.Service,
 	redisBroker *RedisBrokerClient,
 	gitManager *git.GitManager,
-	githubService *github.GitHubService,
 	prCreator *github.PRCreator,
 	prRepo repository.PullRequestRepository,
 ) *Processor {
@@ -100,7 +96,6 @@ func NewProcessorWithRedisBroker(
 		wsService:        wsService,
 		redisBroker:      redisBroker,
 		gitManager:       gitManager,
-		githubService:    githubService,
 		prCreator:        prCreator,
 		prRepo:           prRepo,
 		logger:           slog.Default().With("component", "job-processor"),

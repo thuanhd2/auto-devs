@@ -7,6 +7,8 @@ import (
 	"strconv"
 	"sync"
 	"time"
+
+	"github.com/google/go-github/v74/github"
 )
 
 // RateLimitInfo holds information about current rate limits
@@ -109,6 +111,27 @@ func (rl *RateLimiter) UpdateFromResponse(resp *http.Response) {
 	}
 }
 
+// UpdateFromGitHubResponse updates rate limit info from GitHub API response
+func (rl *RateLimiter) UpdateFromGitHubResponse(resp *github.Response) {
+	if resp == nil {
+		return
+	}
+
+	rl.mu.Lock()
+	defer rl.mu.Unlock()
+
+	// Parse rate limit headers from GitHub response
+	if resp.Rate.Limit > 0 {
+		rl.limitInfo.Limit = resp.Rate.Limit
+	}
+	if resp.Rate.Remaining >= 0 {
+		rl.limitInfo.Remaining = resp.Rate.Remaining
+	}
+	if !resp.Rate.Reset.IsZero() {
+		rl.limitInfo.ResetAt = resp.Rate.Reset.Time
+	}
+}
+
 // GetInfo returns current rate limit information
 func (rl *RateLimiter) GetInfo() RateLimitInfo {
 	rl.mu.RLock()
@@ -120,7 +143,7 @@ func (rl *RateLimiter) GetInfo() RateLimitInfo {
 func (rl *RateLimiter) IsRateLimited() bool {
 	rl.mu.RLock()
 	defer rl.mu.RUnlock()
-	
+
 	return rl.limitInfo.Remaining <= 0 && time.Now().Before(rl.limitInfo.ResetAt)
 }
 
@@ -128,13 +151,13 @@ func (rl *RateLimiter) IsRateLimited() bool {
 func (rl *RateLimiter) TimeUntilReset() time.Duration {
 	rl.mu.RLock()
 	defer rl.mu.RUnlock()
-	
+
 	return time.Until(rl.limitInfo.ResetAt)
 }
 
 // String returns a string representation of the rate limiter state
 func (rl *RateLimiter) String() string {
 	info := rl.GetInfo()
-	return fmt.Sprintf("RateLimit: %d/%d remaining, resets at %s", 
+	return fmt.Sprintf("RateLimit: %d/%d remaining, resets at %s",
 		info.Remaining, info.Limit, info.ResetAt.Format(time.RFC3339))
 }

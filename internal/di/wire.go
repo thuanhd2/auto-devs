@@ -98,8 +98,8 @@ type App struct {
 	GitManager      *git.GitManager
 	WorktreeManager *worktreesvc.WorktreeManager
 	// GitHub Services
-	GitHubService   *github.GitHubService
-	PRCreator       *github.PRCreator
+	GitHubService *github.GitHubServiceV2
+	PRCreator     *github.PRCreator
 	// Job Services
 	JobClient        *jobs.Client
 	JobClientAdapter usecase.JobClientInterface
@@ -131,7 +131,6 @@ func NewApp(
 	planningService *ai.PlanningService,
 	gitManager *git.GitManager,
 	worktreeManager *worktreesvc.WorktreeManager,
-	githubService *github.GitHubService,
 	prCreator *github.PRCreator,
 	jobClient *jobs.Client,
 	jobClientAdapter usecase.JobClientInterface,
@@ -161,7 +160,6 @@ func NewApp(
 		PlanningService:     planningService,
 		GitManager:          gitManager,
 		WorktreeManager:     worktreeManager,
-		GitHubService:       githubService,
 		PRCreator:           prCreator,
 		JobClient:           jobClient,
 		JobClientAdapter:    jobClientAdapter,
@@ -291,11 +289,10 @@ func ProvideJobProcessor(
 	executionLogRepo repository.ExecutionLogRepository,
 	wsService *websocket.Service,
 	gitManager *git.GitManager,
-	githubService *github.GitHubService,
 	prCreator *github.PRCreator,
 	prRepo repository.PullRequestRepository,
 ) *jobs.Processor {
-	return jobs.NewProcessor(taskUsecase, projectUsecase, worktreeUsecase, planningService, executionService, planRepo, executionRepo, executionLogRepo, wsService, gitManager, githubService, prCreator, prRepo)
+	return jobs.NewProcessor(taskUsecase, projectUsecase, worktreeUsecase, planningService, executionService, planRepo, executionRepo, executionLogRepo, wsService, gitManager, prCreator, prRepo)
 }
 
 // ProvideWebSocketService provides a WebSocket service instance
@@ -308,16 +305,18 @@ func ProvideExecutionUsecase(executionRepo repository.ExecutionRepository, execu
 }
 
 // ProvideGitHubService provides a GitHub service instance
-func ProvideGitHubService(cfg *config.Config) *github.GitHubService {
+func ProvideGitHubService(cfg *config.Config) *github.GitHubServiceV2 {
 	githubConfig := &github.GitHubConfig{
-		Token:   cfg.GitHub.Token,
-		BaseURL: cfg.GitHub.BaseURL,
+		Token:     cfg.GitHub.Token,
+		BaseURL:   cfg.GitHub.BaseURL,
+		UserAgent: cfg.GitHub.UserAgent,
+		Timeout:   cfg.GitHub.Timeout,
 	}
-	return github.NewGitHubService(githubConfig)
+	return github.NewGitHubServiceV2(githubConfig)
 }
 
 // ProvidePRCreator provides a PR creator instance
-func ProvidePRCreator(githubService *github.GitHubService, cfg *config.Config) *github.PRCreator {
+func ProvidePRCreator(githubService *github.GitHubServiceV2, cfg *config.Config) *github.PRCreator {
 	baseURL := cfg.App.BaseURL
 	if baseURL == "" {
 		baseURL = "http://localhost:8098" // fallback for development
