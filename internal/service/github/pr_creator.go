@@ -157,8 +157,8 @@ func (prc *PRCreator) GeneratePRDescription(task entity.Task, plan *entity.Plan,
 		description.WriteString(fmt.Sprintf("**Duration:** %v\n", duration.Round(time.Second)))
 	}
 
-	if execution.Result != "" {
-		description.WriteString(fmt.Sprintf("**Implementation Result:**\n```json\n%s\n```\n\n", execution.Result))
+	if execution.Result != nil {
+		description.WriteString(fmt.Sprintf("**Implementation Result:**\n```json\n%s\n```\n\n", *execution.Result))
 	}
 
 	// Add testing instructions

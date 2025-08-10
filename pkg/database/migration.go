@@ -11,5 +11,8 @@ func RunMigrations(db *GormDB) error {
 	return db.AutoMigrate(
 		&entity.Project{},
 		&entity.Task{},
+		&entity.Execution{},
+		&entity.Process{},
+		&entity.ExecutionLog{},
 	)
 }

@@ -142,12 +142,12 @@ func (_c *ExecutionLogRepositoryMock_BatchCreate_Call) RunAndReturn(run func(ctx
 	return _c
 }
 
-// BatchCreateAsync provides a mock function for the type ExecutionLogRepositoryMock
-func (_mock *ExecutionLogRepositoryMock) BatchCreateAsync(ctx context.Context, logs []*entity.ExecutionLog) error {
+// BatchInsertOrUpdate provides a mock function for the type ExecutionLogRepositoryMock
+func (_mock *ExecutionLogRepositoryMock) BatchInsertOrUpdate(ctx context.Context, logs []*entity.ExecutionLog) error {
 	ret := _mock.Called(ctx, logs)
 
 	if len(ret) == 0 {
-		panic("no return value specified for BatchCreateAsync")
+		panic("no return value specified for BatchInsertOrUpdate")
 	}
 
 	var r0 error
@@ -159,31 +159,31 @@ func (_mock *ExecutionLogRepositoryMock) BatchCreateAsync(ctx context.Context, l
 	return r0
 }
 
-// ExecutionLogRepositoryMock_BatchCreateAsync_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'BatchCreateAsync'
-type ExecutionLogRepositoryMock_BatchCreateAsync_Call struct {
+// ExecutionLogRepositoryMock_BatchInsertOrUpdate_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'BatchInsertOrUpdate'
+type ExecutionLogRepositoryMock_BatchInsertOrUpdate_Call struct {
 	*mock.Call
 }
 
-// BatchCreateAsync is a helper method to define mock.On call
+// BatchInsertOrUpdate is a helper method to define mock.On call
 //   - ctx
 //   - logs
-func (_e *ExecutionLogRepositoryMock_Expecter) BatchCreateAsync(ctx interface{}, logs interface{}) *ExecutionLogRepositoryMock_BatchCreateAsync_Call {
-	return &ExecutionLogRepositoryMock_BatchCreateAsync_Call{Call: _e.mock.On("BatchCreateAsync", ctx, logs)}
+func (_e *ExecutionLogRepositoryMock_Expecter) BatchInsertOrUpdate(ctx interface{}, logs interface{}) *ExecutionLogRepositoryMock_BatchInsertOrUpdate_Call {
+	return &ExecutionLogRepositoryMock_BatchInsertOrUpdate_Call{Call: _e.mock.On("BatchInsertOrUpdate", ctx, logs)}
 }
 
-func (_c *ExecutionLogRepositoryMock_BatchCreateAsync_Call) Run(run func(ctx context.Context, logs []*entity.ExecutionLog)) *ExecutionLogRepositoryMock_BatchCreateAsync_Call {
+func (_c *ExecutionLogRepositoryMock_BatchInsertOrUpdate_Call) Run(run func(ctx context.Context, logs []*entity.ExecutionLog)) *ExecutionLogRepositoryMock_BatchInsertOrUpdate_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		run(args[0].(context.Context), args[1].([]*entity.ExecutionLog))
 	})
 	return _c
 }
 
-func (_c *ExecutionLogRepositoryMock_BatchCreateAsync_Call) Return(err error) *ExecutionLogRepositoryMock_BatchCreateAsync_Call {
+func (_c *ExecutionLogRepositoryMock_BatchInsertOrUpdate_Call) Return(err error) *ExecutionLogRepositoryMock_BatchInsertOrUpdate_Call {
 	_c.Call.Return(err)
 	return _c
 }
 
-func (_c *ExecutionLogRepositoryMock_BatchCreateAsync_Call) RunAndReturn(run func(ctx context.Context, logs []*entity.ExecutionLog) error) *ExecutionLogRepositoryMock_BatchCreateAsync_Call {
+func (_c *ExecutionLogRepositoryMock_BatchInsertOrUpdate_Call) RunAndReturn(run func(ctx context.Context, logs []*entity.ExecutionLog) error) *ExecutionLogRepositoryMock_BatchInsertOrUpdate_Call {
 	_c.Call.Return(run)
 	return _c
 }

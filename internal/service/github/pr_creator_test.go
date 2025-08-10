@@ -141,13 +141,14 @@ func TestPRCreator_GeneratePRDescription(t *testing.T) {
 
 	startTime := time.Now().Add(-1 * time.Hour)
 	endTime := time.Now()
+	resultString := `{"status": "success", "files": ["test.go"]}`
 	execution := entity.Execution{
 		ID:          executionID,
 		TaskID:      taskID,
 		Status:      entity.ExecutionStatusCompleted,
 		StartedAt:   startTime,
 		CompletedAt: &endTime,
-		Result:      `{"status": "success", "files": ["test.go"]}`,
+		Result:      &resultString,
 	}
 
 	description, err := creator.GeneratePRDescription(task, plan, execution)

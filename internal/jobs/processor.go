@@ -210,7 +210,7 @@ func (p *Processor) ProcessTaskPlanning(ctx context.Context, task *asynq.Task) e
 		Status:    entity.ExecutionStatus(execution.Status),
 		StartedAt: execution.StartedAt,
 		Progress:  execution.Progress,
-		Result:    "{}",
+		Result:    nil,
 	}
 
 	err = p.executionRepo.Create(ctx, dbExecution)
@@ -379,7 +379,7 @@ func (p *Processor) ProcessTaskImplementation(ctx context.Context, task *asynq.T
 		Status:    entity.ExecutionStatus(execution.Status),
 		StartedAt: execution.StartedAt,
 		Progress:  execution.Progress,
-		Result:    "{}",
+		Result:    nil,
 	}
 
 	err = p.executionRepo.Create(ctx, dbExecution)

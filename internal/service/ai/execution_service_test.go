@@ -76,8 +76,10 @@ func TestExecutionService_StartExecution(t *testing.T) {
 	processManager := NewProcessManager()
 	es := NewExecutionService(cliManager, processManager)
 
+	worktreePath := "testdata/worktree"
 	task := entity.Task{
-		ID: uuid.New(),
+		ID:           uuid.New(),
+		WorktreePath: &worktreePath,
 	}
 
 	execution, err := es.StartExecution(&task, NewFakeAiCodingCli(), true)
@@ -119,8 +121,10 @@ func TestExecutionService_CancelExecution(t *testing.T) {
 	processManager := NewProcessManager()
 	es := NewExecutionService(cliManager, processManager)
 
+	worktreePath := "testdata/worktree"
 	task := entity.Task{
-		ID: uuid.New(),
+		ID:           uuid.New(),
+		WorktreePath: &worktreePath,
 	}
 
 	execution, err := es.StartExecution(&task, NewFakeAiCodingCli(), true)
@@ -147,8 +151,10 @@ func TestExecutionService_PauseResumeExecution(t *testing.T) {
 	processManager := NewProcessManager()
 	es := NewExecutionService(cliManager, processManager)
 
+	worktreePath := "testdata/worktree"
 	task := entity.Task{
-		ID: uuid.New(),
+		ID:           uuid.New(),
+		WorktreePath: &worktreePath,
 	}
 
 	execution, err := es.StartExecution(&task, NewFakeAiCodingCli(), true)
@@ -225,8 +231,10 @@ func TestExecutionService_RealTimeUpdates(t *testing.T) {
 		updates = append(updates, update)
 	})
 
+	worktreePath := "testdata/worktree"
 	task := entity.Task{
-		ID: uuid.New(),
+		ID:           uuid.New(),
+		WorktreePath: &worktreePath,
 	}
 
 	execution, err := es.StartExecution(&task, NewFakeAiCodingCli(), true)

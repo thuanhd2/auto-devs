@@ -103,7 +103,7 @@ func ToExecutionResponse(execution *entity.Execution) ExecutionResponse {
 		response.CompletedAt = execution.CompletedAt
 	}
 
-	if execution.Result != "" {
+	if execution.Result != nil {
 		// Parse result if needed
 		response.Result = &entity.ExecutionResult{}
 	}
