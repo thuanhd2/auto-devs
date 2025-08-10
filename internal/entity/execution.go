@@ -39,7 +39,7 @@ type Execution struct {
 	CompletedAt  *time.Time      `json:"completed_at,omitempty"`
 	ErrorMessage string          `json:"error_message,omitempty" gorm:"type:text"`
 	Progress     float64         `json:"progress" gorm:"default:0.0;check:progress >= 0 AND progress <= 1"`
-	Result       string          `json:"result,omitempty" gorm:"type:jsonb"` // JSON serialized ExecutionResult
+	Result       *string         `json:"result,omitempty" gorm:"type:jsonb"` // JSON serialized ExecutionResult
 	CreatedAt    time.Time       `json:"created_at" gorm:"autoCreateTime"`
 	UpdatedAt    time.Time       `json:"updated_at" gorm:"autoUpdateTime"`
 	DeletedAt    gorm.DeletedAt  `json:"deleted_at,omitempty" gorm:"index"`

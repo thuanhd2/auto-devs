@@ -19,10 +19,8 @@ type ExecutionLogRepository interface {
 
 	// Batch operations for performance
 	BatchCreate(ctx context.Context, logs []*entity.ExecutionLog) error
-	BatchCreateAsync(ctx context.Context, logs []*entity.ExecutionLog) error
 	GetLogsBatch(ctx context.Context, executionID uuid.UUID, limit, offset int) ([]*entity.ExecutionLog, error)
 	BatchInsertOrUpdate(ctx context.Context, logs []*entity.ExecutionLog) error
-	BatchInsertOrUpdateAsync(ctx context.Context, logs []*entity.ExecutionLog) error
 
 	// Filtering and search
 	GetByLevel(ctx context.Context, executionID uuid.UUID, level entity.LogLevel) ([]*entity.ExecutionLog, error)
