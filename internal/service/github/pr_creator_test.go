@@ -177,7 +177,7 @@ func TestPRCreator_ValidateTaskForPRCreation(t *testing.T) {
 		ID:         uuid.New(),
 		Title:      "Valid task",
 		BranchName: stringPtr("feature/valid-task"),
-		Project: entity.Project{
+		Project: &entity.Project{
 			RepositoryURL: "https://github.com/owner/repo",
 		},
 	}
@@ -204,7 +204,7 @@ func TestPRCreator_ValidateTaskForPRCreation(t *testing.T) {
 				ID:         uuid.New(),
 				Title:      "",
 				BranchName: stringPtr("feature/test"),
-				Project: entity.Project{
+				Project: &entity.Project{
 					RepositoryURL: "https://github.com/owner/repo",
 				},
 			},
@@ -216,7 +216,7 @@ func TestPRCreator_ValidateTaskForPRCreation(t *testing.T) {
 			task: entity.Task{
 				ID:    uuid.New(),
 				Title: "Valid task",
-				Project: entity.Project{
+				Project: &entity.Project{
 					RepositoryURL: "https://github.com/owner/repo",
 				},
 			},
@@ -237,7 +237,7 @@ func TestPRCreator_ValidateTaskForPRCreation(t *testing.T) {
 				ID:         uuid.New(),
 				Title:      "Valid task",
 				BranchName: stringPtr("feature/test"),
-				Project:    entity.Project{},
+				Project:    &entity.Project{},
 			},
 			execution: validExecution,
 			hasError:  true,
@@ -300,7 +300,7 @@ func TestPRCreator_getRepositoryFromTask(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			task := entity.Task{
-				Project: entity.Project{
+				Project: &entity.Project{
 					RepositoryURL: tt.repoURL,
 				},
 			}
@@ -355,7 +355,7 @@ func TestPRCreator_CreatePRFromImplementation(t *testing.T) {
 		ID:         taskID,
 		Title:      "Test task",
 		BranchName: &branchName,
-		Project: entity.Project{
+		Project: &entity.Project{
 			RepositoryURL: "https://github.com/owner/repo",
 		},
 	}

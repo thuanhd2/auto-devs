@@ -57,36 +57,36 @@ func GetAllPullRequestStatuses() []PullRequestStatus {
 
 // PullRequest represents a GitHub pull request associated with a task
 type PullRequest struct {
-	ID               uuid.UUID         `json:"id" gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
-	TaskID           uuid.UUID         `json:"task_id" gorm:"type:uuid;not null" validate:"required"`
-	GitHubPRNumber   int               `json:"github_pr_number" gorm:"not null" validate:"required,min=1"`
-	Repository       string            `json:"repository" gorm:"size:255;not null" validate:"required"`
-	Title            string            `json:"title" gorm:"size:255;not null" validate:"required,min=1,max=255"`
-	Body             string            `json:"body" gorm:"type:text"`
-	Status           PullRequestStatus `json:"status" gorm:"size:20;not null;default:'OPEN'" validate:"required,oneof=OPEN MERGED CLOSED"`
-	HeadBranch       string            `json:"head_branch" gorm:"size:255;not null" validate:"required"`
-	BaseBranch       string            `json:"base_branch" gorm:"size:255;not null;default:'main'" validate:"required"`
-	GitHubURL        string            `json:"github_url" gorm:"size:500"`
-	MergeCommitSHA   *string           `json:"merge_commit_sha,omitempty" gorm:"size:40"`
-	MergedAt         *time.Time        `json:"merged_at,omitempty"`
-	ClosedAt         *time.Time        `json:"closed_at,omitempty"`
-	CreatedBy        *string           `json:"created_by,omitempty" gorm:"size:255"`
-	MergedBy         *string           `json:"merged_by,omitempty" gorm:"size:255"`
-	Reviewers        []string          `json:"reviewers,omitempty" gorm:"-"`                // Will be stored as JSON
-	ReviewersJSON    string            `json:"-" gorm:"column:reviewers;type:jsonb"`
-	Labels           []string          `json:"labels,omitempty" gorm:"-"`                   // Will be stored as JSON
-	LabelsJSON       string            `json:"-" gorm:"column:labels;type:jsonb"`
-	Assignees        []string          `json:"assignees,omitempty" gorm:"-"`               // Will be stored as JSON
-	AssigneesJSON    string            `json:"-" gorm:"column:assignees;type:jsonb"`
-	IsDraft          bool              `json:"is_draft" gorm:"default:false"`
-	Mergeable        *bool             `json:"mergeable,omitempty"`
-	MergeableState   *string           `json:"mergeable_state,omitempty" gorm:"size:50"`
-	Additions        *int              `json:"additions,omitempty"`
-	Deletions        *int              `json:"deletions,omitempty"`
-	ChangedFiles     *int              `json:"changed_files,omitempty"`
-	CreatedAt        time.Time         `json:"created_at" gorm:"autoCreateTime"`
-	UpdatedAt        time.Time         `json:"updated_at" gorm:"autoUpdateTime"`
-	DeletedAt        gorm.DeletedAt    `json:"deleted_at,omitempty" gorm:"index"`
+	ID             uuid.UUID         `json:"id" gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
+	TaskID         uuid.UUID         `json:"task_id" gorm:"type:uuid;not null" validate:"required"`
+	GitHubPRNumber int               `json:"github_pr_number" gorm:"column:github_pr_number;not null" validate:"required,min=1"`
+	Repository     string            `json:"repository" gorm:"size:255;not null" validate:"required"`
+	Title          string            `json:"title" gorm:"size:255;not null" validate:"required,min=1,max=255"`
+	Body           string            `json:"body" gorm:"type:text"`
+	Status         PullRequestStatus `json:"status" gorm:"size:20;not null;default:'OPEN'" validate:"required,oneof=OPEN MERGED CLOSED"`
+	HeadBranch     string            `json:"head_branch" gorm:"size:255;not null" validate:"required"`
+	BaseBranch     string            `json:"base_branch" gorm:"size:255;not null;default:'main'" validate:"required"`
+	GitHubURL      string            `json:"github_url" gorm:"column:github_url;size:500"`
+	MergeCommitSHA *string           `json:"merge_commit_sha,omitempty" gorm:"size:40"`
+	MergedAt       *time.Time        `json:"merged_at,omitempty"`
+	ClosedAt       *time.Time        `json:"closed_at,omitempty"`
+	CreatedBy      *string           `json:"created_by,omitempty" gorm:"size:255"`
+	MergedBy       *string           `json:"merged_by,omitempty" gorm:"size:255"`
+	Reviewers      []string          `json:"reviewers,omitempty" gorm:"-"` // Will be stored as JSON
+	ReviewersJSON  string            `json:"-" gorm:"column:reviewers;type:jsonb"`
+	Labels         []string          `json:"labels,omitempty" gorm:"-"` // Will be stored as JSON
+	LabelsJSON     string            `json:"-" gorm:"column:labels;type:jsonb"`
+	Assignees      []string          `json:"assignees,omitempty" gorm:"-"` // Will be stored as JSON
+	AssigneesJSON  string            `json:"-" gorm:"column:assignees;type:jsonb"`
+	IsDraft        bool              `json:"is_draft" gorm:"default:false"`
+	Mergeable      *bool             `json:"mergeable,omitempty"`
+	MergeableState *string           `json:"mergeable_state,omitempty" gorm:"size:50"`
+	Additions      *int              `json:"additions,omitempty"`
+	Deletions      *int              `json:"deletions,omitempty"`
+	ChangedFiles   *int              `json:"changed_files,omitempty"`
+	CreatedAt      time.Time         `json:"created_at" gorm:"autoCreateTime"`
+	UpdatedAt      time.Time         `json:"updated_at" gorm:"autoUpdateTime"`
+	DeletedAt      gorm.DeletedAt    `json:"deleted_at,omitempty" gorm:"index"`
 
 	// Relationships
 	Task *Task `json:"task,omitempty" gorm:"foreignKey:TaskID"`
@@ -96,7 +96,7 @@ type PullRequest struct {
 type PullRequestComment struct {
 	ID            uuid.UUID      `json:"id" gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
 	PullRequestID uuid.UUID      `json:"pull_request_id" gorm:"type:uuid;not null"`
-	GitHubID      *int64         `json:"github_id,omitempty" gorm:"unique"`
+	GitHubID      *int64         `json:"github_id,omitempty" gorm:"column:github_id;unique"`
 	Author        string         `json:"author" gorm:"size:255;not null"`
 	Body          string         `json:"body" gorm:"type:text;not null"`
 	FilePath      *string        `json:"file_path,omitempty" gorm:"size:500"`
@@ -114,7 +114,7 @@ type PullRequestComment struct {
 type PullRequestReview struct {
 	ID            uuid.UUID      `json:"id" gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
 	PullRequestID uuid.UUID      `json:"pull_request_id" gorm:"type:uuid;not null"`
-	GitHubID      *int64         `json:"github_id,omitempty" gorm:"unique"`
+	GitHubID      *int64         `json:"github_id,omitempty" gorm:"column:github_id;unique"`
 	Reviewer      string         `json:"reviewer" gorm:"size:255;not null"`
 	State         string         `json:"state" gorm:"size:50;not null"` // APPROVED, CHANGES_REQUESTED, COMMENTED
 	Body          *string        `json:"body,omitempty" gorm:"type:text"`

@@ -14,6 +14,8 @@ type Config struct {
 	Worktree              WorktreeConfig
 	Redis                 RedisConfig
 	CentrifugeRedisBroker CentrifugeRedisBrokerConfig
+	GitHub                GitHubConfig
+	App                   AppConfig
 }
 
 type ServerConfig struct {
@@ -49,6 +51,17 @@ type CentrifugeRedisBrokerConfig struct {
 	Address  string
 	Password string
 	DB       int
+}
+
+type GitHubConfig struct {
+	Token     string
+	BaseURL   string
+	UserAgent string
+	Timeout   int
+}
+
+type AppConfig struct {
+	BaseURL string
 }
 
 func Load() *Config {
@@ -87,6 +100,15 @@ func Load() *Config {
 			Address:  getEnv("CENTRIFUGE_REDIS_ADDRESS", "localhost:6379"),
 			Password: getEnv("CENTRIFUGE_REDIS_PASSWORD", ""),
 			DB:       getEnvAsInt("CENTRIFUGE_REDIS_DB", 2),
+		},
+		GitHub: GitHubConfig{
+			Token:     getEnv("GITHUB_TOKEN", ""),
+			BaseURL:   getEnv("GITHUB_BASE_URL", "https://api.github.com"),
+			UserAgent: getEnv("GITHUB_USER_AGENT", "auto-devs/1.0"),
+			Timeout:   getEnvAsInt("GITHUB_TIMEOUT", 30),
+		},
+		App: AppConfig{
+			BaseURL: getEnv("APP_BASE_URL", "http://localhost:8098"),
 		},
 	}
 }

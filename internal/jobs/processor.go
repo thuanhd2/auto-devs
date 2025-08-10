@@ -10,6 +10,8 @@ import (
 	"github.com/auto-devs/auto-devs/internal/entity"
 	"github.com/auto-devs/auto-devs/internal/repository"
 	"github.com/auto-devs/auto-devs/internal/service/ai"
+	"github.com/auto-devs/auto-devs/internal/service/git"
+	"github.com/auto-devs/auto-devs/internal/service/github"
 	"github.com/auto-devs/auto-devs/internal/usecase"
 	"github.com/auto-devs/auto-devs/internal/websocket"
 	"github.com/google/uuid"
@@ -28,6 +30,9 @@ type Processor struct {
 	executionLogRepo repository.ExecutionLogRepository
 	wsService        *websocket.Service
 	redisBroker      *RedisBrokerClient // Redis broker client for cross-process messaging
+	gitManager       *git.GitManager
+	prCreator        *github.PRCreator
+	prRepo           repository.PullRequestRepository
 	logger           *slog.Logger
 }
 
@@ -42,6 +47,9 @@ func NewProcessor(
 	executionRepo repository.ExecutionRepository,
 	executionLogRepo repository.ExecutionLogRepository,
 	wsService *websocket.Service,
+	gitManager *git.GitManager,
+	prCreator *github.PRCreator,
+	prRepo repository.PullRequestRepository,
 ) *Processor {
 	return &Processor{
 		taskUsecase:      taskUsecase,
@@ -53,6 +61,9 @@ func NewProcessor(
 		executionRepo:    executionRepo,
 		executionLogRepo: executionLogRepo,
 		wsService:        wsService,
+		gitManager:       gitManager,
+		prCreator:        prCreator,
+		prRepo:           prRepo,
 		logger:           slog.Default().With("component", "job-processor"),
 	}
 }
@@ -69,6 +80,9 @@ func NewProcessorWithRedisBroker(
 	executionLogRepo repository.ExecutionLogRepository,
 	wsService *websocket.Service,
 	redisBroker *RedisBrokerClient,
+	gitManager *git.GitManager,
+	prCreator *github.PRCreator,
+	prRepo repository.PullRequestRepository,
 ) *Processor {
 	return &Processor{
 		taskUsecase:      taskUsecase,
@@ -81,6 +95,9 @@ func NewProcessorWithRedisBroker(
 		executionLogRepo: executionLogRepo,
 		wsService:        wsService,
 		redisBroker:      redisBroker,
+		gitManager:       gitManager,
+		prCreator:        prCreator,
+		prRepo:           prRepo,
 		logger:           slog.Default().With("component", "job-processor"),
 	}
 }
@@ -415,15 +432,17 @@ func (p *Processor) ProcessTaskImplementation(ctx context.Context, task *asynq.T
 					// 	p.logger.Error("Failed to save failure log", "error", err, "execution_id", dbExecution.ID)
 					// }
 				} else {
-					// TODO: Commit code to git, push to github and create PR
 					p.logger.Info("AI execution completed successfully", "task_id", payload.TaskID, "execution_id", execution.ID)
-					_ = p.updateTaskStatus(context.Background(), payload.TaskID, entity.TaskStatusCODEREVIEWING)
 
 					// Update execution status to COMPLETED
 					err := p.executionRepo.MarkCompleted(context.Background(), dbExecution.ID, completedAt, nil)
 					if err != nil {
 						p.logger.Error("Failed to mark execution as completed", "error", err, "execution_id", dbExecution.ID)
 					}
+					// Execute PR creation workflow
+					p.executePRCreationWorkflow(context.Background(), projectTask, plan, dbExecution)
+
+					_ = p.updateTaskStatus(context.Background(), payload.TaskID, entity.TaskStatusCODEREVIEWING)
 
 					// // Create completion log entry
 					// completionLog := &entity.ExecutionLog{
@@ -677,4 +696,90 @@ func (p *Processor) savePlanAndUpdateStatus(ctx context.Context, taskID uuid.UUI
 
 	p.logger.Info("Task status updated to PLAN_REVIEWING", "task_id", taskID)
 	return nil
+}
+
+// executePRCreationWorkflow handles the automated PR creation workflow after successful AI implementation
+func (p *Processor) executePRCreationWorkflow(ctx context.Context, projectTask *entity.Task, plan *entity.Plan, dbExecution *entity.Execution) {
+	p.logger.Info("Starting PR creation workflow", "task_id", projectTask.ID)
+
+	// Step 1: Check if task has a worktree path
+	if projectTask.WorktreePath == nil {
+		p.logger.Error("Task has no worktree path, cannot commit and push changes", "task_id", projectTask.ID)
+		return
+	}
+
+	// Step 2: Check if there are pending changes in the worktree
+	hasPendingChanges, err := p.gitManager.HasPendingChanges(ctx, *projectTask.WorktreePath)
+	if err != nil {
+		p.logger.Error("Failed to check pending changes", "error", err, "task_id", projectTask.ID)
+		// Continue without failing the entire workflow
+	}
+
+	// Step 3: Commit and push changes if any exist
+	if hasPendingChanges {
+		commitMessage := fmt.Sprintf("Implement task: %s\n\nTask ID: %s\nAI Implementation completed via Auto-Devs\n\n- %s",
+			projectTask.Title,
+			projectTask.ID.String(),
+			projectTask.Description)
+
+		err = p.gitManager.CommitAndPush(ctx, *projectTask.WorktreePath, commitMessage, "origin", *projectTask.BranchName)
+		if err != nil {
+			p.logger.Error("Failed to commit and push changes", "error", err, "task_id", projectTask.ID)
+			// Don't fail the workflow, but log the error
+			return
+		} else {
+			p.logger.Info("Successfully committed and pushed changes", "task_id", projectTask.ID, "branch", *projectTask.BranchName)
+		}
+	} else {
+		p.logger.Info("No pending changes to commit", "task_id", projectTask.ID)
+	}
+
+	// Step 4: Create PR using the existing PRCreator service
+	if p.prCreator != nil && projectTask.BranchName != nil {
+		project, err := p.projectUsecase.GetByID(ctx, projectTask.ProjectID)
+		if err != nil {
+			p.logger.Error("Failed to get project", "error", err, "task_id", projectTask.ID)
+			return
+		}
+		projectTask.Project = project
+		pr, err := p.prCreator.CreatePRFromImplementation(ctx, *projectTask, *dbExecution, plan)
+		if err != nil {
+			p.logger.Error("Failed to create PR", "error", err, "task_id", projectTask.ID)
+			// Don't fail the workflow, log and continue
+			return
+		}
+
+		// Step 5: Save PR to database
+		if err := p.prRepo.Create(ctx, pr); err != nil {
+			p.logger.Error("Failed to save PR to database", "error", err, "pr_id", pr.ID, "task_id", projectTask.ID)
+		} else {
+			p.logger.Info("PR created and saved successfully",
+				"pr_number", pr.GitHubPRNumber,
+				"task_id", projectTask.ID,
+				"pr_id", pr.ID)
+
+			// Step 6: Send WebSocket notification about PR creation
+			p.sendPRNotification(ctx, projectTask.ProjectID, pr, "pr_created")
+		}
+	} else {
+		p.logger.Warn("PR creation skipped - missing required services or branch name",
+			"task_id", projectTask.ID,
+			"has_pr_creator", p.prCreator != nil,
+			"has_branch_name", projectTask.BranchName != nil)
+	}
+}
+
+// sendPRNotification sends WebSocket notification about PR events
+func (p *Processor) sendPRNotification(ctx context.Context, projectID uuid.UUID, pr *entity.PullRequest, eventType string) {
+	if p.wsService != nil {
+		data := map[string]interface{}{
+			"type": eventType,
+			"pr":   pr,
+		}
+		if err := p.wsService.SendProjectMessage(projectID, websocket.MessageTypePRUpdate, data); err != nil {
+			p.logger.Error("Failed to send PR WebSocket notification", "error", err, "project_id", projectID, "pr_id", pr.ID)
+		} else {
+			p.logger.Debug("PR WebSocket notification sent successfully", "event_type", eventType, "pr_id", pr.ID)
+		}
+	}
 }

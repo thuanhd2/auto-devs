@@ -427,3 +427,81 @@ func (g *GitCommands) DeleteWorktree(ctx context.Context, workingDir, worktreePa
 
 	return nil
 }
+
+// AddAllChanges stages all changes in the working directory
+func (g *GitCommands) AddAllChanges(ctx context.Context, workingDir string) error {
+	result, err := g.executor.Execute(ctx, workingDir, "add", ".")
+	if err != nil {
+		return WrapWithOperation("add-all", err)
+	}
+
+	if result.ExitCode != 0 {
+		return NewGitError("add-all", result.ExitCode, result.Command, result.Stdout, result.Stderr, nil)
+	}
+
+	return nil
+}
+
+// Commit creates a commit with the given message
+func (g *GitCommands) Commit(ctx context.Context, workingDir, message string) error {
+	result, err := g.executor.Execute(ctx, workingDir, "commit", "-m", message)
+	if err != nil {
+		return WrapWithOperation("commit", err)
+	}
+
+	if result.ExitCode != 0 {
+		return NewGitError("commit", result.ExitCode, result.Command, result.Stdout, result.Stderr, nil)
+	}
+
+	return nil
+}
+
+// Push pushes commits to remote repository
+func (g *GitCommands) Push(ctx context.Context, workingDir, remote, branch string) error {
+	args := []string{"push"}
+	if remote != "" && branch != "" {
+		args = append(args, remote, branch)
+	}
+
+	result, err := g.executor.Execute(ctx, workingDir, args...)
+	if err != nil {
+		return WrapWithOperation("push", err)
+	}
+
+	if result.ExitCode != 0 {
+		return NewGitError("push", result.ExitCode, result.Command, result.Stdout, result.Stderr, nil)
+	}
+
+	return nil
+}
+
+// PushWithUpstream pushes commits and sets upstream tracking
+func (g *GitCommands) PushWithUpstream(ctx context.Context, workingDir, remote, branch string) error {
+	args := []string{"push", "--set-upstream", remote, branch}
+	
+	result, err := g.executor.Execute(ctx, workingDir, args...)
+	if err != nil {
+		return WrapWithOperation("push-upstream", err)
+	}
+
+	if result.ExitCode != 0 {
+		return NewGitError("push-upstream", result.ExitCode, result.Command, result.Stdout, result.Stderr, nil)
+	}
+
+	return nil
+}
+
+// GetPendingChanges checks if there are uncommitted changes
+func (g *GitCommands) GetPendingChanges(ctx context.Context, workingDir string) (bool, error) {
+	result, err := g.executor.Execute(ctx, workingDir, "status", "--porcelain")
+	if err != nil {
+		return false, WrapWithOperation("get-pending-changes", err)
+	}
+
+	if result.ExitCode != 0 {
+		return false, NewGitError("get-pending-changes", result.ExitCode, result.Command, result.Stdout, result.Stderr, nil)
+	}
+
+	// If there's any output, there are pending changes
+	return strings.TrimSpace(result.Stdout) != "", nil
+}

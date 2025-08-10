@@ -293,6 +293,78 @@ func (m *GitManager) DeleteWorktree(ctx context.Context, request *DeleteWorktree
 	return nil
 }
 
+// CommitAndPush commits all changes and pushes to the remote branch
+func (m *GitManager) CommitAndPush(ctx context.Context, workingDir, commitMessage, remote, branch string) error {
+	workingDir = m.getWorkingDir(workingDir)
+
+	m.logger.Info("Starting commit and push workflow",
+		"working_dir", workingDir,
+		"remote", remote,
+		"branch", branch)
+
+	// Check if there are pending changes
+	hasPendingChanges, err := m.commands.GetPendingChanges(ctx, workingDir)
+	if err != nil {
+		m.logger.Error("Failed to check pending changes", "error", err)
+		return fmt.Errorf("failed to check pending changes: %w", err)
+	}
+
+	if !hasPendingChanges {
+		m.logger.Info("No pending changes to commit")
+		return nil
+	}
+
+	// Stage all changes
+	err = m.executeWithRetry(ctx, func() error {
+		return m.commands.AddAllChanges(ctx, workingDir)
+	})
+	if err != nil {
+		m.logger.Error("Failed to add changes", "error", err)
+		return fmt.Errorf("failed to stage changes: %w", err)
+	}
+
+	// Commit changes
+	err = m.executeWithRetry(ctx, func() error {
+		return m.commands.Commit(ctx, workingDir, commitMessage)
+	})
+	if err != nil {
+		m.logger.Error("Failed to commit changes", "error", err)
+		return fmt.Errorf("failed to commit changes: %w", err)
+	}
+
+	// Push changes with upstream tracking
+	err = m.executeWithRetry(ctx, func() error {
+		return m.commands.PushWithUpstream(ctx, workingDir, remote, branch)
+	})
+	if err != nil {
+		m.logger.Error("Failed to push changes", "error", err)
+		return fmt.Errorf("failed to push changes: %w", err)
+	}
+
+	m.logger.Info("Successfully committed and pushed changes",
+		"working_dir", workingDir,
+		"remote", remote,
+		"branch", branch)
+
+	return nil
+}
+
+// HasPendingChanges checks if there are uncommitted changes in the working directory
+func (m *GitManager) HasPendingChanges(ctx context.Context, workingDir string) (bool, error) {
+	workingDir = m.getWorkingDir(workingDir)
+
+	m.logger.Debug("Checking for pending changes", "working_dir", workingDir)
+
+	hasPendingChanges, err := m.commands.GetPendingChanges(ctx, workingDir)
+	if err != nil {
+		m.logger.Error("Failed to check pending changes", "error", err)
+		return false, fmt.Errorf("failed to check pending changes: %w", err)
+	}
+
+	m.logger.Debug("Pending changes check result", "has_changes", hasPendingChanges)
+	return hasPendingChanges, nil
+}
+
 // Branch Management Methods
 
 // GenerateBranchName generates a branch name based on task information
