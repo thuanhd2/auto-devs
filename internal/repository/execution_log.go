@@ -21,6 +21,8 @@ type ExecutionLogRepository interface {
 	BatchCreate(ctx context.Context, logs []*entity.ExecutionLog) error
 	BatchCreateAsync(ctx context.Context, logs []*entity.ExecutionLog) error
 	GetLogsBatch(ctx context.Context, executionID uuid.UUID, limit, offset int) ([]*entity.ExecutionLog, error)
+	BatchInsertOrUpdate(ctx context.Context, logs []*entity.ExecutionLog) error
+	BatchInsertOrUpdateAsync(ctx context.Context, logs []*entity.ExecutionLog) error
 
 	// Filtering and search
 	GetByLevel(ctx context.Context, executionID uuid.UUID, level entity.LogLevel) ([]*entity.ExecutionLog, error)
@@ -53,30 +55,30 @@ type ExecutionLogRepository interface {
 
 // LogStats represents log statistics
 type LogStats struct {
-	TotalLogs        int64                     `json:"total_logs"`
-	LogsByLevel      map[entity.LogLevel]int64 `json:"logs_by_level"`
-	LogsBySource     map[string]int64          `json:"logs_by_source"`
-	ErrorCount       int64                     `json:"error_count"`
-	WarningCount     int64                     `json:"warning_count"`
-	FirstLogTime     *time.Time                `json:"first_log_time,omitempty"`
-	LastLogTime      *time.Time                `json:"last_log_time,omitempty"`
-	RecentErrorLogs  []*entity.ExecutionLog    `json:"recent_error_logs"`
-	LogSizeBytes     int64                     `json:"log_size_bytes"`
+	TotalLogs       int64                     `json:"total_logs"`
+	LogsByLevel     map[entity.LogLevel]int64 `json:"logs_by_level"`
+	LogsBySource    map[string]int64          `json:"logs_by_source"`
+	ErrorCount      int64                     `json:"error_count"`
+	WarningCount    int64                     `json:"warning_count"`
+	FirstLogTime    *time.Time                `json:"first_log_time,omitempty"`
+	LastLogTime     *time.Time                `json:"last_log_time,omitempty"`
+	RecentErrorLogs []*entity.ExecutionLog    `json:"recent_error_logs"`
+	LogSizeBytes    int64                     `json:"log_size_bytes"`
 }
 
 // LogFilters represents filtering options for logs
 type LogFilters struct {
-	ExecutionID   *uuid.UUID
-	ProcessID     *uuid.UUID
-	Levels        []entity.LogLevel
-	Sources       []string
-	SearchTerm    *string
-	TimeAfter     *time.Time
-	TimeBefore    *time.Time
-	Limit         *int
-	Offset        *int
-	OrderBy       *string // "timestamp", "level", "source"
-	OrderDir      *string // "asc", "desc"
+	ExecutionID *uuid.UUID
+	ProcessID   *uuid.UUID
+	Levels      []entity.LogLevel
+	Sources     []string
+	SearchTerm  *string
+	TimeAfter   *time.Time
+	TimeBefore  *time.Time
+	Limit       *int
+	Offset      *int
+	OrderBy     *string // "timestamp", "level", "source"
+	OrderDir    *string // "asc", "desc"
 }
 
 // LogBatchConfig represents configuration for batch operations

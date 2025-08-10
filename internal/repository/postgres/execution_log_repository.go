@@ -27,7 +27,7 @@ type executionLogRepository struct {
 // NewExecutionLogRepository creates a new PostgreSQL execution log repository
 func NewExecutionLogRepository(db *database.GormDB) repository.ExecutionLogRepository {
 	ctx, cancel := context.WithCancel(context.Background())
-	
+
 	repo := &executionLogRepository{
 		db:         db,
 		batchQueue: make(chan *entity.ExecutionLog, repository.DefaultLogBatchConfig.AsyncBuffer),
@@ -186,6 +186,89 @@ func (r *executionLogRepository) BatchCreateAsync(ctx context.Context, logs []*e
 	return nil
 }
 
+// BatchInsertOrUpdate inserts or updates logs
+func (r *executionLogRepository) BatchInsertOrUpdate(ctx context.Context, logs []*entity.ExecutionLog) error {
+	// it's the same with BatchInsertOrUpdateAsync but it's synchronous
+	if len(logs) == 0 {
+		return nil
+	}
+
+	for _, log := range logs {
+		if err := r.insertOrUpdateLog(ctx, log); err != nil {
+			return fmt.Errorf("failed to insert/update log: %w", err)
+		}
+	}
+
+	return nil
+}
+
+// BatchInsertOrUpdateAsync inserts or updates logs asynchronously
+func (r *executionLogRepository) BatchInsertOrUpdateAsync(ctx context.Context, logs []*entity.ExecutionLog) error {
+	if len(logs) == 0 {
+		return nil
+	}
+
+	// Set default values for logs
+	for _, log := range logs {
+		if log.ID == uuid.Nil {
+			log.ID = uuid.New()
+		}
+		if log.Timestamp.IsZero() {
+			log.Timestamp = time.Now()
+		}
+
+		// Queue log for asynchronous processing
+		select {
+		case r.batchQueue <- log:
+			// Log queued successfully
+		case <-ctx.Done():
+			return ctx.Err()
+		default:
+			// Queue is full, fall back to synchronous processing
+			if err := r.insertOrUpdateLog(ctx, log); err != nil {
+				return fmt.Errorf("failed to insert/update log synchronously: %w", err)
+			}
+		}
+	}
+
+	return nil
+}
+
+// insertOrUpdateLog handles a single log insert or update
+func (r *executionLogRepository) insertOrUpdateLog(ctx context.Context, log *entity.ExecutionLog) error {
+	// Check if log exists based on execution_id and line
+	var existingLog entity.ExecutionLog
+	result := r.db.WithContext(ctx).Where("execution_id = ? AND line = ?", log.ExecutionID, log.Line).First(&existingLog)
+
+	if result.Error != nil {
+		if result.Error == gorm.ErrRecordNotFound {
+			// Log doesn't exist, create new one
+			if err := r.db.WithContext(ctx).Create(log).Error; err != nil {
+				return fmt.Errorf("failed to create execution log: %w", err)
+			}
+		} else {
+			// Database error
+			return fmt.Errorf("failed to check existing log: %w", result.Error)
+		}
+	} else {
+		// Log exists, update it
+		// Preserve the original ID and created_at
+		updateData := map[string]interface{}{
+			"message":   log.Message,
+			"level":     log.Level,
+			"source":    log.Source,
+			"metadata":  log.Metadata,
+			"timestamp": log.Timestamp,
+		}
+
+		if err := r.db.WithContext(ctx).Model(&existingLog).Updates(updateData).Error; err != nil {
+			return fmt.Errorf("failed to update execution log: %w", err)
+		}
+	}
+
+	return nil
+}
+
 // batchProcessor processes queued logs in batches
 func (r *executionLogRepository) batchProcessor() {
 	defer r.wg.Done()
@@ -194,12 +277,12 @@ func (r *executionLogRepository) batchProcessor() {
 	defer ticker.Stop()
 
 	var batch []*entity.ExecutionLog
-	
+
 	for {
 		select {
 		case log := <-r.batchQueue:
 			batch = append(batch, log)
-			
+
 			// Process batch when it reaches the configured size
 			if len(batch) >= r.config.BatchSize {
 				r.processBatch(batch)
@@ -229,9 +312,18 @@ func (r *executionLogRepository) processBatch(batch []*entity.ExecutionLog) {
 	defer cancel()
 
 	for attempt := 0; attempt <= r.config.RetryAttempts; attempt++ {
-		err := r.BatchCreate(ctx, batch)
+		// Try to process as insert/update first, fall back to create if needed
+		err := r.processBatchAsInsertOrUpdate(ctx, batch)
 		if err == nil {
 			return // Success
+		}
+
+		// If insert/update fails, try simple batch create as fallback
+		if attempt == 0 {
+			err = r.BatchCreate(ctx, batch)
+			if err == nil {
+				return // Success with fallback
+			}
 		}
 
 		if attempt < r.config.RetryAttempts {
@@ -240,16 +332,71 @@ func (r *executionLogRepository) processBatch(batch []*entity.ExecutionLog) {
 	}
 }
 
+// processBatchAsInsertOrUpdate processes a batch of logs with insert/update logic
+func (r *executionLogRepository) processBatchAsInsertOrUpdate(ctx context.Context, batch []*entity.ExecutionLog) error {
+	// Process in smaller batches to avoid memory issues
+	batchSize := r.config.BatchSize
+	for i := 0; i < len(batch); i += batchSize {
+		end := i + batchSize
+		if end > len(batch) {
+			end = len(batch)
+		}
+
+		subBatch := batch[i:end]
+
+		// Use a transaction for each sub-batch
+		err := r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+			for _, log := range subBatch {
+				// Check if log exists based on execution_id and line
+				var existingLog entity.ExecutionLog
+				result := tx.Where("execution_id = ? AND line = ?", log.ExecutionID, log.Line).First(&existingLog)
+
+				if result.Error != nil {
+					if result.Error == gorm.ErrRecordNotFound {
+						// Log doesn't exist, create new one
+						if err := tx.Create(log).Error; err != nil {
+							return fmt.Errorf("failed to create execution log: %w", err)
+						}
+					} else {
+						// Database error
+						return fmt.Errorf("failed to check existing log: %w", result.Error)
+					}
+				} else {
+					// Log exists, update it
+					// Preserve the original ID and created_at
+					updateData := map[string]interface{}{
+						"message":   log.Message,
+						"level":     log.Level,
+						"source":    log.Source,
+						"metadata":  log.Metadata,
+						"timestamp": log.Timestamp,
+					}
+
+					if err := tx.Model(&existingLog).Updates(updateData).Error; err != nil {
+						return fmt.Errorf("failed to update execution log: %w", err)
+					}
+				}
+			}
+			return nil
+		})
+		if err != nil {
+			return fmt.Errorf("failed to process sub-batch %d-%d: %w", i, end-1, err)
+		}
+	}
+
+	return nil
+}
+
 // GetLogsBatch retrieves logs in batches for pagination
 func (r *executionLogRepository) GetLogsBatch(ctx context.Context, executionID uuid.UUID, limit, offset int) ([]*entity.ExecutionLog, error) {
 	var logs []entity.ExecutionLog
 
 	query := r.db.WithContext(ctx).Where("execution_id = ?", executionID).Order("timestamp ASC")
-	
+
 	if limit > 0 {
 		query = query.Limit(limit)
 	}
-	
+
 	if offset > 0 {
 		query = query.Offset(offset)
 	}

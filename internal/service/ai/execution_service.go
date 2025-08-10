@@ -95,6 +95,7 @@ func (es *ExecutionService) SetUpdateCallback(callback func(update ExecutionUpda
 type AiCodingCli interface {
 	GetPlanningCommand(context.Context, *entity.Task) (string, string, error)
 	GetImplementationCommand(context.Context, *entity.Task) (string, string, error)
+	ParseOutputToLogs(output string) []*entity.ExecutionLog
 }
 
 // StartExecution starts a new AI execution

@@ -451,6 +451,15 @@ func (p *Processor) ProcessTaskImplementation(ctx context.Context, task *asynq.T
 				// if err := p.executionLogRepo.Create(context.Background(), stdoutLog); err != nil {
 				// 	p.logger.Error("Failed to save stdout log", "error", err, "execution_id", dbExecution.ID)
 				// }
+				logs := aiExecutor.ParseOutputToLogs(stdout)
+				// assign execution id to each log
+				for _, log := range logs {
+					log.ExecutionID = dbExecution.ID
+				}
+				err := p.executionLogRepo.BatchInsertOrUpdate(context.Background(), logs)
+				if err != nil {
+					p.logger.Error("Failed to insert or update logs", "error", err, "execution_id", dbExecution.ID)
+				}
 			case stderr := <-stderrChannel:
 				p.logger.Error("AI execution stderr", "task_id", payload.TaskID, "execution_id", execution.ID, "stderr", stderr)
 				// Save stderr to execution database

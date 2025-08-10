@@ -11,10 +11,10 @@ import (
 type LogLevel string
 
 const (
-	LogLevelDebug LogLevel = "debug"
-	LogLevelInfo  LogLevel = "info"
-	LogLevelWarn  LogLevel = "warn"
-	LogLevelError LogLevel = "error"
+	LogLevelDebug LogLevel = "DEBUG"
+	LogLevelInfo  LogLevel = "INFO"
+	LogLevelWarn  LogLevel = "WARN"
+	LogLevelError LogLevel = "ERROR"
 )
 
 // IsValid checks if the log level is valid
@@ -32,12 +32,14 @@ type ExecutionLog struct {
 	ID          uuid.UUID `json:"id" gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
 	ExecutionID uuid.UUID `json:"execution_id" gorm:"type:uuid;not null;index"`
 	// ProcessID   *uuid.UUID `json:"process_id,omitempty" gorm:"type:uuid;index"`
-	Level     LogLevel  `json:"level" gorm:"type:varchar(10);not null;index"`
+	Level     LogLevel  `json:"log_level" gorm:"column:log_level; type:varchar(10);not null;index"`
 	Message   string    `json:"message" gorm:"type:text;not null"`
 	Timestamp time.Time `json:"timestamp" gorm:"not null;index"`
 	Source    string    `json:"source" gorm:"type:varchar(50)"`       // stdout, stderr, system, etc.
-	Metadata  string    `json:"metadata,omitempty" gorm:"type:jsonb"` // Additional metadata as JSON
+	Metadata  JSONB     `json:"metadata,omitempty" gorm:"type:jsonb"` // Additional metadata as JSON
 	CreatedAt time.Time `json:"created_at" gorm:"autoCreateTime"`
+	UpdatedAt time.Time `json:"updated_at" gorm:"autoUpdateTime"`
+	Line      int       `json:"line" gorm:"type:int"`
 
 	// Relationships
 	Execution *Execution `json:"execution,omitempty" gorm:"foreignKey:ExecutionID;references:ID"`

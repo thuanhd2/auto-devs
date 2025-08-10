@@ -141,7 +141,7 @@ func ToExecutionLogResponse(log *entity.ExecutionLog) ExecutionLogResponse {
 		CreatedAt:   log.CreatedAt,
 	}
 
-	if log.Metadata != "" {
+	if log.Metadata != nil {
 		// Parse metadata if needed
 		response.Metadata = log.Metadata
 	}

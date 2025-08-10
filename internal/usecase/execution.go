@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"time"
@@ -325,13 +326,21 @@ func (u *ExecutionUsecaseImpl) AddExecutionLog(ctx context.Context, req AddExecu
 		timestamp = *req.Timestamp
 	}
 
+	metadata := entity.JSONB{}
+	if req.Metadata != "" {
+		err := json.Unmarshal([]byte(req.Metadata), &metadata)
+		if err != nil {
+			return nil, fmt.Errorf("failed to unmarshal metadata: %w", err)
+		}
+	}
+
 	log := &entity.ExecutionLog{
 		ExecutionID: req.ExecutionID,
 		// ProcessID:   req.ProcessID,
 		Level:     req.Level,
 		Message:   req.Message,
 		Source:    req.Source,
-		Metadata:  req.Metadata,
+		Metadata:  metadata,
 		Timestamp: timestamp,
 	}
 
@@ -351,13 +360,21 @@ func (u *ExecutionUsecaseImpl) BatchAddLogs(ctx context.Context, logReqs []AddEx
 			timestamp = *req.Timestamp
 		}
 
+		metadata := entity.JSONB{}
+		if req.Metadata != "" {
+			err := json.Unmarshal([]byte(req.Metadata), &metadata)
+			if err != nil {
+				return fmt.Errorf("failed to unmarshal metadata: %w", err)
+			}
+		}
+
 		logs[i] = &entity.ExecutionLog{
 			ExecutionID: req.ExecutionID,
 			// ProcessID:   req.ProcessID,
 			Level:     req.Level,
 			Message:   req.Message,
 			Source:    req.Source,
-			Metadata:  req.Metadata,
+			Metadata:  metadata,
 			Timestamp: timestamp,
 		}
 	}

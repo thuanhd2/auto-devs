@@ -36,12 +36,27 @@ func (e *FakeCodeExecutor) GetImplementationCommand(ctx context.Context, task *e
 		return "", "", err
 	}
 	projectRootPath := projectPath
-	fakeCliPath := filepath.Join(projectRootPath, "fake-cli", "fake.sh")
+	fakeCliPath := filepath.Join(projectRootPath, "fake-cli", "fake-claude.js")
+	command := fmt.Sprintf("node %s", fakeCliPath)
 	prompt, err := e.getImplementationPrompt(ctx, task)
 	if err != nil {
 		return "", "", err
 	}
-	return fakeCliPath, prompt, nil
+	return command, prompt, nil
+}
+
+func (e *FakeCodeExecutor) ParseOutputToLogs(output string) []*entity.ExecutionLog {
+	lines := strings.Split(output, "\n")
+	logs := make([]*entity.ExecutionLog, len(lines))
+	for i, line := range lines {
+		logs[i] = &entity.ExecutionLog{
+			Message: line,
+			Level:   entity.LogLevelInfo,
+			Source:  "stdout",
+			Line:    i,
+		}
+	}
+	return logs
 }
 
 func (e *FakeCodeExecutor) getImplementationPrompt(_ context.Context, task *entity.Task) (string, error) {

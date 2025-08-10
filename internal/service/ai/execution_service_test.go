@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -48,6 +49,20 @@ func (f *FakeAiCodingCli) GetImplementationCommand(ctx context.Context, task *en
 	projectRootPath := filepath.Join(projectPath, "../../../")
 	fakeCliPath := filepath.Join(projectRootPath, "fake-cli", "fake.sh")
 	return fakeCliPath, "hello world", nil
+}
+
+func (f *FakeAiCodingCli) ParseOutputToLogs(output string) []*entity.ExecutionLog {
+	lines := strings.Split(output, "\n")
+	logs := make([]*entity.ExecutionLog, len(lines))
+	for i, line := range lines {
+		logs[i] = &entity.ExecutionLog{
+			Message: line,
+			Level:   entity.LogLevelInfo,
+			Source:  "stdout",
+			Line:    i,
+		}
+	}
+	return logs
 }
 
 func NewFakeAiCodingCli() AiCodingCli {
