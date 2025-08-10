@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { Task } from '@/types/task'
 import { getStatusColor, getStatusTitle } from '@/lib/kanban'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import {
@@ -10,6 +11,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet'
+import { ExternalLink } from 'lucide-react'
 import { PlanReview } from '../planning'
 import { TaskActions } from './task-actions'
 import { TaskEditForm } from './task-edit-form'
@@ -17,6 +19,7 @@ import { TaskHistory } from './task-history'
 import { TaskMetadata } from './task-metadata'
 import { ExecutionList } from '../executions'
 import { useTaskExecutions } from '@/hooks/use-executions'
+import { usePullRequestByTask } from '@/hooks/use-pull-requests'
 
 interface TaskDetailSheetProps {
   open: boolean
@@ -113,10 +116,11 @@ export function TaskDetailSheet({
 
             <Separator />
 
-            {/* Tabs for Plan Review, Executions, and Metadata */}
+            {/* Tabs for Plan Review, Code Changes, Executions, and Metadata */}
             <Tabs defaultValue="plan-review" className="w-full">
-              <TabsList className="grid w-full grid-cols-3">
+              <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="plan-review">Plan Review</TabsTrigger>
+                <TabsTrigger value="code-changes">Code Changes</TabsTrigger>
                 <TabsTrigger value="executions">Executions</TabsTrigger>
                 <TabsTrigger value="metadata">Metadata</TabsTrigger>
               </TabsList>
@@ -127,6 +131,10 @@ export function TaskDetailSheet({
                   onPlanUpdate={onEdit}
                   onStatusChange={onStatusChange}
                 />
+              </TabsContent>
+              
+              <TabsContent value="code-changes" className="mt-4">
+                <CodeChanges taskId={task.id} />
               </TabsContent>
               
               <TabsContent value="executions" className="mt-4">
@@ -231,5 +239,54 @@ function TaskExecutions({ taskId }: { taskId: string }) {
       showFilters={false}
       className="max-h-96 overflow-y-auto"
     />
+  )
+}
+
+// CodeChanges component for the code changes tab
+function CodeChanges({ taskId }: { taskId: string }) {
+  const { data: pullRequest, isLoading, error } = usePullRequestByTask(taskId)
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center p-4">
+        <div className="text-sm text-muted-foreground">Loading pull request...</div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center p-4">
+        <div className="text-sm text-red-600">Error loading pull request</div>
+      </div>
+    )
+  }
+
+  if (!pullRequest) {
+    return (
+      <div className="flex items-center justify-center p-4">
+        <div className="text-sm text-muted-foreground">No pull request created yet</div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center gap-2">
+        <h4 className="text-sm font-medium">Pull Request</h4>
+      </div>
+      <Button 
+        variant="outline" 
+        size="sm" 
+        className="w-fit"
+        onClick={() => window.open(pullRequest.html_url, '_blank')}
+      >
+        <ExternalLink className="mr-2 h-4 w-4" />
+        View Pull Request
+      </Button>
+      <div className="text-xs text-muted-foreground">
+        #{pullRequest.number} - {pullRequest.title}
+      </div>
+    </div>
   )
 }
