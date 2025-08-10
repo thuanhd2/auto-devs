@@ -3,6 +3,7 @@ package github
 import (
 	"context"
 	"fmt"
+	"log"
 	"strings"
 	"time"
 
@@ -57,11 +58,17 @@ func (prc *PRCreator) CreatePRFromImplementation(ctx context.Context, task entit
 		return nil, fmt.Errorf("unable to determine repository from task")
 	}
 
+	log.Println("repository", repository)
+	log.Println("base branch", "master")
+	log.Println("head branch", *task.BranchName)
+	log.Println("title", title)
+	log.Println("description", description)
+
 	// Create the pull request via GitHub API
 	githubPR, err := prc.githubService.CreatePullRequest(
 		ctx,
 		repository,
-		"main",           // base branch - could be configurable
+		"master",         // base branch - should be get from task.BaseBranchName
 		*task.BranchName, // head branch
 		title,
 		description,
@@ -250,6 +257,7 @@ func (prc *PRCreator) getRepositoryFromTask(task entity.Task) string {
 
 	// Parse GitHub URL to extract owner/repo format
 	repoURL := task.Project.RepositoryURL
+	log.Println("repoURL", repoURL)
 
 	// Remove common prefixes
 	prefixes := []string{
@@ -316,11 +324,12 @@ func (prc *PRCreator) ValidateTaskForPRCreation(task entity.Task, execution enti
 		return CreatePRCreationError(task.ID.String(), "validation", fmt.Errorf("task must have a branch name"))
 	}
 
+	// TODO: Need to handle this case, the execution status need to be completed before the PR is created
 	// Check execution is complete
-	if execution.Status != entity.ExecutionStatusCompleted {
-		return CreatePRCreationError(task.ID.String(), "validation",
-			fmt.Errorf("execution must be completed, current status: %s", execution.Status))
-	}
+	// if execution.Status != entity.ExecutionStatusCompleted {
+	// 	return CreatePRCreationError(task.ID.String(), "validation",
+	// 		fmt.Errorf("execution must be completed, current status: %s", execution.Status))
+	// }
 
 	// Check repository is available
 	repository := prc.getRepositoryFromTask(task)

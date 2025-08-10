@@ -438,17 +438,16 @@ func (p *Processor) ProcessTaskImplementation(ctx context.Context, task *asynq.T
 					// }
 				} else {
 					p.logger.Info("AI execution completed successfully", "task_id", payload.TaskID, "execution_id", execution.ID)
-					
-					// Execute PR creation workflow
-					p.executePRCreationWorkflow(context.Background(), projectTask, execution, plan, dbExecution)
-					
-					_ = p.updateTaskStatus(context.Background(), payload.TaskID, entity.TaskStatusCODEREVIEWING)
 
 					// Update execution status to COMPLETED
 					err := p.executionRepo.MarkCompleted(context.Background(), dbExecution.ID, completedAt, nil)
 					if err != nil {
 						p.logger.Error("Failed to mark execution as completed", "error", err, "execution_id", dbExecution.ID)
 					}
+					// Execute PR creation workflow
+					p.executePRCreationWorkflow(context.Background(), projectTask, plan, dbExecution)
+
+					_ = p.updateTaskStatus(context.Background(), payload.TaskID, entity.TaskStatusCODEREVIEWING)
 
 					// // Create completion log entry
 					// completionLog := &entity.ExecutionLog{
@@ -705,7 +704,7 @@ func (p *Processor) savePlanAndUpdateStatus(ctx context.Context, taskID uuid.UUI
 }
 
 // executePRCreationWorkflow handles the automated PR creation workflow after successful AI implementation
-func (p *Processor) executePRCreationWorkflow(ctx context.Context, projectTask *entity.Task, execution *ai.Execution, plan *entity.Plan, dbExecution *entity.Execution) {
+func (p *Processor) executePRCreationWorkflow(ctx context.Context, projectTask *entity.Task, plan *entity.Plan, dbExecution *entity.Execution) {
 	p.logger.Info("Starting PR creation workflow", "task_id", projectTask.ID)
 
 	// Step 1: Check if task has a worktree path
@@ -723,11 +722,11 @@ func (p *Processor) executePRCreationWorkflow(ctx context.Context, projectTask *
 
 	// Step 3: Commit and push changes if any exist
 	if hasPendingChanges {
-		commitMessage := fmt.Sprintf("Implement task: %s\n\nTask ID: %s\nAI Implementation completed via Auto-Devs\n\n- %s", 
-			projectTask.Title, 
+		commitMessage := fmt.Sprintf("Implement task: %s\n\nTask ID: %s\nAI Implementation completed via Auto-Devs\n\n- %s",
+			projectTask.Title,
 			projectTask.ID.String(),
 			projectTask.Description)
-		
+
 		err = p.gitManager.CommitAndPush(ctx, *projectTask.WorktreePath, commitMessage, "origin", *projectTask.BranchName)
 		if err != nil {
 			p.logger.Error("Failed to commit and push changes", "error", err, "task_id", projectTask.ID)
@@ -742,6 +741,12 @@ func (p *Processor) executePRCreationWorkflow(ctx context.Context, projectTask *
 
 	// Step 4: Create PR using the existing PRCreator service
 	if p.prCreator != nil && projectTask.BranchName != nil {
+		project, err := p.projectUsecase.GetByID(ctx, projectTask.ProjectID)
+		if err != nil {
+			p.logger.Error("Failed to get project", "error", err, "task_id", projectTask.ID)
+			return
+		}
+		projectTask.Project = project
 		pr, err := p.prCreator.CreatePRFromImplementation(ctx, *projectTask, *dbExecution, plan)
 		if err != nil {
 			p.logger.Error("Failed to create PR", "error", err, "task_id", projectTask.ID)
@@ -753,17 +758,17 @@ func (p *Processor) executePRCreationWorkflow(ctx context.Context, projectTask *
 		if err := p.prRepo.Create(ctx, pr); err != nil {
 			p.logger.Error("Failed to save PR to database", "error", err, "pr_id", pr.ID, "task_id", projectTask.ID)
 		} else {
-			p.logger.Info("PR created and saved successfully", 
-				"pr_number", pr.GitHubPRNumber, 
-				"task_id", projectTask.ID, 
+			p.logger.Info("PR created and saved successfully",
+				"pr_number", pr.GitHubPRNumber,
+				"task_id", projectTask.ID,
 				"pr_id", pr.ID)
-			
+
 			// Step 6: Send WebSocket notification about PR creation
 			p.sendPRNotification(ctx, projectTask.ProjectID, pr, "pr_created")
 		}
 	} else {
-		p.logger.Warn("PR creation skipped - missing required services or branch name", 
-			"task_id", projectTask.ID, 
+		p.logger.Warn("PR creation skipped - missing required services or branch name",
+			"task_id", projectTask.ID,
 			"has_pr_creator", p.prCreator != nil,
 			"has_branch_name", projectTask.BranchName != nil)
 	}

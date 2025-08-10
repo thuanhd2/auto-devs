@@ -147,7 +147,9 @@ func (t *TaskResponse) FromEntity(task *entity.Task) {
 
 func (t *TaskWithProjectResponse) FromEntity(task *entity.Task) {
 	t.TaskResponse.FromEntity(task)
-	t.Project.FromEntity(&task.Project)
+	if task.Project != nil {
+		t.Project.FromEntity(task.Project)
+	}
 }
 
 func TaskResponseFromEntity(task *entity.Task) TaskResponse {

@@ -287,7 +287,7 @@ type Task struct {
 	DeletedAt      gorm.DeletedAt `json:"deleted_at,omitempty" gorm:"index"`
 
 	// Relationships
-	Project    Project        `json:"project,omitempty" gorm:"foreignKey:ProjectID"`
+	Project    *Project       `json:"project,omitempty" gorm:"foreignKey:ProjectID"`
 	ParentTask *Task          `json:"parent_task,omitempty" gorm:"foreignKey:ParentTaskID"`
 	Subtasks   []Task         `json:"subtasks,omitempty" gorm:"foreignKey:ParentTaskID"`
 	AuditLogs  []TaskAuditLog `json:"audit_logs,omitempty" gorm:"foreignKey:TaskID"`

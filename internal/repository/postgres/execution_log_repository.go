@@ -255,7 +255,7 @@ func (r *executionLogRepository) insertOrUpdateLog(ctx context.Context, log *ent
 		// Preserve the original ID and created_at
 		updateData := map[string]interface{}{
 			"message":   log.Message,
-			"level":     log.Level,
+			"log_level": log.Level,
 			"source":    log.Source,
 			"metadata":  log.Metadata,
 			"timestamp": log.Timestamp,
