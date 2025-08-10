@@ -12,6 +12,7 @@ import (
 	"github.com/auto-devs/auto-devs/internal/repository/postgres"
 	"github.com/auto-devs/auto-devs/internal/service/ai"
 	"github.com/auto-devs/auto-devs/internal/service/git"
+	"github.com/auto-devs/auto-devs/internal/service/github"
 	worktreesvc "github.com/auto-devs/auto-devs/internal/service/worktree"
 	"github.com/auto-devs/auto-devs/internal/usecase"
 	"github.com/auto-devs/auto-devs/internal/websocket"
@@ -31,9 +32,12 @@ var ProviderSet = wire.NewSet(
 	postgres.NewAuditRepository,
 	postgres.NewExecutionRepository,
 	postgres.NewExecutionLogRepository,
+	ProvidePullRequestRepository,
 	// Service providers
 	ProvideGitManager,
 	ProvideProjectGitService,
+	ProvideGitHubService,
+	ProvidePRCreator,
 	ProvideIntegratedWorktreeService,
 	ProvideWorktreeManager,
 	// WebSocket service provider
@@ -76,6 +80,7 @@ type App struct {
 	AuditRepo           repository.AuditRepository
 	ExecutionRepo       repository.ExecutionRepository
 	ExecutionLogRepo    repository.ExecutionLogRepository
+	PullRequestRepo     repository.PullRequestRepository
 	AuditUsecase        usecase.AuditUsecase
 	ProjectUsecase      usecase.ProjectUsecase
 	TaskUsecase         usecase.TaskUsecase
@@ -92,6 +97,9 @@ type App struct {
 	// Git Services
 	GitManager      *git.GitManager
 	WorktreeManager *worktreesvc.WorktreeManager
+	// GitHub Services
+	GitHubService   *github.GitHubService
+	PRCreator       *github.PRCreator
 	// Job Services
 	JobClient        *jobs.Client
 	JobClientAdapter usecase.JobClientInterface
@@ -109,6 +117,7 @@ func NewApp(
 	auditRepo repository.AuditRepository,
 	executionRepo repository.ExecutionRepository,
 	executionLogRepo repository.ExecutionLogRepository,
+	pullRequestRepo repository.PullRequestRepository,
 	auditUsecase usecase.AuditUsecase,
 	projectUsecase usecase.ProjectUsecase,
 	taskUsecase usecase.TaskUsecase,
@@ -122,6 +131,8 @@ func NewApp(
 	planningService *ai.PlanningService,
 	gitManager *git.GitManager,
 	worktreeManager *worktreesvc.WorktreeManager,
+	githubService *github.GitHubService,
+	prCreator *github.PRCreator,
 	jobClient *jobs.Client,
 	jobClientAdapter usecase.JobClientInterface,
 	jobProcessor *jobs.Processor,
@@ -136,6 +147,7 @@ func NewApp(
 		AuditRepo:           auditRepo,
 		ExecutionRepo:       executionRepo,
 		ExecutionLogRepo:    executionLogRepo,
+		PullRequestRepo:     pullRequestRepo,
 		AuditUsecase:        auditUsecase,
 		ProjectUsecase:      projectUsecase,
 		TaskUsecase:         taskUsecase,
@@ -149,6 +161,8 @@ func NewApp(
 		PlanningService:     planningService,
 		GitManager:          gitManager,
 		WorktreeManager:     worktreeManager,
+		GitHubService:       githubService,
+		PRCreator:           prCreator,
 		JobClient:           jobClient,
 		JobClientAdapter:    jobClientAdapter,
 		JobProcessor:        jobProcessor,
@@ -276,8 +290,12 @@ func ProvideJobProcessor(
 	executionRepo repository.ExecutionRepository,
 	executionLogRepo repository.ExecutionLogRepository,
 	wsService *websocket.Service,
+	gitManager *git.GitManager,
+	githubService *github.GitHubService,
+	prCreator *github.PRCreator,
+	prRepo repository.PullRequestRepository,
 ) *jobs.Processor {
-	return jobs.NewProcessor(taskUsecase, projectUsecase, worktreeUsecase, planningService, executionService, planRepo, executionRepo, executionLogRepo, wsService)
+	return jobs.NewProcessor(taskUsecase, projectUsecase, worktreeUsecase, planningService, executionService, planRepo, executionRepo, executionLogRepo, wsService, gitManager, githubService, prCreator, prRepo)
 }
 
 // ProvideWebSocketService provides a WebSocket service instance
@@ -287,4 +305,27 @@ func ProvideWebSocketService(cfg *config.Config) *websocket.Service {
 
 func ProvideExecutionUsecase(executionRepo repository.ExecutionRepository, executionLogRepo repository.ExecutionLogRepository, taskRepo repository.TaskRepository) usecase.ExecutionUsecase {
 	return usecase.NewExecutionUsecase(executionRepo, executionLogRepo, taskRepo)
+}
+
+// ProvideGitHubService provides a GitHub service instance
+func ProvideGitHubService(cfg *config.Config) *github.GitHubService {
+	githubConfig := &github.GitHubConfig{
+		Token:   cfg.GitHub.Token,
+		BaseURL: cfg.GitHub.BaseURL,
+	}
+	return github.NewGitHubService(githubConfig)
+}
+
+// ProvidePRCreator provides a PR creator instance
+func ProvidePRCreator(githubService *github.GitHubService, cfg *config.Config) *github.PRCreator {
+	baseURL := cfg.App.BaseURL
+	if baseURL == "" {
+		baseURL = "http://localhost:8098" // fallback for development
+	}
+	return github.NewPRCreator(githubService, baseURL)
+}
+
+// ProvidePullRequestRepository provides a PullRequestRepository instance
+func ProvidePullRequestRepository(gormDB *database.GormDB) repository.PullRequestRepository {
+	return postgres.NewPullRequestRepository(gormDB.DB)
 }
