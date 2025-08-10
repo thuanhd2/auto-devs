@@ -415,6 +415,7 @@ func (p *Processor) ProcessTaskImplementation(ctx context.Context, task *asynq.T
 					// 	p.logger.Error("Failed to save failure log", "error", err, "execution_id", dbExecution.ID)
 					// }
 				} else {
+					// TODO: Commit code to git, push to github and create PR
 					p.logger.Info("AI execution completed successfully", "task_id", payload.TaskID, "execution_id", execution.ID)
 					_ = p.updateTaskStatus(context.Background(), payload.TaskID, entity.TaskStatusCODEREVIEWING)
 
@@ -482,35 +483,6 @@ func (p *Processor) ProcessTaskImplementation(ctx context.Context, task *asynq.T
 	// or back to IMPLEMENTING on failure through its callback mechanism
 
 	return nil
-}
-
-// convertEntityPlanToAIPlan converts database Plan entity to AI service Plan format
-func (p *Processor) convertEntityPlanToAIPlan(plan *entity.Plan) *ai.Plan {
-	// For this implementation, we'll create a structured plan from the markdown content
-	// In a more sophisticated version, the content could be parsed to extract steps
-	return &ai.Plan{
-		ID:          plan.ID.String(),
-		TaskID:      plan.TaskID.String(),
-		Description: "Implementation plan",
-		Steps: []ai.PlanStep{
-			{
-				ID:          "1",
-				Description: "Execute implementation based on plan content",
-				Action:      "implement",
-				Parameters: map[string]string{
-					"content":       plan.Content,
-					"worktree_path": "", // Will be set by execution service
-				},
-				Order: 1,
-			},
-		},
-		Context: map[string]string{
-			"plan_content": plan.Content,
-			"plan_status":  string(plan.Status),
-			"created_at":   plan.CreatedAt.Format("2006-01-02T15:04:05Z"),
-		},
-		CreatedAt: plan.CreatedAt,
-	}
 }
 
 // updateTaskStatus updates the task status and broadcasts WebSocket notification
