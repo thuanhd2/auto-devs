@@ -732,19 +732,7 @@ func (r *taskRepository) GetAuditLogs(ctx context.Context, taskID uuid.UUID, lim
 	return logPtrs, nil
 }
 
-// CreateAuditLog creates a new audit log entry
-func (r *taskRepository) CreateAuditLog(ctx context.Context, auditLog *entity.TaskAuditLog) error {
-	if auditLog.ID == uuid.Nil {
-		auditLog.ID = uuid.New()
-	}
 
-	result := r.db.WithContext(ctx).Create(auditLog)
-	if result.Error != nil {
-		return fmt.Errorf("failed to create audit log: %w", result.Error)
-	}
-
-	return nil
-}
 
 // GetTaskStatistics retrieves comprehensive task statistics
 func (r *taskRepository) GetTaskStatistics(ctx context.Context, projectID uuid.UUID) (*entity.TaskStatistics, error) {
@@ -904,46 +892,7 @@ func (r *taskRepository) DeleteComment(ctx context.Context, commentID uuid.UUID)
 	return nil
 }
 
-// AddAttachment adds a file attachment to a task
-func (r *taskRepository) AddAttachment(ctx context.Context, attachment *entity.TaskAttachment) error {
-	if attachment.ID == uuid.Nil {
-		attachment.ID = uuid.New()
-	}
 
-	result := r.db.WithContext(ctx).Create(attachment)
-	if result.Error != nil {
-		return fmt.Errorf("failed to add attachment: %w", result.Error)
-	}
-
-	return nil
-}
-
-// GetAttachments retrieves attachments for a task
-func (r *taskRepository) GetAttachments(ctx context.Context, taskID uuid.UUID) ([]*entity.TaskAttachment, error) {
-	var attachments []entity.TaskAttachment
-
-	result := r.db.WithContext(ctx).Where("task_id = ?", taskID).Order("created_at ASC").Find(&attachments)
-	if result.Error != nil {
-		return nil, fmt.Errorf("failed to get attachments: %w", result.Error)
-	}
-
-	attachmentPtrs := make([]*entity.TaskAttachment, len(attachments))
-	for i := range attachments {
-		attachmentPtrs[i] = &attachments[i]
-	}
-
-	return attachmentPtrs, nil
-}
-
-// DeleteAttachment deletes a file attachment
-func (r *taskRepository) DeleteAttachment(ctx context.Context, attachmentID uuid.UUID) error {
-	result := r.db.WithContext(ctx).Delete(&entity.TaskAttachment{}, "id = ?", attachmentID)
-	if result.Error != nil {
-		return fmt.Errorf("failed to delete attachment: %w", result.Error)
-	}
-
-	return nil
-}
 
 // ExportTasks exports tasks in the specified format
 func (r *taskRepository) ExportTasks(ctx context.Context, filters entity.TaskFilters, format entity.TaskExportFormat) ([]byte, error) {

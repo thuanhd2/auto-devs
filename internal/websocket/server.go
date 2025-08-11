@@ -78,13 +78,13 @@ func NewServer(appConfig *config.CentrifugeRedisBrokerConfig) (*Server, error) {
 				// private channel require user_id to be the same as the client.UserID()
 				channelParts := strings.Split(e.Channel, ":")
 				if len(channelParts) < 2 {
-					log.Printf("[%d] error adding subscription: invalid private channel format", e.Channel)
+					log.Printf("[%s] error adding subscription: invalid private channel format", e.Channel)
 					cb(centrifuge.SubscribeReply{}, centrifuge.ErrorBadRequest)
 					return
 				}
 				channelUserId := channelParts[1]
 				if client.UserID() != channelUserId {
-					log.Printf("[%d] error adding subscription: permission denied for private channel", e.Channel)
+					log.Printf("[%s] error adding subscription: permission denied for private channel", e.Channel)
 					cb(centrifuge.SubscribeReply{}, centrifuge.ErrorPermissionDenied)
 					return
 				}
