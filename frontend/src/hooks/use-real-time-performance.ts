@@ -1,4 +1,4 @@
-import { useRef, useCallback, useMemo, useState, useEffect } from 'react'
+import { useRef, useCallback, useState, useEffect } from 'react'
 
 // Utility functions for debouncing and throttling
 function debounce<T extends (...args: any[]) => any>(func: T, wait: number): T {

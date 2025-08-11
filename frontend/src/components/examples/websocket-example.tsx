@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -20,8 +20,7 @@ import {
   Users, 
   Activity,
   MessageSquare,
-  CheckCircle,
-  AlertCircle
+  CheckCircle
 } from 'lucide-react'
 
 export function WebSocketExample() {

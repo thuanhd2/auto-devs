@@ -4,7 +4,6 @@ import {
   Play,
   Pause,
   Square,
-  Trash2,
   Eye,
   AlertTriangle,
   ChevronRight,
@@ -23,7 +22,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { ExecutionDuration } from './execution-duration'

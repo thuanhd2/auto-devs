@@ -1,8 +1,6 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useCallback } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import type {
-  PullRequest,
-  PullRequestsResponse,
   PullRequestFilters,
   CreatePullRequestRequest,
   UpdatePullRequestRequest,
@@ -53,32 +51,9 @@ export function usePullRequest({
     refetchOnWindowFocus: false,
   })
 
-  // WebSocket integration for real-time updates
-  const { lastMessage } = useWebSocket()
-
-  useEffect(() => {
-    if (!lastMessage) return
-
-    try {
-      const message =
-        typeof lastMessage === 'string' ? JSON.parse(lastMessage) : lastMessage
-
-      if (
-        (message.type === 'pr_updated' ||
-          message.type === 'pr_comment_added' ||
-          message.type === 'pr_review_added') &&
-        message.data?.pull_request?.id === pullRequestId
-      ) {
-        // Update the specific PR data
-        queryClient.setQueryData(
-          ['pull-request', pullRequestId],
-          message.data.pull_request
-        )
-      }
-    } catch (error) {
-      console.error('Error processing WebSocket message:', error)
-    }
-  }, [lastMessage, pullRequestId, queryClient])
+  // TODO: WebSocket integration for real-time updates would go here
+  // const { lastMessage } = useWebSocketContext()
+  // useEffect(() => { ... }, [pullRequestId, queryClient])
 
   return query
 }

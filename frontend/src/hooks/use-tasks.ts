@@ -1,5 +1,4 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { taskOptimisticUpdates } from '@/services/optimisticUpdates'
 import type {
   Task,
   UpdateTaskRequest,

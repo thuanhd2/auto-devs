@@ -8,7 +8,6 @@ import {
   Calendar,
   GitBranch,
   Activity,
-  GitFork,
   Archive,
   RotateCcw,
 } from 'lucide-react'

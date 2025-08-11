@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useNavigate, useParams } from '@tanstack/react-router'
 import type { UpdateProjectRequest } from '@/types/project'
-import { ArrowLeft, GitBranch, Trash2, Info, GitFork } from 'lucide-react'
+import { ArrowLeft, GitBranch, Trash2, Info } from 'lucide-react'
 import {
   useProject,
   useUpdateProject,
@@ -29,7 +29,6 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
-import { Separator } from '@/components/ui/separator'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Textarea } from '@/components/ui/textarea'
 import { SimpleConfirmDialog } from '@/components/simple-confirm-dialog'
