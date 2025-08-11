@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { ExecutionLog } from '@/types/execution'
 import { AlertTriangle } from 'lucide-react'
 import {
@@ -42,6 +42,24 @@ export function ExecutionLogsModal({
 }: ExecutionLogsModalProps) {
   const { data, isLoading, error } = useExecutionLogs(executionId)
   const logs = data?.data || []
+  const scrollAreaRef = useRef<HTMLDivElement>(null)
+  const [prevLogsLength, setPrevLogsLength] = useState(0)
+
+  // Auto scroll to bottom when new logs arrive
+  useEffect(() => {
+    if (logs.length > prevLogsLength && scrollAreaRef.current) {
+      const scrollContainer = scrollAreaRef.current.querySelector(
+        '[data-radix-scroll-area-viewport]'
+      )
+      if (scrollContainer) {
+        scrollContainer.scrollTo({
+          top: scrollContainer.scrollHeight,
+          behavior: 'smooth',
+        })
+      }
+    }
+    setPrevLogsLength(logs.length)
+  }, [logs.length, prevLogsLength])
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className='sm:w-[400px] sm:max-w-[400px] lg:h-[80vh] lg:w-[80vw] lg:max-w-none'>
@@ -60,12 +78,24 @@ export function ExecutionLogsModal({
           )}
           {!isLoading && !error && (
             <ScrollArea
+              ref={scrollAreaRef}
               className='h-full rounded border p-2 text-xs'
               stickToBottom
             >
               {logs ? (
-                logs.map((log) => (
-                  <div key={log.id}>
+                logs.map((log, index) => (
+                  <div
+                    key={log.id}
+                    className={`animate-in fade-in-0 slide-in-from-bottom-2 duration-300 ${
+                      index >= prevLogsLength ? 'animate-in' : ''
+                    }`}
+                    style={{
+                      animationDelay:
+                        index >= prevLogsLength
+                          ? `${(index - prevLogsLength) * 50}ms`
+                          : '10ms',
+                    }}
+                  >
                     <ExecutionLogItem log={log} />
                   </div>
                 ))
