@@ -1,12 +1,12 @@
 import { toast } from 'sonner'
 
-export interface AnimationConfig {
+interface AnimationConfig {
   duration?: number
   easing?: string
   delay?: number
 }
 
-export interface TaskAnimationOptions {
+interface TaskAnimationOptions {
   showToast?: boolean
   toastMessage?: string
   highlightDuration?: number
@@ -130,11 +130,7 @@ export class AnimationUtils {
   /**
    * Create a ripple effect for interactive elements
    */
-  static createRippleEffect(
-    element: HTMLElement,
-    x: number,
-    y: number
-  ): void {
+  static createRippleEffect(element: HTMLElement, x: number, y: number): void {
     const ripple = document.createElement('div')
     const rect = element.getBoundingClientRect()
     const size = Math.max(rect.width, rect.height)
@@ -199,8 +195,13 @@ export class AnimationUtils {
  * Hook for managing task animations in React components
  */
 export function useTaskAnimations() {
-  const animateTaskCreated = (taskId: string, options?: TaskAnimationOptions) => {
-    const element = document.querySelector(`[data-task-id="${taskId}"]`) as HTMLElement
+  const animateTaskCreated = (
+    taskId: string,
+    options?: TaskAnimationOptions
+  ) => {
+    const element = document.querySelector(
+      `[data-task-id="${taskId}"]`
+    ) as HTMLElement
     if (element) {
       AnimationUtils.animateTaskAppear(element)
       if (options?.showToast) {
@@ -209,8 +210,13 @@ export function useTaskAnimations() {
     }
   }
 
-  const animateTaskUpdated = (taskId: string, options?: TaskAnimationOptions) => {
-    const element = document.querySelector(`[data-task-id="${taskId}"]`) as HTMLElement
+  const animateTaskUpdated = (
+    taskId: string,
+    options?: TaskAnimationOptions
+  ) => {
+    const element = document.querySelector(
+      `[data-task-id="${taskId}"]`
+    ) as HTMLElement
     if (element) {
       AnimationUtils.animateTaskUpdate(element, options)
     }
@@ -221,7 +227,9 @@ export function useTaskAnimations() {
     newStatus: string,
     options?: TaskAnimationOptions
   ) => {
-    const element = document.querySelector(`[data-task-id="${taskId}"]`) as HTMLElement
+    const element = document.querySelector(
+      `[data-task-id="${taskId}"]`
+    ) as HTMLElement
     if (element) {
       AnimationUtils.animateStatusChange(element, {
         ...options,
@@ -231,8 +239,13 @@ export function useTaskAnimations() {
     }
   }
 
-  const animateTaskDeleted = (taskId: string, options?: TaskAnimationOptions) => {
-    const element = document.querySelector(`[data-task-id="${taskId}"]`) as HTMLElement
+  const animateTaskDeleted = (
+    taskId: string,
+    options?: TaskAnimationOptions
+  ) => {
+    const element = document.querySelector(
+      `[data-task-id="${taskId}"]`
+    ) as HTMLElement
     if (element) {
       return AnimationUtils.animateTaskRemove(element).then(() => {
         if (options?.showToast) {
@@ -244,7 +257,9 @@ export function useTaskAnimations() {
   }
 
   const animateColumnCountUpdate = (status: string) => {
-    const element = document.querySelector(`[data-column="${status}"] .task-count`) as HTMLElement
+    const element = document.querySelector(
+      `[data-column="${status}"] .task-count`
+    ) as HTMLElement
     if (element) {
       AnimationUtils.animateCountUpdate(element)
     }
@@ -256,64 +271,5 @@ export function useTaskAnimations() {
     animateTaskStatusChanged,
     animateTaskDeleted,
     animateColumnCountUpdate,
-  }
-}
-
-/**
- * CSS classes for animations (to be added to tailwind.config.js)
- */
-export const ANIMATION_CLASSES = {
-  // Task appearance
-  taskAppear: 'animate-in fade-in-0 slide-in-from-top-2 duration-300',
-  taskRemove: 'animate-out fade-out-0 slide-out-to-top-2 duration-250',
-  
-  // Status changes
-  statusChange: 'animate-pulse bg-blue-100 border-blue-300 duration-2000',
-  taskUpdate: 'animate-pulse bg-green-50 border-green-200 duration-1500',
-  
-  // Interactive feedback
-  buttonPress: 'active:scale-95 transition-transform duration-100',
-  hover: 'hover:scale-105 transition-transform duration-200',
-  
-  // Loading states
-  skeleton: 'animate-pulse bg-gray-200',
-  shimmer: 'animate-shimmer bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200',
-  
-  // Real-time indicators
-  newContent: 'animate-bounce text-blue-600',
-  updateIndicator: 'animate-ping absolute inline-flex h-2 w-2 rounded-full bg-blue-400 opacity-75',
-} as const
-
-/**
- * Debounced animation manager to prevent excessive animations
- */
-export class AnimationDebouncer {
-  private static timers: Map<string, NodeJS.Timeout> = new Map()
-  
-  static debounce(key: string, callback: () => void, delay = 100): void {
-    const existingTimer = this.timers.get(key)
-    if (existingTimer) {
-      clearTimeout(existingTimer)
-    }
-    
-    const timer = setTimeout(() => {
-      callback()
-      this.timers.delete(key)
-    }, delay)
-    
-    this.timers.set(key, timer)
-  }
-  
-  static clear(key?: string): void {
-    if (key) {
-      const timer = this.timers.get(key)
-      if (timer) {
-        clearTimeout(timer)
-        this.timers.delete(key)
-      }
-    } else {
-      this.timers.forEach(timer => clearTimeout(timer))
-      this.timers.clear()
-    }
   }
 }

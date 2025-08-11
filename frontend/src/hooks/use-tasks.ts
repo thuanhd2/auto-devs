@@ -8,21 +8,13 @@ import type {
 import { toast } from 'sonner'
 import { tasksApi } from '@/lib/api/tasks'
 
-export const TASKS_QUERY_KEY = 'tasks'
+const TASKS_QUERY_KEY = 'tasks'
 
 export function useTasks(projectId: string, filters?: TaskFilters) {
   return useQuery({
     queryKey: [TASKS_QUERY_KEY, projectId, filters],
     queryFn: () => tasksApi.getTasks(projectId, filters),
     enabled: !!projectId,
-  })
-}
-
-export function useTask(taskId: string) {
-  return useQuery({
-    queryKey: [TASKS_QUERY_KEY, taskId],
-    queryFn: () => tasksApi.getTask(taskId),
-    enabled: !!taskId,
   })
 }
 
@@ -220,7 +212,9 @@ export function useApprovePlan() {
       return { previousTasks }
     },
     onSuccess: (response, taskId) => {
-      toast.success(`Plan approved! Implementation job enqueued. Job ID: ${response.job_id}`)
+      toast.success(
+        `Plan approved! Implementation job enqueued. Job ID: ${response.job_id}`
+      )
     },
     onError: (error: any, taskId, context) => {
       // Revert optimistic update on error

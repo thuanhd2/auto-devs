@@ -14,7 +14,7 @@ import {
   ConnectionState,
 } from '@/services/websocketService'
 
-export interface WebSocketContextValue {
+interface WebSocketContextValue {
   // Connection state
   connectionState: ConnectionState
   isConnected: boolean
@@ -72,7 +72,7 @@ export interface WebSocketContextValue {
 
 const WebSocketContext = createContext<WebSocketContextValue | null>(null)
 
-export interface WebSocketProviderProps {
+interface WebSocketProviderProps {
   children: ReactNode
   authToken?: string | null
   autoConnect?: boolean
@@ -481,17 +481,5 @@ export function useWebSocketProject(projectId?: string) {
     unsubscribeFromProject,
     onlineUsers,
     userCount,
-  }
-}
-
-export function useWebSocketDebug() {
-  const { messageHistory, clearMessageHistory, isDebugMode, setDebugMode } =
-    useWebSocketContext()
-
-  return {
-    messageHistory,
-    clearMessageHistory,
-    isDebugMode,
-    setDebugMode,
   }
 }

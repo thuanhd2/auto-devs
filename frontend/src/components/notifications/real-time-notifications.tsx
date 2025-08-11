@@ -312,19 +312,3 @@ function WebSocketNotificationHandler({
 
   return null
 }
-
-/**
- * Notification settings that can be customized by users
- */
-export interface NotificationSettings {
-  enableToastNotifications: boolean
-  enableBrowserNotifications: boolean
-  enableSoundNotifications: boolean
-  taskCreated: boolean
-  taskUpdated: boolean
-  taskDeleted: boolean
-  taskStatusChanged: boolean
-  projectUpdated: boolean
-  userPresence: boolean
-  connectionEvents: boolean
-}

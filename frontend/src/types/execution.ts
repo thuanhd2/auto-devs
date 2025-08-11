@@ -1,18 +1,14 @@
-export type ExecutionStatus = 
+export type ExecutionStatus =
   | 'pending'
-  | 'running' 
+  | 'running'
   | 'paused'
   | 'completed'
   | 'failed'
   | 'cancelled'
 
-export type LogLevel = 
-  | 'debug'
-  | 'info'
-  | 'warn'
-  | 'error'
+type LogLevel = 'debug' | 'info' | 'warn' | 'error'
 
-export interface ExecutionResult {
+interface ExecutionResult {
   output: string
   files: string[]
   metrics: Record<string, unknown>
@@ -131,40 +127,23 @@ export interface ExecutionLogListResponse {
 }
 
 // UI-specific types
-export interface ExecutionStatusBadgeProps {
+interface ExecutionStatusBadgeProps {
   status: ExecutionStatus
   size?: 'sm' | 'md' | 'lg'
   showIcon?: boolean
 }
 
-export interface ExecutionProgressProps {
+interface ExecutionProgressProps {
   progress: number
   status: ExecutionStatus
   size?: 'sm' | 'md' | 'lg'
   showPercentage?: boolean
 }
 
-export interface ExecutionDurationProps {
+interface ExecutionDurationProps {
   startedAt: string
   completedAt?: string
   showIcon?: boolean
-}
-
-// Utility types for sorting and filtering
-export const EXECUTION_STATUS_ORDER: Record<ExecutionStatus, number> = {
-  running: 1,
-  pending: 2,
-  paused: 3,
-  completed: 4,
-  failed: 5,
-  cancelled: 6,
-}
-
-export const LOG_LEVEL_ORDER: Record<LogLevel, number> = {
-  error: 1,
-  warn: 2,
-  info: 3,
-  debug: 4,
 }
 
 // Status colors for UI
@@ -175,11 +154,4 @@ export const EXECUTION_STATUS_COLORS: Record<ExecutionStatus, string> = {
   completed: 'bg-green-100 text-green-800',
   failed: 'bg-red-100 text-red-800',
   cancelled: 'bg-gray-100 text-gray-600',
-}
-
-export const LOG_LEVEL_COLORS: Record<LogLevel, string> = {
-  debug: 'bg-gray-100 text-gray-600',
-  info: 'bg-blue-100 text-blue-600',
-  warn: 'bg-yellow-100 text-yellow-600',
-  error: 'bg-red-100 text-red-600',
 }

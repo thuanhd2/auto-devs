@@ -12,7 +12,7 @@ export interface CentrifugeMessage {
   message_id: string
 }
 
-export interface CentrifugeConfig {
+interface CentrifugeConfig {
   url: string
   token?: string
   debug: boolean
@@ -32,7 +32,7 @@ export interface ConnectionState {
 type EventListener = (message: CentrifugeMessage) => void
 type ConnectionListener = (state: ConnectionState) => void
 
-export class CentrifugeService {
+class CentrifugeService {
   private centrifuge: Centrifuge | null = null
   private config: CentrifugeConfig
   private connectionState: ConnectionState

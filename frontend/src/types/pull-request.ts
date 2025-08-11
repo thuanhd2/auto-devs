@@ -1,6 +1,6 @@
-export type PullRequestStatus = 'OPEN' | 'MERGED' | 'CLOSED'
+type PullRequestStatus = 'OPEN' | 'MERGED' | 'CLOSED'
 
-export interface PullRequestComment {
+interface PullRequestComment {
   id: string
   pull_request_id: string
   github_id?: number
@@ -13,7 +13,7 @@ export interface PullRequestComment {
   updated_at: string
 }
 
-export interface PullRequestReview {
+interface PullRequestReview {
   id: string
   pull_request_id: string
   github_id?: number
@@ -25,7 +25,7 @@ export interface PullRequestReview {
   updated_at: string
 }
 
-export interface PullRequestCheck {
+interface PullRequestCheck {
   id: string
   pull_request_id: string
   check_name: string

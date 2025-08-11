@@ -53,7 +53,7 @@ export const KANBAN_COLUMNS: KanbanColumn[] = [
   },
 ]
 
-export const TASK_STATUS_TRANSITIONS: Record<TaskStatus, TaskStatus[]> = {
+const TASK_STATUS_TRANSITIONS: Record<TaskStatus, TaskStatus[]> = {
   TODO: ['PLANNING', 'CANCELLED'],
   PLANNING: ['PLAN_REVIEWING', 'CANCELLED'],
   PLAN_REVIEWING: ['IMPLEMENTING', 'PLANNING', 'CANCELLED'],
@@ -63,12 +63,11 @@ export const TASK_STATUS_TRANSITIONS: Record<TaskStatus, TaskStatus[]> = {
   CANCELLED: [],
 }
 
-export function canTransitionTo(fromStatus: TaskStatus, toStatus: TaskStatus): boolean {
+export function canTransitionTo(
+  fromStatus: TaskStatus,
+  toStatus: TaskStatus
+): boolean {
   return TASK_STATUS_TRANSITIONS[fromStatus].includes(toStatus)
-}
-
-export function getColumnById(columnId: TaskStatus): KanbanColumn | undefined {
-  return KANBAN_COLUMNS.find(col => col.id === columnId)
 }
 
 export function getStatusColor(status: TaskStatus): string {

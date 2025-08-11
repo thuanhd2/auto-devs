@@ -26,7 +26,7 @@ export const executionsApi = {
     filters?: ExecutionFilters
   ): Promise<ExecutionListResponse> {
     const params = new URLSearchParams()
-    
+
     if (filters) {
       if (filters.status) {
         params.append('status', filters.status)
@@ -87,7 +87,7 @@ export const executionsApi = {
     filters?: ExecutionLogFilters
   ): Promise<ExecutionLogListResponse> {
     const params = new URLSearchParams()
-    
+
     if (filters) {
       if (filters.level) {
         params.append('level', filters.level)
@@ -141,7 +141,10 @@ export const executionsApi = {
     executionId: string,
     data: UpdateExecutionRequest
   ): Promise<Execution> {
-    const response = await api.put(`${API_ENDPOINTS.EXECUTIONS}/${executionId}`, data)
+    const response = await api.put(
+      `${API_ENDPOINTS.EXECUTIONS}/${executionId}`,
+      data
+    )
     return response.data
   },
 
@@ -181,7 +184,7 @@ export const executionsApi = {
     // For now, return a no-op cleanup function
     // Real implementation would establish WebSocket connection to:
     // ws://localhost:8098/ws/executions/{executionId}
-    
+
     // Mock cleanup function
     return () => {
       // Cleanup WebSocket connection
@@ -198,63 +201,10 @@ export const executionsApi = {
     // For now, return a no-op cleanup function
     // Real implementation would establish WebSocket connection to:
     // ws://localhost:8098/ws/executions/{executionId}/logs
-    
+
     // Mock cleanup function
     return () => {
       // Cleanup WebSocket connection
     }
-  }
-}
-
-// Utility functions for data formatting
-export const executionUtils = {
-  formatDuration: (nanoseconds: number): string => {
-    const seconds = Math.floor(nanoseconds / 1_000_000_000)
-    const minutes = Math.floor(seconds / 60)
-    const hours = Math.floor(minutes / 60)
-
-    if (hours > 0) {
-      return `${hours}h ${minutes % 60}m ${seconds % 60}s`
-    } else if (minutes > 0) {
-      return `${minutes}m ${seconds % 60}s`
-    } else {
-      return `${seconds}s`
-    }
   },
-
-  formatProgress: (progress: number): string => {
-    return `${Math.round(progress * 100)}%`
-  },
-
-  formatTimestamp: (timestamp: string): string => {
-    return new Date(timestamp).toLocaleString()
-  },
-
-  formatRelativeTime: (timestamp: string): string => {
-    const now = new Date()
-    const time = new Date(timestamp)
-    const diffMs = now.getTime() - time.getTime()
-    const diffSeconds = Math.floor(diffMs / 1000)
-    const diffMinutes = Math.floor(diffSeconds / 60)
-    const diffHours = Math.floor(diffMinutes / 60)
-    const diffDays = Math.floor(diffHours / 24)
-
-    if (diffDays > 0) {
-      return `${diffDays}d ago`
-    } else if (diffHours > 0) {
-      return `${diffHours}h ago`
-    } else if (diffMinutes > 0) {
-      return `${diffMinutes}m ago`
-    } else {
-      return `${diffSeconds}s ago`
-    }
-  },
-
-  isExecutionActive: (status: string): boolean => {
-    return status === 'running' || status === 'pending'
-  },
-
-  isExecutionCompleted: (status: string): boolean => {
-    return status === 'completed' || status === 'failed' || status === 'cancelled'
-  }
 }

@@ -18,7 +18,7 @@ export type TaskGitStatus =
   | 'PR_MERGED' // Pull request merged
   | 'WORKTREE_ERROR' // Error with worktree operations
 
-export interface TaskGitInfo {
+interface TaskGitInfo {
   status: TaskGitStatus
   branch_name?: string
   worktree_path?: string
