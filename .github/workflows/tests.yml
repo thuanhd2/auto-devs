@@ -47,12 +47,7 @@ jobs:
       
       - name: Set up test environment
         run: |
-          cp .env.test.example .env.test
-          echo "DB_HOST=localhost" >> .env.test
-          echo "DB_PORT=5432" >> .env.test
-          echo "DB_USERNAME=postgres" >> .env.test
-          echo "DB_PASSWORD=postgres" >> .env.test
-          echo "DB_NAME=autodevs_test" >> .env.test
+          cp .env.test.example .env
       
       - name: Run database migrations
         env:
