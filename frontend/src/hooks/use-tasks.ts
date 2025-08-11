@@ -2,7 +2,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import type {
   Task,
   UpdateTaskRequest,
-  TaskFilters,
   StartPlanningRequest,
 } from '@/types/task'
 import { toast } from 'sonner'
@@ -10,10 +9,10 @@ import { tasksApi } from '@/lib/api/tasks'
 
 const TASKS_QUERY_KEY = 'tasks'
 
-export function useTasks(projectId: string, filters?: TaskFilters) {
+export function useTasks(projectId: string) {
   return useQuery({
-    queryKey: [TASKS_QUERY_KEY, projectId, filters],
-    queryFn: () => tasksApi.getTasks(projectId, filters),
+    queryKey: [TASKS_QUERY_KEY, projectId],
+    queryFn: () => tasksApi.getTasks(projectId),
     enabled: !!projectId,
   })
 }

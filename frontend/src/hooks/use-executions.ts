@@ -35,3 +35,15 @@ export function useTaskExecutions(taskId: string, filters?: ExecutionFilters) {
     },
   })
 }
+
+// Get execution logs for a specific execution
+export function useExecutionLogs(executionId: string) {
+  return useQuery({
+    queryKey: [EXECUTION_LOGS_QUERY_KEY, executionId],
+    queryFn: () => executionsApi.getExecutionLogs(executionId),
+    enabled: !!executionId,
+    refetchInterval: (_data) => {
+      return 1000
+    },
+  })
+}

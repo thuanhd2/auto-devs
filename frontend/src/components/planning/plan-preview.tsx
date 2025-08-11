@@ -21,16 +21,13 @@ const parseMarkdown = (content: string): string => {
     // Headers
     .replace(
       /^### (.*$)/gm,
-      '<h4 class="text-lg font-semibold mt-6 mb-3 text-gray-900">$1</h3>'
+      '<h4 class="text-lg font-semibold mt-6 mb-3">$1</h3>'
     )
     .replace(
       /^## (.*$)/gm,
-      '<h3 class="text-xl font-semibold mt-8 mb-4 text-gray-900 border-b border-gray-200 pb-2">$1</h2>'
+      '<h3 class="text-xl font-semibold mt-8 mb-4 border-b border-gray-200 pb-2">$1</h2>'
     )
-    .replace(
-      /^# (.*$)/gm,
-      '<h2 class="text-2xl font-bold mt-8 mb-6 text-gray-900">$1</h1>'
-    )
+    .replace(/^# (.*$)/gm, '<h2 class="text-2xl font-bold mt-8 mb-6">$1</h1>')
 
     // Bold and italic
     .replace(
@@ -233,9 +230,7 @@ export function PlanPreview({
             />
           </svg>
         </div>
-        <h3 className='mb-2 text-lg font-medium text-gray-900'>
-          No content to preview
-        </h3>
+        <h3 className='mb-2 text-lg font-medium'>No content to preview</h3>
         <p className='text-sm text-gray-500'>
           Start writing your plan to see a preview here.
         </p>

@@ -14,7 +14,7 @@ async function main() {
     const lines = dummyOutput.split('\n')
     for (const line of lines) {
         console.log(line)
-        await new Promise(resolve => setTimeout(resolve, 300))
+        await new Promise(resolve => setTimeout(resolve, 1000))
     }
     // dummy some files in the current directory
     const files = ['file1.txt', 'file2.txt', 'file3.txt']

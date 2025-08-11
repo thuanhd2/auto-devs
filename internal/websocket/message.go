@@ -43,6 +43,9 @@ const (
 	AuthRequired MessageType = "auth_required"
 	AuthSuccess  MessageType = "auth_success"
 	AuthFailed   MessageType = "auth_failed"
+
+	// Execution logs updated
+	ExecutionLogsCreated MessageType = "execution_logs_created"
 )
 
 // Message represents a WebSocket message

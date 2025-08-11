@@ -14,7 +14,7 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
-import { ExecutionList } from '../executions'
+import { ExecutionList, ExecutionLogsModal } from '../executions'
 import { PlanReview } from '../planning'
 import { TaskActions } from './task-actions'
 import { TaskEditForm } from './task-edit-form'
@@ -117,11 +117,11 @@ export function TaskDetailSheet({
             <Separator />
 
             {/* Tabs for Plan Review, Code Changes, Executions, and Metadata */}
-            <Tabs defaultValue='plan-review' className='w-full'>
+            <Tabs defaultValue='executions' className='w-full'>
               <TabsList className='grid w-full grid-cols-4'>
+                <TabsTrigger value='executions'>Executions</TabsTrigger>
                 <TabsTrigger value='plan-review'>Plan Review</TabsTrigger>
                 <TabsTrigger value='code-changes'>Code Changes</TabsTrigger>
-                <TabsTrigger value='executions'>Executions</TabsTrigger>
                 <TabsTrigger value='metadata'>Metadata</TabsTrigger>
               </TabsList>
 
@@ -192,6 +192,11 @@ function TaskExecutions({ taskId }: { taskId: string }) {
 
   const executions = executionsData?.data || []
 
+  const [showLogsModal, setShowLogsModal] = useState(false)
+  const [selectedExecutionId, setSelectedExecutionId] = useState<string | null>(
+    null
+  )
+
   const handleCreateExecution = () => {
     // This would typically open a dialog or trigger execution creation
     // TODO: Implement execution creation dialog
@@ -216,7 +221,8 @@ function TaskExecutions({ taskId }: { taskId: string }) {
   const handleViewLogs = (executionId: string) => {
     // This would typically open a logs modal or navigate to logs page
     // TODO: Implement logs modal
-    void executionId
+    setShowLogsModal(true)
+    setSelectedExecutionId(executionId)
   }
 
   const handleViewDetails = (executionId: string) => {
@@ -226,22 +232,29 @@ function TaskExecutions({ taskId }: { taskId: string }) {
   }
 
   return (
-    <ExecutionList
-      executions={executions}
-      loading={isLoading}
-      error={error?.message}
-      onRefresh={refetch}
-      onCreateExecution={handleCreateExecution}
-      onUpdateExecution={handleUpdateExecution}
-      onDeleteExecution={handleDeleteExecution}
-      onViewLogs={handleViewLogs}
-      onViewDetails={handleViewDetails}
-      compact={true}
-      expandable={true}
-      showCreateButton={true}
-      showFilters={false}
-      className='max-h-96 overflow-y-auto'
-    />
+    <>
+      <ExecutionList
+        executions={executions}
+        loading={isLoading}
+        error={error?.message}
+        onRefresh={refetch}
+        onCreateExecution={handleCreateExecution}
+        onUpdateExecution={handleUpdateExecution}
+        onDeleteExecution={handleDeleteExecution}
+        onViewLogs={handleViewLogs}
+        onViewDetails={handleViewDetails}
+        compact={true}
+        expandable={true}
+        showCreateButton={true}
+        showFilters={false}
+        className='max-h-96 overflow-y-auto'
+      />
+      <ExecutionLogsModal
+        open={showLogsModal}
+        executionId={selectedExecutionId}
+        onClose={() => setShowLogsModal(false)}
+      />
+    </>
   )
 }
 

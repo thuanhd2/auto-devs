@@ -96,7 +96,10 @@ export function ExecutionItem({
             </CollapsibleTrigger>
             <CollapsibleContent className='space-y-4'>
               <div className='border-t pt-4'>
-                <ExecutionDetails execution={execution} />
+                <ExecutionDetails
+                  execution={execution}
+                  onViewLogs={onViewLogs}
+                />
               </div>
             </CollapsibleContent>
           </Collapsible>
@@ -170,7 +173,13 @@ function ExecutionHeader({
   )
 }
 
-function ExecutionDetails({ execution }: { execution: Execution }) {
+function ExecutionDetails({
+  execution,
+  onViewLogs,
+}: {
+  execution: Execution
+  onViewLogs?: (executionId: string) => void
+}) {
   return (
     <div className='space-y-3'>
       <ExecutionProgress

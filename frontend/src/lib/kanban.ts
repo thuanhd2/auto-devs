@@ -79,3 +79,7 @@ export function getStatusTitle(status: TaskStatus): string {
   const column = getColumnById(status)
   return column?.title || status
 }
+
+function getColumnById(columnId: TaskStatus): KanbanColumn | undefined {
+  return KANBAN_COLUMNS.find((col) => col.id === columnId)
+}
