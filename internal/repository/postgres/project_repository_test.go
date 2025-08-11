@@ -93,39 +93,7 @@ func TestProjectRepository_GetByID_NotFound(t *testing.T) {
 	assert.Contains(t, err.Error(), "project not found")
 }
 
-func TestProjectRepository_GetAll(t *testing.T) {
-	db := SetupTestDB(t)
-	defer TeardownTestDB()
 
-	repo := NewProjectRepository(db)
-	ctx := context.Background()
-
-	// Create multiple projects
-	project1 := &entity.Project{
-		Name:        "Project 1",
-		Description: "Description 1",
-		RepositoryURL:     "https://github.com/test/repo1.git",
-	}
-	project2 := &entity.Project{
-		Name:        "Project 2",
-		Description: "Description 2",
-		RepositoryURL:     "https://github.com/test/repo2.git",
-	}
-
-	err := repo.Create(ctx, project1)
-	require.NoError(t, err)
-	err = repo.Create(ctx, project2)
-	require.NoError(t, err)
-
-	// Get all projects
-	projects, err := repo.GetAll(ctx)
-	require.NoError(t, err)
-
-	assert.Len(t, projects, 2)
-	// Projects should be ordered by created_at DESC (newest first)
-	assert.Equal(t, project2.ID, projects[0].ID)
-	assert.Equal(t, project1.ID, projects[1].ID)
-}
 
 func TestProjectRepository_Update(t *testing.T) {
 	db := SetupTestDB(t)
@@ -224,74 +192,9 @@ func TestProjectRepository_Delete_NotFound(t *testing.T) {
 	assert.Contains(t, err.Error(), "project not found")
 }
 
-func TestProjectRepository_GetWithTaskCount(t *testing.T) {
-	db := SetupTestDB(t)
-	defer TeardownTestDB()
 
-	projectRepo := NewProjectRepository(db)
-	taskRepo := NewTaskRepository(db)
-	ctx := context.Background()
 
-	// Create project
-	project := &entity.Project{
-		Name:        "Test Project",
-		Description: "Test Description",
-		RepositoryURL:     "https://github.com/test/repo.git",
-	}
-	err := projectRepo.Create(ctx, project)
-	require.NoError(t, err)
 
-	// Create tasks
-	task1 := &entity.Task{
-		ProjectID:   project.ID,
-		Title:       "Task 1",
-		Description: "Description 1",
-		Status:      entity.TaskStatusTODO,
-	}
-	task2 := &entity.Task{
-		ProjectID:   project.ID,
-		Title:       "Task 2",
-		Description: "Description 2",
-		Status:      entity.TaskStatusDONE,
-	}
-
-	err = taskRepo.Create(ctx, task1)
-	require.NoError(t, err)
-	err = taskRepo.Create(ctx, task2)
-	require.NoError(t, err)
-
-	// Get project with task count
-	result, err := projectRepo.GetWithTaskCount(ctx, project.ID)
-	require.NoError(t, err)
-
-	assert.Equal(t, project.ID, result.Project.ID)
-	assert.Equal(t, project.Name, result.Project.Name)
-	assert.Equal(t, 2, result.TaskCount)
-}
-
-func TestProjectRepository_GetWithTaskCount_NoTasks(t *testing.T) {
-	db := SetupTestDB(t)
-	defer TeardownTestDB()
-
-	repo := NewProjectRepository(db)
-	ctx := context.Background()
-
-	// Create project
-	project := &entity.Project{
-		Name:        "Test Project",
-		Description: "Test Description",
-		RepositoryURL:     "https://github.com/test/repo.git",
-	}
-	err := repo.Create(ctx, project)
-	require.NoError(t, err)
-
-	// Get project with task count
-	result, err := repo.GetWithTaskCount(ctx, project.ID)
-	require.NoError(t, err)
-
-	assert.Equal(t, project.ID, result.Project.ID)
-	assert.Equal(t, 0, result.TaskCount)
-}
 
 func TestProjectRepository_Delete_WithTasks(t *testing.T) {
 	db := SetupTestDB(t)

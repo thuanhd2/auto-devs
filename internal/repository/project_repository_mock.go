@@ -280,62 +280,6 @@ func (_c *ProjectRepositoryMock_Delete_Call) RunAndReturn(run func(ctx context.C
 	return _c
 }
 
-// GetAll provides a mock function for the type ProjectRepositoryMock
-func (_mock *ProjectRepositoryMock) GetAll(ctx context.Context) ([]*entity.Project, error) {
-	ret := _mock.Called(ctx)
-
-	if len(ret) == 0 {
-		panic("no return value specified for GetAll")
-	}
-
-	var r0 []*entity.Project
-	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context) ([]*entity.Project, error)); ok {
-		return returnFunc(ctx)
-	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context) []*entity.Project); ok {
-		r0 = returnFunc(ctx)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]*entity.Project)
-		}
-	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context) error); ok {
-		r1 = returnFunc(ctx)
-	} else {
-		r1 = ret.Error(1)
-	}
-	return r0, r1
-}
-
-// ProjectRepositoryMock_GetAll_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetAll'
-type ProjectRepositoryMock_GetAll_Call struct {
-	*mock.Call
-}
-
-// GetAll is a helper method to define mock.On call
-//   - ctx
-func (_e *ProjectRepositoryMock_Expecter) GetAll(ctx interface{}) *ProjectRepositoryMock_GetAll_Call {
-	return &ProjectRepositoryMock_GetAll_Call{Call: _e.mock.On("GetAll", ctx)}
-}
-
-func (_c *ProjectRepositoryMock_GetAll_Call) Run(run func(ctx context.Context)) *ProjectRepositoryMock_GetAll_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context))
-	})
-	return _c
-}
-
-func (_c *ProjectRepositoryMock_GetAll_Call) Return(projects []*entity.Project, err error) *ProjectRepositoryMock_GetAll_Call {
-	_c.Call.Return(projects, err)
-	return _c
-}
-
-func (_c *ProjectRepositoryMock_GetAll_Call) RunAndReturn(run func(ctx context.Context) ([]*entity.Project, error)) *ProjectRepositoryMock_GetAll_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
 // GetAllWithParams provides a mock function for the type ProjectRepositoryMock
 func (_mock *ProjectRepositoryMock) GetAllWithParams(ctx context.Context, params GetProjectsParams) ([]*entity.Project, int, error) {
 	ret := _mock.Called(ctx, params)
@@ -623,63 +567,6 @@ func (_c *ProjectRepositoryMock_GetTaskStatistics_Call) Return(taskStatusToInt m
 }
 
 func (_c *ProjectRepositoryMock_GetTaskStatistics_Call) RunAndReturn(run func(ctx context.Context, projectID uuid.UUID) (map[entity.TaskStatus]int, error)) *ProjectRepositoryMock_GetTaskStatistics_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// GetWithTaskCount provides a mock function for the type ProjectRepositoryMock
-func (_mock *ProjectRepositoryMock) GetWithTaskCount(ctx context.Context, id uuid.UUID) (*ProjectWithTaskCount, error) {
-	ret := _mock.Called(ctx, id)
-
-	if len(ret) == 0 {
-		panic("no return value specified for GetWithTaskCount")
-	}
-
-	var r0 *ProjectWithTaskCount
-	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID) (*ProjectWithTaskCount, error)); ok {
-		return returnFunc(ctx, id)
-	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID) *ProjectWithTaskCount); ok {
-		r0 = returnFunc(ctx, id)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*ProjectWithTaskCount)
-		}
-	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID) error); ok {
-		r1 = returnFunc(ctx, id)
-	} else {
-		r1 = ret.Error(1)
-	}
-	return r0, r1
-}
-
-// ProjectRepositoryMock_GetWithTaskCount_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetWithTaskCount'
-type ProjectRepositoryMock_GetWithTaskCount_Call struct {
-	*mock.Call
-}
-
-// GetWithTaskCount is a helper method to define mock.On call
-//   - ctx
-//   - id
-func (_e *ProjectRepositoryMock_Expecter) GetWithTaskCount(ctx interface{}, id interface{}) *ProjectRepositoryMock_GetWithTaskCount_Call {
-	return &ProjectRepositoryMock_GetWithTaskCount_Call{Call: _e.mock.On("GetWithTaskCount", ctx, id)}
-}
-
-func (_c *ProjectRepositoryMock_GetWithTaskCount_Call) Run(run func(ctx context.Context, id uuid.UUID)) *ProjectRepositoryMock_GetWithTaskCount_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(uuid.UUID))
-	})
-	return _c
-}
-
-func (_c *ProjectRepositoryMock_GetWithTaskCount_Call) Return(projectWithTaskCount *ProjectWithTaskCount, err error) *ProjectRepositoryMock_GetWithTaskCount_Call {
-	_c.Call.Return(projectWithTaskCount, err)
-	return _c
-}
-
-func (_c *ProjectRepositoryMock_GetWithTaskCount_Call) RunAndReturn(run func(ctx context.Context, id uuid.UUID) (*ProjectWithTaskCount, error)) *ProjectRepositoryMock_GetWithTaskCount_Call {
 	_c.Call.Return(run)
 	return _c
 }
