@@ -49,21 +49,12 @@ func SetupRoutes(router *gin.Engine, projectUsecase usecase.ProjectUsecase, task
 			projects.GET("/:id", projectHandler.GetProject)
 			projects.PUT("/:id", projectHandler.UpdateProject)
 			projects.DELETE("/:id", projectHandler.DeleteProject)
-			projects.GET("/:id/tasks", projectHandler.GetProjectWithTasks)
 			projects.GET("/:id/statistics", projectHandler.GetProjectStatistics)
-			projects.GET("/:id/status-analytics", taskHandler.GetProjectStatusAnalytics)
 			projects.POST("/:id/archive", projectHandler.ArchiveProject)
 			projects.POST("/:id/restore", projectHandler.RestoreProject)
-			projects.GET("/:id/settings", projectHandler.GetProjectSettings)
-			projects.PUT("/:id/settings", projectHandler.UpdateProjectSettings)
-
-			// Repository URL endpoint
-			projects.PUT("/:id/repository-url", projectHandler.UpdateRepositoryURL)
 
 			// Git repository management endpoints
 			projects.POST("/:id/git/reinit", projectHandler.ReinitGitRepository)
-			projects.GET("/:id/git/status", projectHandler.GetGitStatus)
-
 			// Git branches endpoint
 			projects.GET("/:id/branches", projectHandler.ListBranches)
 		}
@@ -73,18 +64,9 @@ func SetupRoutes(router *gin.Engine, projectUsecase usecase.ProjectUsecase, task
 		{
 			tasks.POST("", taskHandler.CreateTask)
 			tasks.GET("", taskHandler.ListTasks)
-			tasks.GET("/filter", taskHandler.GetTasksWithFilters)
-			tasks.PATCH("/bulk-status", taskHandler.BulkUpdateTaskStatus)
 			tasks.GET("/:id", taskHandler.GetTask)
 			tasks.PUT("/:id", taskHandler.UpdateTask)
 			tasks.DELETE("/:id", taskHandler.DeleteTask)
-			tasks.PATCH("/:id/status", taskHandler.UpdateTaskStatus)
-			tasks.PATCH("/:id/status-with-history", taskHandler.UpdateTaskStatusWithHistory)
-			tasks.GET("/:id/status-history", taskHandler.GetTaskStatusHistory)
-			tasks.GET("/:id/validate-transition", taskHandler.ValidateTaskStatusTransition)
-			tasks.PATCH("/:id/git-status", taskHandler.UpdateTaskGitStatus)
-			tasks.GET("/:id/validate-git-transition", taskHandler.ValidateTaskGitStatusTransition)
-			tasks.GET("/:id/project", taskHandler.GetTaskWithProject)
 
 			// Planning workflow endpoints
 			tasks.POST("/:id/start-planning", taskHandler.StartPlanning)

@@ -37,8 +37,7 @@ func setupGinRouter(handler *ProjectHandler) *gin.Engine {
 		projects.GET("/:id", handler.GetProject)
 		projects.PUT("/:id", handler.UpdateProject)
 		projects.DELETE("/:id", handler.DeleteProject)
-		projects.GET("/:id/tasks", handler.GetProjectWithTasks)
-		projects.GET("/:id/statistics", handler.GetProjectStatistics)
+projects.GET("/:id/statistics", handler.GetProjectStatistics)
 		projects.POST("/:id/archive", handler.ArchiveProject)
 		projects.POST("/:id/restore", handler.RestoreProject)
 	}
