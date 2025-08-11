@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
-import { Badge } from '@/components/ui/badge'
+
 import { 
   CheckCircle, 
   Clock, 
@@ -314,7 +314,7 @@ export function RealTimeProjectStats({
 /**
  * Compact stats component for sidebar or smaller spaces
  */
-export function CompactProjectStats({ projectId, tasks }: Pick<ProjectStatsProps, 'projectId' | 'tasks'>) {
+export function CompactProjectStats({ tasks }: Pick<ProjectStatsProps, 'tasks'>) {
   const stats = useMemo(() => {
     const completed = tasks.filter(t => t.status === 'DONE').length
     const total = tasks.length

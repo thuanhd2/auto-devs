@@ -256,15 +256,14 @@ export function UserPresenceCompact({ projectId }: { projectId: string }) {
 /**
  * Live cursor component (basic implementation)
  */
-export function LiveCursors({ projectId }: { projectId: string }) {
-  const { onlineUsers } = useWebSocketProject(projectId)
-  const [cursors, setCursors] = useState<
+export function LiveCursors({ _projectId }: { _projectId: string }) {
+  const [cursors] = useState<
     Map<string, { x: number; y: number; username: string }>
   >(new Map())
 
   // Track mouse movements and broadcast to other users
   useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
+    const handleMouseMove = (_e: MouseEvent) => {
       // In a real implementation, this would broadcast cursor position via WebSocket
       // For now, we'll just simulate other users' cursors
     }

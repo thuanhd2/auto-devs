@@ -12,7 +12,6 @@ import {
   CheckCircle,
   XCircle,
   AlertTriangle,
-  FileText,
   Plus,
   SquareTerminal,
 } from 'lucide-react'

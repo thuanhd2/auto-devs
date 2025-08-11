@@ -18,7 +18,7 @@ import {
   useDeleteProject,
 } from '@/hooks/use-projects'
 import { useTasks } from '@/hooks/use-tasks'
-import { Badge } from '@/components/ui/badge'
+
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -27,27 +27,25 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import { Progress } from '@/components/ui/progress'
+
 import { Separator } from '@/components/ui/separator'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Tabs, TabsContent } from '@/components/ui/tabs'
 import {
   UserPresence,
   UserPresenceCompact,
 } from '@/components/collaboration/user-presence'
 import { GitStatusCard } from '@/components/kanban/git-status-card'
 import { ProjectBoard } from '@/components/kanban/project-board'
-import { Header } from '@/components/layout/header'
 import { Main } from '@/components/layout/main'
 import { RealTimeNotifications } from '@/components/notifications/real-time-notifications'
-import { ProfileDropdown } from '@/components/profile-dropdown'
-import { Search as SearchComponent } from '@/components/search'
+
 import { SimpleConfirmDialog } from '@/components/simple-confirm-dialog'
 import {
   RealTimeProjectStats,
   CompactProjectStats,
 } from '@/components/stats/real-time-project-stats'
-import { ThemeSwitch } from '@/components/theme-switch'
+
 
 const statusConfig = {
   TODO: { label: 'To Do', icon: Clock, color: 'bg-slate-500' },
@@ -135,9 +133,6 @@ export function ProjectDetail() {
   }
 
   const tasks = tasksResponse?.tasks || []
-  const totalTasks = statistics?.total_tasks || 0
-  const completedTasks = statistics?.tasks_by_status.DONE || 0
-  const progress = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0
 
   return (
     <>

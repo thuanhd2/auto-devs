@@ -1,4 +1,4 @@
-import React from 'react'
+
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -6,7 +6,6 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { Progress } from '@/components/ui/progress'
 import { 
-  Wifi, 
   WifiOff, 
   AlertCircle, 
   CheckCircle, 
