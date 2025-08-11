@@ -1,8 +1,7 @@
-import { cn } from '@/lib/utils'
-import { Clock, Timer } from 'lucide-react'
 import { useMemo, useState, useEffect } from 'react'
-
 import type { ExecutionStatus } from '@/types/execution'
+import { Clock, Timer } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 interface ExecutionDurationProps {
   startedAt: string
@@ -24,7 +23,7 @@ export function ExecutionDuration({
   className,
 }: ExecutionDurationProps) {
   const [currentTime, setCurrentTime] = useState(Date.now())
-  
+
   const isActive = status === 'running' || status === 'pending'
 
   // Update current time for active executions
@@ -41,13 +40,13 @@ export function ExecutionDuration({
   const duration = useMemo(() => {
     const startTime = new Date(startedAt).getTime()
     const endTime = completedAt ? new Date(completedAt).getTime() : currentTime
-    
+
     return endTime - startTime
   }, [startedAt, completedAt, currentTime])
 
   const formattedDuration = useMemo(() => {
     const durationInSeconds = Math.floor(duration / 1000)
-    
+
     switch (format) {
       case 'short':
         return formatShortDuration(durationInSeconds)
@@ -63,76 +62,23 @@ export function ExecutionDuration({
   const Icon = isActive ? Timer : Clock
 
   return (
-    <div className={cn(
-      'inline-flex items-center gap-1 text-sm text-muted-foreground',
-      className
-    )}>
+    <div
+      className={cn(
+        'text-muted-foreground inline-flex items-center gap-1 text-sm',
+        className
+      )}
+    >
       {showIcon && (
-        <Icon className={cn(
-          'h-3 w-3',
-          isActive && 'animate-pulse text-blue-500'
-        )} />
+        <Icon
+          className={cn('h-3 w-3', isActive && 'animate-pulse text-blue-500')}
+        />
       )}
       {showLabel && <span>Duration:</span>}
-      <span className={cn(
-        'font-mono',
-        isActive && 'text-blue-600 font-medium'
-      )}>
+      <span
+        className={cn('font-mono', isActive && 'font-medium text-blue-600')}
+      >
         {formattedDuration}
       </span>
-    </div>
-  )
-}
-
-// Real-time duration component that updates every second
-export function LiveExecutionDuration({
-  startedAt,
-  completedAt,
-  status,
-  showIcon = true,
-  className,
-}: Omit<ExecutionDurationProps, 'format'>) {
-  const [currentTime, setCurrentTime] = useState(Date.now())
-  
-  const isActive = status === 'running' || status === 'pending'
-
-  useEffect(() => {
-    if (!isActive) return
-
-    const interval = setInterval(() => {
-      setCurrentTime(Date.now())
-    }, 1000)
-
-    return () => clearInterval(interval)
-  }, [isActive])
-
-  const duration = useMemo(() => {
-    const startTime = new Date(startedAt).getTime()
-    const endTime = completedAt ? new Date(completedAt).getTime() : currentTime
-    
-    return Math.floor((endTime - startTime) / 1000)
-  }, [startedAt, completedAt, currentTime])
-
-  return (
-    <div className={cn(
-      'inline-flex items-center gap-1 text-sm',
-      isActive ? 'text-blue-600 font-medium' : 'text-muted-foreground',
-      className
-    )}>
-      {showIcon && (
-        <Timer className={cn(
-          'h-3 w-3',
-          isActive && 'animate-pulse'
-        )} />
-      )}
-      <span className="font-mono">
-        {formatShortDuration(duration)}
-      </span>
-      {isActive && (
-        <div className="flex items-center">
-          <div className="h-1 w-1 rounded-full bg-green-500 animate-ping" />
-        </div>
-      )}
     </div>
   )
 }

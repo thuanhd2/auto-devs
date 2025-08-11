@@ -1,7 +1,7 @@
-import { Progress } from '@/components/ui/progress'
-import { cn } from '@/lib/utils'
 import type { ExecutionStatus } from '@/types/execution'
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react'
+import { cn } from '@/lib/utils'
+import { Progress } from '@/components/ui/progress'
 
 interface ExecutionProgressProps {
   progress: number // 0.0 to 1.0
@@ -56,72 +56,19 @@ export function ExecutionProgress({
 
   return (
     <div className={cn('flex items-center gap-2', className)}>
-      <div className="flex-1">
-        <Progress 
+      <div className='flex-1'>
+        <Progress
           value={percentage}
           className={cn('w-full', sizeClasses[size])}
         />
       </div>
-      
+
       {showPercentage && (
-        <div className="flex items-center gap-1 text-sm font-medium text-muted-foreground min-w-[3rem]">
-          {Icon && <Icon className="h-3 w-3" />}
+        <div className='text-muted-foreground flex min-w-[3rem] items-center gap-1 text-sm font-medium'>
+          {Icon && <Icon className='h-3 w-3' />}
           <span>{percentage}%</span>
         </div>
       )}
     </div>
   )
 }
-
-// Animated progress component for active executions
-export function AnimatedExecutionProgress({
-  progress,
-  status,
-  size = 'md',
-  showPercentage = true,
-  className,
-}: ExecutionProgressProps) {
-  const isActive = status === 'running' || status === 'pending'
-  
-  return (
-    <div className={cn('flex items-center gap-2', className)}>
-      <div className="flex-1 relative">
-        <Progress 
-          value={Math.round(progress * 100)}
-          className={cn(
-            'w-full transition-all duration-300',
-            sizeClasses[size],
-            isActive && 'animate-pulse'
-          )}
-        />
-        
-        {/* Animated gradient overlay for running executions */}
-        {status === 'running' && (
-          <div 
-            className={cn(
-              'absolute inset-0 rounded-full opacity-30',
-              'bg-gradient-to-r from-transparent via-white to-transparent',
-              'animate-shimmer'
-            )}
-            style={{
-              backgroundSize: '200% 100%',
-              animation: 'shimmer 2s infinite linear',
-            }}
-          />
-        )}
-      </div>
-      
-      {showPercentage && (
-        <div className="flex items-center gap-1 text-sm font-medium text-muted-foreground min-w-[3rem]">
-          <span className={cn(
-            'transition-all duration-300',
-            isActive && 'text-blue-600'
-          )}>
-            {Math.round(progress * 100)}%
-          </span>
-        </div>
-      )}
-    </div>
-  )
-}
-

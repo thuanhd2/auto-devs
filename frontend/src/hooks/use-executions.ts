@@ -15,9 +15,9 @@ import type {
 import { toast } from 'sonner'
 import { executionsApi } from '@/lib/api/executions'
 
-export const EXECUTIONS_QUERY_KEY = 'executions'
-export const EXECUTION_LOGS_QUERY_KEY = 'execution-logs'
-export const EXECUTION_STATS_QUERY_KEY = 'execution-stats'
+const EXECUTIONS_QUERY_KEY = 'executions'
+const EXECUTION_LOGS_QUERY_KEY = 'execution-logs'
+const EXECUTION_STATS_QUERY_KEY = 'execution-stats'
 
 // Get executions for a specific task
 export function useTaskExecutions(taskId: string, filters?: ExecutionFilters) {

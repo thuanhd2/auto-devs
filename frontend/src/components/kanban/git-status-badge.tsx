@@ -1,10 +1,4 @@
-import { Badge } from '@/components/ui/badge'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip'
+import type { TaskGitStatus } from '@/types/task'
 import {
   GitBranch,
   AlertCircle,
@@ -16,8 +10,14 @@ import {
   XCircle,
   GitPullRequest,
 } from 'lucide-react'
-import type { TaskGitStatus } from '@/types/task'
 import { cn } from '@/lib/utils'
+import { Badge } from '@/components/ui/badge'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 
 interface GitStatusBadgeProps {
   status: TaskGitStatus
@@ -122,12 +122,7 @@ export function GitStatusBadge({
       )}
     >
       {showIcon && (
-        <Icon 
-          className={cn(
-            'h-3 w-3',
-            config.animate && 'animate-spin'
-          )} 
-        />
+        <Icon className={cn('h-3 w-3', config.animate && 'animate-spin')} />
       )}
       <span className={variant === 'compact' ? 'hidden sm:inline' : ''}>
         {config.label}
@@ -142,17 +137,15 @@ export function GitStatusBadge({
   return (
     <TooltipProvider>
       <Tooltip>
-        <TooltipTrigger asChild>
-          {badgeContent}
-        </TooltipTrigger>
-        <TooltipContent side="top" className="max-w-xs">
-          <div className="space-y-1">
-            <p className="font-medium">{config.label}</p>
-            <p className="text-xs text-muted-foreground">
+        <TooltipTrigger asChild>{badgeContent}</TooltipTrigger>
+        <TooltipContent side='top' className='max-w-xs'>
+          <div className='space-y-1'>
+            <p className='font-medium'>{config.label}</p>
+            <p className='text-muted-foreground text-xs'>
               {config.description}
             </p>
             {branchName && (
-              <p className="text-xs font-mono bg-muted px-1.5 py-0.5 rounded">
+              <p className='bg-muted rounded px-1.5 py-0.5 font-mono text-xs'>
                 {branchName}
               </p>
             )}
@@ -161,28 +154,4 @@ export function GitStatusBadge({
       </Tooltip>
     </TooltipProvider>
   )
-}
-
-export function getGitStatusPriority(status: TaskGitStatus): number {
-  const priority: Record<TaskGitStatus, number> = {
-    WORKTREE_ERROR: 10,
-    PR_MERGED: 9,
-    PR_CREATED: 8,
-    CHANGES_COMMITTED: 7,
-    CHANGES_STAGED: 6,
-    CHANGES_PENDING: 5,
-    BRANCH_CREATED: 4,
-    WORKTREE_CREATED: 3,
-    WORKTREE_PENDING: 2,
-    NO_GIT: 1,
-  }
-  return priority[status] || 0
-}
-
-export function getGitStatusColor(status: TaskGitStatus): string {
-  return GIT_STATUS_CONFIG[status].color
-}
-
-export function getGitStatusLabel(status: TaskGitStatus): string {
-  return GIT_STATUS_CONFIG[status].label
 }
