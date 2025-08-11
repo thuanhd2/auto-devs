@@ -81,7 +81,7 @@ func (r *executionLogRepository) GetByExecutionID(ctx context.Context, execution
 func (r *executionLogRepository) GetByProcessID(ctx context.Context, processID uuid.UUID) ([]*entity.ExecutionLog, error) {
 	var logs []entity.ExecutionLog
 
-	result := r.db.WithContext(ctx).Where("process_id = ?", processID).Order("timestamp ASC").Find(&logs)
+	result := r.db.WithContext(ctx).Where("process_id = ?", processID).Order("line ASC").Find(&logs)
 	if result.Error != nil {
 		return nil, fmt.Errorf("failed to get process logs: %w", result.Error)
 	}

@@ -378,11 +378,13 @@ func (es *ExecutionService) estimateProgress(output string) float64 {
 
 // handleExecutionCompletion handles successful execution completion
 func (es *ExecutionService) handleExecutionCompletion(execution *Execution, process *Process) {
-	log.Println("handleExecutionCompletion", execution.ID)
 	execution.mu.Lock()
-	log.Println("handleExecutionCompletion lock", execution.ID)
-	defer execution.cancel()
-	defer execution.mu.Unlock()
+	defer func() {
+		// should sleep 1 second to make sure the process is finished and logs are saved
+		time.Sleep(1 * time.Second)
+		execution.cancel()
+		execution.mu.Unlock()
+	}()
 
 	now := time.Now()
 	execution.CompletedAt = &now
@@ -392,7 +394,6 @@ func (es *ExecutionService) handleExecutionCompletion(execution *Execution, proc
 
 	// Check if process completed successfully
 	if process.ExitCode != nil && *process.ExitCode == 0 {
-		log.Println("handleExecutionCompletion completed", execution.ID)
 		execution.Status = ExecutionStatusCompleted
 		execution.Progress = 1.0
 
@@ -406,7 +407,6 @@ func (es *ExecutionService) handleExecutionCompletion(execution *Execution, proc
 		execution.Result = result
 
 	} else {
-		log.Println("handleExecutionCompletion failed", execution.ID)
 		exitCode := -1
 		if process.ExitCode != nil {
 			exitCode = *process.ExitCode

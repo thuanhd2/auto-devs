@@ -48,11 +48,13 @@ export function ExecutionLogsModal({
   // Auto scroll to bottom when new logs arrive
   useEffect(() => {
     if (logs.length > prevLogsLength && scrollAreaRef.current) {
-      const scrollContainer = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]')
+      const scrollContainer = scrollAreaRef.current.querySelector(
+        '[data-radix-scroll-area-viewport]'
+      )
       if (scrollContainer) {
         scrollContainer.scrollTo({
           top: scrollContainer.scrollHeight,
-          behavior: 'smooth'
+          behavior: 'smooth',
         })
       }
     }
@@ -82,13 +84,16 @@ export function ExecutionLogsModal({
             >
               {logs ? (
                 logs.map((log, index) => (
-                  <div 
+                  <div
                     key={log.id}
                     className={`animate-in fade-in-0 slide-in-from-bottom-2 duration-300 ${
                       index >= prevLogsLength ? 'animate-in' : ''
                     }`}
                     style={{
-                      animationDelay: index >= prevLogsLength ? `${(index - prevLogsLength) * 50}ms` : '0ms'
+                      animationDelay:
+                        index >= prevLogsLength
+                          ? `${(index - prevLogsLength) * 50}ms`
+                          : '10ms',
                     }}
                   >
                     <ExecutionLogItem log={log} />
