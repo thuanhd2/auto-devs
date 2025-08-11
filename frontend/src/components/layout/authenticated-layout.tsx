@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils'
 import { SearchProvider } from '@/context/search-context'
 import { WebSocketProvider } from '@/context/websocket-context'
 import { SidebarProvider } from '@/components/ui/sidebar'
-import { WebSocketDebugPanel } from '@/components/debug/websocket-debug-panel'
+
 import { AppSidebar } from '@/components/layout/app-sidebar'
 import { RealTimeNotifications } from '@/components/notifications/real-time-notifications'
 import SkipToMain from '@/components/skip-to-main'
@@ -72,8 +72,7 @@ export function AuthenticatedLayout({ children }: Props) {
               enableSound={false}
             />
           </div>
-          {/* WebSocket Debug Panel - only in development */}
-          {import.meta.env.DEV && <WebSocketDebugPanel />}
+
         </SidebarProvider>
       </WebSocketProvider>
     </SearchProvider>
