@@ -5,14 +5,24 @@ import { cn } from '@/lib/utils'
 interface ScrollAreaProps
   extends React.ComponentProps<typeof ScrollAreaPrimitive.Root> {
   orientation?: 'vertical' | 'horizontal'
+  stickToBottom?: boolean
 }
 
 function ScrollArea({
   className,
   children,
   orientation = 'vertical',
+  stickToBottom = false,
   ...props
 }: ScrollAreaProps) {
+  const viewportRef = React.useRef<HTMLDivElement>(null)
+
+  React.useEffect(() => {
+    if (stickToBottom && viewportRef.current) {
+      viewportRef.current.scrollTop = viewportRef.current.scrollHeight
+    }
+  }, [stickToBottom])
+
   return (
     <ScrollAreaPrimitive.Root
       data-slot='scroll-area'
@@ -25,6 +35,7 @@ function ScrollArea({
           'focus-visible:ring-ring/50 size-full rounded-[inherit] transition-[color,box-shadow] outline-none focus-visible:ring-[3px] focus-visible:outline-1',
           orientation === 'horizontal' && 'overflow-x-auto!'
         )}
+        ref={viewportRef}
       >
         {children}
       </ScrollAreaPrimitive.Viewport>

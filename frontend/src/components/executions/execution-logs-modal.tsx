@@ -44,11 +44,11 @@ export function ExecutionLogsModal({
   const logs = data?.data || []
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className='w-full max-w-2xl'>
+      <DialogContent className='sm:w-[400px] sm:max-w-[400px] lg:h-[80vh] lg:w-[80vw] lg:max-w-none'>
         <DialogHeader>
           <DialogTitle>Execution Logs</DialogTitle>
         </DialogHeader>
-        <div className='max-h-[400px] min-h-[200px]'>
+        <div className='h-[60vh]'>
           {isLoading && (
             <div className='text-muted-foreground text-sm'>Loading logs...</div>
           )}
@@ -59,7 +59,10 @@ export function ExecutionLogsModal({
             </div>
           )}
           {!isLoading && !error && (
-            <ScrollArea className='h-64 rounded border p-2 text-xs'>
+            <ScrollArea
+              className='h-full rounded border p-2 text-xs'
+              stickToBottom
+            >
               {logs ? (
                 logs.map((log) => (
                   <div key={log.id}>
@@ -92,7 +95,7 @@ function ExecutionLogItem({ log }: { log: ExecutionLog }) {
 
   try {
     const logData = JSON.parse(message)
-    
+
     // Get icon based on message type
     const getIcon = () => {
       switch (logData.type) {
@@ -100,7 +103,11 @@ function ExecutionLogItem({ log }: { log: ExecutionLog }) {
           return <User className='h-4 w-4 text-blue-600' />
         case 'assistant':
           // Check if this is a tool_use message
-          if (logData.message?.content?.some((item: any) => item.type === 'tool_use')) {
+          if (
+            logData.message?.content?.some(
+              (item: any) => item.type === 'tool_use'
+            )
+          ) {
             return <Settings className='h-4 w-4 text-orange-600' />
           }
           return <Bot className='h-4 w-4 text-green-600' />
@@ -122,20 +129,26 @@ function ExecutionLogItem({ log }: { log: ExecutionLog }) {
           return content.map((item: any, index: number) => {
             if (item.type === 'tool_result') {
               return (
-                <div key={index} className='bg-gray-50 p-2 rounded border-l-2 border-purple-400'>
-                  <div className='text-xs text-purple-600 font-medium mb-1'>
+                <div
+                  key={index}
+                  className='rounded border-l-2 border-purple-400 bg-gray-50 p-2'
+                >
+                  <div className='mb-1 text-xs font-medium text-purple-600'>
                     Tool Result ({item.tool_use_id})
                   </div>
                   <div className='text-sm'>
-                    {Array.isArray(item.content) 
+                    {Array.isArray(item.content)
                       ? item.content.map((c: any) => c.text).join(' ')
-                      : item.content
-                    }
+                      : item.content}
                   </div>
                 </div>
               )
             }
-            return <div key={index} className='text-sm'>{item.text || JSON.stringify(item)}</div>
+            return (
+              <div key={index} className='text-sm'>
+                {item.text || JSON.stringify(item)}
+              </div>
+            )
           })
         }
         return <div className='text-sm text-blue-700'>User message</div>
@@ -147,17 +160,23 @@ function ExecutionLogItem({ log }: { log: ExecutionLog }) {
           return content.map((item: any, index: number) => {
             if (item.type === 'text') {
               return (
-                <div key={index} className='text-sm text-gray-800 whitespace-pre-wrap'>
+                <div
+                  key={index}
+                  className='text-sm whitespace-pre-wrap text-gray-800'
+                >
                   {item.text}
                 </div>
               )
             }
             if (item.type === 'tool_use') {
               return (
-                <div key={index} className='bg-orange-50 p-2 rounded border-l-2 border-orange-400'>
-                  <div className='flex items-center gap-2 mb-2'>
+                <div
+                  key={index}
+                  className='rounded border-l-2 border-orange-400 bg-orange-50 p-2'
+                >
+                  <div className='mb-2 flex items-center gap-2'>
                     <Settings className='h-3 w-3 text-orange-600' />
-                    <span className='text-xs text-orange-600 font-medium'>
+                    <span className='text-xs font-medium text-orange-600'>
                       Tool: {item.name}
                     </span>
                   </div>
@@ -165,15 +184,21 @@ function ExecutionLogItem({ log }: { log: ExecutionLog }) {
                     <div className='space-y-1'>
                       <div className='flex items-center gap-2'>
                         <CheckSquare className='h-3 w-3 text-emerald-600' />
-                        <span className='text-xs text-emerald-600 font-medium'>TODO List Update</span>
+                        <span className='text-xs font-medium text-emerald-600'>
+                          TODO List Update
+                        </span>
                       </div>
                       {item.input.todos.map((todo: any, todoIndex: number) => (
-                        <div key={todoIndex} className='text-xs pl-5 py-1'>
-                          <span className={`px-1.5 py-0.5 rounded text-xs font-medium mr-2 ${
-                            todo.status === 'completed' ? 'bg-green-100 text-green-700' :
-                            todo.status === 'in_progress' ? 'bg-yellow-100 text-yellow-700' :
-                            'bg-gray-100 text-gray-700'
-                          }`}>
+                        <div key={todoIndex} className='py-1 pl-5 text-xs'>
+                          <span
+                            className={`mr-2 rounded px-1.5 py-0.5 text-xs font-medium ${
+                              todo.status === 'completed'
+                                ? 'bg-green-100 text-green-700'
+                                : todo.status === 'in_progress'
+                                  ? 'bg-yellow-100 text-yellow-700'
+                                  : 'bg-gray-100 text-gray-700'
+                            }`}
+                          >
                             {todo.status}
                           </span>
                           {todo.content}
@@ -183,16 +208,19 @@ function ExecutionLogItem({ log }: { log: ExecutionLog }) {
                   )}
                   {item.name !== 'TodoWrite' && (
                     <div className='text-xs text-gray-600'>
-                      {typeof item.input === 'object' ? 
-                        JSON.stringify(item.input, null, 2) : 
-                        item.input
-                      }
+                      {typeof item.input === 'object'
+                        ? JSON.stringify(item.input, null, 2)
+                        : item.input}
                     </div>
                   )}
                 </div>
               )
             }
-            return <div key={index} className='text-sm'>{JSON.stringify(item)}</div>
+            return (
+              <div key={index} className='text-sm'>
+                {JSON.stringify(item)}
+              </div>
+            )
           })
         }
         return <div className='text-sm text-green-700'>Assistant message</div>
@@ -200,17 +228,15 @@ function ExecutionLogItem({ log }: { log: ExecutionLog }) {
 
       if (logData.type === 'result') {
         return (
-          <div className='bg-emerald-50 p-2 rounded border-l-2 border-emerald-400'>
-            <div className='text-xs text-emerald-600 font-medium mb-1'>
+          <div className='rounded border-l-2 border-emerald-400 bg-emerald-50 p-2'>
+            <div className='mb-1 text-xs font-medium text-emerald-600'>
               Execution Result ({logData.subtype})
             </div>
             <div className='text-sm text-gray-800'>
               Duration: {logData.duration_ms}ms | Turns: {logData.num_turns}
             </div>
             {logData.result && (
-              <div className='text-sm text-gray-700 mt-2 max-h-32 overflow-y-auto'>
-                {logData.result}
-              </div>
+              <div className='mt-2 text-sm text-gray-700'>{logData.result}</div>
             )}
           </div>
         )
@@ -227,21 +253,17 @@ function ExecutionLogItem({ log }: { log: ExecutionLog }) {
     return (
       <div className='mb-3 border-b border-gray-100 pb-3 last:border-b-0'>
         <div className='flex items-start gap-2'>
-          <div className='flex-shrink-0 mt-1'>
-            {getIcon()}
-          </div>
-          <div className='flex-1 min-w-0'>
-            <div className='flex items-center gap-2 mb-1'>
-              <span className='text-xs text-gray-500 font-medium'>
+          <div className='mt-1 flex-shrink-0'>{getIcon()}</div>
+          <div className='min-w-0 flex-1'>
+            <div className='mb-1 flex items-center gap-2'>
+              <span className='text-xs font-medium text-gray-500'>
                 {logData.type}
               </span>
               <span className='text-xs text-gray-400'>
                 {new Date(log.timestamp).toLocaleTimeString()}
               </span>
             </div>
-            <div className='space-y-2'>
-              {formatContent()}
-            </div>
+            <div className='space-y-2'>{formatContent()}</div>
           </div>
         </div>
       </div>
@@ -251,12 +273,12 @@ function ExecutionLogItem({ log }: { log: ExecutionLog }) {
     return (
       <div className='mb-3 border-b border-gray-100 pb-3 last:border-b-0'>
         <div className='flex items-start gap-2'>
-          <AlertTriangle className='h-4 w-4 text-red-600 mt-1' />
-          <div className='flex-1 min-w-0'>
-            <div className='text-xs text-red-600 font-medium mb-1'>
+          <AlertTriangle className='mt-1 h-4 w-4 text-red-600' />
+          <div className='min-w-0 flex-1'>
+            <div className='mb-1 text-xs font-medium text-red-600'>
               Invalid log format
             </div>
-            <div className='text-sm text-gray-600 font-mono bg-gray-50 p-2 rounded'>
+            <div className='rounded bg-gray-50 p-2 font-mono text-sm text-gray-600'>
               {message}
             </div>
           </div>
@@ -264,9 +286,4 @@ function ExecutionLogItem({ log }: { log: ExecutionLog }) {
       </div>
     )
   }
-}
-  const object = JSON.parse(message)
-  // TODO need show the content as humman-readable
-  // dummy data can find in fake-cli/fake-output.log
-  return <div>{object.type}</div>
 }
