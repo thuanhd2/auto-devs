@@ -1,7 +1,5 @@
 method,endpoint,in-use
-GET,/swagger/*any,false
 GET,/api/v1/health,false
-GET,/ws/connect,true
 GET,/api/v1/websocket/connections,false
 GET,/api/v1/websocket/metrics,false
 POST,/api/v1/websocket/broadcast,false
@@ -54,3 +52,13 @@ GET,/api/v1/executions/:id,true
 PUT,/api/v1/executions/:id,true
 DELETE,/api/v1/executions/:id,true
 GET,/api/v1/executions/:id/logs,true
+GET,/api/v1/executions/:id/logs/stats,true
+GET,/api/v1/pull-requests,false
+GET,/api/v1/pull-requests/:id,false
+POST,/api/v1/pull-requests,false
+PUT,/api/v1/pull-requests/:id,false
+DELETE,/api/v1/pull-requests/:id,false
+POST,/api/v1/pull-requests/:id/sync,false
+POST,/api/v1/pull-requests/:id/merge,false
+POST,/api/v1/pull-requests/:id/close,false
+POST,/api/v1/pull-requests/:id/reopen,false
