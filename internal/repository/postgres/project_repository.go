@@ -52,23 +52,7 @@ func (r *projectRepository) GetByID(ctx context.Context, id uuid.UUID) (*entity.
 	return &project, nil
 }
 
-// GetAll retrieves all projects
-func (r *projectRepository) GetAll(ctx context.Context) ([]*entity.Project, error) {
-	var projects []entity.Project
 
-	result := r.db.WithContext(ctx).Order("created_at DESC").Find(&projects)
-	if result.Error != nil {
-		return nil, fmt.Errorf("failed to get projects: %w", result.Error)
-	}
-
-	// Convert to slice of pointers
-	projectPtrs := make([]*entity.Project, len(projects))
-	for i := range projects {
-		projectPtrs[i] = &projects[i]
-	}
-
-	return projectPtrs, nil
-}
 
 // Update updates an existing project
 func (r *projectRepository) Update(ctx context.Context, project *entity.Project) error {
@@ -105,31 +89,7 @@ func (r *projectRepository) Delete(ctx context.Context, id uuid.UUID) error {
 	return nil
 }
 
-// GetWithTaskCount retrieves a project with its task count
-func (r *projectRepository) GetWithTaskCount(ctx context.Context, id uuid.UUID) (*repository.ProjectWithTaskCount, error) {
-	var project entity.Project
-	var taskCount int64
 
-	// Get project
-	result := r.db.WithContext(ctx).First(&project, "id = ?", id)
-	if result.Error != nil {
-		if result.Error == gorm.ErrRecordNotFound {
-			return nil, fmt.Errorf("project not found with id %s", id)
-		}
-		return nil, fmt.Errorf("failed to get project: %w", result.Error)
-	}
-
-	// Get task count
-	result = r.db.WithContext(ctx).Model(&entity.Task{}).Where("project_id = ?", id).Count(&taskCount)
-	if result.Error != nil {
-		return nil, fmt.Errorf("failed to get task count: %w", result.Error)
-	}
-
-	return &repository.ProjectWithTaskCount{
-		Project:   &project,
-		TaskCount: int(taskCount),
-	}, nil
-}
 
 // GetAllWithParams retrieves projects with search, filtering, sorting and pagination
 func (r *projectRepository) GetAllWithParams(ctx context.Context, params repository.GetProjectsParams) ([]*entity.Project, int, error) {
