@@ -38,7 +38,7 @@ func InitializeApp() (*App, error) {
 	auditRepository := postgres.NewAuditRepository(gormDB)
 	executionRepository := postgres.NewExecutionRepository(gormDB)
 	executionLogRepository := postgres.NewExecutionLogRepository(gormDB)
-	pullRequestRepository := ProvidePullRequestRepository(gormDB)
+	pullRequestRepository := postgres.NewPullRequestRepository(gormDB)
 	auditUsecase := ProvideAuditUsecase(auditRepository)
 	gitManager, err := ProvideGitManager(configConfig)
 	if err != nil {
@@ -54,7 +54,7 @@ func InitializeApp() (*App, error) {
 	worktreeUsecase := ProvideWorktreeUsecase(worktreeRepository, taskRepository, projectRepository, integratedWorktreeService, gitManager)
 	client := ProvideJobClient(configConfig)
 	jobClientInterface := ProvideJobClientAdapter(client)
-	taskUsecase := ProvideTaskUsecase(taskRepository, projectRepository, notificationUsecase, worktreeUsecase, jobClientInterface)
+	taskUsecase := ProvideTaskUsecase(taskRepository, pullRequestRepository, projectRepository, notificationUsecase, worktreeUsecase, jobClientInterface)
 	executionUsecase := ProvideExecutionUsecase(executionRepository, executionLogRepository, taskRepository)
 	service := ProvideWebSocketService(configConfig)
 	cliManager, err := ProvideCLIManager()
@@ -78,9 +78,7 @@ func InitializeApp() (*App, error) {
 // wire.go:
 
 // ProviderSet is the Wire provider set for the entire application
-var ProviderSet = wire.NewSet(config.Load, ProvideGormDB, postgres.NewProjectRepository, postgres.NewTaskRepository, postgres.NewPlanRepository, ProvideWorktreeRepository, postgres.NewAuditRepository, postgres.NewExecutionRepository, postgres.NewExecutionLogRepository, ProvidePullRequestRepository,
-
-	ProvideGitManager,
+var ProviderSet = wire.NewSet(config.Load, ProvideGormDB, postgres.NewProjectRepository, postgres.NewTaskRepository, postgres.NewPlanRepository, ProvideWorktreeRepository, postgres.NewAuditRepository, postgres.NewExecutionRepository, postgres.NewExecutionLogRepository, postgres.NewPullRequestRepository, ProvideGitManager,
 	ProvideProjectGitService,
 	ProvideGitHubService,
 	ProvidePRCreator,
@@ -259,12 +257,13 @@ func ProvideWorktreeUsecase(
 // ProvideTaskUsecase provides a TaskUsecase instance
 func ProvideTaskUsecase(
 	taskRepo repository.TaskRepository,
+	pullRequestRepo repository.PullRequestRepository,
 	projectRepo repository.ProjectRepository,
 	notificationUsecase usecase.NotificationUsecase,
 	worktreeUsecase usecase.WorktreeUsecase,
 	jobClient usecase.JobClientInterface,
 ) usecase.TaskUsecase {
-	return usecase.NewTaskUsecase(taskRepo, projectRepo, notificationUsecase, worktreeUsecase, jobClient)
+	return usecase.NewTaskUsecase(taskRepo, pullRequestRepo, projectRepo, notificationUsecase, worktreeUsecase, jobClient)
 }
 
 // ProvideCLIManager provides a CLIManager instance
@@ -360,5 +359,5 @@ func ProvidePRCreator(githubService *github.GitHubServiceV2, cfg *config.Config)
 
 // ProvidePullRequestRepository provides a PullRequestRepository instance
 func ProvidePullRequestRepository(gormDB *database.GormDB) repository.PullRequestRepository {
-	return postgres.NewPullRequestRepository(gormDB.DB)
+	return postgres.NewPullRequestRepository(gormDB)
 }

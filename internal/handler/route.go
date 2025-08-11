@@ -92,6 +92,9 @@ func SetupRoutes(router *gin.Engine, projectUsecase usecase.ProjectUsecase, task
 
 			// Execution endpoints for tasks
 			tasks.GET("/:id/executions", executionHandler.GetTaskExecutions)
+
+			// Pull request endpoints
+			tasks.GET("/:id/pull-request", taskHandler.GetPullRequest)
 		}
 
 		// Execution routes

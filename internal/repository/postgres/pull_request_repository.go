@@ -6,24 +6,26 @@ import (
 	"fmt"
 
 	"github.com/auto-devs/auto-devs/internal/entity"
+	"github.com/auto-devs/auto-devs/internal/repository"
+	"github.com/auto-devs/auto-devs/pkg/database"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
 // PullRequestRepository implements the pull request repository interface using PostgreSQL
-type PullRequestRepository struct {
-	db *gorm.DB
+type pullRequestRepository struct {
+	db *database.GormDB
 }
 
 // NewPullRequestRepository creates a new pull request repository
-func NewPullRequestRepository(db *gorm.DB) *PullRequestRepository {
-	return &PullRequestRepository{
+func NewPullRequestRepository(db *database.GormDB) repository.PullRequestRepository {
+	return &pullRequestRepository{
 		db: db,
 	}
 }
 
 // Create creates a new pull request
-func (r *PullRequestRepository) Create(ctx context.Context, pr *entity.PullRequest) error {
+func (r *pullRequestRepository) Create(ctx context.Context, pr *entity.PullRequest) error {
 	if pr == nil {
 		return fmt.Errorf("pull request cannot be nil")
 	}
@@ -37,10 +39,10 @@ func (r *PullRequestRepository) Create(ctx context.Context, pr *entity.PullReque
 }
 
 // GetByID retrieves a pull request by ID
-func (r *PullRequestRepository) GetByID(ctx context.Context, id uuid.UUID) (*entity.PullRequest, error) {
+func (r *pullRequestRepository) GetByID(ctx context.Context, id uuid.UUID) (*entity.PullRequest, error) {
 	var pr entity.PullRequest
 	result := r.db.WithContext(ctx).Where("id = ?", id).First(&pr)
-	
+
 	if result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 			return nil, fmt.Errorf("pull request not found: %s", id)
@@ -52,7 +54,7 @@ func (r *PullRequestRepository) GetByID(ctx context.Context, id uuid.UUID) (*ent
 }
 
 // Update updates an existing pull request
-func (r *PullRequestRepository) Update(ctx context.Context, pr *entity.PullRequest) error {
+func (r *pullRequestRepository) Update(ctx context.Context, pr *entity.PullRequest) error {
 	if pr == nil {
 		return fmt.Errorf("pull request cannot be nil")
 	}
@@ -70,7 +72,7 @@ func (r *PullRequestRepository) Update(ctx context.Context, pr *entity.PullReque
 }
 
 // Delete deletes a pull request
-func (r *PullRequestRepository) Delete(ctx context.Context, id uuid.UUID) error {
+func (r *pullRequestRepository) Delete(ctx context.Context, id uuid.UUID) error {
 	result := r.db.WithContext(ctx).Delete(&entity.PullRequest{}, id)
 	if result.Error != nil {
 		return fmt.Errorf("failed to delete pull request: %w", result.Error)
@@ -84,10 +86,10 @@ func (r *PullRequestRepository) Delete(ctx context.Context, id uuid.UUID) error 
 }
 
 // GetByTaskID retrieves a pull request by task ID
-func (r *PullRequestRepository) GetByTaskID(ctx context.Context, taskID uuid.UUID) (*entity.PullRequest, error) {
+func (r *pullRequestRepository) GetByTaskID(ctx context.Context, taskID uuid.UUID) (*entity.PullRequest, error) {
 	var pr entity.PullRequest
 	result := r.db.WithContext(ctx).Where("task_id = ?", taskID).First(&pr)
-	
+
 	if result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 			return nil, nil // No PR found for task (which is valid)
@@ -99,10 +101,10 @@ func (r *PullRequestRepository) GetByTaskID(ctx context.Context, taskID uuid.UUI
 }
 
 // GetByGitHubPRNumber retrieves a pull request by GitHub PR number and repository
-func (r *PullRequestRepository) GetByGitHubPRNumber(ctx context.Context, repo string, prNumber int) (*entity.PullRequest, error) {
+func (r *pullRequestRepository) GetByGitHubPRNumber(ctx context.Context, repo string, prNumber int) (*entity.PullRequest, error) {
 	var pr entity.PullRequest
 	result := r.db.WithContext(ctx).Where("repository = ? AND github_pr_number = ?", repo, prNumber).First(&pr)
-	
+
 	if result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 			return nil, fmt.Errorf("pull request not found: repo=%s, pr=%d", repo, prNumber)
@@ -114,10 +116,10 @@ func (r *PullRequestRepository) GetByGitHubPRNumber(ctx context.Context, repo st
 }
 
 // GetByRepository retrieves all pull requests for a repository
-func (r *PullRequestRepository) GetByRepository(ctx context.Context, repo string) ([]*entity.PullRequest, error) {
+func (r *pullRequestRepository) GetByRepository(ctx context.Context, repo string) ([]*entity.PullRequest, error) {
 	var prs []*entity.PullRequest
 	result := r.db.WithContext(ctx).Where("repository = ?", repo).Order("created_at DESC").Find(&prs)
-	
+
 	if result.Error != nil {
 		return nil, fmt.Errorf("failed to get pull requests by repository: %w", result.Error)
 	}
@@ -126,10 +128,10 @@ func (r *PullRequestRepository) GetByRepository(ctx context.Context, repo string
 }
 
 // GetByStatus retrieves pull requests by status
-func (r *PullRequestRepository) GetByStatus(ctx context.Context, status entity.PullRequestStatus) ([]*entity.PullRequest, error) {
+func (r *pullRequestRepository) GetByStatus(ctx context.Context, status entity.PullRequestStatus) ([]*entity.PullRequest, error) {
 	var prs []*entity.PullRequest
 	result := r.db.WithContext(ctx).Where("status = ?", status).Order("created_at DESC").Find(&prs)
-	
+
 	if result.Error != nil {
 		return nil, fmt.Errorf("failed to get pull requests by status: %w", result.Error)
 	}
@@ -138,15 +140,15 @@ func (r *PullRequestRepository) GetByStatus(ctx context.Context, status entity.P
 }
 
 // GetActiveMonitoringPRs retrieves pull requests that should be actively monitored
-func (r *PullRequestRepository) GetActiveMonitoringPRs(ctx context.Context) ([]*entity.PullRequest, error) {
+func (r *pullRequestRepository) GetActiveMonitoringPRs(ctx context.Context) ([]*entity.PullRequest, error) {
 	var prs []*entity.PullRequest
-	
+
 	// Get all open PRs that should be monitored
 	result := r.db.WithContext(ctx).
 		Where("status = ?", entity.PullRequestStatusOpen).
 		Order("created_at DESC").
 		Find(&prs)
-	
+
 	if result.Error != nil {
 		return nil, fmt.Errorf("failed to get active monitoring PRs: %w", result.Error)
 	}
@@ -155,10 +157,10 @@ func (r *PullRequestRepository) GetActiveMonitoringPRs(ctx context.Context) ([]*
 }
 
 // GetOpenPRs retrieves all open pull requests
-func (r *PullRequestRepository) GetOpenPRs(ctx context.Context) ([]*entity.PullRequest, error) {
+func (r *pullRequestRepository) GetOpenPRs(ctx context.Context) ([]*entity.PullRequest, error) {
 	var prs []*entity.PullRequest
 	result := r.db.WithContext(ctx).Where("status = ?", entity.PullRequestStatusOpen).Order("created_at DESC").Find(&prs)
-	
+
 	if result.Error != nil {
 		return nil, fmt.Errorf("failed to get open pull requests: %w", result.Error)
 	}
@@ -167,14 +169,14 @@ func (r *PullRequestRepository) GetOpenPRs(ctx context.Context) ([]*entity.PullR
 }
 
 // List retrieves pull requests with pagination
-func (r *PullRequestRepository) List(ctx context.Context, offset, limit int) ([]*entity.PullRequest, error) {
+func (r *pullRequestRepository) List(ctx context.Context, offset, limit int) ([]*entity.PullRequest, error) {
 	var prs []*entity.PullRequest
 	result := r.db.WithContext(ctx).
 		Order("created_at DESC").
 		Offset(offset).
 		Limit(limit).
 		Find(&prs)
-	
+
 	if result.Error != nil {
 		return nil, fmt.Errorf("failed to list pull requests: %w", result.Error)
 	}
@@ -183,9 +185,9 @@ func (r *PullRequestRepository) List(ctx context.Context, offset, limit int) ([]
 }
 
 // ListByProjectID retrieves pull requests by project ID with pagination
-func (r *PullRequestRepository) ListByProjectID(ctx context.Context, projectID uuid.UUID, offset, limit int) ([]*entity.PullRequest, error) {
+func (r *pullRequestRepository) ListByProjectID(ctx context.Context, projectID uuid.UUID, offset, limit int) ([]*entity.PullRequest, error) {
 	var prs []*entity.PullRequest
-	
+
 	// Join with tasks to filter by project ID
 	result := r.db.WithContext(ctx).
 		Joins("JOIN tasks ON tasks.id = pull_requests.task_id").
@@ -194,7 +196,7 @@ func (r *PullRequestRepository) ListByProjectID(ctx context.Context, projectID u
 		Offset(offset).
 		Limit(limit).
 		Find(&prs)
-	
+
 	if result.Error != nil {
 		return nil, fmt.Errorf("failed to list pull requests by project ID: %w", result.Error)
 	}

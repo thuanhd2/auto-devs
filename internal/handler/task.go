@@ -788,3 +788,20 @@ func (h *TaskHandler) ApprovePlan(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, response)
 }
+
+func (h *TaskHandler) GetPullRequest(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, dto.NewErrorResponse(err, http.StatusBadRequest, "Invalid task ID"))
+		return
+	}
+
+	pr, err := h.taskUsecase.GetPullRequest(c.Request.Context(), id)
+	if err != nil {
+		c.JSON(http.StatusNotFound, dto.NewErrorResponse(err, http.StatusNotFound, "Pull request not found"))
+		return
+	}
+
+	c.JSON(http.StatusOK, pr)
+}
