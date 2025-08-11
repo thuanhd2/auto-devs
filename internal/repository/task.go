@@ -53,7 +53,6 @@ type TaskRepository interface {
 
 	// Audit trail
 	GetAuditLogs(ctx context.Context, taskID uuid.UUID, limit *int) ([]*entity.TaskAuditLog, error)
-	CreateAuditLog(ctx context.Context, auditLog *entity.TaskAuditLog) error
 
 	// Statistics and analytics
 	GetStatusHistory(ctx context.Context, taskID uuid.UUID) ([]*entity.TaskStatusHistory, error)
@@ -72,10 +71,7 @@ type TaskRepository interface {
 	UpdateComment(ctx context.Context, comment *entity.TaskComment) error
 	DeleteComment(ctx context.Context, commentID uuid.UUID) error
 
-	// Attachments
-	AddAttachment(ctx context.Context, attachment *entity.TaskAttachment) error
-	GetAttachments(ctx context.Context, taskID uuid.UUID) ([]*entity.TaskAttachment, error)
-	DeleteAttachment(ctx context.Context, attachmentID uuid.UUID) error
+
 
 	// Export functionality
 	ExportTasks(ctx context.Context, filters entity.TaskFilters, format entity.TaskExportFormat) ([]byte, error)

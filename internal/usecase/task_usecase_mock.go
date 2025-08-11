@@ -1532,6 +1532,63 @@ func (_c *TaskUsecaseMock_GetParentTask_Call) RunAndReturn(run func(ctx context.
 	return _c
 }
 
+// GetPullRequest provides a mock function for the type TaskUsecaseMock
+func (_mock *TaskUsecaseMock) GetPullRequest(ctx context.Context, taskID uuid.UUID) (*entity.PullRequest, error) {
+	ret := _mock.Called(ctx, taskID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetPullRequest")
+	}
+
+	var r0 *entity.PullRequest
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID) (*entity.PullRequest, error)); ok {
+		return returnFunc(ctx, taskID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID) *entity.PullRequest); ok {
+		r0 = returnFunc(ctx, taskID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*entity.PullRequest)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID) error); ok {
+		r1 = returnFunc(ctx, taskID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// TaskUsecaseMock_GetPullRequest_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetPullRequest'
+type TaskUsecaseMock_GetPullRequest_Call struct {
+	*mock.Call
+}
+
+// GetPullRequest is a helper method to define mock.On call
+//   - ctx
+//   - taskID
+func (_e *TaskUsecaseMock_Expecter) GetPullRequest(ctx interface{}, taskID interface{}) *TaskUsecaseMock_GetPullRequest_Call {
+	return &TaskUsecaseMock_GetPullRequest_Call{Call: _e.mock.On("GetPullRequest", ctx, taskID)}
+}
+
+func (_c *TaskUsecaseMock_GetPullRequest_Call) Run(run func(ctx context.Context, taskID uuid.UUID)) *TaskUsecaseMock_GetPullRequest_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(uuid.UUID))
+	})
+	return _c
+}
+
+func (_c *TaskUsecaseMock_GetPullRequest_Call) Return(pullRequest *entity.PullRequest, err error) *TaskUsecaseMock_GetPullRequest_Call {
+	_c.Call.Return(pullRequest, err)
+	return _c
+}
+
+func (_c *TaskUsecaseMock_GetPullRequest_Call) RunAndReturn(run func(ctx context.Context, taskID uuid.UUID) (*entity.PullRequest, error)) *TaskUsecaseMock_GetPullRequest_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetStatusAnalytics provides a mock function for the type TaskUsecaseMock
 func (_mock *TaskUsecaseMock) GetStatusAnalytics(ctx context.Context, projectID uuid.UUID) (*entity.TaskStatusAnalytics, error) {
 	ret := _mock.Called(ctx, projectID)

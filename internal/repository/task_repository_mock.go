@@ -39,52 +39,6 @@ func (_m *TaskRepositoryMock) EXPECT() *TaskRepositoryMock_Expecter {
 	return &TaskRepositoryMock_Expecter{mock: &_m.Mock}
 }
 
-// AddAttachment provides a mock function for the type TaskRepositoryMock
-func (_mock *TaskRepositoryMock) AddAttachment(ctx context.Context, attachment *entity.TaskAttachment) error {
-	ret := _mock.Called(ctx, attachment)
-
-	if len(ret) == 0 {
-		panic("no return value specified for AddAttachment")
-	}
-
-	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *entity.TaskAttachment) error); ok {
-		r0 = returnFunc(ctx, attachment)
-	} else {
-		r0 = ret.Error(0)
-	}
-	return r0
-}
-
-// TaskRepositoryMock_AddAttachment_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'AddAttachment'
-type TaskRepositoryMock_AddAttachment_Call struct {
-	*mock.Call
-}
-
-// AddAttachment is a helper method to define mock.On call
-//   - ctx
-//   - attachment
-func (_e *TaskRepositoryMock_Expecter) AddAttachment(ctx interface{}, attachment interface{}) *TaskRepositoryMock_AddAttachment_Call {
-	return &TaskRepositoryMock_AddAttachment_Call{Call: _e.mock.On("AddAttachment", ctx, attachment)}
-}
-
-func (_c *TaskRepositoryMock_AddAttachment_Call) Run(run func(ctx context.Context, attachment *entity.TaskAttachment)) *TaskRepositoryMock_AddAttachment_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(*entity.TaskAttachment))
-	})
-	return _c
-}
-
-func (_c *TaskRepositoryMock_AddAttachment_Call) Return(err error) *TaskRepositoryMock_AddAttachment_Call {
-	_c.Call.Return(err)
-	return _c
-}
-
-func (_c *TaskRepositoryMock_AddAttachment_Call) RunAndReturn(run func(ctx context.Context, attachment *entity.TaskAttachment) error) *TaskRepositoryMock_AddAttachment_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
 // AddComment provides a mock function for the type TaskRepositoryMock
 func (_mock *TaskRepositoryMock) AddComment(ctx context.Context, comment *entity.TaskComment) error {
 	ret := _mock.Called(ctx, comment)
@@ -562,52 +516,6 @@ func (_c *TaskRepositoryMock_Create_Call) RunAndReturn(run func(ctx context.Cont
 	return _c
 }
 
-// CreateAuditLog provides a mock function for the type TaskRepositoryMock
-func (_mock *TaskRepositoryMock) CreateAuditLog(ctx context.Context, auditLog *entity.TaskAuditLog) error {
-	ret := _mock.Called(ctx, auditLog)
-
-	if len(ret) == 0 {
-		panic("no return value specified for CreateAuditLog")
-	}
-
-	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *entity.TaskAuditLog) error); ok {
-		r0 = returnFunc(ctx, auditLog)
-	} else {
-		r0 = ret.Error(0)
-	}
-	return r0
-}
-
-// TaskRepositoryMock_CreateAuditLog_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CreateAuditLog'
-type TaskRepositoryMock_CreateAuditLog_Call struct {
-	*mock.Call
-}
-
-// CreateAuditLog is a helper method to define mock.On call
-//   - ctx
-//   - auditLog
-func (_e *TaskRepositoryMock_Expecter) CreateAuditLog(ctx interface{}, auditLog interface{}) *TaskRepositoryMock_CreateAuditLog_Call {
-	return &TaskRepositoryMock_CreateAuditLog_Call{Call: _e.mock.On("CreateAuditLog", ctx, auditLog)}
-}
-
-func (_c *TaskRepositoryMock_CreateAuditLog_Call) Run(run func(ctx context.Context, auditLog *entity.TaskAuditLog)) *TaskRepositoryMock_CreateAuditLog_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(*entity.TaskAuditLog))
-	})
-	return _c
-}
-
-func (_c *TaskRepositoryMock_CreateAuditLog_Call) Return(err error) *TaskRepositoryMock_CreateAuditLog_Call {
-	_c.Call.Return(err)
-	return _c
-}
-
-func (_c *TaskRepositoryMock_CreateAuditLog_Call) RunAndReturn(run func(ctx context.Context, auditLog *entity.TaskAuditLog) error) *TaskRepositoryMock_CreateAuditLog_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
 // CreateTaskFromTemplate provides a mock function for the type TaskRepositoryMock
 func (_mock *TaskRepositoryMock) CreateTaskFromTemplate(ctx context.Context, templateID uuid.UUID, projectID uuid.UUID, createdBy string) (*entity.Task, error) {
 	ret := _mock.Called(ctx, templateID, projectID, createdBy)
@@ -755,52 +663,6 @@ func (_c *TaskRepositoryMock_Delete_Call) Return(err error) *TaskRepositoryMock_
 }
 
 func (_c *TaskRepositoryMock_Delete_Call) RunAndReturn(run func(ctx context.Context, id uuid.UUID) error) *TaskRepositoryMock_Delete_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// DeleteAttachment provides a mock function for the type TaskRepositoryMock
-func (_mock *TaskRepositoryMock) DeleteAttachment(ctx context.Context, attachmentID uuid.UUID) error {
-	ret := _mock.Called(ctx, attachmentID)
-
-	if len(ret) == 0 {
-		panic("no return value specified for DeleteAttachment")
-	}
-
-	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID) error); ok {
-		r0 = returnFunc(ctx, attachmentID)
-	} else {
-		r0 = ret.Error(0)
-	}
-	return r0
-}
-
-// TaskRepositoryMock_DeleteAttachment_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'DeleteAttachment'
-type TaskRepositoryMock_DeleteAttachment_Call struct {
-	*mock.Call
-}
-
-// DeleteAttachment is a helper method to define mock.On call
-//   - ctx
-//   - attachmentID
-func (_e *TaskRepositoryMock_Expecter) DeleteAttachment(ctx interface{}, attachmentID interface{}) *TaskRepositoryMock_DeleteAttachment_Call {
-	return &TaskRepositoryMock_DeleteAttachment_Call{Call: _e.mock.On("DeleteAttachment", ctx, attachmentID)}
-}
-
-func (_c *TaskRepositoryMock_DeleteAttachment_Call) Run(run func(ctx context.Context, attachmentID uuid.UUID)) *TaskRepositoryMock_DeleteAttachment_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(uuid.UUID))
-	})
-	return _c
-}
-
-func (_c *TaskRepositoryMock_DeleteAttachment_Call) Return(err error) *TaskRepositoryMock_DeleteAttachment_Call {
-	_c.Call.Return(err)
-	return _c
-}
-
-func (_c *TaskRepositoryMock_DeleteAttachment_Call) RunAndReturn(run func(ctx context.Context, attachmentID uuid.UUID) error) *TaskRepositoryMock_DeleteAttachment_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -1008,63 +870,6 @@ func (_c *TaskRepositoryMock_GetArchivedTasks_Call) Return(tasks []*entity.Task,
 }
 
 func (_c *TaskRepositoryMock_GetArchivedTasks_Call) RunAndReturn(run func(ctx context.Context, projectID *uuid.UUID) ([]*entity.Task, error)) *TaskRepositoryMock_GetArchivedTasks_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// GetAttachments provides a mock function for the type TaskRepositoryMock
-func (_mock *TaskRepositoryMock) GetAttachments(ctx context.Context, taskID uuid.UUID) ([]*entity.TaskAttachment, error) {
-	ret := _mock.Called(ctx, taskID)
-
-	if len(ret) == 0 {
-		panic("no return value specified for GetAttachments")
-	}
-
-	var r0 []*entity.TaskAttachment
-	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID) ([]*entity.TaskAttachment, error)); ok {
-		return returnFunc(ctx, taskID)
-	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID) []*entity.TaskAttachment); ok {
-		r0 = returnFunc(ctx, taskID)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]*entity.TaskAttachment)
-		}
-	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID) error); ok {
-		r1 = returnFunc(ctx, taskID)
-	} else {
-		r1 = ret.Error(1)
-	}
-	return r0, r1
-}
-
-// TaskRepositoryMock_GetAttachments_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetAttachments'
-type TaskRepositoryMock_GetAttachments_Call struct {
-	*mock.Call
-}
-
-// GetAttachments is a helper method to define mock.On call
-//   - ctx
-//   - taskID
-func (_e *TaskRepositoryMock_Expecter) GetAttachments(ctx interface{}, taskID interface{}) *TaskRepositoryMock_GetAttachments_Call {
-	return &TaskRepositoryMock_GetAttachments_Call{Call: _e.mock.On("GetAttachments", ctx, taskID)}
-}
-
-func (_c *TaskRepositoryMock_GetAttachments_Call) Run(run func(ctx context.Context, taskID uuid.UUID)) *TaskRepositoryMock_GetAttachments_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(uuid.UUID))
-	})
-	return _c
-}
-
-func (_c *TaskRepositoryMock_GetAttachments_Call) Return(taskAttachments []*entity.TaskAttachment, err error) *TaskRepositoryMock_GetAttachments_Call {
-	_c.Call.Return(taskAttachments, err)
-	return _c
-}
-
-func (_c *TaskRepositoryMock_GetAttachments_Call) RunAndReturn(run func(ctx context.Context, taskID uuid.UUID) ([]*entity.TaskAttachment, error)) *TaskRepositoryMock_GetAttachments_Call {
 	_c.Call.Return(run)
 	return _c
 }
