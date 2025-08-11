@@ -1,5 +1,10 @@
 # CLAUDE.md
 
+## IMPORTANT use tools
+
+- serena
+- github
+
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Auto-Devs API Core
@@ -9,6 +14,7 @@ This is a Go-based API server for the Auto-Devs project management system with a
 ### Backend Development Commands
 
 **Build and Run:**
+
 ```bash
 # Build the application
 make build
@@ -27,6 +33,7 @@ go test ./... -v
 ```
 
 **Database Management:**
+
 ```bash
 # Run all pending migrations
 make migrate-up
@@ -42,6 +49,7 @@ make migrate-create name=migration_name
 ```
 
 **Code Generation:**
+
 ```bash
 # Generate Swagger documentation
 make swagger
@@ -58,6 +66,7 @@ make mocks
 ```
 
 **Worker Management:**
+
 ```bash
 # Build worker binary
 make build-worker
@@ -108,30 +117,36 @@ The backend follows a layered clean architecture:
 ### Key Backend Components
 
 **Dependency Injection:**
+
 - Uses Google Wire for compile-time dependency injection
 - Configuration in `internal/di/wire.go`
 - Generated code in `internal/di/wire_gen.go`
 
 **Database:**
+
 - PostgreSQL with GORM
 - Migration management with golang-migrate
 - Repository pattern for data access
 
 **Job Processing:**
+
 - Redis-based job queue using Hibiken Asynq
 - Background workers for task execution
 - AI-powered planning and execution services
 
 **WebSocket Support:**
+
 - Real-time communication using Centrifuge
 - Notification system for task updates
 
 **AI Integration:**
+
 - CLI manager for Claude Code integration
 - Process management for AI task execution
 - Planning and execution services
 
 **Git Integration:**
+
 - Worktree management for isolated development
 - GitHub integration for PR creation
 - Branch and commit management
@@ -139,6 +154,7 @@ The backend follows a layered clean architecture:
 ### Frontend Architecture
 
 **Tech Stack:**
+
 - React 19 with TypeScript
 - Vite for build tooling
 - TailwindCSS for styling
@@ -148,6 +164,7 @@ The backend follows a layered clean architecture:
 - Zustand for state management
 
 **Key Frontend Features:**
+
 - Drag-and-drop task management
 - Real-time updates via WebSocket
 - Form handling with React Hook Form and Zod validation
