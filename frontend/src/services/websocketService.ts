@@ -94,6 +94,7 @@ export class CentrifugeService {
       // Set up event handlers
       this.centrifuge.on('connecting', (ctx) => {
         if (this.config.debug) {
+          // eslint-disable-next-line no-console
           console.log('Centrifuge connecting:', ctx)
         }
         this.updateConnectionState({
@@ -103,6 +104,7 @@ export class CentrifugeService {
 
       this.centrifuge.on('connected', (ctx) => {
         if (this.config.debug) {
+          // eslint-disable-next-line no-console
           console.log('Centrifuge connected:', ctx)
         }
         this.updateConnectionState({
@@ -118,6 +120,7 @@ export class CentrifugeService {
 
       this.centrifuge.on('disconnected', (ctx) => {
         if (this.config.debug) {
+          // eslint-disable-next-line no-console
           console.log('Centrifuge disconnected:', ctx)
         }
         this.updateConnectionState({
@@ -127,6 +130,7 @@ export class CentrifugeService {
       })
 
       this.centrifuge.on('error', (ctx) => {
+        // eslint-disable-next-line no-console
         console.error('Centrifuge error:', ctx)
         this.updateConnectionState({
           status: 'error',
@@ -252,6 +256,7 @@ export class CentrifugeService {
 
         subscription.on('publication', (ctx: PublicationContext) => {
           if (this.config.debug) {
+            // eslint-disable-next-line no-console
             console.log('Received message on channel', channel, ':', ctx.data)
           }
 
@@ -267,18 +272,21 @@ export class CentrifugeService {
 
             this.handleMessage(channel, message)
           } catch (error) {
+            // eslint-disable-next-line no-console
             console.error('Failed to parse message:', error, ctx.data)
           }
         })
 
         subscription.on('subscribing', (ctx: SubscriptionDataContext) => {
           if (this.config.debug) {
+            // eslint-disable-next-line no-console
             console.log('Subscribing to channel:', channel, ctx)
           }
         })
 
         subscription.on('subscribed', (ctx: SubscriptionDataContext) => {
           if (this.config.debug) {
+            // eslint-disable-next-line no-console
             console.log('Subscribed to channel:', channel, ctx)
           }
           resolve()
@@ -286,12 +294,14 @@ export class CentrifugeService {
 
         subscription.on('unsubscribed', (ctx: SubscriptionDataContext) => {
           if (this.config.debug) {
+            // eslint-disable-next-line no-console
             console.log('Unsubscribed from channel:', channel, ctx)
           }
           this.subscriptions.delete(channel)
         })
 
         subscription.on('error', (ctx) => {
+          // eslint-disable-next-line no-console
           console.error('Subscription error for channel', channel, ':', ctx)
           reject(ctx.error)
         })
@@ -319,6 +329,7 @@ export class CentrifugeService {
     // Resubscribe to all channels that have listeners
     for (const channel of this.eventListeners.keys()) {
       this.subscribeToChannel(channel).catch((error) => {
+        // eslint-disable-next-line no-console
         console.error('Failed to resubscribe to channel:', channel, error)
       })
     }
@@ -332,6 +343,7 @@ export class CentrifugeService {
         try {
           listener(message)
         } catch (error) {
+          // eslint-disable-next-line no-console
           console.error('Error in message listener:', error)
         }
       })
@@ -344,6 +356,7 @@ export class CentrifugeService {
         try {
           listener(message)
         } catch (error) {
+          // eslint-disable-next-line no-console
           console.error('Error in wildcard listener:', error)
         }
       })
@@ -356,6 +369,7 @@ export class CentrifugeService {
       try {
         listener(this.connectionState)
       } catch (error) {
+        // eslint-disable-next-line no-console
         console.error('Error in connection state listener:', error)
       }
     })

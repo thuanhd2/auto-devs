@@ -48,7 +48,6 @@ export function ExecutionStatusBadge({
   showIcon = true,
   className,
 }: ExecutionStatusBadgeProps) {
-  console.log('status', status)
   const Icon = statusIcons[status]
   const colorClasses = EXECUTION_STATUS_COLORS[status]
 

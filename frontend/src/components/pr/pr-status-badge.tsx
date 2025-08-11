@@ -1,13 +1,13 @@
-import { GitMerge, GitPullRequest, XCircle, AlertCircle, CheckCircle2 } from 'lucide-react'
 import type { PullRequestStatus } from '@/types/pull-request'
-import { Badge } from '@/components/ui/badge'
-import { 
-  Tooltip, 
-  TooltipContent, 
-  TooltipProvider, 
-  TooltipTrigger 
-} from '@/components/ui/tooltip'
+import { CheckCircle, XCircle, Clock, AlertCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { Badge } from '@/components/ui/badge'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 
 interface PRStatusBadgeProps {
   status: PullRequestStatus
@@ -22,14 +22,14 @@ const PR_STATUS_CONFIG = {
   OPEN: {
     label: 'Open',
     description: 'Pull request is open and ready for review',
-    icon: GitPullRequest,
+    icon: CheckCircle,
     color: 'bg-green-100 text-green-700 border-green-200',
     variant: 'secondary' as const,
   },
   MERGED: {
     label: 'Merged',
     description: 'Pull request has been merged successfully',
-    icon: GitMerge,
+    icon: CheckCircle,
     color: 'bg-purple-100 text-purple-700 border-purple-200',
     variant: 'secondary' as const,
   },
@@ -57,13 +57,13 @@ export function PRStatusBadge({
     <Badge
       variant={config.variant}
       className={cn(
-        'flex items-center gap-1 text-xs border',
+        'flex items-center gap-1 border text-xs',
         config.color,
         variant === 'compact' && 'px-1.5 py-0.5 text-xs',
         className
       )}
     >
-      {showIcon && <Icon className="h-3 w-3" />}
+      {showIcon && <Icon className='h-3 w-3' />}
       <span className={variant === 'compact' ? 'hidden sm:inline' : ''}>
         {config.label}
         {prNumber && ` #${prNumber}`}
@@ -75,9 +75,9 @@ export function PRStatusBadge({
     return prUrl ? (
       <a
         href={prUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="inline-block hover:scale-105 transition-transform"
+        target='_blank'
+        rel='noopener noreferrer'
+        className='inline-block transition-transform hover:scale-105'
         onClick={(e) => e.stopPropagation()}
       >
         {badgeContent}
@@ -94,9 +94,9 @@ export function PRStatusBadge({
           {prUrl ? (
             <a
               href={prUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-block hover:scale-105 transition-transform"
+              target='_blank'
+              rel='noopener noreferrer'
+              className='inline-block transition-transform hover:scale-105'
               onClick={(e) => e.stopPropagation()}
             >
               {badgeContent}
@@ -105,14 +105,14 @@ export function PRStatusBadge({
             badgeContent
           )}
         </TooltipTrigger>
-        <TooltipContent side="top" className="max-w-xs">
-          <div className="space-y-1">
-            <p className="font-medium">{config.label}</p>
-            <p className="text-xs text-muted-foreground">
+        <TooltipContent side='top' className='max-w-xs'>
+          <div className='space-y-1'>
+            <p className='font-medium'>{config.label}</p>
+            <p className='text-muted-foreground text-xs'>
               {config.description}
             </p>
             {prNumber && (
-              <p className="text-xs font-mono bg-muted px-1.5 py-0.5 rounded">
+              <p className='bg-muted rounded px-1.5 py-0.5 font-mono text-xs'>
                 PR #{prNumber}
               </p>
             )}

@@ -69,7 +69,6 @@ export function BranchSelectionDialog({
       }
     } catch (err) {
       setError('Failed to load branches. Please try again.')
-      console.error('Error fetching branches:', err)
     } finally {
       setLoading(false)
     }

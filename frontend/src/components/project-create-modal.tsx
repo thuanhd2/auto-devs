@@ -79,7 +79,7 @@ export function ProjectCreateModal({
         to: '/projects/$projectId',
         params: { projectId: project.id },
       })
-    } catch (error) {
+    } catch {
       // Error handling is done in the mutation hook
     }
   }

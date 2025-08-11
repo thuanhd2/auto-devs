@@ -19,8 +19,6 @@ export function usePullRequests({
   filters,
   enabled = true,
 }: UsePullRequestsOptions) {
-  const queryClient = useQueryClient()
-
   const query = useQuery({
     queryKey: ['pull-requests', projectId, filters],
     queryFn: () => pullRequestsApi.getPullRequests(projectId, filters),
@@ -41,8 +39,6 @@ export function usePullRequest({
   pullRequestId,
   enabled = true,
 }: UsePullRequestOptions) {
-  const queryClient = useQueryClient()
-
   const query = useQuery({
     queryKey: ['pull-request', pullRequestId],
     queryFn: () => pullRequestsApi.getPullRequest(pullRequestId),

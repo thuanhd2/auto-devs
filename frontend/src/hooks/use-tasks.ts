@@ -220,7 +220,9 @@ export function useApprovePlan() {
       return { previousTasks }
     },
     onSuccess: (response, taskId) => {
-      toast.success(`Plan approved! Implementation job enqueued. Job ID: ${response.job_id}`)
+      toast.success(
+        `Plan approved! Implementation job enqueued. Job ID: ${response.job_id}`
+      )
     },
     onError: (error: any, taskId, context) => {
       // Revert optimistic update on error

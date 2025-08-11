@@ -1,33 +1,27 @@
-import { useState, useEffect, useCallback } from 'react'
-import { taskOptimisticUpdates } from '@/services/optimisticUpdates'
-import { CentrifugeMessage } from '@/services/websocketService'
-import type { Task, TaskFilters } from '@/types/task'
-import { toast } from 'sonner'
-import {
-  useWebSocketProject,
-  useWebSocketContext,
-} from '@/context/websocket-context'
-import {
-  useTasks,
-  useDeleteTask,
-  useDuplicateTask,
-  useStartPlanning,
-  useApprovePlan,
-} from '@/hooks/use-tasks'
-import { BoardFilters } from './board-filters'
-import { BoardToolbar } from './board-toolbar'
+import { useState, useEffect } from 'react'
+import type { Project } from '@/types/project'
+import type { Task, TaskStatus } from '@/types/task'
+import { useParams } from 'react-router-dom'
+import { useWebSocketConnection } from '@/context/websocket-context'
+import { useProjects } from '@/hooks/use-projects'
+import { useTasks } from '@/hooks/use-tasks'
+import { RealTimeNotifications } from '@/components/notifications/real-time-notifications'
+import { RealTimeProjectStats } from '@/components/stats/real-time-project-stats'
+import { GitOperationControls } from './git-operation-controls'
+import { GitStatusCard } from './git-status-card'
 import { KanbanBoard } from './kanban-board'
-import { TaskDetailSheet } from './task-detail-sheet'
+import { TaskDetailModal } from './task-detail-modal'
+import { TaskEditModal } from './task-edit-modal'
 import { TaskFormModal } from './task-form-modal'
+import { TaskHistoryModal } from './task-history-modal'
 
 interface ProjectBoardProps {
   projectId: string
 }
 
 export function ProjectBoard({ projectId }: ProjectBoardProps) {
-  const [filters, setFilters] = useState<TaskFilters>({})
+  const [filters, setFilters] = useState({})
   const [searchQuery, setSearchQuery] = useState('')
-  const [isCompactView, setIsCompactView] = useState(false)
   const [localTasks, setLocalTasks] = useState<Task[]>([])
 
   // Modal states
@@ -42,50 +36,13 @@ export function ProjectBoard({ projectId }: ProjectBoardProps) {
     task?: Task | null
   }>({ open: false, task: null })
 
-  const {
-    data: tasksResponse,
-    isLoading,
-    refetch,
-  } = useTasks(projectId, filters)
-  const deleteTaskMutation = useDeleteTask()
-  const duplicateTaskMutation = useDuplicateTask()
-  const startPlanningMutation = useStartPlanning()
-  const approvePlanAndStartImplementMutation = useApprovePlan()
+  const { data: tasksResponse, refetch } = useTasks(projectId, filters)
+
   // WebSocket integration
-  const { setCurrentProjectId } = useWebSocketProject(projectId)
-  const { isConnected, subscribe, unsubscribe } = useWebSocketContext()
-  const onTaskUpdated = useCallback((message: CentrifugeMessage) => {
-    const { task_id: taskId, project_id: projectId, changes } = message.data
-    // do nothing if current project id is not the same as the task's project id
-    if (projectId !== projectId) {
-      return
-    }
-    // update the task in the local tasks array
-    setLocalTasks((prev) =>
-      prev.map((t) => {
-        if (t.id !== taskId) {
-          return t
-        }
-        const changedValues = {}
-        for (const key in changes) {
-          if (t[key] !== changes[key].new) {
-            changedValues[key] = changes[key].new
-          }
-        }
-        return { ...t, ...changedValues }
-      })
-    )
-  }, [])
-  useEffect(() => {
-    subscribe('task_updated', onTaskUpdated)
-    return () => {
-      unsubscribe('task_updated', onTaskUpdated)
-    }
-  }, [subscribe, unsubscribe, onTaskUpdated])
+  const { setCurrentProjectId } = useWebSocketConnection()
 
   // Keep local tasks in sync with server data
   useEffect(() => {
-    // console.log('tasks changed', tasks)
     const tasks = tasksResponse?.tasks || []
     setLocalTasks(tasks)
   }, [tasksResponse])
@@ -96,82 +53,6 @@ export function ProjectBoard({ projectId }: ProjectBoardProps) {
       setCurrentProjectId(projectId)
     }
   }, [projectId, setCurrentProjectId])
-
-  // Handle real-time task updates from WebSocket
-  const handleTaskCreated = useCallback(
-    (task: Task) => {
-      if (task.project_id === projectId) {
-        setLocalTasks((prev) => {
-          // Check if task already exists to avoid duplicates
-          if (prev.some((t) => t.id === task.id)) {
-            return prev
-          }
-          return [...prev, task]
-        })
-      }
-    },
-    [projectId]
-  )
-
-  const handleTaskUpdated = useCallback(
-    (task: Task, changes?: any) => {
-      if (task.project_id === projectId) {
-        // Confirm any pending optimistic updates for this task
-        taskOptimisticUpdates.confirmTaskUpdate(task.id, task)
-
-        setLocalTasks((prev) => prev.map((t) => (t.id === task.id ? task : t)))
-      }
-    },
-    [projectId]
-  )
-
-  const handleTaskDeleted = useCallback((taskId: string) => {
-    setLocalTasks((prev) => {
-      const task = prev.find((t) => t.id === taskId)
-      if (task) {
-        return prev.filter((t) => t.id !== taskId)
-      }
-      return prev
-    })
-  }, [])
-
-  const handleDeleteTask = async (taskId: string) => {
-    if (confirm('Are you sure you want to delete this task?')) {
-      const task = localTasks.find((t) => t.id === taskId)
-      if (!task) return
-
-      // Apply optimistic delete
-      const updateId = taskOptimisticUpdates.deleteTask(
-        taskId,
-        task,
-        () => setLocalTasks((prev) => prev.filter((t) => t.id !== taskId)),
-        () => {
-          // Task deletion confirmed by server
-          console.log('Task deletion confirmed')
-        },
-        (originalTask) => {
-          // Revert deletion if failed
-          if (originalTask) {
-            setLocalTasks((prev) => [...prev, originalTask])
-            toast.error('Failed to delete task')
-          }
-        }
-      )
-
-      try {
-        await deleteTaskMutation.mutateAsync(taskId)
-        // Confirm the optimistic update
-        // Note: This will be handled by WebSocket message handler
-      } catch (error) {
-        // Error is handled by the mutation and optimistic update revert
-      }
-    }
-  }
-
-  const handleRefresh = () => {
-    refetch()
-    toast.success('Board refreshed')
-  }
 
   const handleCreateTask = () => {
     setTaskFormModal({ open: true, mode: 'create', task: null })
@@ -185,28 +66,76 @@ export function ProjectBoard({ projectId }: ProjectBoardProps) {
     setTaskDetailSheet({ open: true, task })
   }
 
-  const handleStartPlanning = async (taskId: string, branchName: string) => {
+  const handleCloseTaskFormModal = () => {
+    setTaskFormModal({ open: false, mode: 'create', task: null })
+  }
+
+  const handleCloseTaskDetailSheet = () => {
+    setTaskDetailSheet({ open: false, task: null })
+  }
+
+  const handleCloseTaskEditModal = () => {
+    setTaskFormModal({ open: false, mode: 'create', task: null })
+  }
+
+  const handleCloseTaskHistoryModal = () => {
+    // Close history modal logic
+  }
+
+  const handleTaskFormSubmit = async (taskData: Partial<Task>) => {
     try {
-      await startPlanningMutation.mutateAsync({
-        taskId,
-        request: { branch_name: branchName },
-      })
-    } catch (error) {
-      // Error is handled by the mutation hook
+      await refetch()
+      handleCloseTaskFormModal()
+    } catch (err) {
+      // Handle error
     }
   }
 
-  const handleApprovePlanAndStartImplement = async (taskId: string) => {
-    if (
-      confirm(
-        'Are you sure you want to approve the plan and start implementing?'
-      )
-    ) {
-      try {
-        await approvePlanAndStartImplementMutation.mutateAsync(taskId)
-      } catch (error) {
-        // Error is handled by the mutation hook
-      }
+  const handleTaskEditSubmit = async (taskData: Partial<Task>) => {
+    try {
+      await refetch()
+      handleCloseTaskEditModal()
+    } catch (err) {
+      // Handle error
+    }
+  }
+
+  const handleTaskDeleted = async (taskId: string) => {
+    try {
+      await refetch()
+    } catch (err) {
+      // Handle error
+    }
+  }
+
+  const handleTaskStatusChange = async (
+    taskId: string,
+    newStatus: TaskStatus
+  ) => {
+    try {
+      await refetch()
+    } catch (err) {
+      // Handle error
+    }
+  }
+
+  const handleTaskMoved = async (
+    taskId: string,
+    newStatus: TaskStatus,
+    newIndex: number
+  ) => {
+    try {
+      await refetch()
+    } catch (err) {
+      // Handle error
+    }
+  }
+
+  const handleRefresh = async () => {
+    try {
+      await refetch()
+    } catch (err) {
+      // Handle error
     }
   }
 

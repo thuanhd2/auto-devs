@@ -1,4 +1,6 @@
+import { useState, useEffect } from 'react'
 import { format } from 'date-fns'
+import { Task } from '@/types/kanban'
 import { Clock, ArrowRight, Circle } from 'lucide-react'
 import { getStatusColor, getStatusTitle } from '@/lib/kanban'
 import { Badge } from '@/components/ui/badge'
@@ -22,65 +24,50 @@ interface TaskHistoryItem {
 }
 
 interface TaskHistoryProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  taskId: string
+  task: Task
+  onClose: () => void
 }
 
-// Mock history data - replace with actual API call
-const mockTaskHistory: TaskHistoryItem[] = [
-  {
-    id: '1',
-    action: 'created',
-    timestamp: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-    user: 'John Doe',
-  },
-  {
-    id: '2',
-    action: 'status_changed',
-    field: 'status',
-    oldValue: 'TODO',
-    newValue: 'PLANNING',
-    timestamp: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString(),
-    user: 'Jane Smith',
-  },
-  {
-    id: '3',
-    action: 'updated',
-    field: 'description',
-    timestamp: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-    user: 'John Doe',
-  },
-  {
-    id: '4',
-    action: 'status_changed',
-    field: 'status',
-    oldValue: 'PLANNING',
-    newValue: 'IMPLEMENTING',
-    timestamp: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-    user: 'Jane Smith',
-  },
-  {
-    id: '5',
-    action: 'updated',
-    field: 'branch_name',
-    newValue: 'feature/task-implementation',
-    timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-    user: 'John Doe',
-  },
-  {
-    id: '6',
-    action: 'updated',
-    field: 'pr_url',
-    newValue: 'https://github.com/org/repo/pull/123',
-    timestamp: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-    user: 'John Doe',
-  },
-]
+export function TaskHistory({ task, onClose }: TaskHistoryProps) {
+  const [isLoading, setIsLoading] = useState(false)
+  const [history, setHistory] = useState<TaskHistoryItem[]>([])
 
-export function TaskHistory({ open, onOpenChange, taskId }: TaskHistoryProps) {
-  // In real app, fetch history from API
-  const history = mockTaskHistory
+  useEffect(() => {
+    const fetchHistory = async () => {
+      setIsLoading(true)
+      try {
+        // TODO: Implement API call to fetch task history
+        const mockHistory: TaskHistoryItem[] = [
+          {
+            id: '1',
+            action: 'created',
+            timestamp: new Date(
+              Date.now() - 7 * 24 * 60 * 60 * 1000
+            ).toISOString(),
+            user: 'John Doe',
+          },
+          {
+            id: '2',
+            action: 'status_changed',
+            field: 'status',
+            oldValue: 'TODO',
+            newValue: 'PLANNING',
+            timestamp: new Date(
+              Date.now() - 6 * 24 * 60 * 60 * 1000
+            ).toISOString(),
+            user: 'Jane Smith',
+          },
+        ]
+        setHistory(mockHistory)
+      } catch {
+        // Handle error silently
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchHistory()
+  }, [])
 
   const getActionIcon = (action: string) => {
     switch (action) {
@@ -117,7 +104,7 @@ export function TaskHistory({ open, onOpenChange, taskId }: TaskHistoryProps) {
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={true} onOpenChange={onClose}>
       <DialogContent className='max-h-[80vh] overflow-y-auto sm:max-w-[600px]'>
         <DialogHeader>
           <DialogTitle>Task History</DialogTitle>

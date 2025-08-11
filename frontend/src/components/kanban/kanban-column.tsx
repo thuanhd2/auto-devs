@@ -13,7 +13,6 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { DraggableTaskCard } from './draggable-task-card'
 import { EmptyColumn } from './empty-column'
-import { TaskCard } from './task-card'
 
 interface KanbanColumnProps {
   column: KanbanColumn

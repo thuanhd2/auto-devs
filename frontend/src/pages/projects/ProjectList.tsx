@@ -173,9 +173,9 @@ export function ProjectList() {
               <TabsTrigger value='archived' className='flex items-center gap-2'>
                 <Archive className='h-4 w-4' />
                 Archived
-                {archivedProjectsData?.projects.length > 0 && (
+                {archivedProjectsData?.projects?.length > 0 && (
                   <Badge variant='secondary' className='ml-1'>
-                    {archivedProjectsData.projects.length}
+                    {archivedProjectsData?.projects?.length}
                   </Badge>
                 )}
               </TabsTrigger>
@@ -272,9 +272,9 @@ export function ProjectList() {
               {/* Results Info for Archived Projects */}
               {!archivedLoading &&
                 archivedProjectsData &&
-                archivedProjectsData.projects.length > 0 && (
+                archivedProjectsData?.projects?.length > 0 && (
                   <div className='text-muted-foreground text-center text-sm'>
-                    Showing {archivedProjectsData.projects.length} of{' '}
+                    Showing {archivedProjectsData?.projects?.length} of{' '}
                     {archivedProjectsData.total} archived projects
                   </div>
                 )}

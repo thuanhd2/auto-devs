@@ -1,32 +1,48 @@
-import { useState } from 'react'
-import { useParams, useNavigate } from '@tanstack/react-router'
-import { ArrowLeft, Plus, Filter, SortAsc, SortDesc } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { useParams } from '@tanstack/react-router'
 import type { PullRequest, PullRequestFilters } from '@/types/pull-request'
-import { PRList } from './pr-list'
-import { PRDetail } from './pr-detail'
-import { PRActions } from './pr-actions'
-import { usePullRequests, usePullRequest, usePullRequestMutations, usePullRequestFilters } from '@/hooks/use-pull-requests'
+import { ArrowLeft } from 'lucide-react'
+import { cn } from '@/lib/utils'
+import {
+  usePullRequests,
+  usePullRequest,
+  usePullRequestMutations,
+  usePullRequestFilters,
+} from '@/hooks/use-pull-requests'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { Separator } from '@/components/ui/separator'
-import { Badge } from '@/components/ui/badge'
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet'
 import { Skeleton } from '@/components/ui/skeleton'
-import { cn } from '@/lib/utils'
+import { PRActions } from './pr-actions'
+import { PRDetail } from './pr-detail'
+import { PRList } from './pr-list'
 
 interface PRManagementPageProps {
   projectId: string
   className?: string
 }
 
-export function PRManagementPage({ projectId, className }: PRManagementPageProps) {
-  const navigate = useNavigate()
+export function PRManagementPage({
+  projectId,
+  className,
+}: PRManagementPageProps) {
   const [selectedPR, setSelectedPR] = useState<PullRequest | null>(null)
   const [detailSheetOpen, setDetailSheetOpen] = useState(false)
   const { filters, updateFilters, resetFilters } = usePullRequestFilters()
 
   // Queries
-  const { data: pullRequestsResponse, isLoading: loadingPRs, error: prsError } = usePullRequests({
+  const {
+    data: pullRequestsResponse,
+    isLoading: loadingPRs,
+    error: prsError,
+  } = usePullRequests({
     projectId,
     filters,
   })
@@ -46,16 +62,20 @@ export function PRManagementPage({ projectId, className }: PRManagementPageProps
     setDetailSheetOpen(true)
   }
 
-  const handlePRAction = async (pr: PullRequest, action: 'sync' | 'merge' | 'close' | 'reopen', options?: any) => {
+  const handlePRAction = async (
+    pr: PullRequest,
+    action: 'sync' | 'merge' | 'close' | 'reopen',
+    options?: any
+  ) => {
     try {
       switch (action) {
         case 'sync':
           await syncPR.mutateAsync(pr.id)
           break
         case 'merge':
-          await mergePR.mutateAsync({ 
-            id: pr.id, 
-            method: options?.method || 'merge' 
+          await mergePR.mutateAsync({
+            id: pr.id,
+            method: options?.method || 'merge',
           })
           setDetailSheetOpen(false)
           break
@@ -67,12 +87,15 @@ export function PRManagementPage({ projectId, className }: PRManagementPageProps
           await reopenPR.mutateAsync(pr.id)
           break
       }
-    } catch (error) {
-      console.error(`Failed to ${action} PR:`, error)
+    } catch {
+      // Handle error silently
     }
   }
 
-  const handleDetailAction = async (action: 'sync' | 'merge' | 'close' | 'reopen', options?: any) => {
+  const handleDetailAction = async (
+    action: 'sync' | 'merge' | 'close' | 'reopen',
+    options?: any
+  ) => {
     if (!selectedPR) return
     await handlePRAction(selectedPR, action, options)
   }
@@ -91,15 +114,19 @@ export function PRManagementPage({ projectId, className }: PRManagementPageProps
     return (
       <div className={cn('p-6', className)}>
         <Card>
-          <CardContent className="flex items-center justify-center py-12">
-            <div className="text-center">
-              <p className="text-lg font-medium text-destructive">Error loading pull requests</p>
-              <p className="text-muted-foreground">
-                {prsError instanceof Error ? prsError.message : 'An unknown error occurred'}
+          <CardContent className='flex items-center justify-center py-12'>
+            <div className='text-center'>
+              <p className='text-destructive text-lg font-medium'>
+                Error loading pull requests
               </p>
-              <Button 
-                variant="outline" 
-                className="mt-4"
+              <p className='text-muted-foreground'>
+                {prsError instanceof Error
+                  ? prsError.message
+                  : 'An unknown error occurred'}
+              </p>
+              <Button
+                variant='outline'
+                className='mt-4'
                 onClick={() => window.location.reload()}
               >
                 Retry
@@ -114,16 +141,16 @@ export function PRManagementPage({ projectId, className }: PRManagementPageProps
   return (
     <div className={cn('space-y-6', className)}>
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className='flex items-center justify-between'>
         <div>
-          <h1 className="text-2xl font-bold">Pull Requests</h1>
-          <p className="text-muted-foreground">
+          <h1 className='text-2xl font-bold'>Pull Requests</h1>
+          <p className='text-muted-foreground'>
             Manage and monitor pull requests for this project
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className='flex items-center gap-2'>
           <Button
-            variant="outline"
+            variant='outline'
             onClick={resetFilters}
             disabled={loadingPRs}
           >
@@ -134,42 +161,52 @@ export function PRManagementPage({ projectId, className }: PRManagementPageProps
 
       {/* Stats Cards */}
       {pullRequestsResponse && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className='grid grid-cols-1 gap-4 md:grid-cols-4'>
           <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Total PRs</CardTitle>
+            <CardHeader className='pb-3'>
+              <CardTitle className='text-muted-foreground text-sm font-medium'>
+                Total PRs
+              </CardTitle>
             </CardHeader>
-            <CardContent className="pt-0">
-              <div className="text-2xl font-bold">{pullRequestsResponse.total}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Open</CardTitle>
-            </CardHeader>
-            <CardContent className="pt-0">
-              <div className="text-2xl font-bold text-green-600">
-                {pullRequests.filter(pr => pr.status === 'OPEN').length}
+            <CardContent className='pt-0'>
+              <div className='text-2xl font-bold'>
+                {pullRequestsResponse.total}
               </div>
             </CardContent>
           </Card>
           <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Merged</CardTitle>
+            <CardHeader className='pb-3'>
+              <CardTitle className='text-muted-foreground text-sm font-medium'>
+                Open
+              </CardTitle>
             </CardHeader>
-            <CardContent className="pt-0">
-              <div className="text-2xl font-bold text-purple-600">
-                {pullRequests.filter(pr => pr.status === 'MERGED').length}
+            <CardContent className='pt-0'>
+              <div className='text-2xl font-bold text-green-600'>
+                {pullRequests.filter((pr) => pr.status === 'OPEN').length}
               </div>
             </CardContent>
           </Card>
           <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Closed</CardTitle>
+            <CardHeader className='pb-3'>
+              <CardTitle className='text-muted-foreground text-sm font-medium'>
+                Merged
+              </CardTitle>
             </CardHeader>
-            <CardContent className="pt-0">
-              <div className="text-2xl font-bold text-red-600">
-                {pullRequests.filter(pr => pr.status === 'CLOSED').length}
+            <CardContent className='pt-0'>
+              <div className='text-2xl font-bold text-purple-600'>
+                {pullRequests.filter((pr) => pr.status === 'MERGED').length}
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className='pb-3'>
+              <CardTitle className='text-muted-foreground text-sm font-medium'>
+                Closed
+              </CardTitle>
+            </CardHeader>
+            <CardContent className='pt-0'>
+              <div className='text-2xl font-bold text-red-600'>
+                {pullRequests.filter((pr) => pr.status === 'CLOSED').length}
               </div>
             </CardContent>
           </Card>
@@ -186,25 +223,21 @@ export function PRManagementPage({ projectId, className }: PRManagementPageProps
 
       {/* Detail Sheet */}
       <Sheet open={detailSheetOpen} onOpenChange={setDetailSheetOpen}>
-        <SheetContent className="sm:max-w-2xl w-full overflow-y-auto">
+        <SheetContent className='w-full overflow-y-auto sm:max-w-2xl'>
           <SheetHeader>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={handleCloseSheet}
-              >
-                <ArrowLeft className="h-4 w-4" />
+            <div className='flex items-center gap-2'>
+              <Button variant='ghost' size='icon' onClick={handleCloseSheet}>
+                <ArrowLeft className='h-4 w-4' />
               </Button>
               <SheetTitle>Pull Request Details</SheetTitle>
             </div>
           </SheetHeader>
-          
-          <div className="mt-6">
+
+          <div className='mt-6'>
             {selectedPR && prDetail ? (
-              <div className="space-y-6">
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                  <div className="lg:col-span-2">
+              <div className='space-y-6'>
+                <div className='grid grid-cols-1 gap-6 lg:grid-cols-3'>
+                  <div className='lg:col-span-2'>
                     <PRDetail
                       pr={prDetail}
                       loading={loadingDetail}
@@ -212,20 +245,26 @@ export function PRManagementPage({ projectId, className }: PRManagementPageProps
                       onAddComment={handleAddComment}
                     />
                   </div>
-                  <div className="lg:col-span-1">
+                  <div className='lg:col-span-1'>
                     <PRActions
                       pr={prDetail}
-                      loading={loadingDetail || syncPR.isPending || mergePR.isPending || closePR.isPending || reopenPR.isPending}
+                      loading={
+                        loadingDetail ||
+                        syncPR.isPending ||
+                        mergePR.isPending ||
+                        closePR.isPending ||
+                        reopenPR.isPending
+                      }
                       onAction={handleDetailAction}
                     />
                   </div>
                 </div>
               </div>
             ) : selectedPR ? (
-              <div className="space-y-6">
-                <Skeleton className="h-32" />
-                <Skeleton className="h-48" />
-                <Skeleton className="h-64" />
+              <div className='space-y-6'>
+                <Skeleton className='h-32' />
+                <Skeleton className='h-48' />
+                <Skeleton className='h-64' />
               </div>
             ) : null}
           </div>

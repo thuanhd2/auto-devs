@@ -1,18 +1,24 @@
 import { useState } from 'react'
 import type { Task, TaskStatus } from '@/types/task'
 import {
+  MoreHorizontal,
   Edit,
   Trash2,
-  Copy,
-  MoreVertical,
-  History,
-  ExternalLink,
   GitBranch,
+  GitCommit,
+  GitPullRequest,
+  Loader2,
   Play,
 } from 'lucide-react'
+import { useWebSocketConnection } from '@/context/websocket-context'
+import { useTasks } from '@/hooks/use-tasks'
 import { Button } from '@/components/ui/button'
-import { ConfirmDialog } from '../confirm-dialog'
-import { BranchSelectionDialog } from './branch-selection-dialog'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 
 interface TaskActionsProps {
   task: Task
@@ -23,8 +29,6 @@ interface TaskActionsProps {
   onViewHistory?: () => void
   onStartPlanning?: (taskId: string, branchName: string) => void
   onApprovePlanAndStartImplement?: (taskId: string) => void
-  showStatusActions?: boolean
-  showGitActions?: boolean
 }
 
 export function TaskActions({
@@ -36,8 +40,6 @@ export function TaskActions({
   onViewHistory,
   onStartPlanning,
   onApprovePlanAndStartImplement,
-  showStatusActions = true,
-  showGitActions = true,
 }: TaskActionsProps) {
   const [showBranchDialog, setShowBranchDialog] = useState(false)
 

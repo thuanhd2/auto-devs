@@ -6,7 +6,6 @@ import {
   GitBranch,
   ExternalLink,
   Activity,
-  Copy,
   FolderOpen,
 } from 'lucide-react'
 import { getStatusColor, getStatusTitle } from '@/lib/kanban'

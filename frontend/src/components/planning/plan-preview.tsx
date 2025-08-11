@@ -1,10 +1,7 @@
 import { useMemo } from 'react'
-import { Copy, ExternalLink, Printer } from 'lucide-react'
 import { toast } from 'sonner'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { Separator } from '@/components/ui/separator'
 
 interface PlanPreviewProps {
   content: string

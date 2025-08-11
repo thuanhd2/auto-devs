@@ -1,50 +1,53 @@
 import { useState } from 'react'
-import { 
-  GitMerge, 
-  RefreshCw, 
-  XCircle, 
-  RotateCcw, 
-  ExternalLink, 
-  AlertTriangle,
-  CheckCircle2,
-  Loader2,
-  GitPullRequest,
-  Settings
-} from 'lucide-react'
 import type { PullRequest } from '@/types/pull-request'
+import {
+  GitMerge,
+  GitPullRequest,
+  GitBranch,
+  ExternalLink,
+  CheckCircle,
+  XCircle,
+  Clock,
+} from 'lucide-react'
+import { cn } from '@/lib/utils'
+import { useWebSocketConnection } from '@/context/websocket-context'
+import { usePullRequests } from '@/hooks/use-pull-requests'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuTrigger,
-  DropdownMenuSeparator 
-} from '@/components/ui/dropdown-menu'
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle, 
-  DialogDescription, 
-  DialogFooter 
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
 } from '@/components/ui/dialog'
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from '@/components/ui/select'
-import { Textarea } from '@/components/ui/textarea'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu'
 import { Label } from '@/components/ui/label'
-import { cn } from '@/lib/utils'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Separator } from '@/components/ui/separator'
+import { Textarea } from '@/components/ui/textarea'
 
 interface PRActionsProps {
   pr: PullRequest
   loading?: boolean
-  onAction?: (action: 'sync' | 'merge' | 'close' | 'reopen', options?: any) => void
+  onAction?: (
+    action: 'sync' | 'merge' | 'close' | 'reopen',
+    options?: any
+  ) => void
   className?: string
 }
 
@@ -66,30 +69,38 @@ interface ConfirmDialogState {
 const MERGE_METHODS = {
   merge: {
     label: 'Create a merge commit',
-    description: 'All commits from this branch will be added to the base branch via a merge commit.'
+    description:
+      'All commits from this branch will be added to the base branch via a merge commit.',
   },
   squash: {
     label: 'Squash and merge',
-    description: 'All commits will be combined into a single commit on the base branch.'
+    description:
+      'All commits will be combined into a single commit on the base branch.',
   },
   rebase: {
     label: 'Rebase and merge',
-    description: 'All commits will be rebased onto the base branch without a merge commit.'
-  }
+    description:
+      'All commits will be rebased onto the base branch without a merge commit.',
+  },
 } as const
 
-export function PRActions({ pr, loading = false, onAction, className }: PRActionsProps) {
+export function PRActions({
+  pr,
+  loading = false,
+  onAction,
+  className,
+}: PRActionsProps) {
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [mergeDialog, setMergeDialog] = useState<MergeDialogState>({
     open: false,
     method: 'merge',
     commitTitle: pr.title,
-    commitMessage: ''
+    commitMessage: '',
   })
   const [confirmDialog, setConfirmDialog] = useState<ConfirmDialogState>({
     open: false,
     action: null,
-    reason: ''
+    reason: '',
   })
 
   const canMerge = pr.status === 'OPEN' && pr.mergeable !== false
@@ -110,9 +121,13 @@ export function PRActions({ pr, loading = false, onAction, className }: PRAction
     handleAction('sync')
   }
 
-  const handleMerge = (method: MergeMethod, commitTitle: string, commitMessage: string) => {
+  const handleMerge = (
+    method: MergeMethod,
+    commitTitle: string,
+    commitMessage: string
+  ) => {
     handleAction('merge', { method, commitTitle, commitMessage })
-    setMergeDialog(prev => ({ ...prev, open: false }))
+    setMergeDialog((prev) => ({ ...prev, open: false }))
   }
 
   const handleCloseReopen = (action: 'close' | 'reopen', reason?: string) => {
@@ -125,7 +140,7 @@ export function PRActions({ pr, loading = false, onAction, className }: PRAction
       open: true,
       method: 'merge',
       commitTitle: pr.title,
-      commitMessage: pr.body || ''
+      commitMessage: pr.body || '',
     })
   }
 
@@ -133,7 +148,7 @@ export function PRActions({ pr, loading = false, onAction, className }: PRAction
     setConfirmDialog({
       open: true,
       action,
-      reason: ''
+      reason: '',
     })
   }
 
@@ -141,63 +156,69 @@ export function PRActions({ pr, loading = false, onAction, className }: PRAction
     <>
       <Card className={className}>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Settings className="h-5 w-5" />
+          <CardTitle className='flex items-center gap-2'>
+            <GitPullRequest className='h-5 w-5' />
             Actions
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className='space-y-4'>
           {/* Merge Status */}
-          <div className="space-y-2">
-            <h4 className="text-sm font-medium">Merge Status</h4>
+          <div className='space-y-2'>
+            <h4 className='text-sm font-medium'>Merge Status</h4>
             {isMerged ? (
-              <div className="flex items-center gap-2">
-                <Badge variant="secondary" className="gap-1 text-purple-700 bg-purple-100">
-                  <GitMerge className="h-3 w-3" />
+              <div className='flex items-center gap-2'>
+                <Badge
+                  variant='secondary'
+                  className='gap-1 bg-purple-100 text-purple-700'
+                >
+                  <GitMerge className='h-3 w-3' />
                   Merged
                 </Badge>
                 {pr.merged_at && (
-                  <span className="text-sm text-muted-foreground">
+                  <span className='text-muted-foreground text-sm'>
                     {new Date(pr.merged_at).toLocaleDateString()}
                   </span>
                 )}
               </div>
             ) : pr.status === 'CLOSED' ? (
-              <div className="flex items-center gap-2">
-                <Badge variant="destructive" className="gap-1">
-                  <XCircle className="h-3 w-3" />
+              <div className='flex items-center gap-2'>
+                <Badge variant='destructive' className='gap-1'>
+                  <XCircle className='h-3 w-3' />
                   Closed
                 </Badge>
                 {pr.closed_at && (
-                  <span className="text-sm text-muted-foreground">
+                  <span className='text-muted-foreground text-sm'>
                     {new Date(pr.closed_at).toLocaleDateString()}
                   </span>
                 )}
               </div>
             ) : pr.mergeable === false ? (
-              <div className="flex items-center gap-2">
-                <Badge variant="destructive" className="gap-1">
-                  <AlertTriangle className="h-3 w-3" />
+              <div className='flex items-center gap-2'>
+                <Badge variant='destructive' className='gap-1'>
+                  <CheckCircle className='h-3 w-3' />
                   Conflicts
                 </Badge>
-                <span className="text-sm text-muted-foreground">
+                <span className='text-muted-foreground text-sm'>
                   Resolve conflicts before merging
                 </span>
               </div>
             ) : pr.mergeable === true ? (
-              <div className="flex items-center gap-2">
-                <Badge variant="default" className="gap-1 text-green-700 bg-green-100">
-                  <CheckCircle2 className="h-3 w-3" />
+              <div className='flex items-center gap-2'>
+                <Badge
+                  variant='default'
+                  className='gap-1 bg-green-100 text-green-700'
+                >
+                  <CheckCircle className='h-3 w-3' />
                   Ready to merge
                 </Badge>
               </div>
             ) : (
-              <div className="flex items-center gap-2">
-                <Badge variant="outline" className="gap-1">
-                  <Loader2 className="h-3 w-3 animate-spin" />
+              <div className='flex items-center gap-2'>
+                <Badge variant='outline' className='gap-1'>
+                  <Clock className='h-3 w-3 animate-spin' />
                   Checking
                 </Badge>
-                <span className="text-sm text-muted-foreground">
+                <span className='text-muted-foreground text-sm'>
                   Checking merge status...
                 </span>
               </div>
@@ -205,18 +226,18 @@ export function PRActions({ pr, loading = false, onAction, className }: PRAction
           </div>
 
           {/* Action Buttons */}
-          <div className="flex flex-col gap-2">
+          <div className='flex flex-col gap-2'>
             {/* Sync Button */}
             <Button
-              variant="outline"
+              variant='outline'
               onClick={handleSync}
               disabled={loading || actionLoading === 'sync'}
-              className="gap-2 justify-start"
+              className='justify-start gap-2'
             >
               {actionLoading === 'sync' ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <Clock className='h-4 w-4 animate-spin' />
               ) : (
-                <RefreshCw className="h-4 w-4" />
+                <GitPullRequest className='h-4 w-4' />
               )}
               Sync with GitHub
             </Button>
@@ -226,31 +247,43 @@ export function PRActions({ pr, loading = false, onAction, className }: PRAction
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
-                    variant="default"
+                    variant='default'
                     disabled={loading || !!actionLoading || !canMerge}
-                    className="gap-2 justify-start"
+                    className='justify-start gap-2'
                   >
                     {actionLoading === 'merge' ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <Clock className='h-4 w-4 animate-spin' />
                     ) : (
-                      <GitMerge className="h-4 w-4" />
+                      <GitMerge className='h-4 w-4' />
                     )}
                     Merge pull request
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="start">
+                <DropdownMenuContent align='start'>
                   <DropdownMenuItem onClick={openMergeDialog}>
-                    <GitMerge className="h-4 w-4 mr-2" />
+                    <GitMerge className='mr-2 h-4 w-4' />
                     Merge with options
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => handleMerge('merge', pr.title, pr.body || '')}>
+                  <DropdownMenuItem
+                    onClick={() =>
+                      handleMerge('merge', pr.title, pr.body || '')
+                    }
+                  >
                     Create a merge commit
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleMerge('squash', pr.title, pr.body || '')}>
+                  <DropdownMenuItem
+                    onClick={() =>
+                      handleMerge('squash', pr.title, pr.body || '')
+                    }
+                  >
                     Squash and merge
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleMerge('rebase', pr.title, pr.body || '')}>
+                  <DropdownMenuItem
+                    onClick={() =>
+                      handleMerge('rebase', pr.title, pr.body || '')
+                    }
+                  >
                     Rebase and merge
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -260,15 +293,15 @@ export function PRActions({ pr, loading = false, onAction, className }: PRAction
             {/* Close/Reopen Button */}
             {canClose && (
               <Button
-                variant="destructive"
+                variant='destructive'
                 onClick={() => openConfirmDialog('close')}
                 disabled={loading || actionLoading === 'close'}
-                className="gap-2 justify-start"
+                className='justify-start gap-2'
               >
                 {actionLoading === 'close' ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <Clock className='h-4 w-4 animate-spin' />
                 ) : (
-                  <XCircle className="h-4 w-4" />
+                  <XCircle className='h-4 w-4' />
                 )}
                 Close pull request
               </Button>
@@ -276,15 +309,15 @@ export function PRActions({ pr, loading = false, onAction, className }: PRAction
 
             {canReopen && (
               <Button
-                variant="outline"
+                variant='outline'
                 onClick={() => openConfirmDialog('reopen')}
                 disabled={loading || actionLoading === 'reopen'}
-                className="gap-2 justify-start"
+                className='justify-start gap-2'
               >
                 {actionLoading === 'reopen' ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <Clock className='h-4 w-4 animate-spin' />
                 ) : (
-                  <RotateCcw className="h-4 w-4" />
+                  <GitBranch className='h-4 w-4' />
                 )}
                 Reopen pull request
               </Button>
@@ -292,24 +325,27 @@ export function PRActions({ pr, loading = false, onAction, className }: PRAction
 
             {/* External Links */}
             <Button
-              variant="outline"
+              variant='outline'
               onClick={() => window.open(pr.github_url, '_blank')}
-              className="gap-2 justify-start"
+              className='justify-start gap-2'
             >
-              <ExternalLink className="h-4 w-4" />
+              <ExternalLink className='h-4 w-4' />
               Open on GitHub
             </Button>
           </div>
 
           {/* Additional Information */}
           {pr.is_draft && (
-            <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-              <div className="flex items-start gap-2">
-                <GitPullRequest className="h-4 w-4 text-yellow-600 mt-0.5" />
+            <div className='rounded-lg border border-yellow-200 bg-yellow-50 p-3'>
+              <div className='flex items-start gap-2'>
+                <GitPullRequest className='mt-0.5 h-4 w-4 text-yellow-600' />
                 <div>
-                  <p className="text-sm font-medium text-yellow-800">Draft Pull Request</p>
-                  <p className="text-sm text-yellow-700">
-                    This PR is in draft mode. Mark it as ready for review on GitHub to enable merging.
+                  <p className='text-sm font-medium text-yellow-800'>
+                    Draft Pull Request
+                  </p>
+                  <p className='text-sm text-yellow-700'>
+                    This PR is in draft mode. Mark it as ready for review on
+                    GitHub to enable merging.
                   </p>
                 </div>
               </div>
@@ -317,13 +353,16 @@ export function PRActions({ pr, loading = false, onAction, className }: PRAction
           )}
 
           {pr.mergeable === false && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-              <div className="flex items-start gap-2">
-                <AlertTriangle className="h-4 w-4 text-red-600 mt-0.5" />
+            <div className='rounded-lg border border-red-200 bg-red-50 p-3'>
+              <div className='flex items-start gap-2'>
+                <CheckCircle className='mt-0.5 h-4 w-4 text-red-600' />
                 <div>
-                  <p className="text-sm font-medium text-red-800">Merge conflicts</p>
-                  <p className="text-sm text-red-700">
-                    This PR has conflicts that must be resolved before it can be merged.
+                  <p className='text-sm font-medium text-red-800'>
+                    Merge conflicts
+                  </p>
+                  <p className='text-sm text-red-700'>
+                    This PR has conflicts that must be resolved before it can be
+                    merged.
                   </p>
                 </div>
               </div>
@@ -333,22 +372,26 @@ export function PRActions({ pr, loading = false, onAction, className }: PRAction
       </Card>
 
       {/* Merge Dialog */}
-      <Dialog open={mergeDialog.open} onOpenChange={(open) => setMergeDialog(prev => ({ ...prev, open }))}>
-        <DialogContent className="sm:max-w-[500px]">
+      <Dialog
+        open={mergeDialog.open}
+        onOpenChange={(open) => setMergeDialog((prev) => ({ ...prev, open }))}
+      >
+        <DialogContent className='sm:max-w-[500px]'>
           <DialogHeader>
             <DialogTitle>Merge pull request</DialogTitle>
             <DialogDescription>
-              Choose how you want to merge this pull request into {pr.base_branch}.
+              Choose how you want to merge this pull request into{' '}
+              {pr.base_branch}.
             </DialogDescription>
           </DialogHeader>
-          
-          <div className="space-y-4">
+
+          <div className='space-y-4'>
             <div>
-              <Label htmlFor="merge-method">Merge method</Label>
+              <Label htmlFor='merge-method'>Merge method</Label>
               <Select
                 value={mergeDialog.method}
-                onValueChange={(value: MergeMethod) => 
-                  setMergeDialog(prev => ({ ...prev, method: value }))
+                onValueChange={(value: MergeMethod) =>
+                  setMergeDialog((prev) => ({ ...prev, method: value }))
                 }
               >
                 <SelectTrigger>
@@ -358,8 +401,8 @@ export function PRActions({ pr, loading = false, onAction, className }: PRAction
                   {Object.entries(MERGE_METHODS).map(([method, config]) => (
                     <SelectItem key={method} value={method}>
                       <div>
-                        <div className="font-medium">{config.label}</div>
-                        <div className="text-xs text-muted-foreground">
+                        <div className='font-medium'>{config.label}</div>
+                        <div className='text-muted-foreground text-xs'>
                           {config.description}
                         </div>
                       </div>
@@ -370,51 +413,67 @@ export function PRActions({ pr, loading = false, onAction, className }: PRAction
             </div>
 
             <div>
-              <Label htmlFor="commit-title">Commit title</Label>
+              <Label htmlFor='commit-title'>Commit title</Label>
               <input
-                id="commit-title"
-                type="text"
+                id='commit-title'
+                type='text'
                 value={mergeDialog.commitTitle}
-                onChange={(e) => setMergeDialog(prev => ({ ...prev, commitTitle: e.target.value }))}
-                className="w-full px-3 py-2 border border-input rounded-md text-sm"
+                onChange={(e) =>
+                  setMergeDialog((prev) => ({
+                    ...prev,
+                    commitTitle: e.target.value,
+                  }))
+                }
+                className='border-input w-full rounded-md border px-3 py-2 text-sm'
               />
             </div>
 
             <div>
-              <Label htmlFor="commit-message">Commit message (optional)</Label>
+              <Label htmlFor='commit-message'>Commit message (optional)</Label>
               <Textarea
-                id="commit-message"
+                id='commit-message'
                 value={mergeDialog.commitMessage}
-                onChange={(e) => setMergeDialog(prev => ({ ...prev, commitMessage: e.target.value }))}
+                onChange={(e) =>
+                  setMergeDialog((prev) => ({
+                    ...prev,
+                    commitMessage: e.target.value,
+                  }))
+                }
                 rows={4}
-                placeholder="Add additional details about this merge..."
+                placeholder='Add additional details about this merge...'
               />
             </div>
           </div>
 
           <DialogFooter>
             <Button
-              variant="outline"
-              onClick={() => setMergeDialog(prev => ({ ...prev, open: false }))}
+              variant='outline'
+              onClick={() =>
+                setMergeDialog((prev) => ({ ...prev, open: false }))
+              }
             >
               Cancel
             </Button>
             <Button
-              onClick={() => handleMerge(
-                mergeDialog.method, 
-                mergeDialog.commitTitle, 
-                mergeDialog.commitMessage
-              )}
-              disabled={!mergeDialog.commitTitle.trim() || actionLoading === 'merge'}
+              onClick={() =>
+                handleMerge(
+                  mergeDialog.method,
+                  mergeDialog.commitTitle,
+                  mergeDialog.commitMessage
+                )
+              }
+              disabled={
+                !mergeDialog.commitTitle.trim() || actionLoading === 'merge'
+              }
             >
               {actionLoading === 'merge' ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  <Clock className='mr-2 h-4 w-4 animate-spin' />
                   Merging...
                 </>
               ) : (
                 <>
-                  <GitMerge className="h-4 w-4 mr-2" />
+                  <GitMerge className='mr-2 h-4 w-4' />
                   Confirm merge
                 </>
               )}
@@ -424,26 +483,35 @@ export function PRActions({ pr, loading = false, onAction, className }: PRAction
       </Dialog>
 
       {/* Confirm Dialog */}
-      <Dialog open={confirmDialog.open} onOpenChange={(open) => setConfirmDialog(prev => ({ ...prev, open }))}>
+      <Dialog
+        open={confirmDialog.open}
+        onOpenChange={(open) => setConfirmDialog((prev) => ({ ...prev, open }))}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {confirmDialog.action === 'close' ? 'Close pull request' : 'Reopen pull request'}
+              {confirmDialog.action === 'close'
+                ? 'Close pull request'
+                : 'Reopen pull request'}
             </DialogTitle>
             <DialogDescription>
               {confirmDialog.action === 'close'
                 ? 'This will close the pull request without merging. You can reopen it later if needed.'
-                : 'This will reopen the pull request and allow further changes and reviews.'
-              }
+                : 'This will reopen the pull request and allow further changes and reviews.'}
             </DialogDescription>
           </DialogHeader>
-          
+
           <div>
-            <Label htmlFor="reason">Reason (optional)</Label>
+            <Label htmlFor='reason'>Reason (optional)</Label>
             <Textarea
-              id="reason"
+              id='reason'
               value={confirmDialog.reason}
-              onChange={(e) => setConfirmDialog(prev => ({ ...prev, reason: e.target.value }))}
+              onChange={(e) =>
+                setConfirmDialog((prev) => ({
+                  ...prev,
+                  reason: e.target.value,
+                }))
+              }
               rows={3}
               placeholder={`Why are you ${confirmDialog.action === 'close' ? 'closing' : 'reopening'} this PR?`}
             />
@@ -451,27 +519,36 @@ export function PRActions({ pr, loading = false, onAction, className }: PRAction
 
           <DialogFooter>
             <Button
-              variant="outline"
-              onClick={() => setConfirmDialog({ open: false, action: null, reason: '' })}
+              variant='outline'
+              onClick={() =>
+                setConfirmDialog({ open: false, action: null, reason: '' })
+              }
             >
               Cancel
             </Button>
             <Button
-              variant={confirmDialog.action === 'close' ? 'destructive' : 'default'}
-              onClick={() => confirmDialog.action && handleCloseReopen(confirmDialog.action, confirmDialog.reason)}
+              variant={
+                confirmDialog.action === 'close' ? 'destructive' : 'default'
+              }
+              onClick={() =>
+                confirmDialog.action &&
+                handleCloseReopen(confirmDialog.action, confirmDialog.reason)
+              }
               disabled={actionLoading === confirmDialog.action}
             >
               {actionLoading === confirmDialog.action ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  {confirmDialog.action === 'close' ? 'Closing...' : 'Reopening...'}
+                  <Clock className='mr-2 h-4 w-4 animate-spin' />
+                  {confirmDialog.action === 'close'
+                    ? 'Closing...'
+                    : 'Reopening...'}
                 </>
               ) : (
                 <>
                   {confirmDialog.action === 'close' ? (
-                    <XCircle className="h-4 w-4 mr-2" />
+                    <XCircle className='mr-2 h-4 w-4' />
                   ) : (
-                    <RotateCcw className="h-4 w-4 mr-2" />
+                    <GitBranch className='mr-2 h-4 w-4' />
                   )}
                   Confirm {confirmDialog.action}
                 </>

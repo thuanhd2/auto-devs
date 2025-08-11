@@ -1,3 +1,15 @@
+import type { TaskGitStatus } from '@/types/task'
+import {
+  GitBranch,
+  AlertCircle,
+  CheckCircle2,
+  GitMerge,
+  GitCommit,
+  Loader2,
+  XCircle,
+  GitPullRequest,
+} from 'lucide-react'
+import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import {
   Tooltip,
@@ -5,19 +17,6 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
-import {
-  GitBranch,
-  AlertCircle,
-  CheckCircle2,
-  Clock,
-  GitMerge,
-  GitCommit,
-  Loader2,
-  XCircle,
-  GitPullRequest,
-} from 'lucide-react'
-import type { TaskGitStatus } from '@/types/task'
-import { cn } from '@/lib/utils'
 
 interface GitStatusBadgeProps {
   status: TaskGitStatus
@@ -122,12 +121,7 @@ export function GitStatusBadge({
       )}
     >
       {showIcon && (
-        <Icon 
-          className={cn(
-            'h-3 w-3',
-            config.animate && 'animate-spin'
-          )} 
-        />
+        <Icon className={cn('h-3 w-3', config.animate && 'animate-spin')} />
       )}
       <span className={variant === 'compact' ? 'hidden sm:inline' : ''}>
         {config.label}
@@ -142,17 +136,15 @@ export function GitStatusBadge({
   return (
     <TooltipProvider>
       <Tooltip>
-        <TooltipTrigger asChild>
-          {badgeContent}
-        </TooltipTrigger>
-        <TooltipContent side="top" className="max-w-xs">
-          <div className="space-y-1">
-            <p className="font-medium">{config.label}</p>
-            <p className="text-xs text-muted-foreground">
+        <TooltipTrigger asChild>{badgeContent}</TooltipTrigger>
+        <TooltipContent side='top' className='max-w-xs'>
+          <div className='space-y-1'>
+            <p className='font-medium'>{config.label}</p>
+            <p className='text-muted-foreground text-xs'>
               {config.description}
             </p>
             {branchName && (
-              <p className="text-xs font-mono bg-muted px-1.5 py-0.5 rounded">
+              <p className='bg-muted rounded px-1.5 py-0.5 font-mono text-xs'>
                 {branchName}
               </p>
             )}

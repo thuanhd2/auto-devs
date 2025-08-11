@@ -1,20 +1,8 @@
 import { useState } from 'react'
-import type {
-  Execution,
-  ExecutionStatus,
-  ExecutionFilters,
-} from '@/types/execution'
-import {
-  Search,
-  RefreshCw,
-  Clock,
-  Play,
-  CheckCircle,
-  XCircle,
-  AlertTriangle,
-  Plus,
-  SquareTerminal,
-} from 'lucide-react'
+import type { Execution } from '@/types/execution'
+import { Search, Filter } from 'lucide-react'
+import { AlertTriangle } from 'lucide-react'
+import { Play, Clock, CheckCircle, XCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -27,14 +15,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { ExecutionDuration } from './execution-duration'
 import { ExecutionItem } from './execution-item'
+import { ExecutionStatusBadge } from './execution-status-badge'
 
 interface ExecutionListProps {
   executions: Execution[]
   loading?: boolean
   error?: string
   onRefresh?: () => void
-  onCreateExecution?: () => void
   onUpdateExecution?: (
     executionId: string,
     updates: Record<string, unknown>
@@ -42,13 +31,12 @@ interface ExecutionListProps {
   onDeleteExecution?: (executionId: string) => void
   onViewLogs?: (executionId: string) => void
   onViewDetails?: (executionId: string) => void
-  filters?: ExecutionFilters
-  onFiltersChange?: (filters: ExecutionFilters) => void
+  filters?: any
+  onFiltersChange?: (filters: any) => void
   showCreateButton?: boolean
   showFilters?: boolean
   compact?: boolean
   expandable?: boolean
-  emptyState?: React.ReactNode
   className?: string
 }
 
@@ -58,7 +46,7 @@ const statusStats = (executions: Execution[]) => {
       acc[execution.status] = (acc[execution.status] || 0) + 1
       return acc
     },
-    {} as Record<ExecutionStatus, number>
+    {} as Record<Execution['status'], number>
   )
 
   return {
@@ -76,7 +64,6 @@ export function ExecutionList({
   loading = false,
   error,
   onRefresh,
-  onCreateExecution,
   onUpdateExecution,
   onDeleteExecution,
   onViewLogs,
@@ -87,7 +74,6 @@ export function ExecutionList({
   showFilters = true,
   compact = false,
   expandable = false,
-  emptyState,
   className,
 }: ExecutionListProps) {
   const [searchTerm, setSearchTerm] = useState('')
@@ -107,11 +93,11 @@ export function ExecutionList({
     )
   })
 
-  const handleStatusFilter = (status: ExecutionStatus | 'all') => {
+  const handleStatusFilter = (status: Execution['status'] | 'all') => {
     if (status === 'all') {
       onFiltersChange?.({ ...filters, status: undefined, statuses: undefined })
     } else {
-      onFiltersChange?.({ ...filters, status, statuses: undefined })
+      onFiltersChange?.({ ...filters, status, statuses: [status] })
     }
   }
 

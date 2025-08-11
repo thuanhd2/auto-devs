@@ -1,35 +1,40 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { formatDistanceToNow, format } from 'date-fns'
-import { 
-  ExternalLink, 
-  GitBranch, 
-  GitMerge, 
-  MessageCircle, 
-  CheckCircle2, 
-  XCircle, 
-  Clock, 
-  User, 
+import type {
+  PullRequest,
+  PullRequestComment,
+  PullRequestReview,
+  PullRequestCheck,
+} from '@/types/pull-request'
+import {
+  ExternalLink,
+  GitBranch,
+  GitMerge,
+  MessageCircle,
+  CheckCircle2,
+  XCircle,
+  Clock,
+  User,
   Calendar,
   FileText,
-  GitCommit,
   AlertCircle,
   Eye,
   ThumbsUp,
   ThumbsDown,
   Loader2,
   CheckCircle,
-  X
+  X,
 } from 'lucide-react'
-import type { PullRequest, PullRequestComment, PullRequestReview, PullRequestCheck } from '@/types/pull-request'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { useParams } from 'react-router-dom'
+import { cn } from '@/lib/utils'
+import { Avatar } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Avatar } from '@/components/ui/avatar'
-import { Textarea } from '@/components/ui/textarea'
 import { Skeleton } from '@/components/ui/skeleton'
-import { cn } from '@/lib/utils'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Textarea } from '@/components/ui/textarea'
 
 interface PRDetailProps {
   pr: PullRequest
@@ -76,13 +81,31 @@ const REVIEW_STATE_CONFIG = {
 }
 
 const CHECK_STATUS_CONFIG = {
-  PENDING: { label: 'Pending', color: 'text-yellow-700 bg-yellow-100', icon: Clock },
-  SUCCESS: { label: 'Success', color: 'text-green-700 bg-green-100', icon: CheckCircle },
+  PENDING: {
+    label: 'Pending',
+    color: 'text-yellow-700 bg-yellow-100',
+    icon: Clock,
+  },
+  SUCCESS: {
+    label: 'Success',
+    color: 'text-green-700 bg-green-100',
+    icon: CheckCircle,
+  },
   FAILURE: { label: 'Failed', color: 'text-red-700 bg-red-100', icon: X },
-  ERROR: { label: 'Error', color: 'text-red-700 bg-red-100', icon: AlertCircle },
+  ERROR: {
+    label: 'Error',
+    color: 'text-red-700 bg-red-100',
+    icon: AlertCircle,
+  },
 }
 
-export function PRDetail({ pr, loading = false, onAction, onAddComment, className }: PRDetailProps) {
+export function PRDetail({
+  pr,
+  loading = false,
+  onAction,
+  onAddComment,
+  className,
+}: PRDetailProps) {
   const [activeTab, setActiveTab] = useState('overview')
   const [newComment, setNewComment] = useState('')
   const [submittingComment, setSubmittingComment] = useState(false)
@@ -90,20 +113,22 @@ export function PRDetail({ pr, loading = false, onAction, onAddComment, classNam
   if (loading) {
     return (
       <div className={cn('space-y-6', className)}>
-        <Skeleton className="h-32" />
-        <Skeleton className="h-64" />
-        <Skeleton className="h-48" />
+        <Skeleton className='h-32' />
+        <Skeleton className='h-64' />
+        <Skeleton className='h-48' />
       </div>
     )
   }
 
   const statusConfig = STATUS_CONFIG[pr.status]
   const StatusIcon = statusConfig.icon
-  const updatedAgo = formatDistanceToNow(new Date(pr.updated_at), { addSuffix: true })
+  const updatedAgo = formatDistanceToNow(new Date(pr.updated_at), {
+    addSuffix: true,
+  })
 
   const handleSubmitComment = async () => {
     if (!newComment.trim() || submittingComment) return
-    
+
     setSubmittingComment(true)
     try {
       await onAddComment?.(newComment.trim())
@@ -118,151 +143,159 @@ export function PRDetail({ pr, loading = false, onAction, onAddComment, classNam
       {/* PR Header */}
       <Card>
         <CardHeader>
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-2">
+          <div className='flex items-start justify-between gap-4'>
+            <div className='min-w-0 flex-1'>
+              <div className='mb-2 flex items-center gap-2'>
                 <Badge className={cn('gap-1 border', statusConfig.color)}>
-                  <StatusIcon className="h-3 w-3" />
+                  <StatusIcon className='h-3 w-3' />
                   {statusConfig.label}
                 </Badge>
-                <span className="text-sm text-muted-foreground">
+                <span className='text-muted-foreground text-sm'>
                   #{pr.github_pr_number}
                 </span>
-                {pr.is_draft && (
-                  <Badge variant="outline">Draft</Badge>
-                )}
+                {pr.is_draft && <Badge variant='outline'>Draft</Badge>}
               </div>
-              <h1 className="text-2xl font-bold leading-tight mb-2">
+              <h1 className='mb-2 text-2xl leading-tight font-bold'>
                 {pr.title}
               </h1>
-              <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                <div className="flex items-center gap-1">
-                  <GitBranch className="h-4 w-4" />
-                  <span className="font-mono">
+              <div className='text-muted-foreground flex items-center gap-4 text-sm'>
+                <div className='flex items-center gap-1'>
+                  <GitBranch className='h-4 w-4' />
+                  <span className='font-mono'>
                     {pr.head_branch} → {pr.base_branch}
                   </span>
                 </div>
-                <div className="flex items-center gap-1">
-                  <User className="h-4 w-4" />
+                <div className='flex items-center gap-1'>
+                  <User className='h-4 w-4' />
                   <span>by {pr.created_by || 'Unknown'}</span>
                 </div>
-                <div className="flex items-center gap-1">
-                  <Calendar className="h-4 w-4" />
+                <div className='flex items-center gap-1'>
+                  <Calendar className='h-4 w-4' />
                   <span>Updated {updatedAgo}</span>
                 </div>
               </div>
             </div>
-            
-            <div className="flex items-center gap-2">
+
+            <div className='flex items-center gap-2'>
               <Button
-                variant="outline"
-                size="sm"
+                variant='outline'
+                size='sm'
                 onClick={() => window.open(pr.github_url, '_blank')}
-                className="gap-2"
+                className='gap-2'
               >
-                <ExternalLink className="h-4 w-4" />
+                <ExternalLink className='h-4 w-4' />
                 View on GitHub
               </Button>
             </div>
           </div>
         </CardHeader>
-        
+
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="md:col-span-2">
+          <div className='grid grid-cols-1 gap-6 md:grid-cols-3'>
+            <div className='md:col-span-2'>
               {pr.body ? (
-                <div className="prose prose-sm max-w-none">
-                  <div className="whitespace-pre-wrap text-sm text-foreground bg-muted/30 p-4 rounded-lg border">
+                <div className='prose prose-sm max-w-none'>
+                  <div className='text-foreground bg-muted/30 rounded-lg border p-4 text-sm whitespace-pre-wrap'>
                     {pr.body}
                   </div>
                 </div>
               ) : (
-                <p className="text-muted-foreground italic">No description provided.</p>
+                <p className='text-muted-foreground italic'>
+                  No description provided.
+                </p>
               )}
             </div>
-            
-            <div className="space-y-4">
+
+            <div className='space-y-4'>
               {/* Repository */}
               <div>
-                <h4 className="text-sm font-medium mb-2">Repository</h4>
-                <p className="text-sm font-mono bg-muted px-2 py-1 rounded">
+                <h4 className='mb-2 text-sm font-medium'>Repository</h4>
+                <p className='bg-muted rounded px-2 py-1 font-mono text-sm'>
                   {pr.repository}
                 </p>
               </div>
-              
+
               {/* Changes */}
-              {(pr.additions !== undefined || pr.deletions !== undefined || pr.changed_files !== undefined) && (
+              {(pr.additions !== undefined ||
+                pr.deletions !== undefined ||
+                pr.changed_files !== undefined) && (
                 <div>
-                  <h4 className="text-sm font-medium mb-2">Changes</h4>
-                  <div className="flex items-center gap-3 text-sm">
+                  <h4 className='mb-2 text-sm font-medium'>Changes</h4>
+                  <div className='flex items-center gap-3 text-sm'>
                     {pr.additions !== undefined && (
-                      <span className="text-green-600 font-medium">+{pr.additions}</span>
+                      <span className='font-medium text-green-600'>
+                        +{pr.additions}
+                      </span>
                     )}
                     {pr.deletions !== undefined && (
-                      <span className="text-red-600 font-medium">-{pr.deletions}</span>
+                      <span className='font-medium text-red-600'>
+                        -{pr.deletions}
+                      </span>
                     )}
                     {pr.changed_files !== undefined && (
-                      <span className="text-muted-foreground">{pr.changed_files} files</span>
+                      <span className='text-muted-foreground'>
+                        {pr.changed_files} files
+                      </span>
                     )}
                   </div>
                 </div>
               )}
-              
+
               {/* Labels */}
               {pr.labels.length > 0 && (
                 <div>
-                  <h4 className="text-sm font-medium mb-2">Labels</h4>
-                  <div className="flex flex-wrap gap-1">
+                  <h4 className='mb-2 text-sm font-medium'>Labels</h4>
+                  <div className='flex flex-wrap gap-1'>
                     {pr.labels.map((label) => (
-                      <Badge key={label} variant="outline" className="text-xs">
+                      <Badge key={label} variant='outline' className='text-xs'>
                         {label}
                       </Badge>
                     ))}
                   </div>
                 </div>
               )}
-              
+
               {/* Assignees */}
               {pr.assignees.length > 0 && (
                 <div>
-                  <h4 className="text-sm font-medium mb-2">Assignees</h4>
-                  <div className="space-y-1">
+                  <h4 className='mb-2 text-sm font-medium'>Assignees</h4>
+                  <div className='space-y-1'>
                     {pr.assignees.map((assignee) => (
-                      <div key={assignee} className="flex items-center gap-2">
-                        <Avatar className="h-5 w-5">
-                          <div className="h-full w-full bg-muted flex items-center justify-center text-xs">
+                      <div key={assignee} className='flex items-center gap-2'>
+                        <Avatar className='h-5 w-5'>
+                          <div className='bg-muted flex h-full w-full items-center justify-center text-xs'>
                             {assignee.charAt(0).toUpperCase()}
                           </div>
                         </Avatar>
-                        <span className="text-sm">{assignee}</span>
+                        <span className='text-sm'>{assignee}</span>
                       </div>
                     ))}
                   </div>
                 </div>
               )}
-              
+
               {/* Merge Status */}
               {pr.mergeable !== undefined && (
                 <div>
-                  <h4 className="text-sm font-medium mb-2">Merge Status</h4>
-                  <Badge 
-                    variant={pr.mergeable ? "default" : "destructive"}
-                    className="gap-1"
+                  <h4 className='mb-2 text-sm font-medium'>Merge Status</h4>
+                  <Badge
+                    variant={pr.mergeable ? 'default' : 'destructive'}
+                    className='gap-1'
                   >
                     {pr.mergeable ? (
                       <>
-                        <CheckCircle2 className="h-3 w-3" />
+                        <CheckCircle2 className='h-3 w-3' />
                         Ready to merge
                       </>
                     ) : (
                       <>
-                        <XCircle className="h-3 w-3" />
+                        <XCircle className='h-3 w-3' />
                         Conflicts
                       </>
                     )}
                   </Badge>
                   {pr.mergeable_state && (
-                    <p className="text-xs text-muted-foreground mt-1">
+                    <p className='text-muted-foreground mt-1 text-xs'>
                       State: {pr.mergeable_state}
                     </p>
                   )}
@@ -275,41 +308,41 @@ export function PRDetail({ pr, loading = false, onAction, onAddComment, classNam
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="comments" className="gap-2">
+        <TabsList className='grid w-full grid-cols-4'>
+          <TabsTrigger value='overview'>Overview</TabsTrigger>
+          <TabsTrigger value='comments' className='gap-2'>
             Comments
             {pr.comments && pr.comments.length > 0 && (
-              <Badge variant="secondary" className="text-xs">
+              <Badge variant='secondary' className='text-xs'>
                 {pr.comments.length}
               </Badge>
             )}
           </TabsTrigger>
-          <TabsTrigger value="reviews" className="gap-2">
+          <TabsTrigger value='reviews' className='gap-2'>
             Reviews
             {pr.reviews && pr.reviews.length > 0 && (
-              <Badge variant="secondary" className="text-xs">
+              <Badge variant='secondary' className='text-xs'>
                 {pr.reviews.length}
               </Badge>
             )}
           </TabsTrigger>
-          <TabsTrigger value="checks" className="gap-2">
+          <TabsTrigger value='checks' className='gap-2'>
             Checks
             {pr.checks && pr.checks.length > 0 && (
-              <Badge variant="secondary" className="text-xs">
+              <Badge variant='secondary' className='text-xs'>
                 {pr.checks.length}
               </Badge>
             )}
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="overview" className="mt-6">
+        <TabsContent value='overview' className='mt-6'>
           <OverviewTab pr={pr} />
         </TabsContent>
 
-        <TabsContent value="comments" className="mt-6 space-y-6">
-          <CommentsTab 
-            comments={pr.comments || []} 
+        <TabsContent value='comments' className='mt-6 space-y-6'>
+          <CommentsTab
+            comments={pr.comments || []}
             onAddComment={handleSubmitComment}
             newComment={newComment}
             onNewCommentChange={setNewComment}
@@ -317,11 +350,11 @@ export function PRDetail({ pr, loading = false, onAction, onAddComment, classNam
           />
         </TabsContent>
 
-        <TabsContent value="reviews" className="mt-6">
+        <TabsContent value='reviews' className='mt-6'>
           <ReviewsTab reviews={pr.reviews || []} />
         </TabsContent>
 
-        <TabsContent value="checks" className="mt-6">
+        <TabsContent value='checks' className='mt-6'>
           <ChecksTab checks={pr.checks || []} />
         </TabsContent>
       </Tabs>
@@ -333,46 +366,51 @@ function OverviewTab({ pr }: { pr: PullRequest }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <FileText className="h-5 w-5" />
+        <CardTitle className='flex items-center gap-2'>
+          <FileText className='h-5 w-5' />
           Pull Request Information
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+      <CardContent className='space-y-4'>
+        <div className='grid grid-cols-1 gap-4 text-sm md:grid-cols-2'>
           <div>
-            <span className="text-muted-foreground">Created:</span>
-            <p className="font-medium">
+            <span className='text-muted-foreground'>Created:</span>
+            <p className='font-medium'>
               {format(new Date(pr.created_at), 'PPpp')}
             </p>
           </div>
           <div>
-            <span className="text-muted-foreground">Last Updated:</span>
-            <p className="font-medium">
+            <span className='text-muted-foreground'>Last Updated:</span>
+            <p className='font-medium'>
               {format(new Date(pr.updated_at), 'PPpp')}
             </p>
           </div>
           {pr.merged_at && (
             <div>
-              <span className="text-muted-foreground">Merged:</span>
-              <p className="font-medium">
+              <span className='text-muted-foreground'>Merged:</span>
+              <p className='font-medium'>
                 {format(new Date(pr.merged_at), 'PPpp')}
-                {pr.merged_by && <span className="text-muted-foreground"> by {pr.merged_by}</span>}
+                {pr.merged_by && (
+                  <span className='text-muted-foreground'>
+                    {' '}
+                    by {pr.merged_by}
+                  </span>
+                )}
               </p>
             </div>
           )}
           {pr.closed_at && (
             <div>
-              <span className="text-muted-foreground">Closed:</span>
-              <p className="font-medium">
+              <span className='text-muted-foreground'>Closed:</span>
+              <p className='font-medium'>
                 {format(new Date(pr.closed_at), 'PPpp')}
               </p>
             </div>
           )}
           {pr.merge_commit_sha && (
             <div>
-              <span className="text-muted-foreground">Merge Commit:</span>
-              <p className="font-mono text-sm bg-muted px-2 py-1 rounded">
+              <span className='text-muted-foreground'>Merge Commit:</span>
+              <p className='bg-muted rounded px-2 py-1 font-mono text-sm'>
                 {pr.merge_commit_sha.substring(0, 8)}
               </p>
             </div>
@@ -383,13 +421,13 @@ function OverviewTab({ pr }: { pr: PullRequest }) {
   )
 }
 
-function CommentsTab({ 
-  comments, 
-  onAddComment, 
-  newComment, 
-  onNewCommentChange, 
-  submitting 
-}: { 
+function CommentsTab({
+  comments,
+  onAddComment,
+  newComment,
+  onNewCommentChange,
+  submitting,
+}: {
   comments: PullRequestComment[]
   onAddComment: () => void
   newComment: string
@@ -397,27 +435,27 @@ function CommentsTab({
   submitting: boolean
 }) {
   return (
-    <div className="space-y-6">
+    <div className='space-y-6'>
       {/* Add Comment */}
       <Card>
         <CardHeader>
           <CardTitle>Add Comment</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className='space-y-4'>
           <Textarea
-            placeholder="Write a comment..."
+            placeholder='Write a comment...'
             value={newComment}
             onChange={(e) => onNewCommentChange(e.target.value)}
-            className="min-h-24"
+            className='min-h-24'
           />
-          <Button 
+          <Button
             onClick={onAddComment}
             disabled={!newComment.trim() || submitting}
-            className="gap-2"
+            className='gap-2'
           >
             {submitting ? (
               <>
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <Loader2 className='h-4 w-4 animate-spin' />
                 Adding...
               </>
             ) : (
@@ -430,18 +468,18 @@ function CommentsTab({
       {/* Comments List */}
       {comments.length === 0 ? (
         <Card>
-          <CardContent className="flex items-center justify-center py-12">
-            <div className="text-center">
-              <MessageCircle className="mx-auto h-12 w-12 text-muted-foreground" />
-              <p className="mt-4 text-lg font-medium">No comments yet</p>
-              <p className="text-muted-foreground">
+          <CardContent className='flex items-center justify-center py-12'>
+            <div className='text-center'>
+              <MessageCircle className='text-muted-foreground mx-auto h-12 w-12' />
+              <p className='mt-4 text-lg font-medium'>No comments yet</p>
+              <p className='text-muted-foreground'>
                 Be the first to leave a comment on this pull request.
               </p>
             </div>
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-4">
+        <div className='space-y-4'>
           {comments.map((comment) => (
             <CommentCard key={comment.id} comment={comment} />
           ))}
@@ -452,38 +490,40 @@ function CommentsTab({
 }
 
 function CommentCard({ comment }: { comment: PullRequestComment }) {
-  const createdAgo = formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })
-  
+  const createdAgo = formatDistanceToNow(new Date(comment.created_at), {
+    addSuffix: true,
+  })
+
   return (
     <Card>
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Avatar className="h-6 w-6">
-              <div className="h-full w-full bg-muted flex items-center justify-center text-xs">
+      <CardHeader className='pb-3'>
+        <div className='flex items-center justify-between'>
+          <div className='flex items-center gap-2'>
+            <Avatar className='h-6 w-6'>
+              <div className='bg-muted flex h-full w-full items-center justify-center text-xs'>
                 {comment.author.charAt(0).toUpperCase()}
               </div>
             </Avatar>
-            <span className="font-medium">{comment.author}</span>
-            <span className="text-sm text-muted-foreground">commented {createdAgo}</span>
+            <span className='font-medium'>{comment.author}</span>
+            <span className='text-muted-foreground text-sm'>
+              commented {createdAgo}
+            </span>
           </div>
           {comment.is_resolved && (
-            <Badge variant="outline" className="text-xs">
+            <Badge variant='outline' className='text-xs'>
               Resolved
             </Badge>
           )}
         </div>
       </CardHeader>
-      <CardContent className="pt-0">
+      <CardContent className='pt-0'>
         {comment.file_path && (
-          <div className="mb-2 text-xs text-muted-foreground font-mono bg-muted px-2 py-1 rounded">
+          <div className='text-muted-foreground bg-muted mb-2 rounded px-2 py-1 font-mono text-xs'>
             {comment.file_path}
             {comment.line && `:${comment.line}`}
           </div>
         )}
-        <div className="whitespace-pre-wrap text-sm">
-          {comment.body}
-        </div>
+        <div className='text-sm whitespace-pre-wrap'>{comment.body}</div>
       </CardContent>
     </Card>
   )
@@ -493,11 +533,11 @@ function ReviewsTab({ reviews }: { reviews: PullRequestReview[] }) {
   if (reviews.length === 0) {
     return (
       <Card>
-        <CardContent className="flex items-center justify-center py-12">
-          <div className="text-center">
-            <Eye className="mx-auto h-12 w-12 text-muted-foreground" />
-            <p className="mt-4 text-lg font-medium">No reviews yet</p>
-            <p className="text-muted-foreground">
+        <CardContent className='flex items-center justify-center py-12'>
+          <div className='text-center'>
+            <Eye className='text-muted-foreground mx-auto h-12 w-12' />
+            <p className='mt-4 text-lg font-medium'>No reviews yet</p>
+            <p className='text-muted-foreground'>
               Reviews will appear here once submitted.
             </p>
           </div>
@@ -507,7 +547,7 @@ function ReviewsTab({ reviews }: { reviews: PullRequestReview[] }) {
   }
 
   return (
-    <div className="space-y-4">
+    <div className='space-y-4'>
       {reviews.map((review) => (
         <ReviewCard key={review.id} review={review} />
       ))}
@@ -516,38 +556,44 @@ function ReviewsTab({ reviews }: { reviews: PullRequestReview[] }) {
 }
 
 function ReviewCard({ review }: { review: PullRequestReview }) {
-  const stateConfig = REVIEW_STATE_CONFIG[review.state as keyof typeof REVIEW_STATE_CONFIG]
+  const stateConfig =
+    REVIEW_STATE_CONFIG[review.state as keyof typeof REVIEW_STATE_CONFIG]
   const StateIcon = stateConfig?.icon || Eye
-  const submittedAgo = review.submitted_at 
+  const submittedAgo = review.submitted_at
     ? formatDistanceToNow(new Date(review.submitted_at), { addSuffix: true })
     : null
 
   return (
     <Card>
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Avatar className="h-6 w-6">
-              <div className="h-full w-full bg-muted flex items-center justify-center text-xs">
+      <CardHeader className='pb-3'>
+        <div className='flex items-center justify-between'>
+          <div className='flex items-center gap-2'>
+            <Avatar className='h-6 w-6'>
+              <div className='bg-muted flex h-full w-full items-center justify-center text-xs'>
                 {review.reviewer.charAt(0).toUpperCase()}
               </div>
             </Avatar>
-            <span className="font-medium">{review.reviewer}</span>
-            <Badge className={cn('gap-1', stateConfig?.color || 'text-muted-foreground bg-muted')}>
-              <StateIcon className="h-3 w-3" />
+            <span className='font-medium'>{review.reviewer}</span>
+            <Badge
+              className={cn(
+                'gap-1',
+                stateConfig?.color || 'text-muted-foreground bg-muted'
+              )}
+            >
+              <StateIcon className='h-3 w-3' />
               {stateConfig?.label || review.state}
             </Badge>
             {submittedAgo && (
-              <span className="text-sm text-muted-foreground">{submittedAgo}</span>
+              <span className='text-muted-foreground text-sm'>
+                {submittedAgo}
+              </span>
             )}
           </div>
         </div>
       </CardHeader>
       {review.body && (
-        <CardContent className="pt-0">
-          <div className="whitespace-pre-wrap text-sm">
-            {review.body}
-          </div>
+        <CardContent className='pt-0'>
+          <div className='text-sm whitespace-pre-wrap'>{review.body}</div>
         </CardContent>
       )}
     </Card>
@@ -558,11 +604,11 @@ function ChecksTab({ checks }: { checks: PullRequestCheck[] }) {
   if (checks.length === 0) {
     return (
       <Card>
-        <CardContent className="flex items-center justify-center py-12">
-          <div className="text-center">
-            <CheckCircle2 className="mx-auto h-12 w-12 text-muted-foreground" />
-            <p className="mt-4 text-lg font-medium">No checks configured</p>
-            <p className="text-muted-foreground">
+        <CardContent className='flex items-center justify-center py-12'>
+          <div className='text-center'>
+            <CheckCircle2 className='text-muted-foreground mx-auto h-12 w-12' />
+            <p className='mt-4 text-lg font-medium'>No checks configured</p>
+            <p className='text-muted-foreground'>
               CI/CD checks will appear here once configured.
             </p>
           </div>
@@ -572,7 +618,7 @@ function ChecksTab({ checks }: { checks: PullRequestCheck[] }) {
   }
 
   return (
-    <div className="space-y-4">
+    <div className='space-y-4'>
       {checks.map((check) => (
         <CheckCard key={check.id} check={check} />
       ))}
@@ -581,49 +627,53 @@ function ChecksTab({ checks }: { checks: PullRequestCheck[] }) {
 }
 
 function CheckCard({ check }: { check: PullRequestCheck }) {
-  const statusConfig = CHECK_STATUS_CONFIG[check.status as keyof typeof CHECK_STATUS_CONFIG]
+  const statusConfig =
+    CHECK_STATUS_CONFIG[check.status as keyof typeof CHECK_STATUS_CONFIG]
   const StatusIcon = statusConfig?.icon || Clock
-  const duration = check.started_at && check.completed_at
-    ? formatDistanceToNow(new Date(check.started_at), { addSuffix: false })
-    : null
+  const duration =
+    check.started_at && check.completed_at
+      ? formatDistanceToNow(new Date(check.started_at), { addSuffix: false })
+      : null
 
   return (
     <Card>
-      <CardContent className="p-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <StatusIcon 
+      <CardContent className='p-4'>
+        <div className='flex items-center justify-between'>
+          <div className='flex items-center gap-3'>
+            <StatusIcon
               className={cn(
                 'h-5 w-5',
                 check.status === 'PENDING' && 'animate-spin'
-              )} 
+              )}
             />
             <div>
-              <h4 className="font-medium">{check.check_name}</h4>
+              <h4 className='font-medium'>{check.check_name}</h4>
               {check.conclusion && (
-                <p className="text-sm text-muted-foreground">
+                <p className='text-muted-foreground text-sm'>
                   {check.conclusion}
                 </p>
               )}
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className='flex items-center gap-2'>
             <Badge className={cn('gap-1', statusConfig?.color || '')}>
               {statusConfig?.label || check.status}
             </Badge>
             {check.details_url && (
-              <Button variant="outline" size="sm" asChild>
-                <a href={check.details_url} target="_blank" rel="noopener noreferrer">
-                  <ExternalLink className="h-4 w-4" />
+              <Button variant='outline' size='sm' asChild>
+                <a
+                  href={check.details_url}
+                  target='_blank'
+                  rel='noopener noreferrer'
+                >
+                  <ExternalLink className='h-4 w-4' />
                 </a>
               </Button>
             )}
           </div>
         </div>
         {duration && (
-          <p className="text-xs text-muted-foreground mt-2">
-            Took {duration}
-          </p>
+          <p className='text-muted-foreground mt-2 text-xs'>Took {duration}</p>
         )}
       </CardContent>
     </Card>

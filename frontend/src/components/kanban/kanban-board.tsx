@@ -1,26 +1,11 @@
-import { useState, useMemo, useEffect } from 'react'
-import { taskOptimisticUpdates } from '@/services/optimisticUpdates'
+import { useState, useEffect, useMemo } from 'react'
 import type { Task, TaskStatus } from '@/types/task'
-import {
-  DndContext,
-  DragEndEvent,
-  DragOverEvent,
-  DragStartEvent,
-  closestCorners,
-  PointerSensor,
-  useSensor,
-  useSensors,
-} from '@dnd-kit/core'
-import { arrayMove } from '@dnd-kit/sortable'
-import { KANBAN_COLUMNS, canTransitionTo } from '@/lib/kanban'
-import {
-  useWebSocketProject,
-  useWebSocketContext,
-} from '@/context/websocket-context'
-import { useKeyboardNavigation } from '@/hooks/use-keyboard-navigation'
-import { useUpdateTask, useOptimisticTaskUpdate } from '@/hooks/use-tasks'
-import { ScrollArea } from '@/components/ui/scroll-area'
+import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
+import { KANBAN_COLUMNS } from '@/lib/kanban'
+import { useWebSocketConnection } from '@/context/websocket-context'
+import { useTasks } from '@/hooks/use-tasks'
 import { KanbanColumn } from './kanban-column'
+import { TaskCard } from './task-card'
 
 interface KanbanBoardProps {
   tasks: Task[]
@@ -45,12 +30,11 @@ export function KanbanBoard({
 }: KanbanBoardProps) {
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null)
   const [localTasks, setLocalTasks] = useState<Task[]>(tasks)
-  const updateTaskMutation = useUpdateTask()
-  const optimisticUpdate = useOptimisticTaskUpdate()
+  const updateTaskMutation = useTasks()
 
   // WebSocket integration
-  const { setCurrentProjectId } = useWebSocketProject(projectId)
-  const { isConnected } = useWebSocketContext()
+  const { setCurrentProjectId } = useWebSocketConnection()
+  const { isConnected } = useWebSocketConnection()
 
   // Keep local tasks in sync with props
   useEffect(() => {
@@ -77,21 +61,6 @@ export function KanbanBoard({
     })
   }, [localTasks, searchQuery])
 
-  const { selectedTaskId, selectedColumnId } = useKeyboardNavigation({
-    tasks: filteredTasks,
-    onEditTask,
-    onCreateTask,
-    onDeleteTask,
-  })
-
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8,
-      },
-    })
-  )
-
   const tasksByStatus = useMemo(() => {
     const grouped: Record<TaskStatus, Task[]> = {
       TODO: [],
@@ -110,72 +79,78 @@ export function KanbanBoard({
     return grouped
   }, [filteredTasks])
 
-  const handleDragStart = (event: DragStartEvent) => {
+  const handleDragStart = useCallback((event: DragStartEvent) => {
     setActiveTaskId(event.active.id as string)
-  }
+  }, [])
 
-  const handleDragOver = (event: DragOverEvent) => {
-    const { active, over } = event
+  const handleDragOver = useCallback(
+    (event: DragOverEvent) => {
+      const { active, over } = event
 
-    if (!over) return
+      if (!over) return
 
-    const activeTaskId = active.id as string
-    const overColumnId = over.id as TaskStatus
+      const activeTaskId = active.id as string
+      const overColumnId = over.id as TaskStatus
 
-    // Find the active task
-    const activeTask = tasks.find((task) => task.id === activeTaskId)
-    if (!activeTask) return
+      // Find the active task
+      const activeTask = tasks.find((task) => task.id === activeTaskId)
+      if (!activeTask) return
 
-    // Check if we're moving to a different column
-    if (activeTask.status !== overColumnId) {
-      // Check if the transition is valid
-      if (!canTransitionTo(activeTask.status, overColumnId)) {
-        return // Invalid transition, don't allow drop
+      // Check if we're moving to a different column
+      if (activeTask.status !== overColumnId) {
+        // Check if the transition is valid
+        if (!canTransitionTo(activeTask.status, overColumnId)) {
+          return // Invalid transition, don't allow drop
+        }
+
+        // Apply optimistic update using WebSocket service
+        if (activeTask) {
+          taskOptimisticUpdates.updateTaskStatus(
+            activeTaskId,
+            overColumnId,
+            activeTask,
+            (updatedTask) => {
+              setLocalTasks((prev) =>
+                prev.map((t) => (t.id === activeTaskId ? updatedTask : t))
+              )
+            }
+          )
+        }
       }
+    },
+    [tasks]
+  )
 
-      // Apply optimistic update using WebSocket service
-      if (activeTask) {
-        taskOptimisticUpdates.updateTaskStatus(
-          activeTaskId,
-          overColumnId,
-          activeTask,
-          (updatedTask) => {
-            setLocalTasks((prev) =>
-              prev.map((t) => (t.id === activeTaskId ? updatedTask : t))
-            )
-          }
-        )
+  const handleDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      const { active, over } = event
+      setActiveTaskId(null)
+
+      if (!over) return
+
+      const activeTaskId = active.id as string
+      const overColumnId = over.id as TaskStatus
+
+      // Find the active task
+      const activeTask = tasks.find((task) => task.id === activeTaskId)
+      if (!activeTask) return
+
+      // If status changed, update via API
+      if (activeTask.status !== overColumnId) {
+        if (canTransitionTo(activeTask.status, overColumnId)) {
+          updateTaskMutation.mutate({
+            taskId: activeTaskId,
+            updates: { status: overColumnId },
+          })
+        }
       }
-    }
-  }
+    },
+    [tasks, updateTaskMutation]
+  )
 
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event
+  const handleDragCancel = useCallback(() => {
     setActiveTaskId(null)
-
-    if (!over) return
-
-    const activeTaskId = active.id as string
-    const overColumnId = over.id as TaskStatus
-
-    // Find the active task
-    const activeTask = tasks.find((task) => task.id === activeTaskId)
-    if (!activeTask) return
-
-    // If status changed, update via API
-    if (activeTask.status !== overColumnId) {
-      if (canTransitionTo(activeTask.status, overColumnId)) {
-        updateTaskMutation.mutate({
-          taskId: activeTaskId,
-          updates: { status: overColumnId },
-        })
-      }
-    }
-  }
-
-  const handleDragCancel = () => {
-    setActiveTaskId(null)
-  }
+  }, [])
 
   return (
     <DndContext

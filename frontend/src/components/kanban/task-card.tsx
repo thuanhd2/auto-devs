@@ -1,18 +1,10 @@
 import { useState } from 'react'
 import { formatDistanceToNow } from 'date-fns'
 import type { Task } from '@/types/task'
-import { MoreHorizontal, Calendar, GitBranch, ExternalLink } from 'lucide-react'
+import { Calendar, GitBranch, ExternalLink } from 'lucide-react'
 import { getStatusColor, getStatusTitle } from '@/lib/kanban'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
 import { GitStatusBadge } from './git-status-badge'
 
 interface TaskCardProps {
@@ -30,23 +22,6 @@ export function TaskCard({
   onDelete,
   onViewDetails,
 }: TaskCardProps) {
-  const [isMenuOpen, setIsMenuOpen] = useState(false)
-
-  const handleEdit = () => {
-    setIsMenuOpen(false)
-    onEdit?.(task)
-  }
-
-  const handleDelete = () => {
-    setIsMenuOpen(false)
-    onDelete?.(task.id)
-  }
-
-  const handleViewDetails = () => {
-    setIsMenuOpen(false)
-    onViewDetails?.(task)
-  }
-
   const statusColor = getStatusColor(task.status)
   const statusTitle = getStatusTitle(task.status)
   const updatedAgo = formatDistanceToNow(new Date(task.updated_at), {
@@ -56,7 +31,7 @@ export function TaskCard({
   return (
     <Card
       className={`cursor-pointer transition-all duration-200 hover:shadow-md ${isDragging ? 'rotate-2 opacity-50 shadow-lg' : ''} ${statusColor} border-l-4`}
-      onClick={handleViewDetails}
+      onClick={onViewDetails}
     >
       <CardHeader className='pb-2'>
         <div className='flex items-start justify-between gap-2'>

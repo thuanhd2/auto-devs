@@ -110,7 +110,7 @@ export function TaskEditForm({
 
       onSave?.(updatedTask)
       onOpenChange(false)
-    } catch (error) {
+    } catch {
       // Error is handled by the mutation hooks
     }
   }

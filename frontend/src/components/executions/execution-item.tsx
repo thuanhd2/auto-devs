@@ -30,26 +30,14 @@ import { ExecutionStatusBadge } from './execution-status-badge'
 
 interface ExecutionItemProps {
   execution: Execution
-  onUpdate?: (executionId: string, updates: Record<string, unknown>) => void
-  onDelete?: (executionId: string) => void
-  onViewLogs?: (executionId: string) => void
-  onViewDetails?: (executionId: string) => void
-  showActions?: boolean
-  compact?: boolean
-  expandable?: boolean
-  className?: string
+  onEdit?: (execution: Execution) => void
+  onDuplicate?: (execution: Execution) => void
 }
 
 export function ExecutionItem({
   execution,
-  onUpdate,
-  onDelete,
-  onViewLogs,
-  onViewDetails,
-  showActions = true,
-  compact = false,
-  expandable = false,
-  className,
+  onEdit,
+  onDuplicate,
 }: ExecutionItemProps) {
   const [isExpanded, setIsExpanded] = useState(false)
   const isActive =
