@@ -1,25 +1,25 @@
 import { useState } from 'react'
 import type { Task } from '@/types/task'
+import { ExternalLink } from 'lucide-react'
 import { getStatusColor, getStatusTitle } from '@/lib/kanban'
+import { useTaskExecutions } from '@/hooks/use-executions'
+import { usePullRequestByTask } from '@/hooks/use-pull-requests'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import {
   Sheet,
   SheetContent,
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet'
-import { ExternalLink } from 'lucide-react'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
+import { ExecutionList } from '../executions'
 import { PlanReview } from '../planning'
 import { TaskActions } from './task-actions'
 import { TaskEditForm } from './task-edit-form'
 import { TaskHistory } from './task-history'
 import { TaskMetadata } from './task-metadata'
-import { ExecutionList } from '../executions'
-import { useTaskExecutions } from '@/hooks/use-executions'
-import { usePullRequestByTask } from '@/hooks/use-pull-requests'
 
 interface TaskDetailSheetProps {
   open: boolean
@@ -117,31 +117,31 @@ export function TaskDetailSheet({
             <Separator />
 
             {/* Tabs for Plan Review, Code Changes, Executions, and Metadata */}
-            <Tabs defaultValue="plan-review" className="w-full">
-              <TabsList className="grid w-full grid-cols-4">
-                <TabsTrigger value="plan-review">Plan Review</TabsTrigger>
-                <TabsTrigger value="code-changes">Code Changes</TabsTrigger>
-                <TabsTrigger value="executions">Executions</TabsTrigger>
-                <TabsTrigger value="metadata">Metadata</TabsTrigger>
+            <Tabs defaultValue='plan-review' className='w-full'>
+              <TabsList className='grid w-full grid-cols-4'>
+                <TabsTrigger value='plan-review'>Plan Review</TabsTrigger>
+                <TabsTrigger value='code-changes'>Code Changes</TabsTrigger>
+                <TabsTrigger value='executions'>Executions</TabsTrigger>
+                <TabsTrigger value='metadata'>Metadata</TabsTrigger>
               </TabsList>
-              
-              <TabsContent value="plan-review" className="mt-4">
+
+              <TabsContent value='plan-review' className='mt-4'>
                 <PlanReview
                   task={task}
                   onPlanUpdate={onEdit}
                   onStatusChange={onStatusChange}
                 />
               </TabsContent>
-              
-              <TabsContent value="code-changes" className="mt-4">
+
+              <TabsContent value='code-changes' className='mt-4'>
                 <CodeChanges taskId={task.id} />
               </TabsContent>
-              
-              <TabsContent value="executions" className="mt-4">
+
+              <TabsContent value='executions' className='mt-4'>
                 <TaskExecutions taskId={task.id} />
               </TabsContent>
-              
-              <TabsContent value="metadata" className="mt-4">
+
+              <TabsContent value='metadata' className='mt-4'>
                 <TaskMetadata
                   task={task}
                   showGitInfo={true}
@@ -178,16 +178,16 @@ export function TaskDetailSheet({
 
 // TaskExecutions component for the executions tab
 function TaskExecutions({ taskId }: { taskId: string }) {
-  const { 
-    data: executionsData, 
-    isLoading, 
-    error, 
-    refetch 
-  } = useTaskExecutions(taskId, { 
-    page: 1, 
+  const {
+    data: executionsData,
+    isLoading,
+    error,
+    refetch,
+  } = useTaskExecutions(taskId, {
+    page: 1,
     page_size: 20,
     order_by: 'started_at',
-    order_dir: 'desc'
+    order_dir: 'desc',
   })
 
   const executions = executionsData?.data || []
@@ -197,7 +197,10 @@ function TaskExecutions({ taskId }: { taskId: string }) {
     // TODO: Implement execution creation dialog
   }
 
-  const handleUpdateExecution = (executionId: string, updates: Record<string, unknown>) => {
+  const handleUpdateExecution = (
+    executionId: string,
+    updates: Record<string, unknown>
+  ) => {
     // This would typically call the update mutation
     // TODO: Implement execution update functionality
     void executionId
@@ -237,7 +240,7 @@ function TaskExecutions({ taskId }: { taskId: string }) {
       expandable={true}
       showCreateButton={true}
       showFilters={false}
-      className="max-h-96 overflow-y-auto"
+      className='max-h-96 overflow-y-auto'
     />
   )
 }
@@ -248,43 +251,47 @@ function CodeChanges({ taskId }: { taskId: string }) {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center p-4">
-        <div className="text-sm text-muted-foreground">Loading pull request...</div>
+      <div className='flex items-center justify-center p-4'>
+        <div className='text-muted-foreground text-sm'>
+          Loading pull request...
+        </div>
       </div>
     )
   }
 
   if (error) {
     return (
-      <div className="flex items-center justify-center p-4">
-        <div className="text-sm text-red-600">Error loading pull request</div>
+      <div className='flex items-center justify-center p-4'>
+        <div className='text-sm text-red-600'>Error loading pull request</div>
       </div>
     )
   }
 
   if (!pullRequest) {
     return (
-      <div className="flex items-center justify-center p-4">
-        <div className="text-sm text-muted-foreground">No pull request created yet</div>
+      <div className='flex items-center justify-center p-4'>
+        <div className='text-muted-foreground text-sm'>
+          No pull request created yet
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-center gap-2">
-        <h4 className="text-sm font-medium">Pull Request</h4>
+    <div className='space-y-3'>
+      <div className='flex items-center gap-2'>
+        <h4 className='text-sm font-medium'>Pull Request</h4>
       </div>
-      <Button 
-        variant="outline" 
-        size="sm" 
-        className="w-fit"
-        onClick={() => window.open(pullRequest.html_url, '_blank')}
+      <Button
+        variant='outline'
+        size='sm'
+        className='w-fit'
+        onClick={() => window.open(pullRequest.github_url, '_blank')}
       >
-        <ExternalLink className="mr-2 h-4 w-4" />
+        <ExternalLink className='mr-2 h-4 w-4' />
         View Pull Request
       </Button>
-      <div className="text-xs text-muted-foreground">
+      <div className='text-muted-foreground text-xs'>
         #{pullRequest.number} - {pullRequest.title}
       </div>
     </div>

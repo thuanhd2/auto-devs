@@ -108,6 +108,9 @@ type TaskUsecase interface {
 	StartPlanning(ctx context.Context, taskID uuid.UUID, branchName string) (string, error) // returns job ID
 	ApprovePlan(ctx context.Context, taskID uuid.UUID) (string, error)                      // returns job ID
 	ListGitBranches(ctx context.Context, projectID uuid.UUID) ([]GitBranch, error)
+
+	// Pull requests
+	GetPullRequest(ctx context.Context, taskID uuid.UUID) (*entity.PullRequest, error)
 }
 
 type CreateTaskRequest struct {
@@ -210,15 +213,24 @@ type UpdateCommentRequest struct {
 
 type taskUsecase struct {
 	taskRepo            repository.TaskRepository
+	pullRequestRepo     repository.PullRequestRepository
 	projectRepo         repository.ProjectRepository
 	notificationUsecase NotificationUsecase
 	worktreeUsecase     WorktreeUsecase
 	jobClient           JobClientInterface
 }
 
-func NewTaskUsecase(taskRepo repository.TaskRepository, projectRepo repository.ProjectRepository, notificationUsecase NotificationUsecase, worktreeUsecase WorktreeUsecase, jobClient JobClientInterface) TaskUsecase {
+func NewTaskUsecase(
+	taskRepo repository.TaskRepository,
+	pullRequestRepo repository.PullRequestRepository,
+	projectRepo repository.ProjectRepository,
+	notificationUsecase NotificationUsecase,
+	worktreeUsecase WorktreeUsecase,
+	jobClient JobClientInterface,
+) TaskUsecase {
 	return &taskUsecase{
 		taskRepo:            taskRepo,
+		pullRequestRepo:     pullRequestRepo,
 		projectRepo:         projectRepo,
 		notificationUsecase: notificationUsecase,
 		worktreeUsecase:     worktreeUsecase,
@@ -1102,4 +1114,13 @@ func (u *taskUsecase) ListGitBranches(ctx context.Context, projectID uuid.UUID) 
 	// This is a bit awkward - we'd need project usecase here
 	// For now, return empty list as this will be handled by project usecase
 	return []GitBranch{}, fmt.Errorf("method should be called on project usecase instead")
+}
+
+func (u *taskUsecase) GetPullRequest(ctx context.Context, taskID uuid.UUID) (*entity.PullRequest, error) {
+	pr, err := u.pullRequestRepo.GetByTaskID(ctx, taskID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get pull request: %w", err)
+	}
+
+	return pr, nil
 }
