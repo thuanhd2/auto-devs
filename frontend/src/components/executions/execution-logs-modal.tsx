@@ -1,28 +1,7 @@
-import { useEffect, useState, useRef } from 'react'
-import { ExecutionLog } from '@/types/execution'
-import { AlertTriangle } from 'lucide-react'
-import {
-  AlertCircle,
-  Bot,
-  Brain,
-  CheckSquare,
-  ChevronRight,
-  ChevronUp,
-  Edit,
-  Eye,
-  Globe,
-  Plus,
-  Search,
-  Settings,
-  Terminal,
-  User,
-} from 'lucide-react'
-import { useWebSocketContext } from '@/context/websocket-context'
-import { useExecutionLogs } from '@/hooks/use-executions'
-import { Button } from '@/components/ui/button'
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
@@ -65,6 +44,9 @@ export function ExecutionLogsModal({
       <DialogContent className='sm:w-[400px] sm:max-w-[400px] lg:h-[80vh] lg:w-[80vw] lg:max-w-none'>
         <DialogHeader>
           <DialogTitle>Execution Logs</DialogTitle>
+          <DialogDescription>
+            View detailed logs and execution steps for this task.
+          </DialogDescription>
         </DialogHeader>
         <div className='h-[60vh]'>
           {isLoading && (
