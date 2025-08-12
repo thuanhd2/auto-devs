@@ -90,7 +90,6 @@ export function useExecution(executionId: string) {
     enabled: !!executionId,
     refetchInterval: (data) => {
       const executionStatus = data.state?.data?.status
-      console.log('executionStatus', executionStatus)
       if (executionStatus === 'RUNNING' || executionStatus === 'PENDING') {
         return 1000
       }

@@ -12,6 +12,7 @@ import {
   SheetContent,
   SheetHeader,
   SheetTitle,
+  SheetDescription,
 } from '@/components/ui/sheet'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { ExecutionList, ExecutionLogsModal } from '../executions'
@@ -87,6 +88,7 @@ export function TaskDetailSheet({
               </div>
             </div>
           </SheetHeader>
+          <SheetDescription>Task details for task {task.id}</SheetDescription>
 
           <div className='space-y-6 px-4 pb-6'>
             {/* Description */}

@@ -200,30 +200,6 @@ function ExecutionDetails({
         </div>
       )}
 
-      {execution.result && (
-        <div className='rounded-lg border border-green-200 bg-green-50 p-3'>
-          <div className='mb-2 text-sm font-medium text-green-800'>
-            Execution Result
-          </div>
-          <div className='space-y-1 text-sm text-green-700'>
-            {execution.result.files && execution.result.files.length > 0 && (
-              <div>
-                <span className='font-medium'>Files:</span>{' '}
-                {execution.result.files.length}
-              </div>
-            )}
-            {execution.result.output && (
-              <div>
-                <span className='font-medium'>Output:</span>
-                <div className='mt-1 max-h-20 overflow-y-auto rounded border bg-white p-2 font-mono text-xs'>
-                  {execution.result.output}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
       {inlineLogs ? (
         <ExecutionLogsPannel executionId={execution.id} />
       ) : (

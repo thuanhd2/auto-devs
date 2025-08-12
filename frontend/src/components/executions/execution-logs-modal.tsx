@@ -42,7 +42,6 @@ export function ExecutionLogsModal({
 }: ExecutionLogsModalProps) {
   // const { logs, isLoading, error } = useExecutionLogs(executionId)
   const { data: execution, isLoading, error } = useExecution(executionId)
-  console.log('execution', execution)
   const logs = (execution?.logs || []).sort((a, b) => a.line - b.line)
   const scrollAreaRef = useRef<HTMLDivElement>(null)
   const [prevLogsLength, setPrevLogsLength] = useState(0)
