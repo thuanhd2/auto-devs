@@ -34,7 +34,6 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Header } from '@/components/layout/header'
 import { Main } from '@/components/layout/main'
-import { ProfileDropdown } from '@/components/profile-dropdown'
 import { ProjectCreateModal } from '@/components/project-create-modal'
 import { Search as SearchComponent } from '@/components/search'
 import { SimpleConfirmDialog } from '@/components/simple-confirm-dialog'
@@ -105,7 +104,6 @@ export function ProjectList() {
         <div className='ml-auto flex items-center space-x-4'>
           <SearchComponent />
           <ThemeSwitch />
-          <ProfileDropdown />
         </div>
       </Header>
 

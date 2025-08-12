@@ -7,23 +7,15 @@ import {
   IconSettings,
   IconTool,
   IconUserCog,
+  IconBrandGithub,
+  IconRobot,
+  IconHelp,
+  IconCode,
+  IconInfoCircle,
 } from '@tabler/icons-react'
-import { Command } from 'lucide-react'
 import { type SidebarData } from '../types'
 
 export const sidebarData: SidebarData = {
-  user: {
-    name: 'Auto-Devs User',
-    email: 'user@auto-devs.com',
-    avatar: '/avatars/shadcn.jpg',
-  },
-  teams: [
-    {
-      name: 'Auto-Devs',
-      logo: Command,
-      plan: 'AI Development Platform',
-    },
-  ],
   navGroups: [
     {
       title: 'General',
@@ -32,6 +24,47 @@ export const sidebarData: SidebarData = {
           title: 'Projects',
           url: '/projects',
           icon: IconPackages,
+        },
+      ],
+    },
+    {
+      title: 'Settings',
+      items: [
+        {
+          title: 'Settings',
+          icon: IconSettings,
+          items: [
+            {
+              title: 'AI Executor',
+              url: '/settings/ai-executor',
+              icon: IconRobot,
+            },
+            {
+              title: 'Github Integration',
+              url: '/settings/github-integration',
+              icon: IconBrandGithub,
+            },
+            {
+              title: 'Appearance',
+              url: '/settings/appearance',
+              icon: IconPalette,
+            },
+            {
+              title: 'Notifications',
+              url: '/settings/notifications',
+              icon: IconNotification,
+            },
+            {
+              title: 'Code Editor',
+              url: '/settings/code-editor',
+              icon: IconCode,
+            },
+          ],
+        },
+        {
+          title: 'About this project',
+          url: '/about-us',
+          icon: IconInfoCircle,
         },
       ],
     },

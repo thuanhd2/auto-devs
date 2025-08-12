@@ -16,7 +16,15 @@ import { Route as errors500RouteImport } from './routes/(errors)/500'
 import { Route as errors404RouteImport } from './routes/(errors)/404'
 import { Route as errors403RouteImport } from './routes/(errors)/403'
 import { Route as errors401RouteImport } from './routes/(errors)/401'
+import { Route as AuthenticatedSettingsRouteRouteImport } from './routes/_authenticated/settings/route'
+import { Route as AuthenticatedSettingsIndexRouteImport } from './routes/_authenticated/settings/index'
 import { Route as AuthenticatedProjectsIndexRouteImport } from './routes/_authenticated/projects/index'
+import { Route as AuthenticatedAboutUsIndexRouteImport } from './routes/_authenticated/about-us/index'
+import { Route as AuthenticatedSettingsNotificationsRouteImport } from './routes/_authenticated/settings/notifications'
+import { Route as AuthenticatedSettingsGithubIntegrationRouteImport } from './routes/_authenticated/settings/github-integration'
+import { Route as AuthenticatedSettingsCodeEditorRouteImport } from './routes/_authenticated/settings/code-editor'
+import { Route as AuthenticatedSettingsAppearanceRouteImport } from './routes/_authenticated/settings/appearance'
+import { Route as AuthenticatedSettingsAiExecutorRouteImport } from './routes/_authenticated/settings/ai-executor'
 import { Route as AuthenticatedProjectsProjectIdRouteImport } from './routes/_authenticated/projects/$projectId'
 import { Route as AuthenticatedProjectsProjectIdEditRouteImport } from './routes/_authenticated/projects/$projectId/edit'
 import { Route as AuthenticatedProjectsProjectIdTasksTaskIdRouteImport } from './routes/_authenticated/projects/$projectId/tasks/$taskId'
@@ -55,11 +63,59 @@ const errors401Route = errors401RouteImport.update({
   path: '/401',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedSettingsRouteRoute =
+  AuthenticatedSettingsRouteRouteImport.update({
+    id: '/settings',
+    path: '/settings',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedSettingsIndexRoute =
+  AuthenticatedSettingsIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedSettingsRouteRoute,
+  } as any)
 const AuthenticatedProjectsIndexRoute =
   AuthenticatedProjectsIndexRouteImport.update({
     id: '/projects/',
     path: '/projects/',
     getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAboutUsIndexRoute =
+  AuthenticatedAboutUsIndexRouteImport.update({
+    id: '/about-us/',
+    path: '/about-us/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedSettingsNotificationsRoute =
+  AuthenticatedSettingsNotificationsRouteImport.update({
+    id: '/notifications',
+    path: '/notifications',
+    getParentRoute: () => AuthenticatedSettingsRouteRoute,
+  } as any)
+const AuthenticatedSettingsGithubIntegrationRoute =
+  AuthenticatedSettingsGithubIntegrationRouteImport.update({
+    id: '/github-integration',
+    path: '/github-integration',
+    getParentRoute: () => AuthenticatedSettingsRouteRoute,
+  } as any)
+const AuthenticatedSettingsCodeEditorRoute =
+  AuthenticatedSettingsCodeEditorRouteImport.update({
+    id: '/code-editor',
+    path: '/code-editor',
+    getParentRoute: () => AuthenticatedSettingsRouteRoute,
+  } as any)
+const AuthenticatedSettingsAppearanceRoute =
+  AuthenticatedSettingsAppearanceRouteImport.update({
+    id: '/appearance',
+    path: '/appearance',
+    getParentRoute: () => AuthenticatedSettingsRouteRoute,
+  } as any)
+const AuthenticatedSettingsAiExecutorRoute =
+  AuthenticatedSettingsAiExecutorRouteImport.update({
+    id: '/ai-executor',
+    path: '/ai-executor',
+    getParentRoute: () => AuthenticatedSettingsRouteRoute,
   } as any)
 const AuthenticatedProjectsProjectIdRoute =
   AuthenticatedProjectsProjectIdRouteImport.update({
@@ -81,6 +137,7 @@ const AuthenticatedProjectsProjectIdTasksTaskIdRoute =
   } as any)
 
 export interface FileRoutesByFullPath {
+  '/settings': typeof AuthenticatedSettingsRouteRouteWithChildren
   '/401': typeof errors401Route
   '/403': typeof errors403Route
   '/404': typeof errors404Route
@@ -88,7 +145,14 @@ export interface FileRoutesByFullPath {
   '/503': typeof errors503Route
   '/': typeof AuthenticatedIndexRoute
   '/projects/$projectId': typeof AuthenticatedProjectsProjectIdRouteWithChildren
+  '/settings/ai-executor': typeof AuthenticatedSettingsAiExecutorRoute
+  '/settings/appearance': typeof AuthenticatedSettingsAppearanceRoute
+  '/settings/code-editor': typeof AuthenticatedSettingsCodeEditorRoute
+  '/settings/github-integration': typeof AuthenticatedSettingsGithubIntegrationRoute
+  '/settings/notifications': typeof AuthenticatedSettingsNotificationsRoute
+  '/about-us': typeof AuthenticatedAboutUsIndexRoute
   '/projects': typeof AuthenticatedProjectsIndexRoute
+  '/settings/': typeof AuthenticatedSettingsIndexRoute
   '/projects/$projectId/edit': typeof AuthenticatedProjectsProjectIdEditRoute
   '/projects/$projectId/tasks/$taskId': typeof AuthenticatedProjectsProjectIdTasksTaskIdRoute
 }
@@ -100,13 +164,21 @@ export interface FileRoutesByTo {
   '/503': typeof errors503Route
   '/': typeof AuthenticatedIndexRoute
   '/projects/$projectId': typeof AuthenticatedProjectsProjectIdRouteWithChildren
+  '/settings/ai-executor': typeof AuthenticatedSettingsAiExecutorRoute
+  '/settings/appearance': typeof AuthenticatedSettingsAppearanceRoute
+  '/settings/code-editor': typeof AuthenticatedSettingsCodeEditorRoute
+  '/settings/github-integration': typeof AuthenticatedSettingsGithubIntegrationRoute
+  '/settings/notifications': typeof AuthenticatedSettingsNotificationsRoute
+  '/about-us': typeof AuthenticatedAboutUsIndexRoute
   '/projects': typeof AuthenticatedProjectsIndexRoute
+  '/settings': typeof AuthenticatedSettingsIndexRoute
   '/projects/$projectId/edit': typeof AuthenticatedProjectsProjectIdEditRoute
   '/projects/$projectId/tasks/$taskId': typeof AuthenticatedProjectsProjectIdTasksTaskIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
+  '/_authenticated/settings': typeof AuthenticatedSettingsRouteRouteWithChildren
   '/(errors)/401': typeof errors401Route
   '/(errors)/403': typeof errors403Route
   '/(errors)/404': typeof errors404Route
@@ -114,13 +186,21 @@ export interface FileRoutesById {
   '/(errors)/503': typeof errors503Route
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/projects/$projectId': typeof AuthenticatedProjectsProjectIdRouteWithChildren
+  '/_authenticated/settings/ai-executor': typeof AuthenticatedSettingsAiExecutorRoute
+  '/_authenticated/settings/appearance': typeof AuthenticatedSettingsAppearanceRoute
+  '/_authenticated/settings/code-editor': typeof AuthenticatedSettingsCodeEditorRoute
+  '/_authenticated/settings/github-integration': typeof AuthenticatedSettingsGithubIntegrationRoute
+  '/_authenticated/settings/notifications': typeof AuthenticatedSettingsNotificationsRoute
+  '/_authenticated/about-us/': typeof AuthenticatedAboutUsIndexRoute
   '/_authenticated/projects/': typeof AuthenticatedProjectsIndexRoute
+  '/_authenticated/settings/': typeof AuthenticatedSettingsIndexRoute
   '/_authenticated/projects/$projectId/edit': typeof AuthenticatedProjectsProjectIdEditRoute
   '/_authenticated/projects/$projectId/tasks/$taskId': typeof AuthenticatedProjectsProjectIdTasksTaskIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
+    | '/settings'
     | '/401'
     | '/403'
     | '/404'
@@ -128,7 +208,14 @@ export interface FileRouteTypes {
     | '/503'
     | '/'
     | '/projects/$projectId'
+    | '/settings/ai-executor'
+    | '/settings/appearance'
+    | '/settings/code-editor'
+    | '/settings/github-integration'
+    | '/settings/notifications'
+    | '/about-us'
     | '/projects'
+    | '/settings/'
     | '/projects/$projectId/edit'
     | '/projects/$projectId/tasks/$taskId'
   fileRoutesByTo: FileRoutesByTo
@@ -140,12 +227,20 @@ export interface FileRouteTypes {
     | '/503'
     | '/'
     | '/projects/$projectId'
+    | '/settings/ai-executor'
+    | '/settings/appearance'
+    | '/settings/code-editor'
+    | '/settings/github-integration'
+    | '/settings/notifications'
+    | '/about-us'
     | '/projects'
+    | '/settings'
     | '/projects/$projectId/edit'
     | '/projects/$projectId/tasks/$taskId'
   id:
     | '__root__'
     | '/_authenticated'
+    | '/_authenticated/settings'
     | '/(errors)/401'
     | '/(errors)/403'
     | '/(errors)/404'
@@ -153,7 +248,14 @@ export interface FileRouteTypes {
     | '/(errors)/503'
     | '/_authenticated/'
     | '/_authenticated/projects/$projectId'
+    | '/_authenticated/settings/ai-executor'
+    | '/_authenticated/settings/appearance'
+    | '/_authenticated/settings/code-editor'
+    | '/_authenticated/settings/github-integration'
+    | '/_authenticated/settings/notifications'
+    | '/_authenticated/about-us/'
     | '/_authenticated/projects/'
+    | '/_authenticated/settings/'
     | '/_authenticated/projects/$projectId/edit'
     | '/_authenticated/projects/$projectId/tasks/$taskId'
   fileRoutesById: FileRoutesById
@@ -218,12 +320,68 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof errors401RouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/settings': {
+      id: '/_authenticated/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof AuthenticatedSettingsRouteRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/settings/': {
+      id: '/_authenticated/settings/'
+      path: '/'
+      fullPath: '/settings/'
+      preLoaderRoute: typeof AuthenticatedSettingsIndexRouteImport
+      parentRoute: typeof AuthenticatedSettingsRouteRoute
+    }
     '/_authenticated/projects/': {
       id: '/_authenticated/projects/'
       path: '/projects'
       fullPath: '/projects'
       preLoaderRoute: typeof AuthenticatedProjectsIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/about-us/': {
+      id: '/_authenticated/about-us/'
+      path: '/about-us'
+      fullPath: '/about-us'
+      preLoaderRoute: typeof AuthenticatedAboutUsIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/settings/notifications': {
+      id: '/_authenticated/settings/notifications'
+      path: '/notifications'
+      fullPath: '/settings/notifications'
+      preLoaderRoute: typeof AuthenticatedSettingsNotificationsRouteImport
+      parentRoute: typeof AuthenticatedSettingsRouteRoute
+    }
+    '/_authenticated/settings/github-integration': {
+      id: '/_authenticated/settings/github-integration'
+      path: '/github-integration'
+      fullPath: '/settings/github-integration'
+      preLoaderRoute: typeof AuthenticatedSettingsGithubIntegrationRouteImport
+      parentRoute: typeof AuthenticatedSettingsRouteRoute
+    }
+    '/_authenticated/settings/code-editor': {
+      id: '/_authenticated/settings/code-editor'
+      path: '/code-editor'
+      fullPath: '/settings/code-editor'
+      preLoaderRoute: typeof AuthenticatedSettingsCodeEditorRouteImport
+      parentRoute: typeof AuthenticatedSettingsRouteRoute
+    }
+    '/_authenticated/settings/appearance': {
+      id: '/_authenticated/settings/appearance'
+      path: '/appearance'
+      fullPath: '/settings/appearance'
+      preLoaderRoute: typeof AuthenticatedSettingsAppearanceRouteImport
+      parentRoute: typeof AuthenticatedSettingsRouteRoute
+    }
+    '/_authenticated/settings/ai-executor': {
+      id: '/_authenticated/settings/ai-executor'
+      path: '/ai-executor'
+      fullPath: '/settings/ai-executor'
+      preLoaderRoute: typeof AuthenticatedSettingsAiExecutorRouteImport
+      parentRoute: typeof AuthenticatedSettingsRouteRoute
     }
     '/_authenticated/projects/$projectId': {
       id: '/_authenticated/projects/$projectId'
@@ -249,6 +407,32 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AuthenticatedSettingsRouteRouteChildren {
+  AuthenticatedSettingsAiExecutorRoute: typeof AuthenticatedSettingsAiExecutorRoute
+  AuthenticatedSettingsAppearanceRoute: typeof AuthenticatedSettingsAppearanceRoute
+  AuthenticatedSettingsCodeEditorRoute: typeof AuthenticatedSettingsCodeEditorRoute
+  AuthenticatedSettingsGithubIntegrationRoute: typeof AuthenticatedSettingsGithubIntegrationRoute
+  AuthenticatedSettingsNotificationsRoute: typeof AuthenticatedSettingsNotificationsRoute
+  AuthenticatedSettingsIndexRoute: typeof AuthenticatedSettingsIndexRoute
+}
+
+const AuthenticatedSettingsRouteRouteChildren: AuthenticatedSettingsRouteRouteChildren =
+  {
+    AuthenticatedSettingsAiExecutorRoute: AuthenticatedSettingsAiExecutorRoute,
+    AuthenticatedSettingsAppearanceRoute: AuthenticatedSettingsAppearanceRoute,
+    AuthenticatedSettingsCodeEditorRoute: AuthenticatedSettingsCodeEditorRoute,
+    AuthenticatedSettingsGithubIntegrationRoute:
+      AuthenticatedSettingsGithubIntegrationRoute,
+    AuthenticatedSettingsNotificationsRoute:
+      AuthenticatedSettingsNotificationsRoute,
+    AuthenticatedSettingsIndexRoute: AuthenticatedSettingsIndexRoute,
+  }
+
+const AuthenticatedSettingsRouteRouteWithChildren =
+  AuthenticatedSettingsRouteRoute._addFileChildren(
+    AuthenticatedSettingsRouteRouteChildren,
+  )
+
 interface AuthenticatedProjectsProjectIdRouteChildren {
   AuthenticatedProjectsProjectIdEditRoute: typeof AuthenticatedProjectsProjectIdEditRoute
   AuthenticatedProjectsProjectIdTasksTaskIdRoute: typeof AuthenticatedProjectsProjectIdTasksTaskIdRoute
@@ -268,15 +452,19 @@ const AuthenticatedProjectsProjectIdRouteWithChildren =
   )
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedSettingsRouteRoute: typeof AuthenticatedSettingsRouteRouteWithChildren
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
   AuthenticatedProjectsProjectIdRoute: typeof AuthenticatedProjectsProjectIdRouteWithChildren
+  AuthenticatedAboutUsIndexRoute: typeof AuthenticatedAboutUsIndexRoute
   AuthenticatedProjectsIndexRoute: typeof AuthenticatedProjectsIndexRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedSettingsRouteRoute: AuthenticatedSettingsRouteRouteWithChildren,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
   AuthenticatedProjectsProjectIdRoute:
     AuthenticatedProjectsProjectIdRouteWithChildren,
+  AuthenticatedAboutUsIndexRoute: AuthenticatedAboutUsIndexRoute,
   AuthenticatedProjectsIndexRoute: AuthenticatedProjectsIndexRoute,
 }
 
