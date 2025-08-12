@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useNavigate, useParams } from '@tanstack/react-router'
 import type { Task } from '@/types/task'
 import { ExternalLink } from 'lucide-react'
 import { getStatusColor, getStatusTitle } from '@/lib/kanban'
@@ -45,8 +46,24 @@ export function TaskDetailSheet({
   onStartPlanning,
   onApprovePlanAndStartImplement,
 }: TaskDetailSheetProps) {
+  const navigate = useNavigate()
+  const params = useParams({ strict: false }) as { projectId?: string }
   const [showEditForm, setShowEditForm] = useState(false)
   const [showHistory, setShowHistory] = useState(false)
+  
+  // Handle sheet close and URL cleanup
+  const handleOpenChange = (isOpen: boolean) => {
+    onOpenChange(isOpen)
+    
+    if (!isOpen && params.projectId) {
+      // Navigate back to project without task ID
+      navigate({
+        to: '/projects/$projectId',
+        params: { projectId: params.projectId },
+        replace: true
+      })
+    }
+  }
 
   if (!task) return null
 
@@ -72,7 +89,7 @@ export function TaskDetailSheet({
 
   return (
     <>
-      <Sheet open={open} onOpenChange={onOpenChange}>
+      <Sheet open={open} onOpenChange={handleOpenChange}>
         <SheetContent className='overflow-y-auto sm:w-[400px] sm:max-w-[400px] lg:w-[800px] lg:max-w-none'>
           <SheetHeader className='pb-4'>
             <div className='flex items-start justify-between gap-4'>

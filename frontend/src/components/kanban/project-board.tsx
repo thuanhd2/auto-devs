@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { useNavigate, useSearch, useParams } from '@tanstack/react-router'
 import { taskOptimisticUpdates } from '@/services/optimisticUpdates'
 import { CentrifugeMessage } from '@/services/websocketService'
 import type { Task, TaskFilters } from '@/types/task'
@@ -25,10 +26,17 @@ interface ProjectBoardProps {
 }
 
 export function ProjectBoard({ projectId }: ProjectBoardProps) {
+  const navigate = useNavigate()
+  const searchParams = useSearch({ strict: false }) as { taskId?: string }
+  const routeParams = useParams({ strict: false }) as { taskId?: string }
+  
   const [filters, setFilters] = useState<TaskFilters>({})
   const [searchQuery, setSearchQuery] = useState('')
   const [isCompactView, setIsCompactView] = useState(false)
   const [localTasks, setLocalTasks] = useState<Task[]>([])
+  
+  // Get taskId from either route params or search params
+  const currentTaskId = routeParams.taskId || searchParams.taskId
 
   // Modal states
   const [taskFormModal, setTaskFormModal] = useState<{
@@ -89,6 +97,23 @@ export function ProjectBoard({ projectId }: ProjectBoardProps) {
     const tasks = tasksResponse?.tasks || []
     setLocalTasks(tasks)
   }, [tasksResponse])
+
+  // Auto-open task detail sheet when taskId is in URL
+  useEffect(() => {
+    if (currentTaskId && localTasks.length > 0) {
+      const task = localTasks.find(t => t.id === currentTaskId)
+      if (task) {
+        setTaskDetailSheet({ open: true, task })
+      } else {
+        // Task not found, navigate back to project
+        navigate({
+          to: '/projects/$projectId',
+          params: { projectId },
+          replace: true
+        })
+      }
+    }
+  }, [currentTaskId, localTasks, navigate, projectId])
 
   // Set current project for WebSocket subscriptions
   useEffect(() => {
@@ -183,6 +208,13 @@ export function ProjectBoard({ projectId }: ProjectBoardProps) {
 
   const handleViewTaskDetails = (task: Task) => {
     setTaskDetailSheet({ open: true, task })
+    
+    // Update URL to include task ID
+    navigate({
+      to: '/projects/$projectId/tasks/$taskId',
+      params: { projectId, taskId: task.id },
+      replace: true
+    })
   }
 
   const handleStartPlanning = async (taskId: string, branchName: string) => {
@@ -253,9 +285,18 @@ export function ProjectBoard({ projectId }: ProjectBoardProps) {
 
       <TaskDetailSheet
         open={taskDetailSheet.open}
-        onOpenChange={(open) =>
+        onOpenChange={(open) => {
           setTaskDetailSheet((prev) => ({ ...prev, open }))
-        }
+          
+          // If closing the sheet, navigate back to project
+          if (!open) {
+            navigate({
+              to: '/projects/$projectId',
+              params: { projectId },
+              replace: true
+            })
+          }
+        }}
         task={taskDetailSheet.task || null}
         onEdit={handleEditTask}
         onDelete={handleDeleteTask}
