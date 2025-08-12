@@ -292,8 +292,9 @@ func ProvideJobProcessor(
 	gitManager *git.GitManager,
 	prCreator *github.PRCreator,
 	prRepo repository.PullRequestRepository,
+	githubService github.GitHubServiceInterface,
 ) *jobs.Processor {
-	return jobs.NewProcessor(taskUsecase, projectUsecase, worktreeUsecase, planningService, executionService, planRepo, executionRepo, executionLogRepo, wsService, gitManager, prCreator, prRepo)
+	return jobs.NewProcessor(taskUsecase, projectUsecase, worktreeUsecase, planningService, executionService, planRepo, executionRepo, executionLogRepo, wsService, gitManager, prCreator, prRepo, githubService)
 }
 
 // ProvideWebSocketService provides a WebSocket service instance
@@ -306,7 +307,7 @@ func ProvideExecutionUsecase(executionRepo repository.ExecutionRepository, execu
 }
 
 // ProvideGitHubService provides a GitHub service instance
-func ProvideGitHubService(cfg *config.Config) *github.GitHubServiceV2 {
+func ProvideGitHubService(cfg *config.Config) github.GitHubServiceInterface {
 	githubConfig := &github.GitHubConfig{
 		Token:     cfg.GitHub.Token,
 		BaseURL:   cfg.GitHub.BaseURL,
@@ -317,7 +318,7 @@ func ProvideGitHubService(cfg *config.Config) *github.GitHubServiceV2 {
 }
 
 // ProvidePRCreator provides a PR creator instance
-func ProvidePRCreator(githubService *github.GitHubServiceV2, cfg *config.Config) *github.PRCreator {
+func ProvidePRCreator(githubService github.GitHubServiceInterface, cfg *config.Config) *github.PRCreator {
 	baseURL := cfg.App.BaseURL
 	if baseURL == "" {
 		baseURL = "http://localhost:8098" // fallback for development
