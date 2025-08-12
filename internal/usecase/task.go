@@ -136,6 +136,7 @@ type UpdateTaskRequest struct {
 	Tags           []string             `json:"tags"`
 	AssignedTo     *string              `json:"assigned_to"`
 	DueDate        *time.Time           `json:"due_date"`
+	BaseBranchName *string              `json:"base_branch_name"`
 	BranchName     *string              `json:"branch_name"`
 	PullRequest    *string              `json:"pull_request"`
 	WorktreePath   *string              `json:"worktree_path"`
@@ -348,6 +349,9 @@ func (u *taskUsecase) Update(ctx context.Context, id uuid.UUID, req UpdateTaskRe
 	}
 	if req.BranchName != nil {
 		task.BranchName = req.BranchName
+	}
+	if req.BaseBranchName != nil {
+		task.BaseBranchName = req.BaseBranchName
 	}
 	if req.PullRequest != nil {
 		task.PullRequest = req.PullRequest
@@ -1058,7 +1062,7 @@ func (u *taskUsecase) StartPlanning(ctx context.Context, taskID uuid.UUID, branc
 
 	// Update task with branch name
 	_, err = u.Update(ctx, taskID, UpdateTaskRequest{
-		BranchName: &branchName,
+		BaseBranchName: &branchName,
 	})
 	if err != nil {
 		return "", fmt.Errorf("failed to update task with branch name: %w", err)

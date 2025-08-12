@@ -16,9 +16,8 @@ async function main() {
         console.log(line)
         await new Promise(resolve => setTimeout(resolve, 1000))
     }
-    // dummy some files in the current directory
-    const files = ['file1.txt', 'file2.txt', 'file3.txt']
-    for (const file of files) {
+    for (let i = 0; i < 10; i++) {
+        const file = `file${new Date().getTime()}.txt`
         fs.writeFileSync(file, 'dummy content - ' + new Date().toISOString())
     }
 }

@@ -58,18 +58,12 @@ func (prc *PRCreator) CreatePRFromImplementation(ctx context.Context, task entit
 		return nil, fmt.Errorf("unable to determine repository from task")
 	}
 
-	log.Println("repository", repository)
-	log.Println("base branch", "master")
-	log.Println("head branch", *task.BranchName)
-	log.Println("title", title)
-	log.Println("description", description)
-
 	// Create the pull request via GitHub API
 	githubPR, err := prc.githubService.CreatePullRequest(
 		ctx,
 		repository,
-		"master",         // base branch - should be get from tas
-		*task.BranchName, // head branch
+		*task.BaseBranchName, // base branch - should be get from tas
+		*task.BranchName,     // head branch
 		title,
 		description,
 	)

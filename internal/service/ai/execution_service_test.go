@@ -65,6 +65,10 @@ func (f *FakeAiCodingCli) ParseOutputToLogs(output string) []*entity.ExecutionLo
 	return logs
 }
 
+func (f *FakeAiCodingCli) ParseOutputToPlan(output string) (string, error) {
+	return "test plan", nil
+}
+
 func NewFakeAiCodingCli() AiCodingCli {
 	return &FakeAiCodingCli{}
 }

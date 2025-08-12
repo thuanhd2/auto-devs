@@ -2,6 +2,7 @@ package aiexecutors
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -24,7 +25,7 @@ func (e *FakeCodeExecutor) GetPlanningCommand(ctx context.Context, task *entity.
 	projectRootPath := projectPath
 	fakeCliPath := filepath.Join(projectRootPath, "fake-cli", "fake-planning-claude.js")
 	command := fmt.Sprintf("node %s", fakeCliPath)
-	prompt, err := e.getImplementationPrompt(ctx, task)
+	prompt, err := e.generatePlanningPrompt(*task)
 	if err != nil {
 		return "", "", err
 	}
@@ -131,4 +132,56 @@ func (e *FakeCodeExecutor) generatePlanningPrompt(task entity.Task) (string, err
 	promptBuilder.WriteString("The codebase uses Gin framework, GORM for database, and follows standard Go practices.\n")
 
 	return promptBuilder.String(), nil
+}
+
+func (e *FakeCodeExecutor) ParseOutputToPlan(output string) (string, error) {
+	lines := strings.Split(output, "\n")
+	// find the line that contains "name":"ExitPlanMode"
+	planResultLine := ""
+	for _, line := range lines {
+		if strings.Contains(line, "name\":\"ExitPlanMode\"") {
+			planResultLine = line
+			break
+		}
+	}
+	/*Line example:
+
+	{"type":"assistant","message":{"id":"msg_01PDQXBzHtQLA3ruAvhawZh2","type":"message","role":"assistant","model":"claude-sonnet-4-20250514","content":[{"type":"tool_use","id":"toolu_01NuDYFV4iF6kp3bdo48cXgE","name":"ExitPlanMode","input":{"plan":"# Plan: Add Code Changes Tab to Task Details Modal\n\nBased on my research, I have a clear understanding of how to implement the Code Changes tab. Here's my implementation plan:\n\n## Current State Analysis\n- Task details modal currently has 3 tabs: Plan Review, Executions, and Metadata\n- Task model already has pr_url field and TaskGitInfo with pull request information\n- Existing usePullRequestByTask hook can fetch PR data by task ID\n- Rich PRDetail component already exists for displaying pull request information\n\n## Implementation Plan\n\n### 1. Update Task Detail Sheet Component (frontend/src/components/kanban/task-detail-sheet.tsx)\n- Add \"Code Changes\" as the 4th tab (after Plan Review)\n- Update TabsList grid from grid-cols-3 to grid-cols-4\n- Add new TabsTrigger for \"code-changes\" \n- Add new TabsContent with CodeChanges component\n\n### 2. Create CodeChanges Component\n- Use usePullRequestByTask hook to fetch PR data for the task\n- Display different states:\n - No PR yet: Show message \"No pull request created yet\"\n - PR exists: Show PR link button with external link icon\n - Loading: Show skeleton loader\n- Keep it simple and focused per user requirements - just show the PR link\n\n### 3. Implementation Details\n- Add the tab after \"Plan Review\" but before \"Executions\" and \"Metadata\"\n- Use existing UI components (Button, ExternalLink icon, etc.)\n- Handle loading and error states gracefully\n- Make PR link open in new tab when clicked\n\n## Files to Modify\n1. frontend/src/components/kanban/task-detail-sheet.tsx - Add new tab and component\n2. No new files needed - will create inline component for simplicity\n\nThis implementation will be clean, simple, and follows the existing patterns in the codebase."}}],"stop_reason":null,"stop_sequence":null,"usage":{"input_tokens":0,"cache_creation_input_tokens":397,"cache_read_input_tokens":62637,"output_tokens":499,"service_tier":"standard"}},"parent_tool_use_id":null,"session_id":"9d3ac8dd-5572-4bdc-ae86-ff1071e369e7"}
+
+	*/
+
+	var planOutput PlanOutput
+	err := json.Unmarshal([]byte(planResultLine), &planOutput)
+	if err != nil {
+		return "", err
+	}
+	planContent := planOutput.Message.Content[0].Input.Plan
+	return planContent, nil
+}
+
+type PlanOutput struct {
+	Type            string      `json:"type"`
+	Message         PlanMessage `json:"message"`
+	ParentToolUseID string      `json:"parent_tool_use_id"`
+	SessionID       string      `json:"session_id"`
+}
+
+type PlanMessage struct {
+	ID      string        `json:"id"`
+	Type    string        `json:"type"`
+	Role    string        `json:"role"`
+	Model   string        `json:"model"`
+	Content []PlanContent `json:"content"`
+}
+
+type PlanContent struct {
+	Type  string           `json:"type"`
+	ID    string           `json:"id"`
+	Role  string           `json:"role"`
+	Model string           `json:"model"`
+	Input PlanContentInput `json:"input"`
+}
+
+type PlanContentInput struct {
+	Plan string `json:"plan"`
 }

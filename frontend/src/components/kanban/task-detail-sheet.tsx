@@ -88,19 +88,12 @@ export function TaskDetailSheet({
               </div>
             </div>
           </SheetHeader>
-          <SheetDescription>Task details for task {task.id}</SheetDescription>
+          <SheetDescription className='px-4 text-sm whitespace-pre-wrap'>
+            {/* Description */}
+            {task.description}
+          </SheetDescription>
 
           <div className='space-y-6 px-4 pb-6'>
-            {/* Description */}
-            {task.description && (
-              <div>
-                <h4 className='mb-2 text-sm font-medium'>Description</h4>
-                <p className='rounded border p-3 text-sm whitespace-pre-wrap'>
-                  {task.description}
-                </p>
-              </div>
-            )}
-
             {/* Status Actions */}
             <div>
               <h4 className='mb-3 text-sm font-medium'>Actions</h4>

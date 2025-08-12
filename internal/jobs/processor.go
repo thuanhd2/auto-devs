@@ -251,8 +251,11 @@ func (p *Processor) ProcessTaskPlanning(ctx context.Context, task *asynq.Task) e
 					result := execution.Result
 					p.logger.Info("AI Planning execution result", "task_id", payload.TaskID, "execution_id", execution.ID, "result", result)
 					if result != nil {
-						planContent := result.Output
-						err := p.savePlanAndUpdateStatus(backgroundCtx, payload.TaskID, planContent)
+						planContent, err := aiExecutor.ParseOutputToPlan(result.Output)
+						if err != nil {
+							p.logger.Error("Failed to parse output to plan", "error", err, "execution_id", dbExecution.ID)
+						}
+						err = p.savePlanAndUpdateStatus(backgroundCtx, payload.TaskID, planContent)
 						if err != nil {
 							p.logger.Error("Failed to save plan", "error", err, "execution_id", dbExecution.ID)
 						}

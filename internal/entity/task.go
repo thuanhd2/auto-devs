@@ -285,6 +285,7 @@ type Task struct {
 	CreatedAt      time.Time      `json:"created_at" gorm:"autoCreateTime"`
 	UpdatedAt      time.Time      `json:"updated_at" gorm:"autoUpdateTime"`
 	DeletedAt      gorm.DeletedAt `json:"deleted_at,omitempty" gorm:"index"`
+	BaseBranchName *string        `json:"base_branch_name,omitempty" gorm:"size:255"`
 
 	// Relationships
 	Project    *Project       `json:"project,omitempty" gorm:"foreignKey:ProjectID"`

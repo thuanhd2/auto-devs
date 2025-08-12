@@ -96,6 +96,7 @@ type AiCodingCli interface {
 	GetPlanningCommand(context.Context, *entity.Task) (string, string, error)
 	GetImplementationCommand(context.Context, *entity.Task) (string, string, error)
 	ParseOutputToLogs(output string) []*entity.ExecutionLog
+	ParseOutputToPlan(output string) (string, error)
 }
 
 // StartExecution starts a new AI execution

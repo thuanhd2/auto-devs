@@ -150,8 +150,8 @@ func (w *worktreeUsecase) CreateWorktreeForTask(ctx context.Context, req CreateW
 	}
 
 	taskBranchName := ""
-	if task.BranchName != nil {
-		taskBranchName = *task.BranchName
+	if task.BaseBranchName != nil {
+		taskBranchName = *task.BaseBranchName
 	} else {
 		taskBranchName = "main"
 	}
