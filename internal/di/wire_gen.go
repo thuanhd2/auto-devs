@@ -68,9 +68,9 @@ func InitializeApp() (*App, error) {
 	if err != nil {
 		return nil, err
 	}
-	gitHubServiceV2 := ProvideGitHubService(configConfig)
-	prCreator := ProvidePRCreator(gitHubServiceV2, configConfig)
-	processor := ProvideJobProcessor(taskUsecase, projectUsecase, worktreeUsecase, planningService, executionService, planRepository, executionRepository, executionLogRepository, service, gitManager, prCreator, pullRequestRepository, gitHubServiceV2)
+	gitHubServiceInterface := ProvideGitHubService(configConfig)
+	prCreator := ProvidePRCreator(gitHubServiceInterface, configConfig)
+	processor := ProvideJobProcessor(taskUsecase, projectUsecase, worktreeUsecase, planningService, executionService, planRepository, executionRepository, executionLogRepository, service, gitManager, prCreator, pullRequestRepository, gitHubServiceInterface)
 	app := NewApp(configConfig, gormDB, projectRepository, taskRepository, planRepository, worktreeRepository, auditRepository, executionRepository, executionLogRepository, pullRequestRepository, auditUsecase, projectUsecase, taskUsecase, worktreeUsecase, notificationUsecase, executionUsecase, service, cliManager, processManager, executionService, planningService, gitManager, worktreeManager, prCreator, client, jobClientInterface, processor)
 	return app, nil
 }
@@ -324,7 +324,7 @@ func ProvideJobProcessor(
 	gitManager *git.GitManager,
 	prCreator *github.PRCreator,
 	prRepo repository.PullRequestRepository,
-	githubService *github.GitHubServiceV2,
+	githubService github.GitHubServiceInterface,
 ) *jobs.Processor {
 	return jobs.NewProcessor(taskUsecase, projectUsecase, worktreeUsecase, planningService, executionService, planRepo, executionRepo, executionLogRepo, wsService, gitManager, prCreator, prRepo, githubService)
 }
@@ -339,7 +339,7 @@ func ProvideExecutionUsecase(executionRepo repository.ExecutionRepository, execu
 }
 
 // ProvideGitHubService provides a GitHub service instance
-func ProvideGitHubService(cfg *config.Config) *github.GitHubServiceV2 {
+func ProvideGitHubService(cfg *config.Config) github.GitHubServiceInterface {
 	githubConfig := &github.GitHubConfig{
 		Token:     cfg.GitHub.Token,
 		BaseURL:   cfg.GitHub.BaseURL,
@@ -350,7 +350,7 @@ func ProvideGitHubService(cfg *config.Config) *github.GitHubServiceV2 {
 }
 
 // ProvidePRCreator provides a PR creator instance
-func ProvidePRCreator(githubService *github.GitHubServiceV2, cfg *config.Config) *github.PRCreator {
+func ProvidePRCreator(githubService github.GitHubServiceInterface, cfg *config.Config) *github.PRCreator {
 	baseURL := cfg.App.BaseURL
 	if baseURL == "" {
 		baseURL = "http://localhost:8098"
