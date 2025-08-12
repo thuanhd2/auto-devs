@@ -261,6 +261,16 @@ func (p *Processor) ProcessTaskPlanning(ctx context.Context, task *asynq.Task) e
 				return
 			case stdout := <-stdoutChannel:
 				p.logger.Info("AI Planning execution stdout", "task_id", payload.TaskID, "execution_id", execution.ID, "stdout", stdout)
+				// Save stdout to execution database
+				logs := aiExecutor.ParseOutputToLogs(stdout)
+				// assign execution id to each log
+				for _, log := range logs {
+					log.ExecutionID = dbExecution.ID
+				}
+				err := p.executionLogRepo.BatchInsertOrUpdate(context.Background(), logs)
+				if err != nil {
+					p.logger.Error("Failed to insert or update logs", "error", err, "execution_id", dbExecution.ID)
+				}
 			case stderr := <-stderrChannel:
 				p.logger.Error("AI Planning execution stderr", "task_id", payload.TaskID, "execution_id", execution.ID, "stderr", stderr)
 			}
