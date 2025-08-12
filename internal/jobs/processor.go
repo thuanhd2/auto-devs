@@ -295,8 +295,17 @@ func (p *Processor) ProcessTaskPlanning(ctx context.Context, task *asynq.Task) e
 }
 
 func (p *Processor) getAiExecutor(_ context.Context, _ *entity.Task) (ai.AiCodingCli, error) {
-	aiExecutor := aiexecutors.NewFakeCodeExecutor()
-	return aiExecutor, nil
+	executionType := "claude-code"
+	switch executionType {
+	case "claude-code":
+		aiExecutor := aiexecutors.NewClaudeCodeExecutor()
+		return aiExecutor, nil
+	case "fake-code":
+		aiExecutor := aiexecutors.NewFakeCodeExecutor()
+		return aiExecutor, nil
+	default:
+		return nil, fmt.Errorf("invalid execution type: %s", executionType)
+	}
 }
 
 func (p *Processor) ProcessTaskImplementation(ctx context.Context, task *asynq.Task) error {
@@ -823,8 +832,8 @@ func (p *Processor) ProcessPRStatusSync(ctx context.Context, task *asynq.Task) e
 	// Process each open PR
 	for _, pr := range openPRs {
 		if err := p.processSinglePR(ctx, pr); err != nil {
-			p.logger.Error("Failed to process PR", 
-				"pr_id", pr.ID, 
+			p.logger.Error("Failed to process PR",
+				"pr_id", pr.ID,
 				"github_pr_number", pr.GitHubPRNumber,
 				"repository", pr.Repository,
 				"error", err)
@@ -838,7 +847,7 @@ func (p *Processor) ProcessPRStatusSync(ctx context.Context, task *asynq.Task) e
 
 // processSinglePR checks and updates the status of a single PR
 func (p *Processor) processSinglePR(ctx context.Context, pr *entity.PullRequest) error {
-	p.logger.Debug("Checking PR status", 
+	p.logger.Debug("Checking PR status",
 		"pr_id", pr.ID,
 		"github_pr_number", pr.GitHubPRNumber,
 		"repository", pr.Repository,
@@ -852,7 +861,7 @@ func (p *Processor) processSinglePR(ctx context.Context, pr *entity.PullRequest)
 
 	// Check if PR status has changed
 	if pr.Status != updatedPR.Status {
-		p.logger.Info("PR status changed", 
+		p.logger.Info("PR status changed",
 			"pr_id", pr.ID,
 			"github_pr_number", pr.GitHubPRNumber,
 			"old_status", pr.Status,
@@ -872,13 +881,13 @@ func (p *Processor) processSinglePR(ctx context.Context, pr *entity.PullRequest)
 		// If PR was merged, automatically mark associated task as DONE
 		if updatedPR.Status == entity.PullRequestStatusMerged {
 			if err := p.autoCompleteTask(ctx, pr.TaskID); err != nil {
-				p.logger.Error("Failed to auto-complete task", 
+				p.logger.Error("Failed to auto-complete task",
 					"task_id", pr.TaskID,
 					"pr_id", pr.ID,
 					"error", err)
 				// Don't return error here as PR update was successful
 			} else {
-				p.logger.Info("Auto-completed task due to PR merge", 
+				p.logger.Info("Auto-completed task due to PR merge",
 					"task_id", pr.TaskID,
 					"pr_id", pr.ID,
 					"github_pr_number", pr.GitHubPRNumber)
@@ -934,14 +943,14 @@ func (p *Processor) sendPRStatusChangeNotification(ctx context.Context, pr *enti
 			"old_status": oldStatus,
 			"new_status": newStatus,
 		}
-		
+
 		if err := p.wsService.SendProjectMessage(task.ProjectID, websocket.MessageTypePRUpdate, data); err != nil {
-			p.logger.Error("Failed to send PR status change WebSocket notification", 
-				"error", err, 
-				"project_id", task.ProjectID, 
+			p.logger.Error("Failed to send PR status change WebSocket notification",
+				"error", err,
+				"project_id", task.ProjectID,
 				"pr_id", pr.ID)
 		} else {
-			p.logger.Debug("PR status change WebSocket notification sent successfully", 
+			p.logger.Debug("PR status change WebSocket notification sent successfully",
 				"pr_id", pr.ID,
 				"old_status", oldStatus,
 				"new_status", newStatus)
