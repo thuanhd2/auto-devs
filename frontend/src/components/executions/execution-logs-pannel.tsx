@@ -29,17 +29,11 @@ import {
 } from '@/components/ui/dialog'
 import { ScrollArea } from '@/components/ui/scroll-area'
 
-interface ExecutionLogsModalProps {
-  open: boolean
+interface ExecutionLogsPannelProps {
   executionId: string | null
-  onClose: () => void
 }
 
-export function ExecutionLogsModal({
-  open,
-  executionId,
-  onClose,
-}: ExecutionLogsModalProps) {
+export function ExecutionLogsPannel({ executionId }: ExecutionLogsPannelProps) {
   // const { logs, isLoading, error } = useExecutionLogs(executionId)
   const { data: execution, isLoading, error } = useExecution(executionId)
   console.log('execution', execution)
@@ -63,59 +57,45 @@ export function ExecutionLogsModal({
     setPrevLogsLength(logs.length)
   }, [logs.length, prevLogsLength])
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className='sm:w-[400px] sm:max-w-[400px] lg:h-[80vh] lg:w-[80vw] lg:max-w-none'>
-        <DialogHeader>
-          <DialogTitle>Execution Logs</DialogTitle>
-        </DialogHeader>
-        <div className='h-[60vh]'>
-          {isLoading && (
-            <div className='text-muted-foreground text-sm'>Loading logs...</div>
-          )}
-          {error && (
-            <div className='mb-2 flex items-center gap-2 rounded border border-red-200 bg-red-50 p-2 text-red-700'>
-              <AlertTriangle className='h-4 w-4' />
-              <span>{error}</span>
-            </div>
-          )}
-          {!isLoading && !error && (
-            <ScrollArea
-              ref={scrollAreaRef}
-              className='h-full rounded border p-2 text-xs'
-              stickToBottom
-            >
-              {logs ? (
-                logs.map((log, index) => (
-                  <div
-                    key={log.id}
-                    className={`animate-in fade-in-0 slide-in-from-bottom-2 duration-300 ${
-                      index >= prevLogsLength ? 'animate-in' : ''
-                    }`}
-                    style={{
-                      animationDelay:
-                        index >= prevLogsLength
-                          ? `${(index - prevLogsLength) * 50}ms`
-                          : '10ms',
-                    }}
-                  >
-                    <ExecutionLogItem log={log} />
-                  </div>
-                ))
-              ) : (
-                <span className='text-muted-foreground'>
-                  No logs to display.
-                </span>
-              )}
-            </ScrollArea>
-          )}
+    <div className='h-[400px]'>
+      {isLoading && (
+        <div className='text-muted-foreground text-sm'>Loading logs...</div>
+      )}
+      {error && (
+        <div className='mb-2 flex items-center gap-2 rounded border border-red-200 bg-red-50 p-2 text-red-700'>
+          <AlertTriangle className='h-4 w-4' />
+          <span>{error}</span>
         </div>
-        <DialogFooter>
-          <Button variant='outline' onClick={onClose}>
-            Close
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+      )}
+      {!isLoading && !error && (
+        <ScrollArea
+          ref={scrollAreaRef}
+          className='h-full rounded border p-2 text-xs'
+          stickToBottom
+        >
+          {logs && logs.length > 0 ? (
+            logs.map((log, index) => (
+              <div
+                key={log.id}
+                className={`animate-in fade-in-0 slide-in-from-bottom-2 duration-300 ${
+                  index >= prevLogsLength ? 'animate-in' : ''
+                }`}
+                style={{
+                  animationDelay:
+                    index >= prevLogsLength
+                      ? `${(index - prevLogsLength) * 50}ms`
+                      : '10ms',
+                }}
+              >
+                <ExecutionLogItem log={log} />
+              </div>
+            ))
+          ) : (
+            <span className='text-muted-foreground'>No logs to display.</span>
+          )}
+        </ScrollArea>
+      )}
+    </div>
   )
 }
 

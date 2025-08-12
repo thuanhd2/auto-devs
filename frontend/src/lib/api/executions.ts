@@ -67,7 +67,7 @@ export const executionsApi = {
   async getExecution(
     executionId: string,
     includeLogs: boolean = false,
-    logLimit: number = 100
+    logLimit: number = 1000
   ): Promise<Execution | ExecutionWithLogs> {
     const params = new URLSearchParams()
     if (includeLogs) {

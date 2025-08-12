@@ -54,6 +54,7 @@ type ExecutionLogResponse struct {
 	Source      string          `json:"source" example:"stdout"`
 	Metadata    interface{}     `json:"metadata,omitempty"`
 	CreatedAt   time.Time       `json:"created_at" example:"2024-01-01T00:00:00Z"`
+	Line        int             `json:"line" example:"1"`
 }
 
 type ExecutionLogListResponse struct {
@@ -139,6 +140,7 @@ func ToExecutionLogResponse(log *entity.ExecutionLog) ExecutionLogResponse {
 		Timestamp:   log.Timestamp,
 		Source:      log.Source,
 		CreatedAt:   log.CreatedAt,
+		Line:        log.Line,
 	}
 
 	if log.Metadata != nil {

@@ -22,12 +22,13 @@ func (e *FakeCodeExecutor) GetPlanningCommand(ctx context.Context, task *entity.
 		return "", "", err
 	}
 	projectRootPath := projectPath
-	fakeCliPath := filepath.Join(projectRootPath, "fake-cli", "fake-planning.sh")
-	prompt, err := e.generatePlanningPrompt(*task)
+	fakeCliPath := filepath.Join(projectRootPath, "fake-cli", "fake-planning-claude.js")
+	command := fmt.Sprintf("node %s", fakeCliPath)
+	prompt, err := e.getImplementationPrompt(ctx, task)
 	if err != nil {
 		return "", "", err
 	}
-	return fakeCliPath, prompt, nil
+	return command, prompt, nil
 }
 
 func (e *FakeCodeExecutor) GetImplementationCommand(ctx context.Context, task *entity.Task) (string, string, error) {

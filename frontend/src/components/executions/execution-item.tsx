@@ -25,6 +25,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { ExecutionDuration } from './execution-duration'
+import { ExecutionLogsPannel } from './execution-logs-pannel'
 import { ExecutionProgress } from './execution-progress'
 import { ExecutionStatusBadge } from './execution-status-badge'
 
@@ -69,7 +70,7 @@ export function ExecutionItem({
         className
       )}
     >
-      <CardContent className={cn('p-4', compact && 'p-3')}>
+      <CardContent className={cn('p-4', compact && 'p-3 py-0')}>
         {expandable ? (
           <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
             <CollapsibleTrigger asChild>
@@ -180,32 +181,9 @@ function ExecutionDetails({
   execution: Execution
   onViewLogs?: (executionId: string) => void
 }) {
+  const inlineLogs = true
   return (
     <div className='space-y-3'>
-      <ExecutionProgress
-        progress={execution.progress}
-        status={execution.status}
-        size='md'
-      />
-
-      <div className='grid grid-cols-2 gap-4 text-sm'>
-        <div>
-          <span className='text-muted-foreground'>Started:</span>
-          <div className='font-mono text-xs'>
-            {new Date(execution.started_at).toLocaleString()}
-          </div>
-        </div>
-
-        {execution.completed_at && (
-          <div>
-            <span className='text-muted-foreground'>Completed:</span>
-            <div className='font-mono text-xs'>
-              {new Date(execution.completed_at).toLocaleString()}
-            </div>
-          </div>
-        )}
-      </div>
-
       {execution.error && (
         <div className='rounded-lg border border-red-200 bg-red-50 p-3'>
           <div className='flex items-start gap-2'>
@@ -246,10 +224,14 @@ function ExecutionDetails({
         </div>
       )}
 
-      <Button variant='outline' onClick={() => onViewLogs?.(execution.id)}>
-        <Eye className='h-4 w-4' />
-        <span>View Logs</span>
-      </Button>
+      {inlineLogs ? (
+        <ExecutionLogsPannel executionId={execution.id} />
+      ) : (
+        <Button variant='outline' onClick={() => onViewLogs?.(execution.id)}>
+          <Eye className='h-4 w-4' />
+          <span>View Logs</span>
+        </Button>
+      )}
     </div>
   )
 }

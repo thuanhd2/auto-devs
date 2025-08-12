@@ -247,7 +247,6 @@ function TaskExecutions({ taskId }: { taskId: string }) {
         expandable={true}
         showCreateButton={true}
         showFilters={false}
-        className='max-h-96 overflow-y-auto'
       />
       <ExecutionLogsModal
         open={showLogsModal}

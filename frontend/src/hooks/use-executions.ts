@@ -1,3 +1,4 @@
+import { useEffect, useState, useCallback } from 'react'
 import {
   useQuery,
   useMutation,
@@ -11,11 +12,15 @@ import type {
   UpdateExecutionRequest,
   ExecutionFilters,
   ExecutionLogFilters,
+  ExecutionLog,
 } from '@/types/execution'
+import { CentrifugeMessage } from '@/types/websocket'
 import { toast } from 'sonner'
 import { executionsApi } from '@/lib/api/executions'
+import { useWebSocketContext } from '@/context/websocket-context'
 
 const EXECUTIONS_QUERY_KEY = 'executions'
+const EXECUTION_QUERY_KEY = 'execution'
 const EXECUTION_LOGS_QUERY_KEY = 'execution-logs'
 const EXECUTION_STATS_QUERY_KEY = 'execution-stats'
 
@@ -37,13 +42,59 @@ export function useTaskExecutions(taskId: string, filters?: ExecutionFilters) {
 }
 
 // Get execution logs for a specific execution
-export function useExecutionLogs(executionId: string) {
+function useExecutionLogsWithWebSocket(executionId: string) {
+  const [logs, setLogs] = useState<ExecutionLog[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  useEffect(() => {
+    if (!executionId) {
+      return
+    }
+    const fetchLogs = async () => {
+      const logs = await executionsApi.getExecutionLogs(executionId)
+      setLogs(logs.data)
+      setIsLoading(false)
+    }
+    try {
+      fetchLogs()
+    } catch (error) {
+      setError(error as string)
+    }
+  }, [executionId])
+  const newLogCreated = useCallback(
+    (message: CentrifugeMessage) => {
+      const { execution_id: incomingExecutionId, logs: incomingLogs } =
+        message.data
+      if (incomingExecutionId !== executionId) {
+        return
+      }
+      const newLogs = incomingLogs.filter(
+        (log) => !logs.some((l) => l.id === log.id)
+      )
+      setLogs((prev) => [...prev, ...newLogs])
+    },
+    [executionId, logs, setLogs]
+  )
+  const { subscribe, unsubscribe } = useWebSocketContext()
+  useEffect(() => {
+    subscribe('execution_log_created', newLogCreated)
+    return () => unsubscribe('execution_log_created')
+  }, [executionId, newLogCreated])
+  return { logs, isLoading, error }
+}
+
+export function useExecution(executionId: string) {
   return useQuery({
-    queryKey: [EXECUTION_LOGS_QUERY_KEY, executionId],
-    queryFn: () => executionsApi.getExecutionLogs(executionId),
+    queryKey: [EXECUTION_QUERY_KEY, executionId],
+    queryFn: () => executionsApi.getExecution(executionId, true, 1000),
     enabled: !!executionId,
-    refetchInterval: (_data) => {
-      return 1000
+    refetchInterval: (data) => {
+      const executionStatus = data.state?.data?.status
+      console.log('executionStatus', executionStatus)
+      if (executionStatus === 'RUNNING' || executionStatus === 'PENDING') {
+        return 1000
+      }
+      return false
     },
   })
 }
