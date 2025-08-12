@@ -292,8 +292,9 @@ func ProvideJobProcessor(
 	gitManager *git.GitManager,
 	prCreator *github.PRCreator,
 	prRepo repository.PullRequestRepository,
+	githubService *github.GitHubServiceV2,
 ) *jobs.Processor {
-	return jobs.NewProcessor(taskUsecase, projectUsecase, worktreeUsecase, planningService, executionService, planRepo, executionRepo, executionLogRepo, wsService, gitManager, prCreator, prRepo)
+	return jobs.NewProcessor(taskUsecase, projectUsecase, worktreeUsecase, planningService, executionService, planRepo, executionRepo, executionLogRepo, wsService, gitManager, prCreator, prRepo, githubService)
 }
 
 // ProvideWebSocketService provides a WebSocket service instance

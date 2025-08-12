@@ -70,7 +70,7 @@ func InitializeApp() (*App, error) {
 	}
 	gitHubServiceV2 := ProvideGitHubService(configConfig)
 	prCreator := ProvidePRCreator(gitHubServiceV2, configConfig)
-	processor := ProvideJobProcessor(taskUsecase, projectUsecase, worktreeUsecase, planningService, executionService, planRepository, executionRepository, executionLogRepository, service, gitManager, prCreator, pullRequestRepository)
+	processor := ProvideJobProcessor(taskUsecase, projectUsecase, worktreeUsecase, planningService, executionService, planRepository, executionRepository, executionLogRepository, service, gitManager, prCreator, pullRequestRepository, gitHubServiceV2)
 	app := NewApp(configConfig, gormDB, projectRepository, taskRepository, planRepository, worktreeRepository, auditRepository, executionRepository, executionLogRepository, pullRequestRepository, auditUsecase, projectUsecase, taskUsecase, worktreeUsecase, notificationUsecase, executionUsecase, service, cliManager, processManager, executionService, planningService, gitManager, worktreeManager, prCreator, client, jobClientInterface, processor)
 	return app, nil
 }
@@ -324,8 +324,9 @@ func ProvideJobProcessor(
 	gitManager *git.GitManager,
 	prCreator *github.PRCreator,
 	prRepo repository.PullRequestRepository,
+	githubService *github.GitHubServiceV2,
 ) *jobs.Processor {
-	return jobs.NewProcessor(taskUsecase, projectUsecase, worktreeUsecase, planningService, executionService, planRepo, executionRepo, executionLogRepo, wsService, gitManager, prCreator, prRepo)
+	return jobs.NewProcessor(taskUsecase, projectUsecase, worktreeUsecase, planningService, executionService, planRepo, executionRepo, executionLogRepo, wsService, gitManager, prCreator, prRepo, githubService)
 }
 
 // ProvideWebSocketService provides a WebSocket service instance

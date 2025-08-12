@@ -31,6 +31,7 @@ func NewServer(redisAddr, redisPassword string, redisDB int, processor *Processo
 				"critical":       6, // High priority queue
 				"planning":       4, // Planning jobs queue
 				"implementation": 4, // Implementing jobs queue
+				"monitoring":     2, // Monitoring jobs queue  
 				"default":        1, // Default queue
 			},
 			// Concurrency settings
@@ -74,6 +75,7 @@ func NewServer(redisAddr, redisPassword string, redisDB int, processor *Processo
 func (s *Server) RegisterHandlers() {
 	s.mux.HandleFunc(TypeTaskPlanning, s.processor.ProcessTaskPlanning)
 	s.mux.HandleFunc(TypeTaskImplementation, s.processor.ProcessTaskImplementation)
+	s.mux.HandleFunc(TypePRStatusSync, s.processor.ProcessPRStatusSync)
 }
 
 // Start starts the job server

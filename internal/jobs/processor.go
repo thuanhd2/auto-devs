@@ -33,6 +33,7 @@ type Processor struct {
 	gitManager       *git.GitManager
 	prCreator        *github.PRCreator
 	prRepo           repository.PullRequestRepository
+	githubService    github.GitHubServiceInterface
 	logger           *slog.Logger
 }
 
@@ -50,6 +51,7 @@ func NewProcessor(
 	gitManager *git.GitManager,
 	prCreator *github.PRCreator,
 	prRepo repository.PullRequestRepository,
+	githubService github.GitHubServiceInterface,
 ) *Processor {
 	return &Processor{
 		taskUsecase:      taskUsecase,
@@ -64,6 +66,7 @@ func NewProcessor(
 		gitManager:       gitManager,
 		prCreator:        prCreator,
 		prRepo:           prRepo,
+		githubService:    githubService,
 		logger:           slog.Default().With("component", "job-processor"),
 	}
 }
@@ -83,6 +86,7 @@ func NewProcessorWithRedisBroker(
 	gitManager *git.GitManager,
 	prCreator *github.PRCreator,
 	prRepo repository.PullRequestRepository,
+	githubService github.GitHubServiceInterface,
 ) *Processor {
 	return &Processor{
 		taskUsecase:      taskUsecase,
@@ -98,6 +102,7 @@ func NewProcessorWithRedisBroker(
 		gitManager:       gitManager,
 		prCreator:        prCreator,
 		prRepo:           prRepo,
+		githubService:    githubService,
 		logger:           slog.Default().With("component", "job-processor"),
 	}
 }
@@ -793,6 +798,153 @@ func (p *Processor) sendPRNotification(ctx context.Context, projectID uuid.UUID,
 			p.logger.Error("Failed to send PR WebSocket notification", "error", err, "project_id", projectID, "pr_id", pr.ID)
 		} else {
 			p.logger.Debug("PR WebSocket notification sent successfully", "event_type", eventType, "pr_id", pr.ID)
+		}
+	}
+}
+
+// ProcessPRStatusSync processes PR status sync jobs
+func (p *Processor) ProcessPRStatusSync(ctx context.Context, task *asynq.Task) error {
+	p.logger.Info("Processing PR status sync job")
+
+	_, err := ParsePRStatusSyncPayload(task)
+	if err != nil {
+		return fmt.Errorf("failed to parse PR status sync payload: %w", err)
+	}
+
+	// Get all open PRs from database
+	openPRs, err := p.prRepo.GetOpenPRs(ctx)
+	if err != nil {
+		p.logger.Error("Failed to get open PRs", "error", err)
+		return fmt.Errorf("failed to get open PRs: %w", err)
+	}
+
+	p.logger.Info("Found open PRs to check", "count", len(openPRs))
+
+	// Process each open PR
+	for _, pr := range openPRs {
+		if err := p.processSinglePR(ctx, pr); err != nil {
+			p.logger.Error("Failed to process PR", 
+				"pr_id", pr.ID, 
+				"github_pr_number", pr.GitHubPRNumber,
+				"repository", pr.Repository,
+				"error", err)
+			// Continue processing other PRs even if one fails
+		}
+	}
+
+	p.logger.Info("Completed PR status sync job")
+	return nil
+}
+
+// processSinglePR checks and updates the status of a single PR
+func (p *Processor) processSinglePR(ctx context.Context, pr *entity.PullRequest) error {
+	p.logger.Debug("Checking PR status", 
+		"pr_id", pr.ID,
+		"github_pr_number", pr.GitHubPRNumber,
+		"repository", pr.Repository,
+		"current_status", pr.Status)
+
+	// Get current PR status from GitHub
+	updatedPR, err := p.githubService.GetPullRequest(ctx, pr.Repository, pr.GitHubPRNumber)
+	if err != nil {
+		return fmt.Errorf("failed to get PR from GitHub: %w", err)
+	}
+
+	// Check if PR status has changed
+	if pr.Status != updatedPR.Status {
+		p.logger.Info("PR status changed", 
+			"pr_id", pr.ID,
+			"github_pr_number", pr.GitHubPRNumber,
+			"old_status", pr.Status,
+			"new_status", updatedPR.Status)
+
+		// Update PR status in database
+		pr.Status = updatedPR.Status
+		pr.MergedAt = updatedPR.MergedAt
+		pr.ClosedAt = updatedPR.ClosedAt
+		pr.MergeCommitSHA = updatedPR.MergeCommitSHA
+		pr.MergedBy = updatedPR.MergedBy
+
+		if err := p.prRepo.Update(ctx, pr); err != nil {
+			return fmt.Errorf("failed to update PR status in database: %w", err)
+		}
+
+		// If PR was merged, automatically mark associated task as DONE
+		if updatedPR.Status == entity.PullRequestStatusMerged {
+			if err := p.autoCompleteTask(ctx, pr.TaskID); err != nil {
+				p.logger.Error("Failed to auto-complete task", 
+					"task_id", pr.TaskID,
+					"pr_id", pr.ID,
+					"error", err)
+				// Don't return error here as PR update was successful
+			} else {
+				p.logger.Info("Auto-completed task due to PR merge", 
+					"task_id", pr.TaskID,
+					"pr_id", pr.ID,
+					"github_pr_number", pr.GitHubPRNumber)
+			}
+		}
+
+		// Send WebSocket notification about PR status change
+		p.sendPRStatusChangeNotification(ctx, pr, string(pr.Status), string(updatedPR.Status))
+	}
+
+	return nil
+}
+
+// autoCompleteTask automatically marks a task as DONE when its PR is merged
+func (p *Processor) autoCompleteTask(ctx context.Context, taskID uuid.UUID) error {
+	p.logger.Info("Auto-completing task", "task_id", taskID)
+
+	// Get current task to check if it's not already DONE
+	currentTask, err := p.taskUsecase.GetByID(ctx, taskID)
+	if err != nil {
+		return fmt.Errorf("failed to get task: %w", err)
+	}
+
+	// Only update if task is not already DONE
+	if currentTask.Status != entity.TaskStatusDONE {
+		// Update task status to DONE
+		err = p.updateTaskStatus(ctx, taskID, entity.TaskStatusDONE)
+		if err != nil {
+			return fmt.Errorf("failed to update task status to DONE: %w", err)
+		}
+
+		p.logger.Info("Task auto-completed successfully", "task_id", taskID)
+	} else {
+		p.logger.Debug("Task is already DONE, skipping", "task_id", taskID)
+	}
+
+	return nil
+}
+
+// sendPRStatusChangeNotification sends WebSocket notification about PR status changes
+func (p *Processor) sendPRStatusChangeNotification(ctx context.Context, pr *entity.PullRequest, oldStatus, newStatus string) {
+	if p.wsService != nil {
+		// Get the task to determine project ID
+		task, err := p.taskUsecase.GetByID(ctx, pr.TaskID)
+		if err != nil {
+			p.logger.Error("Failed to get task for PR notification", "task_id", pr.TaskID, "error", err)
+			return
+		}
+
+		data := map[string]interface{}{
+			"type":       "pr_status_changed",
+			"pr":         pr,
+			"old_status": oldStatus,
+			"new_status": newStatus,
+		}
+		
+		if err := p.wsService.SendProjectMessage(task.ProjectID, websocket.MessageTypePRUpdate, data); err != nil {
+			p.logger.Error("Failed to send PR status change WebSocket notification", 
+				"error", err, 
+				"project_id", task.ProjectID, 
+				"pr_id", pr.ID)
+		} else {
+			p.logger.Debug("PR status change WebSocket notification sent successfully", 
+				"pr_id", pr.ID,
+				"old_status", oldStatus,
+				"new_status", newStatus)
 		}
 	}
 }

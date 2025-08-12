@@ -59,6 +59,9 @@ func main() {
 	redisAddr := fmt.Sprintf("%s:%s", cfg.Redis.Host, cfg.Redis.Port)
 	server := jobs.NewServer(redisAddr, cfg.Redis.Password, cfg.Redis.DB, processor)
 
+	// Create scheduler for periodic tasks
+	scheduler := jobs.NewScheduler(redisAddr, cfg.Redis.Password, cfg.Redis.DB)
+
 	// Setup graceful shutdown
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -85,12 +88,25 @@ func main() {
 		}
 	}()
 
+	// Start the scheduler
+	logger.Info("Starting job scheduler",
+		"redis_addr", redisAddr,
+		"worker_name", *workerName)
+
+	go func() {
+		if err := scheduler.Start(); err != nil {
+			logger.Error("Job scheduler failed", "error", err)
+			cancel()
+		}
+	}()
+
 	// Wait for shutdown signal
 	<-ctx.Done()
 
 	// Graceful shutdown
 	logger.Info("Shutting down job worker...")
 	server.Stop()
+	scheduler.Stop()
 	logger.Info("Job worker stopped")
 }
 
