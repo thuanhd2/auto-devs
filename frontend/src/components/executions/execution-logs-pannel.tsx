@@ -147,11 +147,11 @@ function ExecutionLogItem({ log }: { log: ExecutionLog }) {
                   <div className='mb-1 text-xs font-medium text-purple-600'>
                     Tool Result ({item.tool_use_id})
                   </div>
-                  <div className='text-sm'>
+                  <pre className='text-sm'>
                     {Array.isArray(item.content)
                       ? item.content.map((c: any) => c.text).join(' ')
                       : item.content}
-                  </div>
+                  </pre>
                 </div>
               )
             }
@@ -218,11 +218,11 @@ function ExecutionLogItem({ log }: { log: ExecutionLog }) {
                     </div>
                   )}
                   {item.name !== 'TodoWrite' && (
-                    <div className='text-xs text-gray-600'>
+                    <pre key={index} className='text-sm whitespace-pre-wrap'>
                       {typeof item.input === 'object'
                         ? JSON.stringify(item.input, null, 2)
                         : item.input}
-                    </div>
+                    </pre>
                   )}
                 </div>
               )
