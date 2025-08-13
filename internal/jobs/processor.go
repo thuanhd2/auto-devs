@@ -294,8 +294,14 @@ func (p *Processor) ProcessTaskPlanning(ctx context.Context, task *asynq.Task) e
 	return nil
 }
 
-func (p *Processor) getAiExecutor(_ context.Context, _ *entity.Task) (ai.AiCodingCli, error) {
-	executionType := "claude-code"
+func (p *Processor) getAiExecutor(ctx context.Context, task *entity.Task) (ai.AiCodingCli, error) {
+	// Get project to determine executor type
+	project, err := p.projectUsecase.GetByID(ctx, task.ProjectID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get project: %w", err)
+	}
+
+	executionType := string(project.ExecutorType)
 	switch executionType {
 	case "claude-code":
 		aiExecutor := aiexecutors.NewClaudeCodeExecutor()

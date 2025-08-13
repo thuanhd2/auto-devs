@@ -29,6 +29,13 @@ import {
 import { Input } from '@/components/ui/input'
 import { Separator } from '@/components/ui/separator'
 import { Textarea } from '@/components/ui/textarea'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { SimpleConfirmDialog } from '@/components/simple-confirm-dialog'
 
 const updateProjectSchema = z.object({
@@ -44,6 +51,9 @@ const updateProjectSchema = z.object({
   init_workspace_script: z
     .string()
     .max(2000, 'Init script must be less than 2000 characters')
+    .optional(),
+  executor_type: z
+    .enum(['claude-code', 'fake-code'])
     .optional(),
 })
 
@@ -73,6 +83,7 @@ export function ProjectEditModal({
       description: '',
       worktree_base_path: '',
       init_workspace_script: '',
+      executor_type: 'claude-code',
     },
   })
 
@@ -84,6 +95,7 @@ export function ProjectEditModal({
         description: project.description || '',
         worktree_base_path: project.worktree_base_path || '',
         init_workspace_script: project.init_workspace_script || '',
+        executor_type: project.executor_type || 'claude-code',
       })
     }
   }, [project, form])
@@ -94,6 +106,7 @@ export function ProjectEditModal({
       description: data.description || undefined,
       worktree_base_path: data.worktree_base_path || undefined,
       init_workspace_script: data.init_workspace_script || undefined,
+      executor_type: data.executor_type,
     }
 
     console.log('updates', updates)
@@ -124,6 +137,7 @@ export function ProjectEditModal({
         description: project.description || '',
         worktree_base_path: project.worktree_base_path || '',
         init_workspace_script: project.init_workspace_script || '',
+        executor_type: project.executor_type || 'claude-code',
       })
     }
   }
@@ -193,6 +207,31 @@ export function ProjectEditModal({
                   </FormControl>
                   <FormDescription>
                     Base path for Git worktree operations
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name='executor_type'
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>AI Executor Type</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder='Select executor type' />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value='claude-code'>Claude Code</SelectItem>
+                      <SelectItem value='fake-code'>Fake Code (Testing)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormDescription>
+                    Choose which AI executor to use for planning and implementing tasks
                   </FormDescription>
                   <FormMessage />
                 </FormItem>

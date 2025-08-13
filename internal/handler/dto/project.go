@@ -14,6 +14,7 @@ type ProjectCreateRequest struct {
 	Description         string `json:"description" binding:"max=1000" example:"Project description"`
 	WorktreeBasePath    string `json:"worktree_base_path" binding:"required,max=500" example:"/tmp/projects/repo"`
 	InitWorkspaceScript string `json:"init_workspace_script" example:"npm install && npm run build"`
+	ExecutorType        string `json:"executor_type" binding:"omitempty,oneof=claude-code fake-code" example:"claude-code"`
 }
 
 type ProjectUpdateRequest struct {
@@ -22,6 +23,7 @@ type ProjectUpdateRequest struct {
 	RepositoryURL       *string `json:"repository_url,omitempty" binding:"omitempty,url,max=500" example:"https://github.com/user/repo.git"`
 	WorktreeBasePath    *string `json:"worktree_base_path,omitempty" binding:"omitempty,max=500" example:"/tmp/projects/repo"`
 	InitWorkspaceScript *string `json:"init_workspace_script,omitempty" example:"npm install && npm run build"`
+	ExecutorType        *string `json:"executor_type,omitempty" binding:"omitempty,oneof=claude-code fake-code" example:"claude-code"`
 }
 
 // Project response DTOs
@@ -32,6 +34,7 @@ type ProjectResponse struct {
 	RepositoryURL       string    `json:"repository_url,omitempty" example:"https://github.com/user/repo.git"`
 	WorktreeBasePath    string    `json:"worktree_base_path,omitempty" example:"/tmp/projects/repo"`
 	InitWorkspaceScript string    `json:"init_workspace_script,omitempty" example:"npm install && npm run build"`
+	ExecutorType        string    `json:"executor_type" example:"claude-code"`
 	CreatedAt           time.Time `json:"created_at" example:"2024-01-15T10:30:00Z"`
 	UpdatedAt           time.Time `json:"updated_at" example:"2024-01-15T10:30:00Z"`
 }
@@ -110,6 +113,7 @@ func (p *ProjectResponse) FromEntity(project *entity.Project) {
 	p.RepositoryURL = project.RepositoryURL
 	p.WorktreeBasePath = project.WorktreeBasePath
 	p.InitWorkspaceScript = project.InitWorkspaceScript
+	p.ExecutorType = string(project.ExecutorType)
 	p.CreatedAt = project.CreatedAt
 	p.UpdatedAt = project.UpdatedAt
 }

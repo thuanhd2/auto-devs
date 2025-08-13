@@ -43,6 +43,7 @@ func (h *ProjectHandler) CreateProject(c *gin.Context) {
 		Description:         req.Description,
 		WorktreeBasePath:    req.WorktreeBasePath,
 		InitWorkspaceScript: req.InitWorkspaceScript,
+		ExecutorType:        req.ExecutorType,
 	}
 
 	project, err := h.projectUsecase.Create(c.Request.Context(), usecaseReq)
@@ -184,6 +185,9 @@ func (h *ProjectHandler) UpdateProject(c *gin.Context) {
 	}
 	if req.InitWorkspaceScript != nil {
 		usecaseReq.InitWorkspaceScript = *req.InitWorkspaceScript
+	}
+	if req.ExecutorType != nil {
+		usecaseReq.ExecutorType = *req.ExecutorType
 	}
 
 	project, err := h.projectUsecase.Update(c.Request.Context(), id, usecaseReq)

@@ -1,3 +1,5 @@
+export type ExecutorType = 'claude-code' | 'fake-code'
+
 export interface Project {
   id: string
   name: string
@@ -5,6 +7,7 @@ export interface Project {
   repository_url?: string
   worktree_base_path?: string
   init_workspace_script?: string
+  executor_type: ExecutorType
   created_at: string
   updated_at: string
 }
@@ -14,6 +17,7 @@ export interface CreateProjectRequest {
   description?: string
   worktree_base_path: string
   init_workspace_script?: string
+  executor_type?: ExecutorType
 }
 
 export interface UpdateProjectRequest {
@@ -22,6 +26,7 @@ export interface UpdateProjectRequest {
   repository_url?: string
   worktree_base_path?: string
   init_workspace_script?: string
+  executor_type?: ExecutorType
 }
 
 export interface ProjectFilters {

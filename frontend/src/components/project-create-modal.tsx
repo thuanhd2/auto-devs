@@ -23,6 +23,13 @@ import {
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 
 const createProjectSchema = z.object({
   name: z
@@ -41,6 +48,9 @@ const createProjectSchema = z.object({
     .string()
     .max(2000, 'Init script must be less than 2000 characters')
     .optional(),
+  executor_type: z
+    .enum(['claude-code', 'fake-code'])
+    .default('claude-code'),
 })
 
 type CreateProjectFormData = z.infer<typeof createProjectSchema>
@@ -64,6 +74,7 @@ export function ProjectCreateModal({
       description: '',
       worktree_base_path: '',
       init_workspace_script: '',
+      executor_type: 'claude-code',
     },
   })
 
@@ -74,6 +85,7 @@ export function ProjectCreateModal({
         description: data.description || undefined,
         worktree_base_path: data.worktree_base_path,
         init_workspace_script: data.init_workspace_script || undefined,
+        executor_type: data.executor_type,
       })
 
       // Close modal and reset form
@@ -160,6 +172,31 @@ export function ProjectCreateModal({
                   </FormControl>
                   <FormDescription>
                     Base path for Git worktree operations
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name='executor_type'
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>AI Executor Type</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder='Select executor type' />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value='claude-code'>Claude Code</SelectItem>
+                      <SelectItem value='fake-code'>Fake Code (Testing)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormDescription>
+                    Choose which AI executor to use for planning and implementing tasks
                   </FormDescription>
                   <FormMessage />
                 </FormItem>

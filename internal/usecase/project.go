@@ -40,6 +40,7 @@ type CreateProjectRequest struct {
 	Description         string `json:"description"`
 	WorktreeBasePath    string `json:"worktree_base_path" binding:"required"`
 	InitWorkspaceScript string `json:"init_workspace_script"`
+	ExecutorType        string `json:"executor_type"`
 }
 
 type UpdateProjectRequest struct {
@@ -48,6 +49,7 @@ type UpdateProjectRequest struct {
 	RepositoryURL       string `json:"repository_url"`
 	WorktreeBasePath    string `json:"worktree_base_path"`
 	InitWorkspaceScript string `json:"init_workspace_script"`
+	ExecutorType        string `json:"executor_type"`
 }
 
 type GetProjectsParams struct {
@@ -111,6 +113,7 @@ var (
 	ErrRepoURLRequired     = errors.New("repository URL is required")
 	ErrRepoURLInvalid      = errors.New("repository URL is invalid")
 	ErrRepoURLTooLong      = errors.New("repository URL must not exceed 500 characters")
+	ErrInvalidExecutorType = errors.New("invalid executor type")
 )
 
 // validateProjectName validates project name according to business rules
@@ -169,6 +172,22 @@ func validateRepoURL(repoURL string) error {
 	return nil
 }
 
+// validateExecutorType validates executor type
+func validateExecutorType(executorType string) error {
+	if executorType == "" {
+		// Default to claude-code if not provided
+		return nil
+	}
+	
+	validTypes := []string{string(entity.ExecutorTypeClaudeCode), string(entity.ExecutorTypeFakeCode)}
+	for _, validType := range validTypes {
+		if executorType == validType {
+			return nil
+		}
+	}
+	return ErrInvalidExecutorType
+}
+
 type projectUsecase struct {
 	projectRepo  repository.ProjectRepository
 	auditUsecase AuditUsecase
@@ -191,6 +210,9 @@ func (u *projectUsecase) Create(ctx context.Context, req CreateProjectRequest) (
 	if err := validateDescription(req.Description); err != nil {
 		return nil, err
 	}
+	if err := validateExecutorType(req.ExecutorType); err != nil {
+		return nil, err
+	}
 
 	// Check for duplicate name
 	exists, err := u.CheckNameExists(ctx, req.Name, nil)
@@ -201,6 +223,12 @@ func (u *projectUsecase) Create(ctx context.Context, req CreateProjectRequest) (
 		return nil, ErrProjectNameExists
 	}
 
+	// Set default executor type if not provided
+	executorType := req.ExecutorType
+	if executorType == "" {
+		executorType = string(entity.ExecutorTypeClaudeCode)
+	}
+
 	project := &entity.Project{
 		ID:                  uuid.New(),
 		Name:                strings.TrimSpace(req.Name),
@@ -208,6 +236,7 @@ func (u *projectUsecase) Create(ctx context.Context, req CreateProjectRequest) (
 		RepositoryURL:       "", // Will be populated by git service later
 		WorktreeBasePath:    strings.TrimSpace(req.WorktreeBasePath),
 		InitWorkspaceScript: strings.TrimSpace(req.InitWorkspaceScript),
+		ExecutorType:        entity.ExecutorType(executorType),
 		CreatedAt:           time.Now(),
 		UpdatedAt:           time.Now(),
 	}
@@ -318,6 +347,12 @@ func (u *projectUsecase) Update(ctx context.Context, id uuid.UUID, req UpdatePro
 	}
 	if req.InitWorkspaceScript != "" {
 		oldProject.InitWorkspaceScript = strings.TrimSpace(req.InitWorkspaceScript)
+	}
+	if req.ExecutorType != "" {
+		if err := validateExecutorType(req.ExecutorType); err != nil {
+			return nil, err
+		}
+		oldProject.ExecutorType = entity.ExecutorType(req.ExecutorType)
 	}
 
 	oldProject.UpdatedAt = time.Now()
