@@ -1,6 +1,6 @@
 # Auto-Devs API Core
 
-API Core implementation for the Auto-Devs project management system.
+[Demo video](https://www.youtube.com/embed/meg2uBtbJ0A)
 
 ## 🚀 Quick Start
 
