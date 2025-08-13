@@ -145,8 +145,8 @@ func (_c *TaskUsecaseMock_AddDependency_Call) RunAndReturn(run func(ctx context.
 }
 
 // ApprovePlan provides a mock function for the type TaskUsecaseMock
-func (_mock *TaskUsecaseMock) ApprovePlan(ctx context.Context, taskID uuid.UUID) (string, error) {
-	ret := _mock.Called(ctx, taskID)
+func (_mock *TaskUsecaseMock) ApprovePlan(ctx context.Context, taskID uuid.UUID, aiType string) (string, error) {
+	ret := _mock.Called(ctx, taskID, aiType)
 
 	if len(ret) == 0 {
 		panic("no return value specified for ApprovePlan")
@@ -154,16 +154,16 @@ func (_mock *TaskUsecaseMock) ApprovePlan(ctx context.Context, taskID uuid.UUID)
 
 	var r0 string
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID) (string, error)); ok {
-		return returnFunc(ctx, taskID)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, string) (string, error)); ok {
+		return returnFunc(ctx, taskID, aiType)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID) string); ok {
-		r0 = returnFunc(ctx, taskID)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, string) string); ok {
+		r0 = returnFunc(ctx, taskID, aiType)
 	} else {
 		r0 = ret.Get(0).(string)
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID) error); ok {
-		r1 = returnFunc(ctx, taskID)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID, string) error); ok {
+		r1 = returnFunc(ctx, taskID, aiType)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -178,13 +178,14 @@ type TaskUsecaseMock_ApprovePlan_Call struct {
 // ApprovePlan is a helper method to define mock.On call
 //   - ctx
 //   - taskID
-func (_e *TaskUsecaseMock_Expecter) ApprovePlan(ctx interface{}, taskID interface{}) *TaskUsecaseMock_ApprovePlan_Call {
-	return &TaskUsecaseMock_ApprovePlan_Call{Call: _e.mock.On("ApprovePlan", ctx, taskID)}
+//   - aiType
+func (_e *TaskUsecaseMock_Expecter) ApprovePlan(ctx interface{}, taskID interface{}, aiType interface{}) *TaskUsecaseMock_ApprovePlan_Call {
+	return &TaskUsecaseMock_ApprovePlan_Call{Call: _e.mock.On("ApprovePlan", ctx, taskID, aiType)}
 }
 
-func (_c *TaskUsecaseMock_ApprovePlan_Call) Run(run func(ctx context.Context, taskID uuid.UUID)) *TaskUsecaseMock_ApprovePlan_Call {
+func (_c *TaskUsecaseMock_ApprovePlan_Call) Run(run func(ctx context.Context, taskID uuid.UUID, aiType string)) *TaskUsecaseMock_ApprovePlan_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(uuid.UUID))
+		run(args[0].(context.Context), args[1].(uuid.UUID), args[2].(string))
 	})
 	return _c
 }
@@ -194,7 +195,7 @@ func (_c *TaskUsecaseMock_ApprovePlan_Call) Return(s string, err error) *TaskUse
 	return _c
 }
 
-func (_c *TaskUsecaseMock_ApprovePlan_Call) RunAndReturn(run func(ctx context.Context, taskID uuid.UUID) (string, error)) *TaskUsecaseMock_ApprovePlan_Call {
+func (_c *TaskUsecaseMock_ApprovePlan_Call) RunAndReturn(run func(ctx context.Context, taskID uuid.UUID, aiType string) (string, error)) *TaskUsecaseMock_ApprovePlan_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -2380,8 +2381,8 @@ func (_c *TaskUsecaseMock_SearchTasks_Call) RunAndReturn(run func(ctx context.Co
 }
 
 // StartPlanning provides a mock function for the type TaskUsecaseMock
-func (_mock *TaskUsecaseMock) StartPlanning(ctx context.Context, taskID uuid.UUID, branchName string) (string, error) {
-	ret := _mock.Called(ctx, taskID, branchName)
+func (_mock *TaskUsecaseMock) StartPlanning(ctx context.Context, taskID uuid.UUID, branchName string, aiType string) (string, error) {
+	ret := _mock.Called(ctx, taskID, branchName, aiType)
 
 	if len(ret) == 0 {
 		panic("no return value specified for StartPlanning")
@@ -2389,16 +2390,16 @@ func (_mock *TaskUsecaseMock) StartPlanning(ctx context.Context, taskID uuid.UUI
 
 	var r0 string
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, string) (string, error)); ok {
-		return returnFunc(ctx, taskID, branchName)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, string, string) (string, error)); ok {
+		return returnFunc(ctx, taskID, branchName, aiType)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, string) string); ok {
-		r0 = returnFunc(ctx, taskID, branchName)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, string, string) string); ok {
+		r0 = returnFunc(ctx, taskID, branchName, aiType)
 	} else {
 		r0 = ret.Get(0).(string)
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID, string) error); ok {
-		r1 = returnFunc(ctx, taskID, branchName)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID, string, string) error); ok {
+		r1 = returnFunc(ctx, taskID, branchName, aiType)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -2414,13 +2415,14 @@ type TaskUsecaseMock_StartPlanning_Call struct {
 //   - ctx
 //   - taskID
 //   - branchName
-func (_e *TaskUsecaseMock_Expecter) StartPlanning(ctx interface{}, taskID interface{}, branchName interface{}) *TaskUsecaseMock_StartPlanning_Call {
-	return &TaskUsecaseMock_StartPlanning_Call{Call: _e.mock.On("StartPlanning", ctx, taskID, branchName)}
+//   - aiType
+func (_e *TaskUsecaseMock_Expecter) StartPlanning(ctx interface{}, taskID interface{}, branchName interface{}, aiType interface{}) *TaskUsecaseMock_StartPlanning_Call {
+	return &TaskUsecaseMock_StartPlanning_Call{Call: _e.mock.On("StartPlanning", ctx, taskID, branchName, aiType)}
 }
 
-func (_c *TaskUsecaseMock_StartPlanning_Call) Run(run func(ctx context.Context, taskID uuid.UUID, branchName string)) *TaskUsecaseMock_StartPlanning_Call {
+func (_c *TaskUsecaseMock_StartPlanning_Call) Run(run func(ctx context.Context, taskID uuid.UUID, branchName string, aiType string)) *TaskUsecaseMock_StartPlanning_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(uuid.UUID), args[2].(string))
+		run(args[0].(context.Context), args[1].(uuid.UUID), args[2].(string), args[3].(string))
 	})
 	return _c
 }
@@ -2430,7 +2432,7 @@ func (_c *TaskUsecaseMock_StartPlanning_Call) Return(s string, err error) *TaskU
 	return _c
 }
 
-func (_c *TaskUsecaseMock_StartPlanning_Call) RunAndReturn(run func(ctx context.Context, taskID uuid.UUID, branchName string) (string, error)) *TaskUsecaseMock_StartPlanning_Call {
+func (_c *TaskUsecaseMock_StartPlanning_Call) RunAndReturn(run func(ctx context.Context, taskID uuid.UUID, branchName string, aiType string) (string, error)) *TaskUsecaseMock_StartPlanning_Call {
 	_c.Call.Return(run)
 	return _c
 }

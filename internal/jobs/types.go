@@ -20,12 +20,14 @@ type TaskPlanningPayload struct {
 	TaskID     uuid.UUID `json:"task_id"`
 	BranchName string    `json:"branch_name"`
 	ProjectID  uuid.UUID `json:"project_id"`
+	AIType     string    `json:"ai_type"`
 }
 
 // TaskImplementationPayload represents the payload for task implementation jobs
 type TaskImplementationPayload struct {
 	TaskID    uuid.UUID `json:"task_id"`
 	ProjectID uuid.UUID `json:"project_id"`
+	AIType    string    `json:"ai_type"`
 }
 
 // PRStatusSyncPayload represents the payload for PR status sync jobs

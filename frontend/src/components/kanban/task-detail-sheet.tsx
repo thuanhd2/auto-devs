@@ -32,7 +32,7 @@ interface TaskDetailSheetProps {
   onDelete?: (taskId: string) => void
   onDuplicate?: (task: Task) => void
   onStatusChange?: (taskId: string, newStatus: Task['status']) => void
-  onStartPlanning?: (taskId: string, branchName: string) => void
+  onStartPlanning?: (taskId: string, branchName: string, aiType: string) => void
   onApprovePlanAndStartImplement?: (taskId: string) => void
 }
 
