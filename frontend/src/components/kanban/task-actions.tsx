@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useState } from 'react'
 import type { Task, TaskStatus } from '@/types/task'
 import {
   Edit,
@@ -13,6 +14,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '../confirm-dialog'
 import { BranchSelectionDialog } from './branch-selection-dialog'
+import { ImplementationConfirmationDialog } from './implementation-confirmation-dialog'
 
 interface TaskActionsProps {
   task: Task
@@ -22,7 +24,7 @@ interface TaskActionsProps {
   onStatusChange?: (taskId: string, newStatus: TaskStatus) => void
   onViewHistory?: () => void
   onStartPlanning?: (taskId: string, branchName: string, aiType: string) => void
-  onApprovePlanAndStartImplement?: (taskId: string) => void
+  onApprovePlanAndStartImplement?: (taskId: string, aiType: string) => void
   showStatusActions?: boolean
   showGitActions?: boolean
 }
@@ -40,6 +42,7 @@ export function TaskActions({
   showGitActions = true,
 }: TaskActionsProps) {
   const [showBranchDialog, setShowBranchDialog] = useState(false)
+  const [showImplementationDialog, setShowImplementationDialog] = useState(false)
 
   const handleDelete = () => {
     onDelete?.(task.id)
@@ -68,7 +71,11 @@ export function TaskActions({
   }
 
   const handleApprovePlanAndStartImplement = () => {
-    onApprovePlanAndStartImplement?.(task.id)
+    setShowImplementationDialog(true)
+  }
+
+  const handleImplementationConfirm = (aiType: string) => {
+    onApprovePlanAndStartImplement?.(task.id, aiType)
   }
 
   return (
@@ -166,6 +173,14 @@ export function TaskActions({
         projectId={task.project_id}
         taskTitle={task.title}
         onBranchSelected={handleBranchSelected}
+      />
+
+      {/* Implementation Confirmation Dialog */}
+      <ImplementationConfirmationDialog
+        open={showImplementationDialog}
+        onOpenChange={setShowImplementationDialog}
+        taskTitle={task.title}
+        onConfirm={handleImplementationConfirm}
       />
     </>
   )

@@ -228,45 +228,14 @@ export function ProjectBoard({ projectId }: ProjectBoardProps) {
     }
   }
 
-  const handleApprovePlanAndStartImplement = async (taskId: string) => {
-    // Get saved AI preference for implementing
-    const savedImplementingAI = localStorage.getItem('ai_preference_implementing') || 
-                               localStorage.getItem('ai_preference_planning') || 
-                               'claude-code'
-
-    // Simple prompt to let user choose AI type for implementing
-    const aiOptions = ['claude-code', 'fake-code']
-    const selectedAI = prompt(
-      'Select AI for implementing (current: ' + savedImplementingAI + '):\n' +
-      '1 = claude-code (Production AI)\n' +
-      '2 = fake-code (Test/Demo AI)\n' +
-      'Press Enter to use current, or type 1 or 2:',
-      ''
-    )
-
-    let aiType = savedImplementingAI
-    if (selectedAI === '1') {
-      aiType = 'claude-code'
-    } else if (selectedAI === '2') {
-      aiType = 'fake-code'
-    }
-
-    // Save the preference for next time
-    localStorage.setItem('ai_preference_implementing', aiType)
-
-    if (
-      confirm(
-        'Are you sure you want to approve the plan and start implementing with ' + aiType + '?'
-      )
-    ) {
-      try {
-        await approvePlanAndStartImplementMutation.mutateAsync({
-          taskId,
-          request: { ai_type: aiType }
-        })
-      } catch (error) {
-        // Error is handled by the mutation hook
-      }
+  const handleApprovePlanAndStartImplement = async (taskId: string, aiType: string) => {
+    try {
+      await approvePlanAndStartImplementMutation.mutateAsync({
+        taskId,
+        request: { ai_type: aiType }
+      })
+    } catch (error) {
+      // Error is handled by the mutation hook
     }
   }
 
