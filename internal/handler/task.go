@@ -306,7 +306,7 @@ func (h *TaskHandler) StartPlanning(c *gin.Context) {
 	}
 
 	// Start planning (this will enqueue a background job)
-	jobID, err := h.taskUsecase.StartPlanning(c.Request.Context(), id, req.BranchName)
+	jobID, err := h.taskUsecase.StartPlanning(c.Request.Context(), id, req.BranchName, req.AIType)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, dto.NewErrorResponse(err, http.StatusInternalServerError, "Failed to start planning"))
 		return
@@ -326,6 +326,7 @@ func (h *TaskHandler) StartPlanning(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param id path string true "Task ID"
+// @Param request body dto.ApprovePlanRequest true "Approve plan request"
 // @Success 200 {object} dto.StartPlanningResponse
 // @Failure 400 {object} dto.ErrorResponse
 // @Failure 404 {object} dto.ErrorResponse
@@ -336,6 +337,12 @@ func (h *TaskHandler) ApprovePlan(c *gin.Context) {
 	id, err := uuid.Parse(idStr)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, dto.NewErrorResponse(err, http.StatusBadRequest, "Invalid task ID"))
+		return
+	}
+
+	var req dto.ApprovePlanRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, dto.NewErrorResponse(err, http.StatusBadRequest, "Invalid request data"))
 		return
 	}
 
@@ -352,7 +359,7 @@ func (h *TaskHandler) ApprovePlan(c *gin.Context) {
 	}
 
 	// Approve plan and start implementation (this will enqueue a background job)
-	jobID, err := h.taskUsecase.ApprovePlan(c.Request.Context(), id)
+	jobID, err := h.taskUsecase.ApprovePlan(c.Request.Context(), id, req.AIType)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, dto.NewErrorResponse(err, http.StatusInternalServerError, "Failed to approve plan and start implementation"))
 		return

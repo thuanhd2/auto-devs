@@ -266,7 +266,7 @@ func (h *TaskHandlerWithWebSocket) StartPlanning(c *gin.Context) {
 	}
 
 	// Start the background planning job using the usecase
-	jobID, err := h.TaskHandler.taskUsecase.StartPlanning(c.Request.Context(), id, req.BranchName)
+	jobID, err := h.TaskHandler.taskUsecase.StartPlanning(c.Request.Context(), id, req.BranchName, req.AIType)
 	if err != nil {
 		// Revert status if job enqueueing fails
 		_, revertErr := h.taskUsecase.UpdateStatus(c.Request.Context(), id, entity.TaskStatusTODO)
@@ -290,6 +290,12 @@ func (h *TaskHandlerWithWebSocket) ApprovePlan(c *gin.Context) {
 	id, err := uuid.Parse(idStr)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, dto.NewErrorResponse(err, http.StatusBadRequest, "Invalid task ID"))
+		return
+	}
+
+	var req dto.ApprovePlanRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, dto.NewErrorResponse(err, http.StatusBadRequest, "Invalid request data"))
 		return
 	}
 
@@ -333,7 +339,7 @@ func (h *TaskHandlerWithWebSocket) ApprovePlan(c *gin.Context) {
 	}
 
 	// Start the background implementation job using the usecase
-	jobID, err := h.TaskHandler.taskUsecase.ApprovePlan(c.Request.Context(), id)
+	jobID, err := h.TaskHandler.taskUsecase.ApprovePlan(c.Request.Context(), id, req.AIType)
 	if err != nil {
 		// Revert status if job enqueueing fails
 		_, revertErr := h.taskUsecase.UpdateStatus(c.Request.Context(), id, entity.TaskStatusPLANREVIEWING)

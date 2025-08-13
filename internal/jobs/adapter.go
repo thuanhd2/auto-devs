@@ -32,6 +32,7 @@ func (a *JobClientAdapter) EnqueueTaskPlanning(payload *usecase.TaskPlanningPayl
 		TaskID:     payload.TaskID,
 		BranchName: payload.BranchName,
 		ProjectID:  payload.ProjectID,
+		AIType:     payload.AIType,
 	}
 
 	// Enqueue the job
@@ -49,6 +50,7 @@ func (a *JobClientAdapter) EnqueueTaskImplementation(payload *usecase.TaskImplem
 	jobPayload := &TaskImplementationPayload{
 		TaskID:    payload.TaskID,
 		ProjectID: payload.ProjectID,
+		AIType:    payload.AIType,
 	}
 
 	// Enqueue the job

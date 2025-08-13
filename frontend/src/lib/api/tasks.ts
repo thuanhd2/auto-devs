@@ -8,6 +8,7 @@ import type {
   TaskFilters,
   StartPlanningRequest,
   StartPlanningResponse,
+  ApprovePlanRequest,
 } from '@/types/task'
 
 const api = axios.create({
@@ -74,9 +75,13 @@ export const tasksApi = {
     return response.data
   },
 
-  async approvePlan(taskId: string): Promise<StartPlanningResponse> {
+  async approvePlan(
+    taskId: string,
+    request: ApprovePlanRequest
+  ): Promise<StartPlanningResponse> {
     const response = await api.post(
-      `${API_ENDPOINTS.TASKS}/${taskId}/approve-plan`
+      `${API_ENDPOINTS.TASKS}/${taskId}/approve-plan`,
+      request
     )
     return response.data
   },

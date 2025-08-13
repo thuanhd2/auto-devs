@@ -197,7 +197,7 @@ func (p *Processor) ProcessTaskPlanning(ctx context.Context, task *asynq.Task) e
 		return fmt.Errorf("failed to get task: %w", err)
 	}
 
-	aiExecutor, err := p.getAiExecutor(ctx, projectTask)
+	aiExecutor, err := p.getAiExecutor(payload.AIType)
 	if err != nil {
 		p.logger.Error("Failed to get AI executor", "task_id", payload.TaskID, "error", err)
 		return fmt.Errorf("failed to get AI executor: %w", err)
@@ -294,9 +294,8 @@ func (p *Processor) ProcessTaskPlanning(ctx context.Context, task *asynq.Task) e
 	return nil
 }
 
-func (p *Processor) getAiExecutor(_ context.Context, _ *entity.Task) (ai.AiCodingCli, error) {
-	executionType := "claude-code"
-	switch executionType {
+func (p *Processor) getAiExecutor(aiType string) (ai.AiCodingCli, error) {
+	switch aiType {
 	case "claude-code":
 		aiExecutor := aiexecutors.NewClaudeCodeExecutor()
 		return aiExecutor, nil
@@ -304,7 +303,7 @@ func (p *Processor) getAiExecutor(_ context.Context, _ *entity.Task) (ai.AiCodin
 		aiExecutor := aiexecutors.NewFakeCodeExecutor()
 		return aiExecutor, nil
 	default:
-		return nil, fmt.Errorf("invalid execution type: %s", executionType)
+		return nil, fmt.Errorf("invalid execution type: %s", aiType)
 	}
 }
 
@@ -387,7 +386,7 @@ func (p *Processor) ProcessTaskImplementation(ctx context.Context, task *asynq.T
 	projectTask.Plans = []entity.Plan{*plan}
 
 	// Step 6: Start AI execution using executionService.StartExecution()
-	aiExecutor, err := p.getAiExecutor(ctx, projectTask)
+	aiExecutor, err := p.getAiExecutor(payload.AIType)
 	if err != nil {
 		p.logger.Error("Failed to get AI executor", "task_id", payload.TaskID, "error", err)
 		return fmt.Errorf("failed to get AI executor: %w", err)

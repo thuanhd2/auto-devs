@@ -80,9 +80,14 @@ export interface TasksResponse {
 // Start Planning types
 export interface StartPlanningRequest {
   branch_name: string
+  ai_type: string
 }
 
 export interface StartPlanningResponse {
   message: string
   job_id: string
+}
+
+export interface ApprovePlanRequest {
+  ai_type: string
 }

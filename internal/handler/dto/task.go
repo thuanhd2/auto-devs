@@ -214,11 +214,17 @@ func TaskStatusAnalyticsResponseFromEntity(analytics *entity.TaskStatusAnalytics
 // Start Planning DTOs
 type StartPlanningRequest struct {
 	BranchName string `json:"branch_name" binding:"required" example:"main"`
+	AIType     string `json:"ai_type" binding:"required" example:"claude-code"`
 }
 
 type StartPlanningResponse struct {
 	Message string `json:"message" example:"Planning started successfully"`
 	JobID   string `json:"job_id" example:"task-123-planning-456"`
+}
+
+// Approve Plan DTOs
+type ApprovePlanRequest struct {
+	AIType string `json:"ai_type" binding:"required" example:"claude-code"`
 }
 
 // Git Branches DTOs

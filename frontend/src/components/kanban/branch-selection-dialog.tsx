@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Loader2, GitBranch } from 'lucide-react'
+import { Loader2, GitBranch, Bot } from 'lucide-react'
 import { projectsApi } from '@/lib/api/projects'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
@@ -31,7 +31,7 @@ interface BranchSelectionDialogProps {
   onOpenChange: (open: boolean) => void
   projectId: string
   taskTitle: string
-  onBranchSelected: (branchName: string) => void
+  onBranchSelected: (branchName: string, aiType: string) => void
 }
 
 export function BranchSelectionDialog({
@@ -43,8 +43,15 @@ export function BranchSelectionDialog({
 }: BranchSelectionDialogProps) {
   const [branches, setBranches] = useState<GitBranch[]>([])
   const [selectedBranch, setSelectedBranch] = useState<string>('')
+  const [selectedAIType, setSelectedAIType] = useState<string>('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string>('')
+
+  // Load AI type preference from localStorage
+  useEffect(() => {
+    const savedPlanningAI = localStorage.getItem('ai_preference_planning')
+    setSelectedAIType(savedPlanningAI || 'claude-code') // Default to claude-code
+  }, [])
 
   useEffect(() => {
     if (open && projectId) {
@@ -76,16 +83,21 @@ export function BranchSelectionDialog({
   }
 
   const handleConfirm = () => {
-    if (selectedBranch) {
-      onBranchSelected(selectedBranch)
+    if (selectedBranch && selectedAIType) {
+      // Save AI type preference to localStorage
+      localStorage.setItem('ai_preference_planning', selectedAIType)
+      
+      onBranchSelected(selectedBranch, selectedAIType)
       onOpenChange(false)
       setSelectedBranch('')
+      setSelectedAIType(localStorage.getItem('ai_preference_planning') || 'claude-code')
     }
   }
 
   const handleCancel = () => {
     onOpenChange(false)
     setSelectedBranch('')
+    setSelectedAIType(localStorage.getItem('ai_preference_planning') || 'claude-code')
     setError('')
   }
 
@@ -116,34 +128,66 @@ export function BranchSelectionDialog({
               <span className='ml-2'>Loading branches...</span>
             </div>
           ) : (
-            <div className='space-y-2'>
-              <label className='text-sm font-medium'>Select Branch:</label>
-              <Select value={selectedBranch} onValueChange={setSelectedBranch}>
+            <>
+              <div className='space-y-2'>
+                <label className='text-sm font-medium'>Select Branch:</label>
+                <Select value={selectedBranch} onValueChange={setSelectedBranch}>
+                  <SelectTrigger>
+                    <SelectValue placeholder='Select a branch' />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {branches.map((branch) => (
+                      <SelectItem key={branch.name} value={branch.name}>
+                        <div className='flex items-center gap-2'>
+                          <span>{branch.name}</span>
+                          {branch.is_current && (
+                            <span className='text-muted-foreground text-xs'>
+                              (current)
+                            </span>
+                          )}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                {branches.length === 0 && !loading && (
+                  <p className='text-muted-foreground text-sm'>
+                    No branches found in the repository.
+                  </p>
+                )}
+              </div>
+
+              <div className='space-y-2'>
+              <label className='text-sm font-medium flex items-center gap-2'>
+                <Bot className='h-4 w-4' />
+                Select AI Assistant:
+              </label>
+              <Select value={selectedAIType} onValueChange={setSelectedAIType}>
                 <SelectTrigger>
-                  <SelectValue placeholder='Select a branch' />
+                  <SelectValue placeholder='Select AI type' />
                 </SelectTrigger>
                 <SelectContent>
-                  {branches.map((branch) => (
-                    <SelectItem key={branch.name} value={branch.name}>
-                      <div className='flex items-center gap-2'>
-                        <span>{branch.name}</span>
-                        {branch.is_current && (
-                          <span className='text-muted-foreground text-xs'>
-                            (current)
-                          </span>
-                        )}
-                      </div>
-                    </SelectItem>
-                  ))}
+                  <SelectItem value='claude-code'>
+                    <div className='flex items-center gap-2'>
+                      <span>Claude Code</span>
+                      <span className='text-muted-foreground text-xs'>
+                        (Production AI)
+                      </span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value='fake-code'>
+                    <div className='flex items-center gap-2'>
+                      <span>Fake Code</span>
+                      <span className='text-muted-foreground text-xs'>
+                        (Test/Demo AI)
+                      </span>
+                    </div>
+                  </SelectItem>
                 </SelectContent>
               </Select>
-
-              {branches.length === 0 && !loading && (
-                <p className='text-muted-foreground text-sm'>
-                  No branches found in the repository.
-                </p>
-              )}
             </div>
+            </>
           )}
         </div>
 
@@ -151,7 +195,7 @@ export function BranchSelectionDialog({
           <Button variant='outline' onClick={handleCancel}>
             Cancel
           </Button>
-          <Button onClick={handleConfirm} disabled={!selectedBranch || loading}>
+          <Button onClick={handleConfirm} disabled={!selectedBranch || !selectedAIType || loading}>
             Start Planning
           </Button>
         </DialogFooter>

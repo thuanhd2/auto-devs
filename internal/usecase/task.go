@@ -22,12 +22,14 @@ type TaskPlanningPayload struct {
 	TaskID     uuid.UUID `json:"task_id"`
 	BranchName string    `json:"branch_name"`
 	ProjectID  uuid.UUID `json:"project_id"`
+	AIType     string    `json:"ai_type"`
 }
 
 // TaskImplementationPayload represents the payload for task implementation jobs
 type TaskImplementationPayload struct {
 	TaskID    uuid.UUID `json:"task_id"`
 	ProjectID uuid.UUID `json:"project_id"`
+	AIType    string    `json:"ai_type"`
 }
 
 type TaskUsecase interface {
@@ -105,8 +107,8 @@ type TaskUsecase interface {
 	ValidateGitStatusTransition(ctx context.Context, taskID uuid.UUID, newGitStatus entity.TaskGitStatus) error
 
 	// Planning workflow
-	StartPlanning(ctx context.Context, taskID uuid.UUID, branchName string) (string, error) // returns job ID
-	ApprovePlan(ctx context.Context, taskID uuid.UUID) (string, error)                      // returns job ID
+	StartPlanning(ctx context.Context, taskID uuid.UUID, branchName string, aiType string) (string, error) // returns job ID
+	ApprovePlan(ctx context.Context, taskID uuid.UUID, aiType string) (string, error)                      // returns job ID
 	ListGitBranches(ctx context.Context, projectID uuid.UUID) ([]GitBranch, error)
 
 	// Pull requests
@@ -1048,7 +1050,7 @@ func (u *taskUsecase) ValidateGitStatusTransition(ctx context.Context, taskID uu
 }
 
 // StartPlanning starts the planning process for a task
-func (u *taskUsecase) StartPlanning(ctx context.Context, taskID uuid.UUID, branchName string) (string, error) {
+func (u *taskUsecase) StartPlanning(ctx context.Context, taskID uuid.UUID, branchName string, aiType string) (string, error) {
 	// Get task to validate it exists and is in TODO status
 	task, err := u.taskRepo.GetByID(ctx, taskID)
 	if err != nil {
@@ -1073,6 +1075,7 @@ func (u *taskUsecase) StartPlanning(ctx context.Context, taskID uuid.UUID, branc
 		TaskID:     taskID,
 		BranchName: branchName,
 		ProjectID:  task.ProjectID,
+		AIType:     aiType,
 	}
 
 	jobID, err := u.jobClient.EnqueueTaskPlanning(payload, 0)
@@ -1084,7 +1087,7 @@ func (u *taskUsecase) StartPlanning(ctx context.Context, taskID uuid.UUID, branc
 }
 
 // ApprovePlan approves the plan for a task and starts implementation
-func (u *taskUsecase) ApprovePlan(ctx context.Context, taskID uuid.UUID) (string, error) {
+func (u *taskUsecase) ApprovePlan(ctx context.Context, taskID uuid.UUID, aiType string) (string, error) {
 	// Get task to validate it exists and is in PLAN_REVIEWING status
 	task, err := u.taskRepo.GetByID(ctx, taskID)
 	if err != nil {
@@ -1103,6 +1106,7 @@ func (u *taskUsecase) ApprovePlan(ctx context.Context, taskID uuid.UUID) (string
 	payload := &TaskImplementationPayload{
 		TaskID:    taskID,
 		ProjectID: task.ProjectID,
+		AIType:    aiType,
 	}
 
 	jobID, err := u.jobClient.EnqueueTaskImplementation(payload, 0)

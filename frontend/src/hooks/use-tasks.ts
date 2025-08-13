@@ -3,6 +3,7 @@ import type {
   Task,
   UpdateTaskRequest,
   StartPlanningRequest,
+  ApprovePlanRequest,
 } from '@/types/task'
 import { toast } from 'sonner'
 import { tasksApi } from '@/lib/api/tasks'
@@ -186,7 +187,8 @@ export function useApprovePlan() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (taskId: string) => tasksApi.approvePlan(taskId),
+    mutationFn: ({ taskId, request }: { taskId: string; request: ApprovePlanRequest }) => 
+      tasksApi.approvePlan(taskId, request),
     onMutate: async (taskId) => {
       // Cancel any outgoing refetches
       await queryClient.cancelQueries({ queryKey: [TASKS_QUERY_KEY] })

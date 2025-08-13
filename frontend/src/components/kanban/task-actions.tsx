@@ -21,7 +21,7 @@ interface TaskActionsProps {
   onDuplicate?: (task: Task) => void
   onStatusChange?: (taskId: string, newStatus: TaskStatus) => void
   onViewHistory?: () => void
-  onStartPlanning?: (taskId: string, branchName: string) => void
+  onStartPlanning?: (taskId: string, branchName: string, aiType: string) => void
   onApprovePlanAndStartImplement?: (taskId: string) => void
   showStatusActions?: boolean
   showGitActions?: boolean
@@ -63,8 +63,8 @@ export function TaskActions({
     setShowBranchDialog(true)
   }
 
-  const handleBranchSelected = (branchName: string) => {
-    onStartPlanning?.(task.id, branchName)
+  const handleBranchSelected = (branchName: string, aiType: string) => {
+    onStartPlanning?.(task.id, branchName, aiType)
   }
 
   const handleApprovePlanAndStartImplement = () => {
