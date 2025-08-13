@@ -37,6 +37,10 @@ const createProjectSchema = z.object({
     .string()
     .min(1, 'Worktree base path is required')
     .max(500, 'Worktree base path must be less than 500 characters'),
+  init_workspace_script: z
+    .string()
+    .max(2000, 'Init script must be less than 2000 characters')
+    .optional(),
 })
 
 type CreateProjectFormData = z.infer<typeof createProjectSchema>
@@ -59,6 +63,7 @@ export function ProjectCreateModal({
       name: '',
       description: '',
       worktree_base_path: '',
+      init_workspace_script: '',
     },
   })
 
@@ -68,6 +73,7 @@ export function ProjectCreateModal({
         name: data.name,
         description: data.description || undefined,
         worktree_base_path: data.worktree_base_path,
+        init_workspace_script: data.init_workspace_script || undefined,
       })
 
       // Close modal and reset form
@@ -154,6 +160,28 @@ export function ProjectCreateModal({
                   </FormControl>
                   <FormDescription>
                     Base path for Git worktree operations
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name='init_workspace_script'
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Init Workspace Script</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder='npm install && npm run build'
+                      className='resize-none'
+                      rows={4}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    Optional bash script to run after creating worktree (e.g., install dependencies)
                   </FormDescription>
                   <FormMessage />
                 </FormItem>

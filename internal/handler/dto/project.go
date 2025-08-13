@@ -10,27 +10,30 @@ import (
 
 // Project request DTOs
 type ProjectCreateRequest struct {
-	Name             string `json:"name" binding:"required,min=1,max=255" example:"My Project"`
-	Description      string `json:"description" binding:"max=1000" example:"Project description"`
-	WorktreeBasePath string `json:"worktree_base_path" binding:"required,max=500" example:"/tmp/projects/repo"`
+	Name                string `json:"name" binding:"required,min=1,max=255" example:"My Project"`
+	Description         string `json:"description" binding:"max=1000" example:"Project description"`
+	WorktreeBasePath    string `json:"worktree_base_path" binding:"required,max=500" example:"/tmp/projects/repo"`
+	InitWorkspaceScript string `json:"init_workspace_script" example:"npm install && npm run build"`
 }
 
 type ProjectUpdateRequest struct {
-	Name             *string `json:"name,omitempty" binding:"omitempty,min=1,max=255" example:"Updated Project Name"`
-	Description      *string `json:"description,omitempty" binding:"omitempty,max=1000" example:"Updated description"`
-	RepositoryURL    *string `json:"repository_url,omitempty" binding:"omitempty,url,max=500" example:"https://github.com/user/repo.git"`
-	WorktreeBasePath *string `json:"worktree_base_path,omitempty" binding:"omitempty,max=500" example:"/tmp/projects/repo"`
+	Name                *string `json:"name,omitempty" binding:"omitempty,min=1,max=255" example:"Updated Project Name"`
+	Description         *string `json:"description,omitempty" binding:"omitempty,max=1000" example:"Updated description"`
+	RepositoryURL       *string `json:"repository_url,omitempty" binding:"omitempty,url,max=500" example:"https://github.com/user/repo.git"`
+	WorktreeBasePath    *string `json:"worktree_base_path,omitempty" binding:"omitempty,max=500" example:"/tmp/projects/repo"`
+	InitWorkspaceScript *string `json:"init_workspace_script,omitempty" example:"npm install && npm run build"`
 }
 
 // Project response DTOs
 type ProjectResponse struct {
-	ID               uuid.UUID `json:"id" example:"123e4567-e89b-12d3-a456-426614174000"`
-	Name             string    `json:"name" example:"My Project"`
-	Description      string    `json:"description" example:"Project description"`
-	RepositoryURL    string    `json:"repository_url,omitempty" example:"https://github.com/user/repo.git"`
-	WorktreeBasePath string    `json:"worktree_base_path,omitempty" example:"/tmp/projects/repo"`
-	CreatedAt        time.Time `json:"created_at" example:"2024-01-15T10:30:00Z"`
-	UpdatedAt        time.Time `json:"updated_at" example:"2024-01-15T10:30:00Z"`
+	ID                  uuid.UUID `json:"id" example:"123e4567-e89b-12d3-a456-426614174000"`
+	Name                string    `json:"name" example:"My Project"`
+	Description         string    `json:"description" example:"Project description"`
+	RepositoryURL       string    `json:"repository_url,omitempty" example:"https://github.com/user/repo.git"`
+	WorktreeBasePath    string    `json:"worktree_base_path,omitempty" example:"/tmp/projects/repo"`
+	InitWorkspaceScript string    `json:"init_workspace_script,omitempty" example:"npm install && npm run build"`
+	CreatedAt           time.Time `json:"created_at" example:"2024-01-15T10:30:00Z"`
+	UpdatedAt           time.Time `json:"updated_at" example:"2024-01-15T10:30:00Z"`
 }
 
 type ProjectWithTasksResponse struct {
@@ -106,6 +109,7 @@ func (p *ProjectResponse) FromEntity(project *entity.Project) {
 	p.Description = project.Description
 	p.RepositoryURL = project.RepositoryURL
 	p.WorktreeBasePath = project.WorktreeBasePath
+	p.InitWorkspaceScript = project.InitWorkspaceScript
 	p.CreatedAt = project.CreatedAt
 	p.UpdatedAt = project.UpdatedAt
 }

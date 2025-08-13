@@ -4,6 +4,7 @@ export interface Project {
   description: string
   repository_url?: string
   worktree_base_path?: string
+  init_workspace_script?: string
   created_at: string
   updated_at: string
 }
@@ -12,6 +13,7 @@ export interface CreateProjectRequest {
   name: string
   description?: string
   worktree_base_path: string
+  init_workspace_script?: string
 }
 
 export interface UpdateProjectRequest {
@@ -19,6 +21,7 @@ export interface UpdateProjectRequest {
   description?: string
   repository_url?: string
   worktree_base_path?: string
+  init_workspace_script?: string
 }
 
 export interface ProjectFilters {

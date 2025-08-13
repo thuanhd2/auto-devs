@@ -49,6 +49,10 @@ const updateProjectSchema = z.object({
     }, 'Please enter a valid repository URL')
     .optional(),
   worktree_base_path: z.string().optional(),
+  init_workspace_script: z
+    .string()
+    .max(2000, 'Init script must be less than 2000 characters')
+    .optional(),
 })
 
 type UpdateProjectFormData = z.infer<typeof updateProjectSchema>
@@ -77,6 +81,7 @@ export function ProjectEditModal({
       description: '',
       repository_url: '',
       worktree_base_path: '',
+      init_workspace_script: '',
     },
   })
 
@@ -88,6 +93,7 @@ export function ProjectEditModal({
         description: project.description || '',
         repository_url: project.repository_url || '',
         worktree_base_path: project.worktree_base_path || '',
+        init_workspace_script: project.init_workspace_script || '',
       })
     }
   }, [project, form])
@@ -98,6 +104,7 @@ export function ProjectEditModal({
       description: data.description || undefined,
       repository_url: data.repository_url || undefined,
       worktree_base_path: data.worktree_base_path || undefined,
+      init_workspace_script: data.init_workspace_script || undefined,
     }
 
     try {
@@ -126,6 +133,7 @@ export function ProjectEditModal({
         description: project.description || '',
         repository_url: project.repository_url || '',
         worktree_base_path: project.worktree_base_path || '',
+        init_workspace_script: project.init_workspace_script || '',
       })
     }
   }
@@ -215,6 +223,28 @@ export function ProjectEditModal({
                   </FormControl>
                   <FormDescription>
                     Base path for Git worktree operations
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name='init_workspace_script'
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Init Workspace Script</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder='npm install && npm run build'
+                      className='resize-none'
+                      rows={4}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    Optional bash script to run after creating worktree (e.g., install dependencies)
                   </FormDescription>
                   <FormMessage />
                 </FormItem>

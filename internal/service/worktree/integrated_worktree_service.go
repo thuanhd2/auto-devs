@@ -72,7 +72,13 @@ func (iws *IntegratedWorktreeService) CreateTaskWorktree(ctx context.Context, re
 		return nil, fmt.Errorf("failed to create worktree directory: %w", err)
 	}
 
-	// TODO: here!!!!
+	// Execute init workspace script if provided
+	if request.InitWorkspaceScript != "" {
+		if err := iws.executeInitScript(ctx, worktreePath, request.InitWorkspaceScript); err != nil {
+			iws.logger.Warn("Failed to execute init workspace script", "error", err)
+			// Continue with worktree creation even if script fails
+		}
+	}
 
 	// Generate branch name
 	branchName, err := iws.gitManager.GenerateBranchName(request.TaskID, request.TaskTitle)
@@ -296,6 +302,46 @@ func (iws *IntegratedWorktreeService) extractTaskIDFromPath(worktreePath string)
 	return ""
 }
 
+// executeInitScript executes the initialization script in the worktree directory
+func (iws *IntegratedWorktreeService) executeInitScript(ctx context.Context, worktreePath string, script string) error {
+	if script == "" {
+		return nil
+	}
+
+	iws.logger.Info("Executing init workspace script", "path", worktreePath)
+
+	// Create a context with timeout for script execution (5 minutes)
+	scriptCtx, cancel := context.WithTimeout(ctx, 5*time.Minute)
+	defer cancel()
+
+	// Execute script using bash
+	cmd := exec.CommandContext(scriptCtx, "bash", "-c", script)
+	cmd.Dir = worktreePath
+	
+	// Set environment variables
+	cmd.Env = append(os.Environ(), 
+		fmt.Sprintf("WORKTREE_PATH=%s", worktreePath),
+		"TERM=xterm-256color",
+	)
+
+	// Capture both stdout and stderr
+	output, err := cmd.CombinedOutput()
+	
+	// Log the output regardless of success or failure
+	if len(output) > 0 {
+		iws.logger.Info("Init script output", 
+			"output", string(output),
+			"path", worktreePath)
+	}
+
+	if err != nil {
+		return fmt.Errorf("script execution failed: %w (output: %s)", err, string(output))
+	}
+
+	iws.logger.Info("Init workspace script executed successfully", "path", worktreePath)
+	return nil
+}
+
 // initializeGitRepository initializes a Git repository in the specified directory
 func (iws *IntegratedWorktreeService) initializeGitRepository(ctx context.Context, worktreePath string) error {
 	iws.logger.Debug("Initializing Git repository", "path", worktreePath)
@@ -349,11 +395,12 @@ func (iws *IntegratedWorktreeService) createInitialCommit(ctx context.Context, w
 
 // CreateTaskWorktreeRequest represents a request to create a task worktree
 type CreateTaskWorktreeRequest struct {
-	ProjectID         string `json:"project_id"`
-	TaskID            string `json:"task_id"`
-	TaskTitle         string `json:"task_title"`
-	ProjectWorkDir    string `json:"project_work_dir"`
-	ProjectMainBranch string `json:"project_main_branch"`
+	ProjectID           string `json:"project_id"`
+	TaskID              string `json:"task_id"`
+	TaskTitle           string `json:"task_title"`
+	ProjectWorkDir      string `json:"project_work_dir"`
+	ProjectMainBranch   string `json:"project_main_branch"`
+	InitWorkspaceScript string `json:"init_workspace_script"`
 }
 
 // CleanupTaskWorktreeRequest represents a request to cleanup a task worktree
