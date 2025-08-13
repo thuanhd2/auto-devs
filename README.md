@@ -1,6 +1,6 @@
 # Auto-Devs API Core
 
-[Demo video](https://www.youtube.com/embed/meg2uBtbJ0A)
+[Demo video](https://youtu.be/meg2uBtbJ0A)
 
 ## 🚀 Quick Start
 
