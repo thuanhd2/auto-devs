@@ -1,4 +1,6 @@
-# Auto-Devs API Core
+# Auto-Devs application
+
+Auto your development workflow with coding AI agents & CLI.
 
 [Demo video](https://youtu.be/meg2uBtbJ0A)
 
@@ -6,152 +8,285 @@
 
 ### Prerequisites
 
-- Go 1.24+
-- PostgreSQL
-- Make (optional)
+- **Go** 1.24.3+
+- **Node.js** 22.12.0+
+- **PostgreSQL** 12+
+- **Redis** 6+
+- **Git**
 
-### Installation
+### Quick Installation
+
+1. **Clone repository:**
 
 ```bash
-# Clone repository
-git clone <repository-url>
-cd vk-c373-api-core-i
+git clone https://github.com/auto-devs/auto-devs.git
+cd auto-devs
+```
 
-# Install dependencies
+2. **Setup environment:**
+
+```bash
+cp .env.example .env
+# Edit .env with your PostgreSQL, Redis credentials and GitHub Personal Access Token
+```
+
+3. **Setup database:**
+
+```bash
+make migrate-up
+```
+
+4. **Install frontend dependencies:**
+
+```bash
+cd frontend && npm install && cd ..
+```
+
+5. **Run development environment:**
+
+```bash
+./run-dev.sh
+```
+
+The application will be available at:
+
+- **Frontend:** http://localhost:5173
+- **Backend API:** http://localhost:8098
+- **Swagger UI:** http://localhost:8098/swagger/index.html
+
+## 🎯 What is Auto-Devs?
+
+Auto-Devs is an AI-powered software development workflow automation platform. The system enables developers to automate coding tasks through AI agents and CLI tools, helping to accelerate development and minimize manual work.
+
+## ✨ Core Features
+
+### 🤖 AI-Powered Task Automation
+
+- **AI Code Generation:** Automatically generate code based on task descriptions
+- **Smart Planning:** AI-assisted planning and requirement analysis
+- **Execution Tracking:** Monitor and manage AI execution processes
+- **AI Executor:** Execution type is configurable, you can choose any cli tool to execute the task
+
+### 📋 Project & Task Management
+
+- **Kanban Board:** Task management with drag & drop interface
+- **Task Lifecycle:** Complete task workflow from planning to completion
+- **Priority Management:** Task priority system with 4 levels
+- **Status Tracking:** Real-time task status monitoring
+
+### 🔄 Git Integration
+
+- **Worktree Management:** Manage multiple git worktrees
+- **Branch Automation:** Automatically create and manage git branches
+- **Pull Request Sync:** Synchronize PR status with GitHub
+- **Repository Management:** Integrate with GitHub repositories
+
+### 📊 Real-time Monitoring
+
+- **WebSocket Support:** Real-time updates for all changes
+- **Execution Logs:** Detailed execution process tracking
+- **Progress Tracking:** Display task execution progress
+
+### 🎨 Modern Web Interface
+
+- **Responsive Design:** Interface compatible with all devices
+- **Dark/Light Theme:** Support for light/dark modes
+- **Real-time Updates:** Real-time data updates via WebSocket
+- **Accessibility:** User-friendly interface design
+
+## 🏗️ Architecture
+
+### Backend (Go)
+
+- **Framework:** Gin web framework
+- **Database:** PostgreSQL with GORM ORM
+- **Cache:** Redis for session and job queue
+- **Job Queue:** Asynq for background task processing
+- **WebSocket:** Gorilla WebSocket for real-time communication
+- **Dependency Injection:** Wire framework
+- **Testing:** Testify with mock generation
+
+### Frontend (React)
+
+- **Framework:** React 19 with TypeScript
+- **UI Components:** ShadcnUI (TailwindCSS + RadixUI)
+- **State Management:** TanStack Query + Zustand
+- **Routing:** TanStack Router
+- **Build Tool:** Vite
+- **Styling:** TailwindCSS
+
+### Key Components
+
+- **AI Executors:** Claude, Fake AI for development/testing
+- **Git Services:** Branch management, worktree operations
+- **GitHub Integration:** Repository sync, PR management
+- **WebSocket Hub:** Real-time communication layer
+- **Job Scheduler:** Background task processing
+
+## 🚀 Getting Started
+
+### Development Setup
+
+1. **Install Go dependencies:**
+
+```bash
 go mod download
 go mod tidy
-
-# Build application
-go build -o server cmd/server/main.go
-
-# Run server
-./server
 ```
 
-## 📚 API Documentation
-
-### Swagger UI
-
-The API documentation is available through Swagger UI:
-
-- **Swagger UI**: http://localhost:8098/swagger/index.html
-- **Root redirect**: http://localhost:8098/ (redirects to Swagger UI)
-
-### API Documentation Files
-
-- **Swagger JSON**: http://localhost:8098/swagger.json
-- **Swagger YAML**: http://localhost:8098/swagger.yaml
-
-## 🔧 Development
-
-### Generate Swagger Documentation
+2. **Generate mocks:**
 
 ```bash
-# Using script
-./scripts/generate-swagger.sh
+make mocks
+```
 
-# Using Makefile
+3. **Generate Wire DI code:**
+
+```bash
+make wire
+```
+
+4. **Generate Swagger docs:**
+
+```bash
 make swagger
-
-# Using swag CLI directly
-swag init -g cmd/server/main.go
-```
-
-### Available Make Commands
-
-```bash
-make help          # Show all available commands
-make build         # Build the application
-make run           # Run the application
-make test          # Run tests
-make swagger       # Generate Swagger documentation
-make swagger-serve # Show Swagger UI URLs
-make deps          # Download dependencies
-make clean         # Clean build artifacts
 ```
 
 ### Database Setup
 
-```bash
-# Run migrations
-make migrate-up
+1. **Create PostgreSQL database:**
 
-# Rollback migrations
-make migrate-down
-
-# Reset database
-make migrate-reset
+```sql
+CREATE DATABASE autodevs_dev;
 ```
 
-## 📋 API Endpoints
+2. **Run migrations:**
 
-### Health Check
+```bash
+make migrate-up
+```
 
-- `GET /api/v1/health` - Check server and database status
+3. **Check migration status:**
 
-### Projects
+```bash
+make migrate-version
+```
 
-- `POST /api/v1/projects` - Create new project
-- `GET /api/v1/projects` - List all projects
-- `GET /api/v1/projects/{id}` - Get project by ID
-- `PUT /api/v1/projects/{id}` - Update project
-- `DELETE /api/v1/projects/{id}` - Delete project
-- `GET /api/v1/projects/{id}/tasks` - Get project with tasks
+### Running Services
 
-### Tasks
+- **Start all services:** `./run-dev.sh`
+- **Start backend only:** `make run`
+- **Start worker only:** `make run-worker`
+- **Start frontend only:** `cd frontend && npm run dev`
 
-- `POST /api/v1/tasks` - Create new task
-- `GET /api/v1/tasks` - List tasks with filtering
-- `GET /api/v1/tasks/{id}` - Get task by ID
-- `PUT /api/v1/tasks/{id}` - Update task
-- `DELETE /api/v1/tasks/{id}` - Delete task
-- `PATCH /api/v1/tasks/{id}/status` - Update task status
-- `GET /api/v1/tasks/{id}/project` - Get task with project
+## 📚 API Documentation
 
-## 🏗️ Architecture
+- **Swagger UI:** http://localhost:8098/swagger/index.html
+- **API Base URL:** http://localhost:8098/api/v1
+- **WebSocket:** ws://localhost:8098/ws
 
-### Layers
+## 🧪 Testing
 
-1. **DTO Layer** (`internal/handler/dto/`) - Request/response models
-2. **Handler Layer** (`internal/handler/`) - HTTP request handlers
-3. **Usecase Layer** (`internal/usecase/`) - Business logic
-4. **Repository Layer** (`internal/repository/`) - Data access
+```bash
+# Run all tests
+make test
 
-### Features
+# Run specific test package
+go test ./internal/service/... -v
 
-- ✅ RESTful API with comprehensive validation
-- ✅ OpenAPI/Swagger documentation
-- ✅ CORS configuration for frontend integration
-- ✅ Rate limiting and security headers
-- ✅ Request logging and error handling
-- ✅ Database migrations with GORM
-- ✅ Clean Architecture pattern
+# Generate test coverage
+go test ./... -coverprofile=coverage.out
+go tool cover -html=coverage.out
+```
+
+## 🛠️ Available Commands
+
+```bash
+# Database operations
+make db-setup          # Setup database with migrations
+make migrate-up        # Run pending migrations
+make migrate-down      # Rollback last migration
+make migrate-reset     # Rollback all migrations
+
+# Build operations
+make build             # Build main application
+make build-worker      # Build worker binary
+make clean             # Clean build artifacts
+
+# Development tools
+make mocks             # Generate mocks for testing
+make wire              # Generate Wire DI code
+make swagger           # Generate Swagger documentation
+
+# Worker management
+make run-worker        # Start job worker
+make run-worker-verbose # Start worker with verbose logging
+```
+
+## 🔧 Configuration
+
+### Environment Variables
+
+```bash
+# Database
+DB_HOST=localhost
+DB_PORT=5432
+DB_USERNAME=postgres
+DB_PASSWORD=postgres
+DB_NAME=autodevs_dev
+
+# Redis
+REDIS_HOST=localhost
+REDIS_PORT=6379
+REDIS_PASSWORD=
+REDIS_DB=0
+
+# Server
+SERVER_PORT=8098
+SERVER_HOST=0.0.0.0
+
+# AI Configuration
+GITHUB_PAT=<your_github_personal_access_token>
+```
 
 ## 📁 Project Structure
 
 ```
-├── cmd/server/           # Application entry point
-├── config/              # Configuration management
-├── docs/                # API documentation
-├── internal/            # Internal application code
-│   ├── di/             # Dependency injection
-│   ├── entity/         # Domain entities
-│   ├── handler/        # HTTP handlers
-│   ├── repository/     # Data access layer
-│   └── usecase/        # Business logic
-├── migrations/          # Database migrations
-├── pkg/                # Public packages
-│   └── database/       # Database utilities
-└── scripts/            # Utility scripts
+auto-devs/
+├── cmd/                    # Application entry points
+│   ├── server/            # Main server binary
+│   └── worker/            # Background job worker
+├── internal/              # Private application code
+│   ├── entity/            # Domain entities
+│   ├── repository/        # Data access layer
+│   ├── service/           # Business logic
+│   ├── usecase/           # Application use cases
+│   ├── handler/           # HTTP handlers
+│   └── websocket/         # WebSocket handling
+├── frontend/              # React frontend application
+├── migrations/            # Database migrations
+├── pkg/                   # Public packages
+└── scripts/               # Utility scripts
 ```
 
-## 🔗 Links
+## 🤝 Contributing
 
-- [API Implementation Guide](docs/api-implementation.md)
-- [Swagger Usage Guide](docs/swagger-usage.md)
-- [Technical Design](docs/technical-design.md)
-- [Development Roadmap](docs/development-roadmap.md)
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/amazing-feature`
+3. Commit your changes: `git commit -m 'Add amazing feature'`
+4. Push to the branch: `git push origin feature/amazing-feature`
+5. Open a Pull Request
 
 ## 📄 License
 
 MIT License
+
+## 🆘 Support
+
+- **Issues:** [GitHub Issues](https://github.com/auto-devs/auto-devs/issues)
+- **Documentation:** [Project Wiki](https://github.com/auto-devs/auto-devs/wiki)
+- **Discussions:** [GitHub Discussions](https://github.com/auto-devs/auto-devs/discussions)
+
+---
+
+**Auto-Devs** - Automating your development workflow with AI 🚀
