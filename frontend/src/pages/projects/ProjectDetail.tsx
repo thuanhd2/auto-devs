@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { formatDistanceToNow } from 'date-fns'
 import { Link, useParams, useNavigate } from '@tanstack/react-router'
 import {
@@ -45,6 +46,7 @@ import {
   RealTimeProjectStats,
   CompactProjectStats,
 } from '@/components/stats/real-time-project-stats'
+import { ProjectEditModal } from '@/components/project-edit-modal'
 
 
 const statusConfig = {
@@ -70,6 +72,7 @@ export function ProjectDetail() {
     from: '/_authenticated/projects/$projectId',
   })
   const navigate = useNavigate()
+  const [editModalOpen, setEditModalOpen] = useState(false)
   const {
     data: project,
     isLoading: projectLoading,
@@ -168,12 +171,10 @@ export function ProjectDetail() {
           </div>
           <div className='flex items-center gap-2'>
             <UserPresenceCompact projectId={projectId} />
-            <Link to='/projects/$projectId/edit' params={{ projectId }}>
-              <Button variant='outline'>
-                <Settings className='mr-2 h-4 w-4' />
-                Settings
-              </Button>
-            </Link>
+            <Button variant='outline' onClick={() => setEditModalOpen(true)}>
+              <Settings className='mr-2 h-4 w-4' />
+              Settings
+            </Button>
             <SimpleConfirmDialog
               title='Delete Project'
               description={`Are you sure you want to delete "${project?.name}"? This action cannot be undone. The project will be moved to the trash and can be restored later.`}
@@ -318,6 +319,14 @@ export function ProjectDetail() {
           </Tabs>
         </div>
       </Main>
+      
+      {/* Project Edit Modal */}
+      <ProjectEditModal
+        projectId={projectId}
+        open={editModalOpen}
+        onOpenChange={setEditModalOpen}
+        onDelete={() => navigate({ to: '/projects' })}
+      />
     </>
   )
 }
