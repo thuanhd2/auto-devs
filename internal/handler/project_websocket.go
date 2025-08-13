@@ -78,6 +78,13 @@ func (h *ProjectHandlerWithWebSocket) UpdateProject(c *gin.Context) {
 			"new": *req.WorktreeBasePath,
 		}
 	}
+	if req.InitWorkspaceScript != nil && *req.InitWorkspaceScript != originalProject.InitWorkspaceScript {
+		usecaseReq.InitWorkspaceScript = *req.InitWorkspaceScript
+		changes["init_workspace_script"] = map[string]interface{}{
+			"old": originalProject.InitWorkspaceScript,
+			"new": *req.InitWorkspaceScript,
+		}
+	}
 
 	project, err := h.projectUsecase.Update(c.Request.Context(), id, usecaseReq)
 	if err != nil {

@@ -72,14 +72,6 @@ func (iws *IntegratedWorktreeService) CreateTaskWorktree(ctx context.Context, re
 		return nil, fmt.Errorf("failed to create worktree directory: %w", err)
 	}
 
-	// Execute init workspace script if provided
-	if request.InitWorkspaceScript != "" {
-		if err := iws.executeInitScript(ctx, worktreePath, request.InitWorkspaceScript); err != nil {
-			iws.logger.Warn("Failed to execute init workspace script", "error", err)
-			// Continue with worktree creation even if script fails
-		}
-	}
-
 	// Generate branch name
 	branchName, err := iws.gitManager.GenerateBranchName(request.TaskID, request.TaskTitle)
 	if err != nil {
@@ -98,6 +90,14 @@ func (iws *IntegratedWorktreeService) CreateTaskWorktree(ctx context.Context, re
 		// Clean up worktree on error
 		iws.worktreeManager.CleanupWorktree(ctx, worktreePath)
 		return nil, fmt.Errorf("failed to create branch: %w", err)
+	}
+
+	// Execute init workspace script if provided
+	if request.InitWorkspaceScript != "" {
+		if err := iws.executeInitScript(ctx, worktreePath, request.InitWorkspaceScript); err != nil {
+			iws.logger.Warn("Failed to execute init workspace script", "error", err)
+			// Continue with worktree creation even if script fails
+		}
 	}
 
 	// Get worktree info
@@ -317,19 +317,19 @@ func (iws *IntegratedWorktreeService) executeInitScript(ctx context.Context, wor
 	// Execute script using bash
 	cmd := exec.CommandContext(scriptCtx, "bash", "-c", script)
 	cmd.Dir = worktreePath
-	
+
 	// Set environment variables
-	cmd.Env = append(os.Environ(), 
+	cmd.Env = append(os.Environ(),
 		fmt.Sprintf("WORKTREE_PATH=%s", worktreePath),
 		"TERM=xterm-256color",
 	)
 
 	// Capture both stdout and stderr
 	output, err := cmd.CombinedOutput()
-	
+
 	// Log the output regardless of success or failure
 	if len(output) > 0 {
-		iws.logger.Info("Init script output", 
+		iws.logger.Info("Init script output",
 			"output", string(output),
 			"path", worktreePath)
 	}

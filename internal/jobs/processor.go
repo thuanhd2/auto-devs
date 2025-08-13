@@ -295,7 +295,7 @@ func (p *Processor) ProcessTaskPlanning(ctx context.Context, task *asynq.Task) e
 }
 
 func (p *Processor) getAiExecutor(_ context.Context, _ *entity.Task) (ai.AiCodingCli, error) {
-	executionType := "claude-code"
+	executionType := "fake-code"
 	switch executionType {
 	case "claude-code":
 		aiExecutor := aiexecutors.NewClaudeCodeExecutor()

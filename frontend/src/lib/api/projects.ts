@@ -88,9 +88,7 @@ export const projectsApi = {
     await api.post(`${API_ENDPOINTS.PROJECTS}/${projectId}/git/reinit`)
   },
 
-  async getProjectBranches(
-    projectId: string
-  ): Promise<{
+  async getProjectBranches(projectId: string): Promise<{
     branches: Array<{
       name: string
       is_current: boolean

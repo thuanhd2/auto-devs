@@ -26,7 +26,6 @@ import { Route as AuthenticatedSettingsCodeEditorRouteImport } from './routes/_a
 import { Route as AuthenticatedSettingsAppearanceRouteImport } from './routes/_authenticated/settings/appearance'
 import { Route as AuthenticatedSettingsAiExecutorRouteImport } from './routes/_authenticated/settings/ai-executor'
 import { Route as AuthenticatedProjectsProjectIdRouteImport } from './routes/_authenticated/projects/$projectId'
-import { Route as AuthenticatedProjectsProjectIdEditRouteImport } from './routes/_authenticated/projects/$projectId/edit'
 import { Route as AuthenticatedProjectsProjectIdTasksTaskIdRouteImport } from './routes/_authenticated/projects/$projectId/tasks/$taskId'
 
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
@@ -123,12 +122,6 @@ const AuthenticatedProjectsProjectIdRoute =
     path: '/projects/$projectId',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedProjectsProjectIdEditRoute =
-  AuthenticatedProjectsProjectIdEditRouteImport.update({
-    id: '/edit',
-    path: '/edit',
-    getParentRoute: () => AuthenticatedProjectsProjectIdRoute,
-  } as any)
 const AuthenticatedProjectsProjectIdTasksTaskIdRoute =
   AuthenticatedProjectsProjectIdTasksTaskIdRouteImport.update({
     id: '/tasks/$taskId',
@@ -153,7 +146,6 @@ export interface FileRoutesByFullPath {
   '/about-us': typeof AuthenticatedAboutUsIndexRoute
   '/projects': typeof AuthenticatedProjectsIndexRoute
   '/settings/': typeof AuthenticatedSettingsIndexRoute
-  '/projects/$projectId/edit': typeof AuthenticatedProjectsProjectIdEditRoute
   '/projects/$projectId/tasks/$taskId': typeof AuthenticatedProjectsProjectIdTasksTaskIdRoute
 }
 export interface FileRoutesByTo {
@@ -172,7 +164,6 @@ export interface FileRoutesByTo {
   '/about-us': typeof AuthenticatedAboutUsIndexRoute
   '/projects': typeof AuthenticatedProjectsIndexRoute
   '/settings': typeof AuthenticatedSettingsIndexRoute
-  '/projects/$projectId/edit': typeof AuthenticatedProjectsProjectIdEditRoute
   '/projects/$projectId/tasks/$taskId': typeof AuthenticatedProjectsProjectIdTasksTaskIdRoute
 }
 export interface FileRoutesById {
@@ -194,7 +185,6 @@ export interface FileRoutesById {
   '/_authenticated/about-us/': typeof AuthenticatedAboutUsIndexRoute
   '/_authenticated/projects/': typeof AuthenticatedProjectsIndexRoute
   '/_authenticated/settings/': typeof AuthenticatedSettingsIndexRoute
-  '/_authenticated/projects/$projectId/edit': typeof AuthenticatedProjectsProjectIdEditRoute
   '/_authenticated/projects/$projectId/tasks/$taskId': typeof AuthenticatedProjectsProjectIdTasksTaskIdRoute
 }
 export interface FileRouteTypes {
@@ -216,7 +206,6 @@ export interface FileRouteTypes {
     | '/about-us'
     | '/projects'
     | '/settings/'
-    | '/projects/$projectId/edit'
     | '/projects/$projectId/tasks/$taskId'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -235,7 +224,6 @@ export interface FileRouteTypes {
     | '/about-us'
     | '/projects'
     | '/settings'
-    | '/projects/$projectId/edit'
     | '/projects/$projectId/tasks/$taskId'
   id:
     | '__root__'
@@ -256,7 +244,6 @@ export interface FileRouteTypes {
     | '/_authenticated/about-us/'
     | '/_authenticated/projects/'
     | '/_authenticated/settings/'
-    | '/_authenticated/projects/$projectId/edit'
     | '/_authenticated/projects/$projectId/tasks/$taskId'
   fileRoutesById: FileRoutesById
 }
@@ -390,13 +377,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedProjectsProjectIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/projects/$projectId/edit': {
-      id: '/_authenticated/projects/$projectId/edit'
-      path: '/edit'
-      fullPath: '/projects/$projectId/edit'
-      preLoaderRoute: typeof AuthenticatedProjectsProjectIdEditRouteImport
-      parentRoute: typeof AuthenticatedProjectsProjectIdRoute
-    }
     '/_authenticated/projects/$projectId/tasks/$taskId': {
       id: '/_authenticated/projects/$projectId/tasks/$taskId'
       path: '/tasks/$taskId'
@@ -434,14 +414,11 @@ const AuthenticatedSettingsRouteRouteWithChildren =
   )
 
 interface AuthenticatedProjectsProjectIdRouteChildren {
-  AuthenticatedProjectsProjectIdEditRoute: typeof AuthenticatedProjectsProjectIdEditRoute
   AuthenticatedProjectsProjectIdTasksTaskIdRoute: typeof AuthenticatedProjectsProjectIdTasksTaskIdRoute
 }
 
 const AuthenticatedProjectsProjectIdRouteChildren: AuthenticatedProjectsProjectIdRouteChildren =
   {
-    AuthenticatedProjectsProjectIdEditRoute:
-      AuthenticatedProjectsProjectIdEditRoute,
     AuthenticatedProjectsProjectIdTasksTaskIdRoute:
       AuthenticatedProjectsProjectIdTasksTaskIdRoute,
   }

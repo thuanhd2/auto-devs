@@ -164,11 +164,12 @@ func (w *worktreeUsecase) CreateWorktreeForTask(ctx context.Context, req CreateW
 
 	// Step 5: Create Git worktree from main branch
 	worktreePath, err := w.integratedWorktreeSvc.CreateTaskWorktree(ctx, &worktreesvc.CreateTaskWorktreeRequest{
-		ProjectID:         req.ProjectID.String(),
-		TaskID:            req.TaskID.String(),
-		TaskTitle:         req.TaskTitle,
-		ProjectWorkDir:    project.WorktreeBasePath,
-		ProjectMainBranch: taskBranchName,
+		ProjectID:           req.ProjectID.String(),
+		TaskID:              req.TaskID.String(),
+		TaskTitle:           req.TaskTitle,
+		ProjectWorkDir:      project.WorktreeBasePath,
+		ProjectMainBranch:   taskBranchName,
+		InitWorkspaceScript: project.InitWorkspaceScript,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create worktree: %w", err)
