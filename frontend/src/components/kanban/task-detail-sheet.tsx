@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from '@tanstack/react-router'
 import type { Task } from '@/types/task'
-import { ExternalLink } from 'lucide-react'
+import { ExternalLink, FolderOpen } from 'lucide-react'
+import { tasksApi } from '@/lib/api/tasks'
 import { getStatusColor, getStatusTitle } from '@/lib/kanban'
 import { useTaskExecutions } from '@/hooks/use-executions'
 import { usePullRequestByTask } from '@/hooks/use-pull-requests'
@@ -146,7 +147,7 @@ export function TaskDetailSheet({
               </TabsContent>
 
               <TabsContent value='code-changes' className='mt-4'>
-                <CodeChanges taskId={task.id} />
+                <CodeChanges taskId={task.id} task={task} />
               </TabsContent>
 
               <TabsContent value='executions' className='mt-4'>
@@ -270,8 +271,24 @@ function TaskExecutions({ taskId }: { taskId: string }) {
 }
 
 // CodeChanges component for the code changes tab
-function CodeChanges({ taskId }: { taskId: string }) {
+function CodeChanges({ taskId, task }: { taskId: string; task?: Task }) {
   const { data: pullRequest, isLoading, error } = usePullRequestByTask(taskId)
+  const [isOpeningCursor, setIsOpeningCursor] = useState(false)
+
+  const handleOpenWithCursor = async () => {
+    if (!task?.git_info?.worktree_path) return
+    
+    try {
+      setIsOpeningCursor(true)
+      await tasksApi.openWithCursor(taskId)
+      // Success feedback could be added here if needed
+    } catch (error) {
+      console.error('Failed to open with Cursor:', error)
+      // Error handling could be added here
+    } finally {
+      setIsOpeningCursor(false)
+    }
+  }
 
   if (isLoading) {
     return (
@@ -293,7 +310,25 @@ function CodeChanges({ taskId }: { taskId: string }) {
 
   if (!pullRequest) {
     return (
-      <div className='flex items-center justify-center p-4'>
+      <div className='space-y-3'>
+        <div className='flex items-center gap-2'>
+          <h4 className='text-sm font-medium'>Code Changes</h4>
+        </div>
+        
+        {/* Open with Cursor button */}
+        {task?.git_info?.worktree_path && (
+          <Button
+            variant='outline'
+            size='sm'
+            className='w-fit'
+            onClick={handleOpenWithCursor}
+            disabled={isOpeningCursor}
+          >
+            <FolderOpen className='mr-2 h-4 w-4' />
+            {isOpeningCursor ? 'Opening...' : 'Open With Cursor'}
+          </Button>
+        )}
+        
         <div className='text-muted-foreground text-sm'>
           No pull request created yet
         </div>
@@ -304,8 +339,23 @@ function CodeChanges({ taskId }: { taskId: string }) {
   return (
     <div className='space-y-3'>
       <div className='flex items-center gap-2'>
-        <h4 className='text-sm font-medium'>Pull Request</h4>
+        <h4 className='text-sm font-medium'>Code Changes</h4>
       </div>
+      
+      {/* Open with Cursor button */}
+      {task?.git_info?.worktree_path && (
+        <Button
+          variant='outline'
+          size='sm'
+          className='w-fit'
+          onClick={handleOpenWithCursor}
+          disabled={isOpeningCursor}
+        >
+          <FolderOpen className='mr-2 h-4 w-4' />
+          {isOpeningCursor ? 'Opening...' : 'Open With Cursor'}
+        </Button>
+      )}
+      
       <Button
         variant='outline'
         size='sm'

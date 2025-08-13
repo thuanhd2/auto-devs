@@ -381,3 +381,50 @@ func (h *TaskHandler) GetPullRequest(c *gin.Context) {
 
 	c.JSON(http.StatusOK, pr)
 }
+
+// OpenWithCursor godoc
+// @Summary Open task workspace with Cursor
+// @Description Open the task's worktree path with Cursor editor
+// @Tags tasks
+// @Accept json
+// @Produce json
+// @Param id path string true "Task ID"
+// @Success 200 {object} dto.SuccessResponse
+// @Failure 400 {object} dto.ErrorResponse
+// @Failure 404 {object} dto.ErrorResponse
+// @Failure 500 {object} dto.ErrorResponse
+// @Router /api/v1/tasks/{id}/open-with-cursor [post]
+func (h *TaskHandler) OpenWithCursor(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, dto.NewErrorResponse(err, http.StatusBadRequest, "Invalid task ID"))
+		return
+	}
+
+	// Get task to check if it has a worktree path
+	task, err := h.taskUsecase.GetByID(c.Request.Context(), id)
+	if err != nil {
+		c.JSON(http.StatusNotFound, dto.NewErrorResponse(err, http.StatusNotFound, "Task not found"))
+		return
+	}
+
+	// Check if task has worktree path
+	if task.WorktreePath == nil || *task.WorktreePath == "" {
+		c.JSON(http.StatusBadRequest, dto.NewErrorResponse(nil, http.StatusBadRequest, "Task does not have a worktree path"))
+		return
+	}
+
+	// Execute cursor command
+	err = h.taskUsecase.OpenWithCursor(c.Request.Context(), id, *task.WorktreePath)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, dto.NewErrorResponse(err, http.StatusInternalServerError, "Failed to open with Cursor"))
+		return
+	}
+
+	response := dto.SuccessResponse{
+		Message: "Successfully opened workspace with Cursor",
+		Success: true,
+	}
+	c.JSON(http.StatusOK, response)
+}

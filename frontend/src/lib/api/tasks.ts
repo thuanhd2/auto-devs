@@ -80,4 +80,8 @@ export const tasksApi = {
     )
     return response.data
   },
+
+  async openWithCursor(taskId: string): Promise<void> {
+    await api.post(`${API_ENDPOINTS.TASKS}/${taskId}/open-with-cursor`)
+  },
 }

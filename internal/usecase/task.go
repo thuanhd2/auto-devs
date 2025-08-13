@@ -3,6 +3,7 @@ package usecase
 import (
 	"context"
 	"fmt"
+	"os/exec"
 	"strings"
 	"time"
 
@@ -111,6 +112,9 @@ type TaskUsecase interface {
 
 	// Pull requests
 	GetPullRequest(ctx context.Context, taskID uuid.UUID) (*entity.PullRequest, error)
+
+	// Open with Cursor
+	OpenWithCursor(ctx context.Context, taskID uuid.UUID, worktreePath string) error
 }
 
 type CreateTaskRequest struct {
@@ -1127,4 +1131,22 @@ func (u *taskUsecase) GetPullRequest(ctx context.Context, taskID uuid.UUID) (*en
 	}
 
 	return pr, nil
+}
+
+// OpenWithCursor opens the task's worktree path with Cursor editor
+func (u *taskUsecase) OpenWithCursor(ctx context.Context, taskID uuid.UUID, worktreePath string) error {
+	if strings.TrimSpace(worktreePath) == "" {
+		return fmt.Errorf("worktree path is empty")
+	}
+
+	// Execute cursor command to open the workspace
+	cmd := exec.Command("cursor", worktreePath)
+	
+	// Start the command in the background (we don't need to wait for it to finish)
+	err := cmd.Start()
+	if err != nil {
+		return fmt.Errorf("failed to open Cursor: %w", err)
+	}
+
+	return nil
 }
