@@ -39,9 +39,10 @@ func (h *ProjectHandler) CreateProject(c *gin.Context) {
 	}
 
 	usecaseReq := usecase.CreateProjectRequest{
-		Name:             req.Name,
-		Description:      req.Description,
-		WorktreeBasePath: req.WorktreeBasePath,
+		Name:                req.Name,
+		Description:         req.Description,
+		WorktreeBasePath:    req.WorktreeBasePath,
+		InitWorkspaceScript: req.InitWorkspaceScript,
 	}
 
 	project, err := h.projectUsecase.Create(c.Request.Context(), usecaseReq)
@@ -180,6 +181,9 @@ func (h *ProjectHandler) UpdateProject(c *gin.Context) {
 	}
 	if req.WorktreeBasePath != nil {
 		usecaseReq.WorktreeBasePath = *req.WorktreeBasePath
+	}
+	if req.InitWorkspaceScript != nil {
+		usecaseReq.InitWorkspaceScript = *req.InitWorkspaceScript
 	}
 
 	project, err := h.projectUsecase.Update(c.Request.Context(), id, usecaseReq)

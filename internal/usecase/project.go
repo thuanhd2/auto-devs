@@ -36,16 +36,18 @@ type ProjectUsecase interface {
 }
 
 type CreateProjectRequest struct {
-	Name             string `json:"name" binding:"required"`
-	Description      string `json:"description"`
-	WorktreeBasePath string `json:"worktree_base_path" binding:"required"`
+	Name                string `json:"name" binding:"required"`
+	Description         string `json:"description"`
+	WorktreeBasePath    string `json:"worktree_base_path" binding:"required"`
+	InitWorkspaceScript string `json:"init_workspace_script"`
 }
 
 type UpdateProjectRequest struct {
-	Name             string `json:"name"`
-	Description      string `json:"description"`
-	RepositoryURL    string `json:"repository_url"`
-	WorktreeBasePath string `json:"worktree_base_path"`
+	Name                string `json:"name"`
+	Description         string `json:"description"`
+	RepositoryURL       string `json:"repository_url"`
+	WorktreeBasePath    string `json:"worktree_base_path"`
+	InitWorkspaceScript string `json:"init_workspace_script"`
 }
 
 type GetProjectsParams struct {
@@ -200,13 +202,14 @@ func (u *projectUsecase) Create(ctx context.Context, req CreateProjectRequest) (
 	}
 
 	project := &entity.Project{
-		ID:               uuid.New(),
-		Name:             strings.TrimSpace(req.Name),
-		Description:      strings.TrimSpace(req.Description),
-		RepositoryURL:    "", // Will be populated by git service later
-		WorktreeBasePath: strings.TrimSpace(req.WorktreeBasePath),
-		CreatedAt:        time.Now(),
-		UpdatedAt:        time.Now(),
+		ID:                  uuid.New(),
+		Name:                strings.TrimSpace(req.Name),
+		Description:         strings.TrimSpace(req.Description),
+		RepositoryURL:       "", // Will be populated by git service later
+		WorktreeBasePath:    strings.TrimSpace(req.WorktreeBasePath),
+		InitWorkspaceScript: strings.TrimSpace(req.InitWorkspaceScript),
+		CreatedAt:           time.Now(),
+		UpdatedAt:           time.Now(),
 	}
 
 	if err := u.projectRepo.Create(ctx, project); err != nil {
@@ -312,6 +315,9 @@ func (u *projectUsecase) Update(ctx context.Context, id uuid.UUID, req UpdatePro
 	}
 	if req.WorktreeBasePath != "" {
 		oldProject.WorktreeBasePath = strings.TrimSpace(req.WorktreeBasePath)
+	}
+	if req.InitWorkspaceScript != "" {
+		oldProject.InitWorkspaceScript = strings.TrimSpace(req.InitWorkspaceScript)
 	}
 
 	oldProject.UpdatedAt = time.Now()

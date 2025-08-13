@@ -2,9 +2,13 @@ import { useEffect } from 'react'
 import { z } from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Settings, Trash2 } from 'lucide-react'
 import type { UpdateProjectRequest } from '@/types/project'
-import { useProject, useUpdateProject, useDeleteProject } from '@/hooks/use-projects'
+import { Settings, Trash2 } from 'lucide-react'
+import {
+  useProject,
+  useUpdateProject,
+  useDeleteProject,
+} from '@/hooks/use-projects'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -23,9 +27,9 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
+import { Separator } from '@/components/ui/separator'
 import { Textarea } from '@/components/ui/textarea'
 import { SimpleConfirmDialog } from '@/components/simple-confirm-dialog'
-import { Separator } from '@/components/ui/separator'
 
 const updateProjectSchema = z.object({
   name: z
@@ -36,19 +40,11 @@ const updateProjectSchema = z.object({
     .string()
     .max(500, 'Description must be less than 500 characters')
     .optional(),
-  repository_url: z
-    .string()
-    .refine((url) => {
-      if (!url) return true // Optional field
-      try {
-        const parsedUrl = new URL(url)
-        return ['http:', 'https:', 'git:', 'ssh:'].includes(parsedUrl.protocol)
-      } catch {
-        return false
-      }
-    }, 'Please enter a valid repository URL')
-    .optional(),
   worktree_base_path: z.string().optional(),
+  init_workspace_script: z
+    .string()
+    .max(2000, 'Init script must be less than 2000 characters')
+    .optional(),
 })
 
 type UpdateProjectFormData = z.infer<typeof updateProjectSchema>
@@ -75,8 +71,8 @@ export function ProjectEditModal({
     defaultValues: {
       name: '',
       description: '',
-      repository_url: '',
       worktree_base_path: '',
+      init_workspace_script: '',
     },
   })
 
@@ -86,8 +82,8 @@ export function ProjectEditModal({
       form.reset({
         name: project.name,
         description: project.description || '',
-        repository_url: project.repository_url || '',
         worktree_base_path: project.worktree_base_path || '',
+        init_workspace_script: project.init_workspace_script || '',
       })
     }
   }, [project, form])
@@ -96,9 +92,11 @@ export function ProjectEditModal({
     const updates: UpdateProjectRequest = {
       name: data.name,
       description: data.description || undefined,
-      repository_url: data.repository_url || undefined,
       worktree_base_path: data.worktree_base_path || undefined,
+      init_workspace_script: data.init_workspace_script || undefined,
     }
+
+    console.log('updates', updates)
 
     try {
       await updateProject.mutateAsync({ projectId, updates })
@@ -124,15 +122,15 @@ export function ProjectEditModal({
       form.reset({
         name: project.name,
         description: project.description || '',
-        repository_url: project.repository_url || '',
         worktree_base_path: project.worktree_base_path || '',
+        init_workspace_script: project.init_workspace_script || '',
       })
     }
   }
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className='sm:max-w-[500px] max-h-[80vh] overflow-y-auto'>
+      <DialogContent className='max-h-[80vh] overflow-y-auto sm:max-w-[500px]'>
         <DialogHeader>
           <DialogTitle className='flex items-center gap-2'>
             <Settings className='h-5 w-5' />
@@ -186,26 +184,6 @@ export function ProjectEditModal({
 
             <FormField
               control={form.control}
-              name='repository_url'
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Repository URL</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder='https://github.com/user/repo.git'
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormDescription>
-                    The Git repository URL (HTTPS or SSH)
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
               name='worktree_base_path'
               render={({ field }) => (
                 <FormItem>
@@ -221,7 +199,30 @@ export function ProjectEditModal({
               )}
             />
 
-            <div className='flex justify-between items-center pt-4'>
+            <FormField
+              control={form.control}
+              name='init_workspace_script'
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Init Workspace Script</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder='npm install && npm run build'
+                      className='resize-none'
+                      rows={4}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    Optional bash script to run after creating worktree (e.g.,
+                    install dependencies)
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <div className='flex items-center justify-between pt-4'>
               <SimpleConfirmDialog
                 title='Delete Project'
                 description='Are you sure you want to delete this project? This action cannot be undone.'
@@ -230,9 +231,9 @@ export function ProjectEditModal({
                 confirmText='Delete Project'
                 cancelText='Cancel'
               >
-                <Button 
-                  type='button' 
-                  variant='destructive' 
+                <Button
+                  type='button'
+                  variant='destructive'
                   disabled={deleteProject.isPending}
                 >
                   {deleteProject.isPending ? (
