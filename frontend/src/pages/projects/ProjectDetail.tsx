@@ -245,10 +245,7 @@ export function ProjectDetail() {
                 </Card>
 
                 {/* Git Status Card */}
-                <GitStatusCard
-                  projectId={projectId}
-                  gitEnabled={!!project.repository_url}
-                />
+                <GitStatusCard projectId={projectId} />
 
                 <Card>
                   <CardHeader>

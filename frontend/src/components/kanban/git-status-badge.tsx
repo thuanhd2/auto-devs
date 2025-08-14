@@ -33,6 +33,7 @@ const GIT_STATUS_CONFIG = {
     icon: XCircle,
     color: 'bg-gray-100 text-gray-600 border-gray-200',
     variant: 'secondary' as const,
+    animate: false,
   },
   WORKTREE_PENDING: {
     label: 'Creating...',
@@ -48,6 +49,7 @@ const GIT_STATUS_CONFIG = {
     icon: GitBranch,
     color: 'bg-emerald-100 text-emerald-700 border-emerald-200',
     variant: 'secondary' as const,
+    animate: false,
   },
   BRANCH_CREATED: {
     label: 'Branch Ready',
@@ -55,6 +57,7 @@ const GIT_STATUS_CONFIG = {
     icon: GitBranch,
     color: 'bg-green-100 text-green-700 border-green-200',
     variant: 'secondary' as const,
+    animate: false,
   },
   CHANGES_PENDING: {
     label: 'Changes',
@@ -62,6 +65,7 @@ const GIT_STATUS_CONFIG = {
     icon: AlertCircle,
     color: 'bg-yellow-100 text-yellow-700 border-yellow-200',
     variant: 'secondary' as const,
+    animate: false,
   },
   CHANGES_STAGED: {
     label: 'Staged',
@@ -69,6 +73,7 @@ const GIT_STATUS_CONFIG = {
     icon: GitCommit,
     color: 'bg-orange-100 text-orange-700 border-orange-200',
     variant: 'secondary' as const,
+    animate: false,
   },
   CHANGES_COMMITTED: {
     label: 'Committed',
@@ -76,6 +81,7 @@ const GIT_STATUS_CONFIG = {
     icon: CheckCircle2,
     color: 'bg-blue-100 text-blue-700 border-blue-200',
     variant: 'secondary' as const,
+    animate: false,
   },
   PR_CREATED: {
     label: 'PR Created',
@@ -83,6 +89,7 @@ const GIT_STATUS_CONFIG = {
     icon: GitPullRequest,
     color: 'bg-purple-100 text-purple-700 border-purple-200',
     variant: 'secondary' as const,
+    animate: false,
   },
   PR_MERGED: {
     label: 'Merged',
@@ -90,6 +97,7 @@ const GIT_STATUS_CONFIG = {
     icon: GitMerge,
     color: 'bg-green-100 text-green-700 border-green-200',
     variant: 'secondary' as const,
+    animate: false,
   },
   WORKTREE_ERROR: {
     label: 'Git Error',
@@ -97,6 +105,7 @@ const GIT_STATUS_CONFIG = {
     icon: XCircle,
     color: 'bg-red-100 text-red-700 border-red-200',
     variant: 'destructive' as const,
+    animate: false,
   },
 } as const
 

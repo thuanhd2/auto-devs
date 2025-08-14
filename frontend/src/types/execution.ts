@@ -39,6 +39,7 @@ export interface ExecutionLog {
   source: string
   metadata?: unknown
   created_at: string
+  line: number
 }
 
 export interface ExecutionWithLogs extends Execution {

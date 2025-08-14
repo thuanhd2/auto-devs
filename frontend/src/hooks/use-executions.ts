@@ -22,10 +22,10 @@ export function useTaskExecutions(taskId: string, filters?: ExecutionFilters) {
   })
 }
 
-export function useExecution(executionId: string) {
+export function useExecution(executionId: string | null) {
   return useQuery({
     queryKey: [EXECUTION_QUERY_KEY, executionId],
-    queryFn: () => executionsApi.getExecution(executionId, true, 1000),
+    queryFn: () => executionsApi.getExecutionWithLogs(executionId || ''),
     enabled: !!executionId,
     refetchInterval: (data) => {
       const executionStatus = data.state?.data?.status

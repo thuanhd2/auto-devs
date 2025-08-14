@@ -42,6 +42,7 @@ export interface Task {
   created_at: string
   updated_at: string
   completed_at?: string
+  worktree_path?: string
   // Git information
   git_info?: TaskGitInfo
   plans?: TaskPlan[]

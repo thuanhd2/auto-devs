@@ -55,12 +55,12 @@ const statusStats = (executions: Execution[]) => {
   )
 
   return {
-    running: stats.running || 0,
-    pending: stats.pending || 0,
-    completed: stats.completed || 0,
-    failed: stats.failed || 0,
-    cancelled: stats.cancelled || 0,
-    paused: stats.paused || 0,
+    running: stats.RUNNING || 0,
+    pending: stats.PENDING || 0,
+    completed: stats.COMPLETED || 0,
+    failed: stats.FAILED || 0,
+    cancelled: stats.CANCELLED || 0,
+    paused: stats.PAUSED || 0,
   }
 }
 
@@ -152,34 +152,30 @@ export function ExecutionList({
         <StatusStatBadge
           label='Running'
           count={stats.running}
-          status='running'
           icon={Play}
-          onClick={() => handleStatusFilter('running')}
-          active={filters?.status === 'running'}
+          onClick={() => handleStatusFilter('RUNNING')}
+          active={filters?.status === 'RUNNING'}
         />
         <StatusStatBadge
           label='Pending'
           count={stats.pending}
-          status='pending'
           icon={Clock}
-          onClick={() => handleStatusFilter('pending')}
-          active={filters?.status === 'pending'}
+          onClick={() => handleStatusFilter('PENDING')}
+          active={filters?.status === 'PENDING'}
         />
         <StatusStatBadge
           label='Completed'
           count={stats.completed}
-          status='completed'
           icon={CheckCircle}
-          onClick={() => handleStatusFilter('completed')}
-          active={filters?.status === 'completed'}
+          onClick={() => handleStatusFilter('COMPLETED')}
+          active={filters?.status === 'COMPLETED'}
         />
         <StatusStatBadge
           label='Failed'
           count={stats.failed}
-          status='failed'
           icon={XCircle}
-          onClick={() => handleStatusFilter('failed')}
-          active={filters?.status === 'failed'}
+          onClick={() => handleStatusFilter('FAILED')}
+          active={filters?.status === 'FAILED'}
         />
         {filters?.status && (
           <Button

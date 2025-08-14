@@ -81,6 +81,13 @@ export const executionsApi = {
     return response.data
   },
 
+  async getExecutionWithLogs(executionId: string): Promise<ExecutionWithLogs> {
+    const response = await api.get(
+      `${API_ENDPOINTS.EXECUTIONS}/${executionId}?include_logs=true&log_limit=1000`
+    )
+    return response.data
+  },
+
   // Get execution logs with pagination and filtering
   async getExecutionLogs(
     executionId: string,

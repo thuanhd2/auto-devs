@@ -12,12 +12,9 @@ import {
   useSensors,
 } from '@dnd-kit/core'
 import { KANBAN_COLUMNS, canTransitionTo } from '@/lib/kanban'
-import {
-  useWebSocketProject,
-  useWebSocketContext,
-} from '@/context/websocket-context'
+import { useWebSocketProject } from '@/context/websocket-context'
 import { useKeyboardNavigation } from '@/hooks/use-keyboard-navigation'
-import { useUpdateTask, useOptimisticTaskUpdate } from '@/hooks/use-tasks'
+import { useUpdateTask } from '@/hooks/use-tasks'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { KanbanColumn } from './kanban-column'
 
@@ -39,7 +36,6 @@ export function KanbanBoard({
   onEditTask,
   onDeleteTask,
   onViewTaskDetails,
-  isCompactView = false,
   searchQuery = '',
 }: KanbanBoardProps) {
   const [localTasks, setLocalTasks] = useState<Task[]>(tasks)
@@ -106,20 +102,18 @@ export function KanbanBoard({
     return grouped
   }, [filteredTasks])
 
-  const handleDragStart = (event: DragStartEvent) => {
-    setActiveTaskId(event.active.id as string)
-  }
+  const handleDragStart = (_event: DragStartEvent) => {}
 
   const handleDragOver = (event: DragOverEvent) => {
     const { active, over } = event
 
     if (!over) return
 
-    const activeTaskId = active.id as string
+    const activeElementId = active.id as string
     const overColumnId = over.id as TaskStatus
 
     // Find the active task
-    const activeTask = tasks.find((task) => task.id === activeTaskId)
+    const activeTask = tasks.find((task) => task.id === activeElementId)
     if (!activeTask) return
 
     // Check if we're moving to a different column
@@ -132,12 +126,12 @@ export function KanbanBoard({
       // Apply optimistic update using WebSocket service
       if (activeTask) {
         taskOptimisticUpdates.updateTaskStatus(
-          activeTaskId,
+          activeElementId,
           overColumnId,
           activeTask,
           (updatedTask) => {
             setLocalTasks((prev) =>
-              prev.map((t) => (t.id === activeTaskId ? updatedTask : t))
+              prev.map((t) => (t.id === activeElementId ? updatedTask : t))
             )
           }
         )
@@ -147,31 +141,28 @@ export function KanbanBoard({
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event
-    setActiveTaskId(null)
 
     if (!over) return
 
-    const activeTaskId = active.id as string
+    const activeElementId = active.id as string
     const overColumnId = over.id as TaskStatus
 
     // Find the active task
-    const activeTask = tasks.find((task) => task.id === activeTaskId)
+    const activeTask = tasks.find((task) => task.id === activeElementId)
     if (!activeTask) return
 
     // If status changed, update via API
     if (activeTask.status !== overColumnId) {
       if (canTransitionTo(activeTask.status, overColumnId)) {
         updateTaskMutation.mutate({
-          taskId: activeTaskId,
+          taskId: activeElementId,
           updates: { status: overColumnId },
         })
       }
     }
   }
 
-  const handleDragCancel = () => {
-    setActiveTaskId(null)
-  }
+  const handleDragCancel = () => {}
 
   return (
     <DndContext
@@ -197,7 +188,6 @@ export function KanbanBoard({
                   onEditTask={onEditTask}
                   onDeleteTask={onDeleteTask}
                   onViewTaskDetails={onViewTaskDetails}
-                  isCompactView={isCompactView}
                   selectedTaskId={selectedTaskId}
                   isSelectedColumn={selectedColumnId === column.id}
                 />

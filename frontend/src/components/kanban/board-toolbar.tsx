@@ -7,7 +7,6 @@ import {
   Download,
 } from 'lucide-react'
 import { useWebSocketConnection } from '@/context/websocket-context'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -34,7 +33,7 @@ export function BoardToolbar({
   projectId,
 }: BoardToolbarProps) {
   const [showHiddenColumns, setShowHiddenColumns] = useState(false)
-  const { isConnected, queuedMessageCount } = useWebSocketConnection()
+  const { isConnected } = useWebSocketConnection()
 
   return (
     <div className='flex items-center justify-between border-b p-4'>
@@ -50,11 +49,6 @@ export function BoardToolbar({
             } animate-pulse`}
           />
           <span className='text-sm'>{isConnected ? 'Live' : 'Offline'}</span>
-          {queuedMessageCount > 0 && (
-            <Badge variant='outline' className='text-xs'>
-              {queuedMessageCount} queued
-            </Badge>
-          )}
         </div>
 
         <Separator orientation='vertical' className='h-6' />

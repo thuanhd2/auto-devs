@@ -5,16 +5,12 @@ import { TaskCard } from './task-card'
 
 interface DraggableTaskCardProps {
   task: Task
-  onEdit?: (task: Task) => void
-  onDelete?: (taskId: string) => void
   onViewDetails?: (task: Task) => void
   isSelected?: boolean
 }
 
 export function DraggableTaskCard({
   task,
-  onEdit,
-  onDelete,
   onViewDetails,
   isSelected = false,
 }: DraggableTaskCardProps) {
@@ -47,8 +43,6 @@ export function DraggableTaskCard({
       <TaskCard
         task={task}
         isDragging={isDragging}
-        onEdit={onEdit}
-        onDelete={onDelete}
         onViewDetails={onViewDetails}
       />
     </div>

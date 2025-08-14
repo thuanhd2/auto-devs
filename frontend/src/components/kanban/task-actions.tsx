@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { Task, TaskStatus } from '@/types/task'
+import type { Task } from '@/types/task'
 import {
   Edit,
   Trash2,

@@ -4,7 +4,6 @@ import {
   Play,
   Pause,
   Square,
-  Eye,
   AlertTriangle,
   ChevronRight,
   MoreHorizontal,
@@ -48,8 +47,8 @@ export function ExecutionItem({
 }: ExecutionItemProps) {
   const [isExpanded, setIsExpanded] = useState(false)
   const isActive =
-    execution.status === 'running' || execution.status === 'pending'
-  const hasError = execution.status === 'failed' || !!execution.error
+    execution.status === 'RUNNING' || execution.status === 'PENDING'
+  const hasError = execution.status === 'FAILED' || !!execution.error
 
   const handleStatusUpdate = (newStatus: string) => {
     onUpdate?.(execution.id, { status: newStatus })
@@ -100,8 +99,6 @@ export function ExecutionItem({
                 <ExecutionActions
                   execution={execution}
                   onUpdate={handleStatusUpdate}
-                  onDelete={onDelete}
-                  onViewDetails={onViewDetails}
                 />
               )}
             </div>
@@ -192,12 +189,12 @@ function ExecutionActions({
   execution: Execution
   onUpdate?: (status: string) => void
 }) {
-  const canPause = execution.status === 'running'
-  const canResume = execution.status === 'paused'
+  const canPause = execution.status === 'RUNNING'
+  const canResume = execution.status === 'PAUSED'
   const canStop =
-    execution.status === 'running' || execution.status === 'paused'
+    execution.status === 'RUNNING' || execution.status === 'PAUSED'
   const canRetry =
-    execution.status === 'failed' || execution.status === 'cancelled'
+    execution.status === 'FAILED' || execution.status === 'CANCELLED'
 
   const dropdownItems = []
   if (canPause) {

@@ -10,13 +10,6 @@ import {
   User,
 } from 'lucide-react'
 import { useExecution } from '@/hooks/use-executions'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog'
 import { ScrollArea } from '@/components/ui/scroll-area'
 
 interface ExecutionLogsPannelProps {
@@ -24,7 +17,6 @@ interface ExecutionLogsPannelProps {
 }
 
 export function ExecutionLogsPannel({ executionId }: ExecutionLogsPannelProps) {
-  // const { logs, isLoading, error } = useExecutionLogs(executionId)
   const { data: execution, isLoading, error } = useExecution(executionId)
   const logs = (execution?.logs || []).sort((a, b) => a.line - b.line)
   const scrollAreaRef = useRef<HTMLDivElement>(null)
@@ -53,7 +45,7 @@ export function ExecutionLogsPannel({ executionId }: ExecutionLogsPannelProps) {
       {error && (
         <div className='mb-2 flex items-center gap-2 rounded border border-red-200 bg-red-50 p-2 text-red-700'>
           <AlertTriangle className='h-4 w-4' />
-          <span>{error}</span>
+          <span>{error.message}</span>
         </div>
       )}
       {!isLoading && !error && (

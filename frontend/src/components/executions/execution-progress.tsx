@@ -18,9 +18,9 @@ const sizeClasses = {
 }
 
 const getProgressIcon = (status: ExecutionStatus, _progress: number) => {
-  if (status === 'completed') return TrendingUp
-  if (status === 'failed' || status === 'cancelled') return TrendingDown
-  if (status === 'paused') return Minus
+  if (status === 'COMPLETED') return TrendingUp
+  if (status === 'FAILED' || status === 'CANCELLED') return TrendingDown
+  if (status === 'PAUSED') return Minus
   return null
 }
 

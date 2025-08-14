@@ -24,7 +24,7 @@ export function ExecutionDuration({
 }: ExecutionDurationProps) {
   const [currentTime, setCurrentTime] = useState(Date.now())
 
-  const isActive = status === 'running' || status === 'pending'
+  const isActive = status === 'RUNNING' || status === 'PENDING'
 
   // Update current time for active executions
   useEffect(() => {

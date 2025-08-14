@@ -21,7 +21,6 @@ interface KanbanColumnProps {
   onEditTask?: (task: Task) => void
   onDeleteTask?: (taskId: string) => void
   onViewTaskDetails?: (task: Task) => void
-  isCompactView?: boolean
   selectedTaskId?: string | null
   isSelectedColumn?: boolean
 }
@@ -30,10 +29,7 @@ export function KanbanColumn({
   column,
   tasks,
   onCreateTask,
-  onEditTask,
-  onDeleteTask,
   onViewTaskDetails,
-  isCompactView = false,
   selectedTaskId,
   isSelectedColumn = false,
 }: KanbanColumnProps) {
@@ -114,10 +110,7 @@ export function KanbanColumn({
                 <DraggableTaskCard
                   key={task.id}
                   task={task}
-                  onEdit={onEditTask}
-                  onDelete={onDeleteTask}
                   onViewDetails={onViewTaskDetails}
-                  isCompact={isCompactView}
                   isSelected={selectedTaskId === task.id}
                 />
               ))}

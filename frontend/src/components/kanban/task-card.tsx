@@ -1,32 +1,20 @@
-import { useState } from 'react'
 import { formatDistanceToNow } from 'date-fns'
 import type { Task } from '@/types/task'
 import { Calendar, GitBranch, ExternalLink } from 'lucide-react'
 import { getStatusColor, getStatusTitle } from '@/lib/kanban'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
 import { GitStatusBadge } from './git-status-badge'
 
 interface TaskCardProps {
   task: Task
   isDragging?: boolean
-  onEdit?: (task: Task) => void
-  onDelete?: (taskId: string) => void
   onViewDetails?: (task: Task) => void
 }
 
 export function TaskCard({
   task,
   isDragging = false,
-  onEdit,
-  onDelete,
   onViewDetails,
 }: TaskCardProps) {
   const handleViewDetails = () => {

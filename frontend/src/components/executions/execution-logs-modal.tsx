@@ -65,7 +65,7 @@ export function ExecutionLogsModal({
           {error && (
             <div className='mb-2 flex items-center gap-2 rounded border border-red-200 bg-red-50 p-2 text-red-700'>
               <AlertTriangle className='h-4 w-4' />
-              <span>{error}</span>
+              <span>{error.message}</span>
             </div>
           )}
           {!isLoading && !error && (

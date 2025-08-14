@@ -48,7 +48,7 @@ export function ProjectBoard({ projectId }: ProjectBoardProps) {
     task?: Task | null
   }>({ open: false, task: null })
 
-  const { data: tasksResponse, refetch } = useTasks(projectId, filters)
+  const { data: tasksResponse } = useTasks(projectId)
   const deleteTaskMutation = useDeleteTask()
   const duplicateTaskMutation = useDuplicateTask()
   const startPlanningMutation = useStartPlanning()
@@ -64,11 +64,11 @@ export function ProjectBoard({ projectId }: ProjectBoardProps) {
     }
     // update the task in the local tasks array
     setLocalTasks((prev) =>
-      prev.map((t) => {
+      prev.map((t: any) => {
         if (t.id !== taskId) {
           return t
         }
-        const changedValues = {}
+        const changedValues: { [key: string]: any } = {}
         for (const key in changes) {
           if (t[key] !== changes[key].new) {
             changedValues[key] = changes[key].new

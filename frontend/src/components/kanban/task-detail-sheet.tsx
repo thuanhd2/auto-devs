@@ -17,7 +17,7 @@ import {
   SheetDescription,
 } from '@/components/ui/sheet'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
-import { ExecutionList, ExecutionLogsModal } from '../executions'
+import { ExecutionList } from '../executions'
 import { PlanReview } from '../planning'
 import { TaskActions } from './task-actions'
 import { TaskEditForm } from './task-edit-form'
@@ -33,7 +33,7 @@ interface TaskDetailSheetProps {
   onDuplicate?: (task: Task) => void
   onStatusChange?: (taskId: string, newStatus: Task['status']) => void
   onStartPlanning?: (taskId: string, branchName: string, aiType: string) => void
-  onApprovePlanAndStartImplement?: (taskId: string) => void
+  onApprovePlanAndStartImplement?: (taskId: string, aiType: string) => void
 }
 
 export function TaskDetailSheet({
@@ -79,10 +79,6 @@ export function TaskDetailSheet({
     onDuplicate?.(task)
   }
 
-  const handleStatusChange = (taskId: string, newStatus: Task['status']) => {
-    onStatusChange?.(taskId, newStatus)
-  }
-
   const handleEditSave = (updatedTask: Task) => {
     onEdit?.(updatedTask)
     setShowEditForm(false)
@@ -120,10 +116,8 @@ export function TaskDetailSheet({
                 onEdit={handleEdit}
                 onDelete={onDelete}
                 onDuplicate={handleDuplicate}
-                onStatusChange={handleStatusChange}
                 onStartPlanning={onStartPlanning}
                 onApprovePlanAndStartImplement={onApprovePlanAndStartImplement}
-                // onViewHistory={() => setShowHistory(true)}
               />
             </div>
 
@@ -205,45 +199,6 @@ function TaskExecutions({ taskId }: { taskId: string }) {
 
   const executions = executionsData?.data || []
 
-  const [showLogsModal, setShowLogsModal] = useState(false)
-  const [selectedExecutionId, setSelectedExecutionId] = useState<string | null>(
-    null
-  )
-
-  const handleCreateExecution = () => {
-    // This would typically open a dialog or trigger execution creation
-    // TODO: Implement execution creation dialog
-  }
-
-  const handleUpdateExecution = (
-    executionId: string,
-    updates: Record<string, unknown>
-  ) => {
-    // This would typically call the update mutation
-    // TODO: Implement execution update functionality
-    void executionId
-    void updates
-  }
-
-  const handleDeleteExecution = (executionId: string) => {
-    // This would typically call the delete mutation
-    // TODO: Implement execution deletion
-    void executionId
-  }
-
-  const handleViewLogs = (executionId: string) => {
-    // This would typically open a logs modal or navigate to logs page
-    // TODO: Implement logs modal
-    setShowLogsModal(true)
-    setSelectedExecutionId(executionId)
-  }
-
-  const handleViewDetails = (executionId: string) => {
-    // This would typically open an execution details modal
-    // TODO: Implement execution details modal
-    void executionId
-  }
-
   return (
     <>
       <ExecutionList
@@ -251,20 +206,9 @@ function TaskExecutions({ taskId }: { taskId: string }) {
         loading={isLoading}
         error={error?.message}
         onRefresh={refetch}
-        onCreateExecution={handleCreateExecution}
-        onUpdateExecution={handleUpdateExecution}
-        onDeleteExecution={handleDeleteExecution}
-        onViewLogs={handleViewLogs}
-        onViewDetails={handleViewDetails}
         compact={true}
         expandable={true}
-        showCreateButton={true}
         showFilters={false}
-      />
-      <ExecutionLogsModal
-        open={showLogsModal}
-        executionId={selectedExecutionId}
-        onClose={() => setShowLogsModal(false)}
       />
     </>
   )
@@ -366,7 +310,7 @@ function CodeChanges({ taskId, task }: { taskId: string; task?: Task }) {
         View Pull Request
       </Button>
       <div className='text-muted-foreground text-xs'>
-        #{pullRequest.number} - {pullRequest.title}
+        #{pullRequest.github_pr_number} - {pullRequest.title}
       </div>
     </div>
   )
