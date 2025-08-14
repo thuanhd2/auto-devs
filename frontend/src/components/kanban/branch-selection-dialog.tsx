@@ -53,13 +53,7 @@ export function BranchSelectionDialog({
     setSelectedAIType(savedPlanningAI || 'claude-code') // Default to claude-code
   }, [])
 
-  useEffect(() => {
-    if (open && projectId) {
-      fetchBranches()
-    }
-  }, [open, projectId])
-
-  const fetchBranches = async () => {
+  const fetchBranches = useCallback(async () => {
     setLoading(true)
     setError('')
 
@@ -80,24 +74,34 @@ export function BranchSelectionDialog({
     } finally {
       setLoading(false)
     }
-  }
+  }, [projectId])
+
+  useEffect(() => {
+    if (open && projectId) {
+      fetchBranches()
+    }
+  }, [open, projectId, fetchBranches])
 
   const handleConfirm = () => {
     if (selectedBranch && selectedAIType) {
       // Save AI type preference to localStorage
       localStorage.setItem('ai_preference_planning', selectedAIType)
-      
+
       onBranchSelected(selectedBranch, selectedAIType)
       onOpenChange(false)
       setSelectedBranch('')
-      setSelectedAIType(localStorage.getItem('ai_preference_planning') || 'claude-code')
+      setSelectedAIType(
+        localStorage.getItem('ai_preference_planning') || 'claude-code'
+      )
     }
   }
 
   const handleCancel = () => {
     onOpenChange(false)
     setSelectedBranch('')
-    setSelectedAIType(localStorage.getItem('ai_preference_planning') || 'claude-code')
+    setSelectedAIType(
+      localStorage.getItem('ai_preference_planning') || 'claude-code'
+    )
     setError('')
   }
 
@@ -131,7 +135,10 @@ export function BranchSelectionDialog({
             <>
               <div className='space-y-2'>
                 <label className='text-sm font-medium'>Select Branch:</label>
-                <Select value={selectedBranch} onValueChange={setSelectedBranch}>
+                <Select
+                  value={selectedBranch}
+                  onValueChange={setSelectedBranch}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder='Select a branch' />
                   </SelectTrigger>
@@ -159,34 +166,37 @@ export function BranchSelectionDialog({
               </div>
 
               <div className='space-y-2'>
-              <label className='text-sm font-medium flex items-center gap-2'>
-                <Bot className='h-4 w-4' />
-                Select AI Assistant:
-              </label>
-              <Select value={selectedAIType} onValueChange={setSelectedAIType}>
-                <SelectTrigger>
-                  <SelectValue placeholder='Select AI type' />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value='claude-code'>
-                    <div className='flex items-center gap-2'>
-                      <span>Claude Code</span>
-                      <span className='text-muted-foreground text-xs'>
-                        (Production AI)
-                      </span>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value='fake-code'>
-                    <div className='flex items-center gap-2'>
-                      <span>Fake Code</span>
-                      <span className='text-muted-foreground text-xs'>
-                        (Test/Demo AI)
-                      </span>
-                    </div>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+                <label className='flex items-center gap-2 text-sm font-medium'>
+                  <Bot className='h-4 w-4' />
+                  Select AI Assistant:
+                </label>
+                <Select
+                  value={selectedAIType}
+                  onValueChange={setSelectedAIType}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder='Select AI type' />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value='claude-code'>
+                      <div className='flex items-center gap-2'>
+                        <span>Claude Code</span>
+                        <span className='text-muted-foreground text-xs'>
+                          (Production AI)
+                        </span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value='fake-code'>
+                      <div className='flex items-center gap-2'>
+                        <span>Fake Code</span>
+                        <span className='text-muted-foreground text-xs'>
+                          (Test/Demo AI)
+                        </span>
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </>
           )}
         </div>
@@ -195,7 +205,10 @@ export function BranchSelectionDialog({
           <Button variant='outline' onClick={handleCancel}>
             Cancel
           </Button>
-          <Button onClick={handleConfirm} disabled={!selectedBranch || !selectedAIType || loading}>
+          <Button
+            onClick={handleConfirm}
+            disabled={!selectedBranch || !selectedAIType || loading}
+          >
             Start Planning
           </Button>
         </DialogFooter>

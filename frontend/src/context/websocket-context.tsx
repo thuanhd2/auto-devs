@@ -253,6 +253,7 @@ export function WebSocketProvider({
       onUserLeft,
       onConnectionError,
       onAuthRequired,
+      confirmOptimisticPendingUpdates,
     ]
   )
 
@@ -423,6 +424,7 @@ export function WebSocketProvider({
   )
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useWebSocketContext(): WebSocketContextValue {
   const context = useContext(WebSocketContext)
   if (!context) {
@@ -433,7 +435,7 @@ export function useWebSocketContext(): WebSocketContextValue {
   return context
 }
 
-// Helper hooks for specific use cases
+// eslint-disable-next-line react-refresh/only-export-components
 export function useWebSocketConnection() {
   const {
     isConnected,
@@ -458,6 +460,7 @@ export function useWebSocketConnection() {
   }
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useWebSocketProject(projectId?: string) {
   const {
     currentProjectId,

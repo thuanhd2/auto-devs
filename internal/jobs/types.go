@@ -10,9 +10,9 @@ import (
 
 // Job type constants
 const (
-	TypeTaskPlanning      = "task:planning"
+	TypeTaskPlanning       = "task:planning"
 	TypeTaskImplementation = "task:implementation"
-	TypePRStatusSync      = "pr:status_sync"
+	TypePRStatusSync       = "pr:status_sync"
 )
 
 // TaskPlanningPayload represents the payload for task planning jobs
@@ -36,18 +36,19 @@ type PRStatusSyncPayload struct {
 }
 
 // NewTaskPlanningJob creates a new task planning job
-func NewTaskPlanningJob(taskID uuid.UUID, branchName string, projectID uuid.UUID) (*asynq.Task, error) {
+func NewTaskPlanningJob(taskID uuid.UUID, branchName string, projectID uuid.UUID, aiType string) (*asynq.Task, error) {
 	payload := TaskPlanningPayload{
 		TaskID:     taskID,
 		BranchName: branchName,
 		ProjectID:  projectID,
+		AIType:     aiType,
 	}
-	
+
 	data, err := json.Marshal(payload)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal task planning payload: %w", err)
 	}
-	
+
 	return asynq.NewTask(TypeTaskPlanning, data), nil
 }
 
@@ -61,17 +62,18 @@ func ParseTaskPlanningPayload(task *asynq.Task) (*TaskPlanningPayload, error) {
 }
 
 // NewTaskImplementationJob creates a new task implementation job
-func NewTaskImplementationJob(taskID uuid.UUID, projectID uuid.UUID) (*asynq.Task, error) {
+func NewTaskImplementationJob(taskID uuid.UUID, projectID uuid.UUID, aiType string) (*asynq.Task, error) {
 	payload := TaskImplementationPayload{
 		TaskID:    taskID,
 		ProjectID: projectID,
+		AIType:    aiType,
 	}
-	
+
 	data, err := json.Marshal(payload)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal task implementation payload: %w", err)
 	}
-	
+
 	return asynq.NewTask(TypeTaskImplementation, data), nil
 }
 
@@ -87,12 +89,12 @@ func ParseTaskImplementationPayload(task *asynq.Task) (*TaskImplementationPayloa
 // NewPRStatusSyncJob creates a new PR status sync job
 func NewPRStatusSyncJob() (*asynq.Task, error) {
 	payload := PRStatusSyncPayload{}
-	
+
 	data, err := json.Marshal(payload)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal PR status sync payload: %w", err)
 	}
-	
+
 	return asynq.NewTask(TypePRStatusSync, data), nil
 }
 

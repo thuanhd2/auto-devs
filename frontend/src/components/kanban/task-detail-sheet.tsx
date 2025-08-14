@@ -51,17 +51,17 @@ export function TaskDetailSheet({
   const params = useParams({ strict: false }) as { projectId?: string }
   const [showEditForm, setShowEditForm] = useState(false)
   const [showHistory, setShowHistory] = useState(false)
-  
+
   // Handle sheet close and URL cleanup
   const handleOpenChange = (isOpen: boolean) => {
     onOpenChange(isOpen)
-    
+
     if (!isOpen && params.projectId) {
       // Navigate back to project without task ID
       navigate({
         to: '/projects/$projectId',
         params: { projectId: params.projectId },
-        replace: true
+        replace: true,
       })
     }
   }
@@ -276,8 +276,8 @@ function CodeChanges({ taskId, task }: { taskId: string; task?: Task }) {
   const [isOpeningCursor, setIsOpeningCursor] = useState(false)
 
   const handleOpenWithCursor = async () => {
-    if (!task?.git_info?.worktree_path) return
-    
+    if (!task?.worktree_path) return
+
     try {
       setIsOpeningCursor(true)
       await tasksApi.openWithCursor(taskId)
@@ -314,9 +314,9 @@ function CodeChanges({ taskId, task }: { taskId: string; task?: Task }) {
         <div className='flex items-center gap-2'>
           <h4 className='text-sm font-medium'>Code Changes</h4>
         </div>
-        
+
         {/* Open with Cursor button */}
-        {task?.git_info?.worktree_path && (
+        {task?.worktree_path && (
           <Button
             variant='outline'
             size='sm'
@@ -328,7 +328,7 @@ function CodeChanges({ taskId, task }: { taskId: string; task?: Task }) {
             {isOpeningCursor ? 'Opening...' : 'Open With Cursor'}
           </Button>
         )}
-        
+
         <div className='text-muted-foreground text-sm'>
           No pull request created yet
         </div>
@@ -341,9 +341,9 @@ function CodeChanges({ taskId, task }: { taskId: string; task?: Task }) {
       <div className='flex items-center gap-2'>
         <h4 className='text-sm font-medium'>Code Changes</h4>
       </div>
-      
+
       {/* Open with Cursor button */}
-      {task?.git_info?.worktree_path && (
+      {task?.worktree_path && (
         <Button
           variant='outline'
           size='sm'
@@ -355,7 +355,7 @@ function CodeChanges({ taskId, task }: { taskId: string; task?: Task }) {
           {isOpeningCursor ? 'Opening...' : 'Open With Cursor'}
         </Button>
       )}
-      
+
       <Button
         variant='outline'
         size='sm'

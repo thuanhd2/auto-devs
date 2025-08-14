@@ -84,8 +84,6 @@ func (h *TaskHandler) GetTask(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
-
-
 // ListTasks godoc
 // @Summary List tasks with filtering
 // @Description Get a list of tasks with optional filtering by status, project, or search term
@@ -217,8 +215,6 @@ func (h *TaskHandler) UpdateTask(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
-
-
 // DeleteTask godoc
 // @Summary Delete a task
 // @Description Delete a task by its ID
@@ -249,22 +245,6 @@ func (h *TaskHandler) DeleteTask(c *gin.Context) {
 
 	c.Status(http.StatusNoContent)
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 // StartPlanning godoc
 // @Summary Start planning for a task
@@ -431,7 +411,6 @@ func (h *TaskHandler) OpenWithCursor(c *gin.Context) {
 
 	response := dto.SuccessResponse{
 		Message: "Successfully opened workspace with Cursor",
-		Success: true,
 	}
 	c.JSON(http.StatusOK, response)
 }

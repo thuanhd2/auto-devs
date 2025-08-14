@@ -12,7 +12,6 @@ import {
   Play,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { ConfirmDialog } from '../confirm-dialog'
 import { BranchSelectionDialog } from './branch-selection-dialog'
 import { ImplementationConfirmationDialog } from './implementation-confirmation-dialog'
 

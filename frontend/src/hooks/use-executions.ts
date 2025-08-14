@@ -14,7 +14,6 @@ import type {
   ExecutionLogFilters,
   ExecutionLog,
 } from '@/types/execution'
-import { CentrifugeMessage } from '@/types/websocket'
 import { toast } from 'sonner'
 import { executionsApi } from '@/lib/api/executions'
 import { useWebSocketContext } from '@/context/websocket-context'
@@ -79,7 +78,7 @@ function useExecutionLogsWithWebSocket(executionId: string) {
   useEffect(() => {
     subscribe('execution_log_created', newLogCreated)
     return () => unsubscribe('execution_log_created')
-  }, [executionId, newLogCreated])
+  }, [executionId, newLogCreated, subscribe, unsubscribe])
   return { logs, isLoading, error }
 }
 

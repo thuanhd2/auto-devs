@@ -97,7 +97,7 @@ export function UserPresence({
     }, 10000) // Update every 10 seconds
 
     return () => clearInterval(interval)
-  }, [activeUsers.length])
+  }, [activeUsers, setUserActivities])
 
   if (userCount === 0) {
     return null
