@@ -7,6 +7,7 @@ This directory contains comprehensive task detail and editing components for the
 ## Components
 
 ### TaskDetailSheet
+
 - **File**: `task-detail-sheet.tsx`
 - **Purpose**: Main task detail view using SheetContent layout
 - **Features**:
@@ -17,6 +18,7 @@ This directory contains comprehensive task detail and editing components for the
   - Responsive design
 
 ### TaskEditForm
+
 - **File**: `task-edit-form.tsx`
 - **Purpose**: Comprehensive task editing form
 - **Features**:
@@ -27,6 +29,7 @@ This directory contains comprehensive task detail and editing components for the
   - Real-time updates
 
 ### TaskHistory
+
 - **File**: `task-history.tsx`
 - **Purpose**: Timeline view of task changes
 - **Features**:
@@ -37,6 +40,7 @@ This directory contains comprehensive task detail and editing components for the
   - Mock data (ready for API integration)
 
 ### TaskMetadata
+
 - **File**: `task-metadata.tsx`
 - **Purpose**: Display task metadata and timestamps
 - **Features**:
@@ -46,6 +50,7 @@ This directory contains comprehensive task detail and editing components for the
   - Configurable display options
 
 ### TaskActions
+
 - **File**: `task-actions.tsx`
 - **Purpose**: Action buttons and controls for tasks
 - **Features**:
@@ -58,10 +63,11 @@ This directory contains comprehensive task detail and editing components for the
 ## Usage
 
 ### Basic Task Detail View
+
 ```tsx
 import { TaskDetailSheet } from '@/components/kanban'
 
-<TaskDetailSheet
+;<TaskDetailSheet
   open={isOpen}
   onOpenChange={setIsOpen}
   task={task}
@@ -73,10 +79,11 @@ import { TaskDetailSheet } from '@/components/kanban'
 ```
 
 ### Task Editing
+
 ```tsx
 import { TaskEditForm } from '@/components/kanban'
 
-<TaskEditForm
+;<TaskEditForm
   open={isEditOpen}
   onOpenChange={setIsEditOpen}
   task={task}
@@ -85,10 +92,11 @@ import { TaskEditForm } from '@/components/kanban'
 ```
 
 ### Task History
+
 ```tsx
 import { TaskHistory } from '@/components/kanban'
 
-<TaskHistory
+;<TaskHistory
   open={isHistoryOpen}
   onOpenChange={setIsHistoryOpen}
   taskId={task.id}
@@ -98,6 +106,7 @@ import { TaskHistory } from '@/components/kanban'
 ## Features
 
 ### ✅ Completed
+
 - [x] Task detail modal/page layout with SheetContent
 - [x] Full task information display
 - [x] Action buttons and controls
@@ -114,11 +123,13 @@ import { TaskHistory } from '@/components/kanban'
 - [x] Git information display and actions
 
 ### 🔄 In Progress
+
 - [ ] Real API integration for task history
 - [ ] User activity tracking
 - [ ] Advanced status workflow
 
 ### 📋 Future Enhancements
+
 - [ ] Task comments system
 - [ ] File attachments
 - [ ] Task dependencies
@@ -138,6 +149,7 @@ The components are designed to work with the existing task API endpoints:
 ## Styling
 
 All components use the existing design system:
+
 - Tailwind CSS for styling
 - shadcn/ui components
 - Consistent color scheme and spacing
@@ -146,8 +158,9 @@ All components use the existing design system:
 ## Accessibility
 
 Components include:
+
 - Proper ARIA labels
 - Keyboard navigation support
 - Screen reader compatibility
 - Focus management
-- Color contrast compliance 
+- Color contrast compliance

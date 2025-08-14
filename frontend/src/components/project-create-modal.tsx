@@ -181,7 +181,8 @@ export function ProjectCreateModal({
                     />
                   </FormControl>
                   <FormDescription>
-                    Optional bash script to run after creating worktree (e.g., install dependencies)
+                    Optional bash script to run after creating worktree (e.g.,
+                    install dependencies)
                   </FormDescription>
                   <FormMessage />
                 </FormItem>

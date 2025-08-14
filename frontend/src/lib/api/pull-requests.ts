@@ -48,18 +48,24 @@ export const pullRequestsApi = {
       }
     }
 
-    const response = await api.get(`${API_ENDPOINTS.PULL_REQUESTS}?${params.toString()}`)
+    const response = await api.get(
+      `${API_ENDPOINTS.PULL_REQUESTS}?${params.toString()}`
+    )
     return response.data
   },
 
   async getPullRequest(pullRequestId: string): Promise<PullRequest> {
-    const response = await api.get(`${API_ENDPOINTS.PULL_REQUESTS}/${pullRequestId}`)
+    const response = await api.get(
+      `${API_ENDPOINTS.PULL_REQUESTS}/${pullRequestId}`
+    )
     return response.data
   },
 
   async getPullRequestByTask(taskId: string): Promise<PullRequest | null> {
     try {
-      const response = await api.get(`${API_ENDPOINTS.TASKS}/${taskId}/pull-request`)
+      const response = await api.get(
+        `${API_ENDPOINTS.TASKS}/${taskId}/pull-request`
+      )
       return response.data
     } catch (error) {
       if (axios.isAxiosError(error) && error.response?.status === 404) {
@@ -69,7 +75,9 @@ export const pullRequestsApi = {
     }
   },
 
-  async createPullRequest(pullRequest: CreatePullRequestRequest): Promise<PullRequest> {
+  async createPullRequest(
+    pullRequest: CreatePullRequestRequest
+  ): Promise<PullRequest> {
     const response = await api.post(API_ENDPOINTS.PULL_REQUESTS, pullRequest)
     return response.data
   },
@@ -78,7 +86,10 @@ export const pullRequestsApi = {
     pullRequestId: string,
     updates: UpdatePullRequestRequest
   ): Promise<PullRequest> {
-    const response = await api.put(`${API_ENDPOINTS.PULL_REQUESTS}/${pullRequestId}`, updates)
+    const response = await api.put(
+      `${API_ENDPOINTS.PULL_REQUESTS}/${pullRequestId}`,
+      updates
+    )
     return response.data
   },
 
@@ -87,24 +98,36 @@ export const pullRequestsApi = {
   },
 
   async syncPullRequest(pullRequestId: string): Promise<PullRequest> {
-    const response = await api.post(`${API_ENDPOINTS.PULL_REQUESTS}/${pullRequestId}/sync`)
+    const response = await api.post(
+      `${API_ENDPOINTS.PULL_REQUESTS}/${pullRequestId}/sync`
+    )
     return response.data
   },
 
-  async mergePullRequest(pullRequestId: string, mergeMethod?: 'merge' | 'squash' | 'rebase'): Promise<PullRequest> {
-    const response = await api.post(`${API_ENDPOINTS.PULL_REQUESTS}/${pullRequestId}/merge`, {
-      merge_method: mergeMethod || 'merge'
-    })
+  async mergePullRequest(
+    pullRequestId: string,
+    mergeMethod?: 'merge' | 'squash' | 'rebase'
+  ): Promise<PullRequest> {
+    const response = await api.post(
+      `${API_ENDPOINTS.PULL_REQUESTS}/${pullRequestId}/merge`,
+      {
+        merge_method: mergeMethod || 'merge',
+      }
+    )
     return response.data
   },
 
   async closePullRequest(pullRequestId: string): Promise<PullRequest> {
-    const response = await api.post(`${API_ENDPOINTS.PULL_REQUESTS}/${pullRequestId}/close`)
+    const response = await api.post(
+      `${API_ENDPOINTS.PULL_REQUESTS}/${pullRequestId}/close`
+    )
     return response.data
   },
 
   async reopenPullRequest(pullRequestId: string): Promise<PullRequest> {
-    const response = await api.post(`${API_ENDPOINTS.PULL_REQUESTS}/${pullRequestId}/reopen`)
+    const response = await api.post(
+      `${API_ENDPOINTS.PULL_REQUESTS}/${pullRequestId}/reopen`
+    )
     return response.data
   },
 }

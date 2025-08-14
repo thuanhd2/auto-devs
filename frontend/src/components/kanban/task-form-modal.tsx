@@ -1,7 +1,10 @@
 import { useEffect } from 'react'
+import * as z from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import * as z from 'zod'
+import type { Task } from '@/types/task'
+import { useCreateTask, useUpdateTask } from '@/hooks/use-tasks'
+import { Button } from '@/components/ui/button'
 import {
   Dialog,
   DialogContent,
@@ -20,9 +23,6 @@ import {
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { Button } from '@/components/ui/button'
-import { useCreateTask, useUpdateTask } from '@/hooks/use-tasks'
-import type { Task } from '@/types/task'
 
 const taskFormSchema = z.object({
   title: z.string().min(1, 'Title is required').max(200, 'Title too long'),
@@ -93,7 +93,7 @@ export function TaskFormModal({
           },
         })
       }
-      
+
       onOpenChange(false)
       form.reset()
     } catch (error) {
@@ -103,30 +103,29 @@ export function TaskFormModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className='sm:max-w-[425px]'>
         <DialogHeader>
           <DialogTitle>
             {mode === 'create' ? 'Create New Task' : 'Edit Task'}
           </DialogTitle>
           <DialogDescription>
-            {mode === 'create' 
+            {mode === 'create'
               ? 'Add a new task to your project board.'
-              : 'Update the task details.'
-            }
+              : 'Update the task details.'}
           </DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-4'>
             <FormField
               control={form.control}
-              name="title"
+              name='title'
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Title</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder="Enter task title..."
+                      placeholder='Enter task title...'
                       {...field}
                       disabled={isLoading}
                     />
@@ -138,14 +137,14 @@ export function TaskFormModal({
 
             <FormField
               control={form.control}
-              name="description"
+              name='description'
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Description</FormLabel>
                   <FormControl>
                     <Textarea
-                      placeholder="Enter task description..."
-                      className="min-h-[100px]"
+                      placeholder='Enter task description...'
+                      className='min-h-[100px]'
                       {...field}
                       disabled={isLoading}
                     />
@@ -157,15 +156,19 @@ export function TaskFormModal({
 
             <DialogFooter>
               <Button
-                type="button"
-                variant="outline"
+                type='button'
+                variant='outline'
                 onClick={() => onOpenChange(false)}
                 disabled={isLoading}
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={isLoading}>
-                {isLoading ? 'Saving...' : mode === 'create' ? 'Create Task' : 'Update Task'}
+              <Button type='submit' disabled={isLoading}>
+                {isLoading
+                  ? 'Saving...'
+                  : mode === 'create'
+                    ? 'Create Task'
+                    : 'Update Task'}
               </Button>
             </DialogFooter>
           </form>

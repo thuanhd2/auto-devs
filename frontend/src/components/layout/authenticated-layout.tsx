@@ -4,7 +4,6 @@ import { cn } from '@/lib/utils'
 import { SearchProvider } from '@/context/search-context'
 import { WebSocketProvider } from '@/context/websocket-context'
 import { SidebarProvider } from '@/components/ui/sidebar'
-
 import { AppSidebar } from '@/components/layout/app-sidebar'
 import { RealTimeNotifications } from '@/components/notifications/real-time-notifications'
 import SkipToMain from '@/components/skip-to-main'
@@ -72,7 +71,6 @@ export function AuthenticatedLayout({ children }: Props) {
               enableSound={false}
             />
           </div>
-
         </SidebarProvider>
       </WebSocketProvider>
     </SearchProvider>

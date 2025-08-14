@@ -34,9 +34,10 @@ export function ImplementationConfirmationDialog({
 
   // Load AI type preference from localStorage
   useEffect(() => {
-    const savedImplementingAI = localStorage.getItem('ai_preference_implementing') || 
-                               localStorage.getItem('ai_preference_planning') || 
-                               'claude-code'
+    const savedImplementingAI =
+      localStorage.getItem('ai_preference_implementing') ||
+      localStorage.getItem('ai_preference_planning') ||
+      'claude-code'
     setSelectedAIType(savedImplementingAI)
   }, [])
 
@@ -44,7 +45,7 @@ export function ImplementationConfirmationDialog({
     if (selectedAIType) {
       // Save AI type preference to localStorage
       localStorage.setItem('ai_preference_implementing', selectedAIType)
-      
+
       onConfirm(selectedAIType)
       onOpenChange(false)
     }
@@ -70,7 +71,7 @@ export function ImplementationConfirmationDialog({
 
         <div className='space-y-4'>
           <div className='space-y-2'>
-            <label className='text-sm font-medium flex items-center gap-2'>
+            <label className='flex items-center gap-2 text-sm font-medium'>
               <Bot className='h-4 w-4' />
               Select AI Assistant:
             </label>
