@@ -19,8 +19,9 @@ type Config struct {
 }
 
 type ServerConfig struct {
-	Port string
-	Host string
+	Port    string
+	Host    string
+	RunMode string
 }
 
 type DatabaseConfig struct {
@@ -72,8 +73,9 @@ func Load() *Config {
 
 	return &Config{
 		Server: ServerConfig{
-			Port: getEnv("SERVER_PORT", "8098"),
-			Host: getEnv("SERVER_HOST", "localhost"),
+			Port:    getEnv("SERVER_PORT", "8098"),
+			Host:    getEnv("SERVER_HOST", "localhost"),
+			RunMode: getEnv("SERVER_RUN_MODE", "dev"),
 		},
 		Database: DatabaseConfig{
 			Host:     getEnv("DB_HOST", "localhost"),

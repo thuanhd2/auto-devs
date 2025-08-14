@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -13,6 +14,14 @@ import (
 	"github.com/auto-devs/auto-devs/internal/handler"
 	"github.com/gin-gonic/gin"
 )
+
+// isAPIRoute checks if the given path is an API route
+func isAPIRoute(path string) bool {
+	return strings.HasPrefix(path, "/api/") ||
+		strings.HasPrefix(path, "/swagger/") ||
+		strings.HasPrefix(path, "/health") ||
+		strings.HasPrefix(path, "/ws")
+}
 
 func main() {
 	gin.SetMode(gin.DebugMode)
@@ -50,6 +59,34 @@ func main() {
 
 	// Setup all routes with middleware
 	handler.SetupRoutes(router, app.ProjectUsecase, app.TaskUsecase, app.ExecutionUsecase, app.GormDB, app.WebSocketService)
+
+	runMode := app.Config.Server.RunMode
+
+	if runMode == "production" {
+		frontendPath := "./public"
+		// Check if frontend is built
+		if _, err := os.Stat(frontendPath + "/index.html"); os.IsNotExist(err) {
+			log.Printf("Warning: Frontend not built. Please run 'make build-frontend' or 'make build-full' first")
+			log.Printf("Serving API only. Frontend will not be available.")
+		} else {
+			// Serve static files from frontend build output
+			router.Static("/assets", frontendPath+"/assets")
+			router.Static("/images", frontendPath+"/images")
+			router.GET("/", func(c *gin.Context) {
+				c.File(frontendPath + "/index.html")
+			})
+
+			// Handle SPA routing - serve index.html for all non-API routes
+			router.NoRoute(func(c *gin.Context) {
+				// Check if the request is for an API route
+				if c.Request.URL.Path == "/" || !isAPIRoute(c.Request.URL.Path) {
+					c.File(frontendPath + "/index.html")
+				} else {
+					c.JSON(404, gin.H{"error": "Not found"})
+				}
+			})
+		}
+	}
 
 	// Start server
 	port := app.Config.Server.Port

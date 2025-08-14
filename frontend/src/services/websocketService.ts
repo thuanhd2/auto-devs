@@ -32,6 +32,12 @@ export interface ConnectionState {
 type EventListener = (message: CentrifugeMessage) => void
 type ConnectionListener = (state: ConnectionState) => void
 
+function getWebsocketUrl() {
+  const host = window.location.host
+  const configUrl = API_CONFIG.WS_URL.replace('base_host', host)
+  return configUrl.replace('ws://', '').replace('wss://', '')
+}
+
 class CentrifugeService {
   private centrifuge: Centrifuge | null = null
   private config: CentrifugeConfig
@@ -43,7 +49,7 @@ class CentrifugeService {
 
   constructor(config?: Partial<CentrifugeConfig>) {
     this.config = {
-      url: API_CONFIG.WS_URL.replace('ws://', '').replace('wss://', ''), // Remove protocol prefix
+      url: getWebsocketUrl(),
       debug: process.env.NODE_ENV === 'development',
       maxReconnectDelay: 30000,
       timeout: 5000,

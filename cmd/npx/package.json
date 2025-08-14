@@ -1,0 +1,17 @@
+{
+    "name": "auto-devs",
+    "private": false,
+    "version": "0.0.1",
+    "main": "index.js",
+    "bin": {
+        "auto-devs": "cli.js"
+    },
+    "keywords": [],
+    "author": "bloop",
+    "license": "",
+    "description": "NPX wrapper around auto-devs",
+    "files": [
+        "dist",
+        "cli.js"
+    ]
+}

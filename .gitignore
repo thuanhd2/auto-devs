@@ -25,3 +25,7 @@ frontend/dist-ssr
 frontend/*.local
 
 frontend/.env
+
+# build
+cmd/npx/dist
+cmd/npx/*.tgz
