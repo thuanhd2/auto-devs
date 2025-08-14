@@ -12,7 +12,6 @@ import {
   CheckCircle,
   XCircle,
   AlertTriangle,
-  Plus,
   SquareTerminal,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -34,21 +33,15 @@ interface ExecutionListProps {
   loading?: boolean
   error?: string
   onRefresh?: () => void
-  onCreateExecution?: () => void
   onUpdateExecution?: (
     executionId: string,
     updates: Record<string, unknown>
   ) => void
-  onDeleteExecution?: (executionId: string) => void
-  onViewLogs?: (executionId: string) => void
-  onViewDetails?: (executionId: string) => void
   filters?: ExecutionFilters
   onFiltersChange?: (filters: ExecutionFilters) => void
-  showCreateButton?: boolean
   showFilters?: boolean
   compact?: boolean
   expandable?: boolean
-  emptyState?: React.ReactNode
   className?: string
 }
 
@@ -76,18 +69,12 @@ export function ExecutionList({
   loading = false,
   error,
   onRefresh,
-  onCreateExecution,
   onUpdateExecution,
-  onDeleteExecution,
-  onViewLogs,
-  onViewDetails,
   filters,
   onFiltersChange,
-  showCreateButton = true,
   showFilters = true,
   compact = false,
   expandable = false,
-  emptyState,
   className,
 }: ExecutionListProps) {
   const [searchTerm, setSearchTerm] = useState('')
@@ -262,9 +249,6 @@ export function ExecutionList({
               key={execution.id}
               execution={execution}
               onUpdate={onUpdateExecution}
-              onDelete={onDeleteExecution}
-              onViewLogs={onViewLogs}
-              onViewDetails={onViewDetails}
               compact={compact}
               expandable={expandable}
             />

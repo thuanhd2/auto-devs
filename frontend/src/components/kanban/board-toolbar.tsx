@@ -3,8 +3,6 @@ import {
   Plus,
   RefreshCw,
   MoreHorizontal,
-  LayoutGrid,
-  List,
   Settings,
   Download,
 } from 'lucide-react'
@@ -25,8 +23,6 @@ import { UserPresence } from '@/components/collaboration/user-presence'
 interface BoardToolbarProps {
   onCreateTask?: () => void
   onRefresh?: () => void
-  isCompactView?: boolean
-  onToggleCompactView?: () => void
   isLoading?: boolean
   projectId?: string
 }
@@ -34,8 +30,6 @@ interface BoardToolbarProps {
 export function BoardToolbar({
   onCreateTask,
   onRefresh,
-  isCompactView = false,
-  onToggleCompactView,
   isLoading = false,
   projectId,
 }: BoardToolbarProps) {

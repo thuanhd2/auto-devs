@@ -16,7 +16,6 @@ import {
   useApprovePlan,
 } from '@/hooks/use-tasks'
 import { BoardFilters } from './board-filters'
-import { BoardToolbar } from './board-toolbar'
 import { KanbanBoard } from './kanban-board'
 import { TaskDetailSheet } from './task-detail-sheet'
 import { TaskFormModal } from './task-form-modal'
@@ -29,12 +28,11 @@ export function ProjectBoard({ projectId }: ProjectBoardProps) {
   const navigate = useNavigate()
   const searchParams = useSearch({ strict: false }) as { taskId?: string }
   const routeParams = useParams({ strict: false }) as { taskId?: string }
-  
+
   const [filters, setFilters] = useState<TaskFilters>({})
   const [searchQuery, setSearchQuery] = useState('')
-  const [isCompactView, setIsCompactView] = useState(false)
   const [localTasks, setLocalTasks] = useState<Task[]>([])
-  
+
   // Get taskId from either route params or search params
   const currentTaskId = routeParams.taskId || searchParams.taskId
 
@@ -50,18 +48,14 @@ export function ProjectBoard({ projectId }: ProjectBoardProps) {
     task?: Task | null
   }>({ open: false, task: null })
 
-  const {
-    data: tasksResponse,
-    isLoading,
-    refetch,
-  } = useTasks(projectId, filters)
+  const { data: tasksResponse, refetch } = useTasks(projectId, filters)
   const deleteTaskMutation = useDeleteTask()
   const duplicateTaskMutation = useDuplicateTask()
   const startPlanningMutation = useStartPlanning()
   const approvePlanAndStartImplementMutation = useApprovePlan()
   // WebSocket integration
   const { setCurrentProjectId } = useWebSocketProject(projectId)
-  const { isConnected, subscribe, unsubscribe } = useWebSocketContext()
+  const { subscribe, unsubscribe } = useWebSocketContext()
   const onTaskUpdated = useCallback((message: CentrifugeMessage) => {
     const { task_id: taskId, project_id: projectId, changes } = message.data
     // do nothing if current project id is not the same as the task's project id
@@ -101,7 +95,7 @@ export function ProjectBoard({ projectId }: ProjectBoardProps) {
   // Auto-open task detail sheet when taskId is in URL
   useEffect(() => {
     if (currentTaskId && localTasks.length > 0) {
-      const task = localTasks.find(t => t.id === currentTaskId)
+      const task = localTasks.find((t) => t.id === currentTaskId)
       if (task) {
         setTaskDetailSheet({ open: true, task })
       } else {
@@ -109,7 +103,7 @@ export function ProjectBoard({ projectId }: ProjectBoardProps) {
         navigate({
           to: '/projects/$projectId',
           params: { projectId },
-          replace: true
+          replace: true,
         })
       }
     }
@@ -123,42 +117,6 @@ export function ProjectBoard({ projectId }: ProjectBoardProps) {
   }, [projectId, setCurrentProjectId])
 
   // Handle real-time task updates from WebSocket
-  const handleTaskCreated = useCallback(
-    (task: Task) => {
-      if (task.project_id === projectId) {
-        setLocalTasks((prev) => {
-          // Check if task already exists to avoid duplicates
-          if (prev.some((t) => t.id === task.id)) {
-            return prev
-          }
-          return [...prev, task]
-        })
-      }
-    },
-    [projectId]
-  )
-
-  const handleTaskUpdated = useCallback(
-    (task: Task, changes?: any) => {
-      if (task.project_id === projectId) {
-        // Confirm any pending optimistic updates for this task
-        taskOptimisticUpdates.confirmTaskUpdate(task.id, task)
-
-        setLocalTasks((prev) => prev.map((t) => (t.id === task.id ? task : t)))
-      }
-    },
-    [projectId]
-  )
-
-  const handleTaskDeleted = useCallback((taskId: string) => {
-    setLocalTasks((prev) => {
-      const task = prev.find((t) => t.id === taskId)
-      if (task) {
-        return prev.filter((t) => t.id !== taskId)
-      }
-      return prev
-    })
-  }, [])
 
   const handleDeleteTask = async (taskId: string) => {
     if (confirm('Are you sure you want to delete this task?')) {
@@ -166,7 +124,7 @@ export function ProjectBoard({ projectId }: ProjectBoardProps) {
       if (!task) return
 
       // Apply optimistic delete
-      const updateId = taskOptimisticUpdates.deleteTask(
+      taskOptimisticUpdates.deleteTask(
         taskId,
         task,
         () => setLocalTasks((prev) => prev.filter((t) => t.id !== taskId)),
@@ -193,11 +151,6 @@ export function ProjectBoard({ projectId }: ProjectBoardProps) {
     }
   }
 
-  const handleRefresh = () => {
-    refetch()
-    toast.success('Board refreshed')
-  }
-
   const handleCreateTask = () => {
     setTaskFormModal({ open: true, mode: 'create', task: null })
   }
@@ -208,16 +161,20 @@ export function ProjectBoard({ projectId }: ProjectBoardProps) {
 
   const handleViewTaskDetails = (task: Task) => {
     setTaskDetailSheet({ open: true, task })
-    
+
     // Update URL to include task ID
     navigate({
       to: '/projects/$projectId/tasks/$taskId',
       params: { projectId, taskId: task.id },
-      replace: true
+      replace: true,
     })
   }
 
-  const handleStartPlanning = async (taskId: string, branchName: string, aiType: string) => {
+  const handleStartPlanning = async (
+    taskId: string,
+    branchName: string,
+    aiType: string
+  ) => {
     try {
       await startPlanningMutation.mutateAsync({
         taskId,
@@ -228,11 +185,14 @@ export function ProjectBoard({ projectId }: ProjectBoardProps) {
     }
   }
 
-  const handleApprovePlanAndStartImplement = async (taskId: string, aiType: string) => {
+  const handleApprovePlanAndStartImplement = async (
+    taskId: string,
+    aiType: string
+  ) => {
     try {
       await approvePlanAndStartImplementMutation.mutateAsync({
         taskId,
-        request: { ai_type: aiType }
+        request: { ai_type: aiType },
       })
     } catch (error) {
       // Error is handled by the mutation hook
@@ -266,7 +226,6 @@ export function ProjectBoard({ projectId }: ProjectBoardProps) {
           onEditTask={handleEditTask}
           onDeleteTask={handleDeleteTask}
           onViewTaskDetails={handleViewTaskDetails}
-          isCompactView={isCompactView}
           searchQuery={searchQuery}
         />
       </div>
@@ -284,13 +243,13 @@ export function ProjectBoard({ projectId }: ProjectBoardProps) {
         open={taskDetailSheet.open}
         onOpenChange={(open) => {
           setTaskDetailSheet((prev) => ({ ...prev, open }))
-          
+
           // If closing the sheet, navigate back to project
           if (!open) {
             navigate({
               to: '/projects/$projectId',
               params: { projectId },
-              replace: true
+              replace: true,
             })
           }
         }}

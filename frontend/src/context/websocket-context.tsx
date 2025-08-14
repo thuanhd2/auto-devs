@@ -118,7 +118,7 @@ export function WebSocketProvider({
   const [messageHistory, setMessageHistory] = useState<CentrifugeMessage[]>([])
   const [isDebugMode, setDebugMode] = useState(false)
 
-  const connectionListenerRef = useRef<(state: ConnectionState) => void>()
+  const connectionListenerRef = useRef<(state: ConnectionState) => void>(null)
   const messageHandlersRef = useRef<
     Map<string, Set<(message: CentrifugeMessage) => void>>
   >(new Map())

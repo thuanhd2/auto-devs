@@ -8,7 +8,6 @@ import {
 } from 'lucide-react'
 import { useProject, useReinitGitRepository } from '@/hooks/use-projects'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -48,11 +47,7 @@ export function GitStatusCard({
   const [status, setStatus] = useState<GitProjectStatusResponse | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const {
-    data: project,
-    isLoading,
-    error: projectError,
-  } = useProject(projectId)
+  const { data: project, isLoading } = useProject(projectId)
   const { mutate: reinitGit } = useReinitGitRepository()
   const fetchStatus = async () => {
     if (!gitEnabled) return
@@ -74,40 +69,6 @@ export function GitStatusCard({
     } catch (err) {
       setError(
         err instanceof Error ? err.message : 'Failed to fetch Git status'
-      )
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const testConnection = async () => {
-    setLoading(true)
-    setError(null)
-
-    try {
-      // TODO: Implement Git connection test
-      console.log('Testing Git connection for project:', projectId)
-      await fetchStatus() // Refresh status after successful test
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : 'Failed to test Git connection'
-      )
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const setupGit = async () => {
-    setLoading(true)
-    setError(null)
-
-    try {
-      // TODO: Implement Git setup
-      console.log('Setting up Git for project:', projectId)
-      await fetchStatus() // Refresh status after successful setup
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : 'Failed to setup Git project'
       )
     } finally {
       setLoading(false)

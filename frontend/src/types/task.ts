@@ -44,6 +44,15 @@ export interface Task {
   completed_at?: string
   // Git information
   git_info?: TaskGitInfo
+  plans?: TaskPlan[]
+}
+
+export interface TaskPlan {
+  id: string
+  task_id: string
+  content: string
+  created_at: string
+  updated_at: string
 }
 
 export interface CreateTaskRequest {

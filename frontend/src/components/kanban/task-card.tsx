@@ -1,10 +1,9 @@
 import { useState } from 'react'
 import { formatDistanceToNow } from 'date-fns'
 import type { Task } from '@/types/task'
-import { MoreHorizontal, Calendar, GitBranch, ExternalLink } from 'lucide-react'
+import { Calendar, GitBranch, ExternalLink } from 'lucide-react'
 import { getStatusColor, getStatusTitle } from '@/lib/kanban'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import {
   DropdownMenu,
@@ -30,20 +29,7 @@ export function TaskCard({
   onDelete,
   onViewDetails,
 }: TaskCardProps) {
-  const [isMenuOpen, setIsMenuOpen] = useState(false)
-
-  const handleEdit = () => {
-    setIsMenuOpen(false)
-    onEdit?.(task)
-  }
-
-  const handleDelete = () => {
-    setIsMenuOpen(false)
-    onDelete?.(task.id)
-  }
-
   const handleViewDetails = () => {
-    setIsMenuOpen(false)
     onViewDetails?.(task)
   }
 

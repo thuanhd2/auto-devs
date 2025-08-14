@@ -11,7 +11,6 @@ import {
   useSensor,
   useSensors,
 } from '@dnd-kit/core'
-import { arrayMove } from '@dnd-kit/sortable'
 import { KANBAN_COLUMNS, canTransitionTo } from '@/lib/kanban'
 import {
   useWebSocketProject,
@@ -43,14 +42,11 @@ export function KanbanBoard({
   isCompactView = false,
   searchQuery = '',
 }: KanbanBoardProps) {
-  const [activeTaskId, setActiveTaskId] = useState<string | null>(null)
   const [localTasks, setLocalTasks] = useState<Task[]>(tasks)
   const updateTaskMutation = useUpdateTask()
-  const optimisticUpdate = useOptimisticTaskUpdate()
 
   // WebSocket integration
   const { setCurrentProjectId } = useWebSocketProject(projectId)
-  const { isConnected } = useWebSocketContext()
 
   // Keep local tasks in sync with props
   useEffect(() => {

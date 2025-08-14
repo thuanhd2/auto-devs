@@ -1,10 +1,7 @@
 import { useMemo } from 'react'
-import { Copy, ExternalLink, Printer } from 'lucide-react'
-import { toast } from 'sonner'
-import { Badge } from '@/components/ui/badge'
+import { ExternalLink } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { Separator } from '@/components/ui/separator'
 
 interface PlanPreviewProps {
   content: string
@@ -94,58 +91,6 @@ export function PlanPreview({
   printFriendly = false,
 }: PlanPreviewProps) {
   const parsedContent = useMemo(() => parseMarkdown(content), [content])
-
-  const handleCopyToClipboard = async () => {
-    try {
-      await navigator.clipboard.writeText(content)
-      toast.success('Plan copied to clipboard!')
-    } catch (error) {
-      toast.error('Failed to copy to clipboard')
-    }
-  }
-
-  const handlePrint = () => {
-    const printWindow = window.open('', '_blank')
-    if (!printWindow) return
-
-    const printContent = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>Implementation Plan</title>
-          <style>
-            body { 
-              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-              line-height: 1.6;
-              max-width: 800px;
-              margin: 0 auto;
-              padding: 20px;
-              color: #333;
-            }
-            h1, h2, h3 { color: #1a1a1a; margin-top: 1.5em; }
-            pre { background: #f5f5f5; padding: 15px; border-radius: 5px; overflow-x: auto; }
-            code { background: #f0f0f0; padding: 2px 4px; border-radius: 3px; }
-            blockquote { border-left: 4px solid #007acc; padding-left: 15px; margin: 15px 0; }
-            ul, ol { padding-left: 20px; }
-            a { color: #007acc; }
-            @media print {
-              body { print-color-adjust: exact; }
-            }
-          </style>
-        </head>
-        <body>
-          <div>
-            ${parsedContent}
-          </div>
-        </body>
-      </html>
-    `
-
-    printWindow.document.open()
-    printWindow.document.write(printContent)
-    printWindow.document.close()
-    printWindow.print()
-  }
 
   const handleOpenInNewTab = () => {
     const newWindow = window.open('', '_blank')
@@ -253,15 +198,6 @@ export function PlanPreview({
               <ExternalLink className='mr-1 h-4 w-4' />
               Full Screen
             </Button>
-            {/* <Button
-              variant='ghost'
-              size='sm'
-              onClick={handlePrint}
-              className='h-8'
-            >
-              <Printer className='mr-1 h-4 w-4' />
-              Print
-            </Button> */}
           </div>
         </div>
       )}

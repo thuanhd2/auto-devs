@@ -1,10 +1,9 @@
 import { useState } from 'react'
 import type { TaskFilters, TaskStatus, TaskGitStatus } from '@/types/task'
-import { Filter, Search, X } from 'lucide-react'
+import { Search, X } from 'lucide-react'
 import { KANBAN_COLUMNS } from '@/lib/kanban'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import {
   Popover,
@@ -18,21 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Separator } from '@/components/ui/separator'
 import { GitStatusBadge, getGitStatusLabel } from './git-status-badge'
-
-const GIT_STATUS_OPTIONS: { id: TaskGitStatus; title: string }[] = [
-  { id: 'NO_GIT', title: 'No Git' },
-  { id: 'WORKTREE_PENDING', title: 'Creating...' },
-  { id: 'WORKTREE_CREATED', title: 'Worktree Ready' },
-  { id: 'BRANCH_CREATED', title: 'Branch Ready' },
-  { id: 'CHANGES_PENDING', title: 'Changes' },
-  { id: 'CHANGES_STAGED', title: 'Staged' },
-  { id: 'CHANGES_COMMITTED', title: 'Committed' },
-  { id: 'PR_CREATED', title: 'PR Created' },
-  { id: 'PR_MERGED', title: 'Merged' },
-  { id: 'WORKTREE_ERROR', title: 'Git Error' },
-]
 
 interface BoardFiltersProps {
   filters: TaskFilters
@@ -49,8 +34,6 @@ export function BoardFilters({
   onSearchChange,
   taskCount,
 }: BoardFiltersProps) {
-  const [isFilterOpen, setIsFilterOpen] = useState(false)
-
   const activeFilterCount = [
     filters.status?.length || 0,
     filters.git_status?.length || 0,
@@ -68,47 +51,6 @@ export function BoardFilters({
       ...filters,
       status: newStatuses.length > 0 ? newStatuses : undefined,
     })
-  }
-  const handleGitStatusToggle = (
-    gitStatus: TaskGitStatus,
-    checked: boolean
-  ) => {
-    const currentGitStatuses = filters.git_status || []
-    const newGitStatuses = checked
-      ? [...currentGitStatuses, gitStatus]
-      : currentGitStatuses.filter((s) => s !== gitStatus)
-
-    onFiltersChange({
-      ...filters,
-      git_status: newGitStatuses.length > 0 ? newGitStatuses : undefined,
-    })
-  }
-
-  const handleBranchSearchChange = (branchSearch: string) => {
-    onFiltersChange({
-      ...filters,
-      branch_search: branchSearch.trim() || undefined,
-    })
-  }
-
-  const handleSortChange = (sortBy: TaskFilters['sortBy']) => {
-    onFiltersChange({
-      ...filters,
-      sortBy,
-      sortOrder: sortBy ? 'desc' : undefined,
-    })
-  }
-
-  const handleSortOrderToggle = () => {
-    onFiltersChange({
-      ...filters,
-      sortOrder: filters.sortOrder === 'asc' ? 'desc' : 'asc',
-    })
-  }
-
-  const clearAllFilters = () => {
-    onFiltersChange({})
-    onSearchChange('')
   }
 
   const hasActiveFilters =

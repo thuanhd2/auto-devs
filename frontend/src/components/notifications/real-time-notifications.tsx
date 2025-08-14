@@ -146,7 +146,7 @@ export function RealTimeNotifications({
   }
 
   // Handle project updated
-  const handleProjectUpdated = (project: any, changes?: any) => {
+  const handleProjectUpdated = (project: any) => {
     if (!projectId || project.id === projectId) {
       const message = `Project "${project.name}" updated`
 
@@ -157,11 +157,7 @@ export function RealTimeNotifications({
   }
 
   // Handle user presence
-  const handleUserJoined = (
-    userId: string,
-    username: string,
-    userProjectId: string
-  ) => {
+  const handleUserJoined = (username: string, userProjectId: string) => {
     if (!projectId || userProjectId === projectId) {
       const message = `${username} joined the project`
 
@@ -169,11 +165,7 @@ export function RealTimeNotifications({
     }
   }
 
-  const handleUserLeft = (
-    userId: string,
-    username: string,
-    userProjectId: string
-  ) => {
+  const handleUserLeft = (username: string, userProjectId: string) => {
     if (!projectId || userProjectId === projectId) {
       const message = `${username} left the project`
 
@@ -224,9 +216,9 @@ function WebSocketNotificationHandler({
   onTaskCreated?: (task: Task) => void
   onTaskUpdated?: (task: Task, changes?: any) => void
   onTaskDeleted?: (taskId: string) => void
-  onProjectUpdated?: (project: any, changes?: any) => void
-  onUserJoined?: (userId: string, username: string, projectId: string) => void
-  onUserLeft?: (userId: string, username: string, projectId: string) => void
+  onProjectUpdated?: (project: any) => void
+  onUserJoined?: (username: string, projectId: string) => void
+  onUserLeft?: (username: string, projectId: string) => void
   onConnectionError?: (error: string) => void
   onAuthRequired?: () => void
 }) {
@@ -250,26 +242,17 @@ function WebSocketNotificationHandler({
       },
       {
         type: 'project_updated',
-        handler: (message: any) =>
-          onProjectUpdated?.(message.data.project, message.data.changes),
+        handler: (message: any) => onProjectUpdated?.(message.data.project),
       },
       {
         type: 'user_joined',
         handler: (message: any) =>
-          onUserJoined?.(
-            message.data.user_id,
-            message.data.username,
-            message.data.project_id
-          ),
+          onUserJoined?.(message.data.username, message.data.project_id),
       },
       {
         type: 'user_left',
         handler: (message: any) =>
-          onUserLeft?.(
-            message.data.user_id,
-            message.data.username,
-            message.data.project_id
-          ),
+          onUserLeft?.(message.data.username, message.data.project_id),
       },
       {
         type: 'error',

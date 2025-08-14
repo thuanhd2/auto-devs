@@ -4,20 +4,11 @@ import { AlertTriangle } from 'lucide-react'
 import {
   AlertCircle,
   Bot,
-  Brain,
   CheckSquare,
-  ChevronRight,
-  ChevronUp,
-  Edit,
-  Eye,
-  Globe,
-  Plus,
-  Search,
   Settings,
   Terminal,
   User,
 } from 'lucide-react'
-import { useWebSocketContext } from '@/context/websocket-context'
 import { useExecution } from '@/hooks/use-executions'
 import { Button } from '@/components/ui/button'
 import {

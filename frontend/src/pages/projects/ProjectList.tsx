@@ -171,11 +171,12 @@ export function ProjectList() {
               <TabsTrigger value='archived' className='flex items-center gap-2'>
                 <Archive className='h-4 w-4' />
                 Archived
-                {archivedProjectsData?.projects.length > 0 && (
-                  <Badge variant='secondary' className='ml-1'>
-                    {archivedProjectsData.projects.length}
-                  </Badge>
-                )}
+                {archivedProjectsData?.projects?.length &&
+                  archivedProjectsData?.projects?.length > 0 && (
+                    <Badge variant='secondary' className='ml-1'>
+                      {archivedProjectsData?.projects?.length}
+                    </Badge>
+                  )}
               </TabsTrigger>
             </TabsList>
 

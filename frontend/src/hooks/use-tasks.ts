@@ -143,7 +143,7 @@ export function useStartPlanning() {
       taskId: string
       request: StartPlanningRequest
     }) => tasksApi.startPlanning(taskId, request),
-    onMutate: async ({ taskId, request }) => {
+    onMutate: async ({ taskId }) => {
       // Cancel any outgoing refetches
       await queryClient.cancelQueries({ queryKey: [TASKS_QUERY_KEY] })
 
@@ -166,10 +166,10 @@ export function useStartPlanning() {
       // Return a context object with the snapshotted value
       return { previousTasks }
     },
-    onSuccess: (response, { taskId }) => {
+    onSuccess: (response) => {
       toast.success(`Planning started successfully. Job ID: ${response.job_id}`)
     },
-    onError: (error: any, { taskId }, context) => {
+    onError: (error: any, context: any) => {
       // Revert optimistic update on error
       if (context?.previousTasks) {
         queryClient.setQueryData([TASKS_QUERY_KEY], context.previousTasks)
@@ -187,9 +187,14 @@ export function useApprovePlan() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ taskId, request }: { taskId: string; request: ApprovePlanRequest }) => 
-      tasksApi.approvePlan(taskId, request),
-    onMutate: async (taskId) => {
+    mutationFn: ({
+      taskId,
+      request,
+    }: {
+      taskId: string
+      request: ApprovePlanRequest
+    }) => tasksApi.approvePlan(taskId, request),
+    onMutate: async (mutatedTask) => {
       // Cancel any outgoing refetches
       await queryClient.cancelQueries({ queryKey: [TASKS_QUERY_KEY] })
 
@@ -202,7 +207,7 @@ export function useApprovePlan() {
         return {
           ...old,
           tasks: old.tasks.map((task: Task) =>
-            task.id === taskId
+            task.id === mutatedTask.taskId
               ? { ...task, status: 'IMPLEMENTING' as Task['status'] }
               : task
           ),
@@ -212,12 +217,12 @@ export function useApprovePlan() {
       // Return a context object with the snapshotted value
       return { previousTasks }
     },
-    onSuccess: (response, taskId) => {
+    onSuccess: (response) => {
       toast.success(
         `Plan approved! Implementation job enqueued. Job ID: ${response.job_id}`
       )
     },
-    onError: (error: any, taskId, context) => {
+    onError: (error: any, context: any) => {
       // Revert optimistic update on error
       if (context?.previousTasks) {
         queryClient.setQueryData([TASKS_QUERY_KEY], context.previousTasks)

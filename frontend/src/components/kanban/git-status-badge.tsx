@@ -3,7 +3,6 @@ import {
   GitBranch,
   AlertCircle,
   CheckCircle2,
-  Clock,
   GitMerge,
   GitCommit,
   Loader2,

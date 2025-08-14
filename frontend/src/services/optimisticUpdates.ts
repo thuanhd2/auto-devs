@@ -293,51 +293,6 @@ class TaskOptimisticUpdates {
   }
 }
 
-// Project-specific optimistic update helpers
-class ProjectOptimisticUpdates {
-  private updateManager: OptimisticUpdateManager
-
-  constructor(updateManager: OptimisticUpdateManager) {
-    this.updateManager = updateManager
-  }
-
-  updateProject(
-    projectId: string,
-    updates: Partial<any>,
-    originalProject: any,
-    onLocalUpdate: (updatedProject: any) => void,
-    onConfirm?: (confirmedProject: any) => void,
-    onRevert?: (originalProject: any) => void
-  ): string {
-    const optimisticProject = { ...originalProject, ...updates }
-
-    // Apply optimistic update
-    onLocalUpdate(optimisticProject)
-
-    return this.updateManager.applyUpdate(
-      'project',
-      projectId,
-      'update',
-      optimisticProject,
-      originalProject,
-      {
-        onConfirm: (confirmedProject) => {
-          if (confirmedProject) {
-            onLocalUpdate(confirmedProject)
-          }
-          onConfirm?.(confirmedProject)
-        },
-        onRevert: (original) => {
-          if (original) {
-            onLocalUpdate(original)
-          }
-          onRevert?.(original)
-        },
-      }
-    )
-  }
-}
-
 // Conflict resolution helpers
 class ConflictResolver {
   static resolveTaskConflict(
@@ -551,7 +506,4 @@ const wsOptimisticIntegrator = new WebSocketOptimisticUpdateIntegrator(
 export const taskOptimisticUpdates = new EnhancedTaskOptimisticUpdates(
   optimisticUpdateManager,
   wsOptimisticIntegrator
-)
-const projectOptimisticUpdates = new ProjectOptimisticUpdates(
-  optimisticUpdateManager
 )

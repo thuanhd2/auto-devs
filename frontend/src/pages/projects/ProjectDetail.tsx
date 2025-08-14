@@ -19,7 +19,6 @@ import {
   useDeleteProject,
 } from '@/hooks/use-projects'
 import { useTasks } from '@/hooks/use-tasks'
-
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -28,7 +27,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-
 import { Separator } from '@/components/ui/separator'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsContent } from '@/components/ui/tabs'
@@ -40,14 +38,12 @@ import { GitStatusCard } from '@/components/kanban/git-status-card'
 import { ProjectBoard } from '@/components/kanban/project-board'
 import { Main } from '@/components/layout/main'
 import { RealTimeNotifications } from '@/components/notifications/real-time-notifications'
-
+import { ProjectEditModal } from '@/components/project-edit-modal'
 import { SimpleConfirmDialog } from '@/components/simple-confirm-dialog'
 import {
   RealTimeProjectStats,
   CompactProjectStats,
 } from '@/components/stats/real-time-project-stats'
-import { ProjectEditModal } from '@/components/project-edit-modal'
-
 
 const statusConfig = {
   TODO: { label: 'To Do', icon: Clock, color: 'bg-slate-500' },
@@ -79,7 +75,7 @@ export function ProjectDetail() {
     error: projectError,
   } = useProject(projectId)
   const { data: statistics } = useProjectStatistics(projectId)
-  const { data: tasksResponse } = useTasks(projectId, {})
+  const { data: tasksResponse } = useTasks(projectId)
   const deleteProjectMutation = useDeleteProject()
 
   const handleDeleteProject = async () => {
@@ -262,7 +258,7 @@ export function ProjectDetail() {
                     </CardDescription>
                   </CardHeader>
                   <CardContent className='space-y-4'>
-                    <CompactProjectStats projectId={projectId} tasks={tasks} />
+                    <CompactProjectStats tasks={tasks} />
 
                     <div className='border-t pt-2'>
                       <UserPresence
@@ -319,7 +315,7 @@ export function ProjectDetail() {
           </Tabs>
         </div>
       </Main>
-      
+
       {/* Project Edit Modal */}
       <ProjectEditModal
         projectId={projectId}

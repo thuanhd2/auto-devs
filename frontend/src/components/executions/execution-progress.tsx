@@ -17,25 +17,6 @@ const sizeClasses = {
   lg: 'h-3',
 }
 
-const _getProgressColor = (status: ExecutionStatus, progress: number) => {
-  switch (status) {
-    case 'running':
-      return progress > 0.8 ? 'bg-green-500' : 'bg-blue-500'
-    case 'completed':
-      return 'bg-green-500'
-    case 'failed':
-      return 'bg-red-500'
-    case 'cancelled':
-      return 'bg-gray-400'
-    case 'paused':
-      return 'bg-yellow-500'
-    case 'pending':
-      return 'bg-gray-300'
-    default:
-      return 'bg-blue-500'
-  }
-}
-
 const getProgressIcon = (status: ExecutionStatus, _progress: number) => {
   if (status === 'completed') return TrendingUp
   if (status === 'failed' || status === 'cancelled') return TrendingDown

@@ -1,4 +1,3 @@
-import { Link } from '@tanstack/react-router'
 import { IconBrandGithub } from '@tabler/icons-react'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
@@ -27,12 +26,16 @@ export default function AboutUs() {
           </p>
         </div>
         <Separator className='my-4 lg:my-6' />
-        <Link to='https://github.com/thuanhd2/auto-devs'>
+        <a
+          href='https://github.com/thuanhd2/auto-devs'
+          target='_blank'
+          rel='noopener noreferrer'
+        >
           <Button>
             <IconBrandGithub />
             Github Repository
           </Button>
-        </Link>
+        </a>
       </Main>
     </>
   )

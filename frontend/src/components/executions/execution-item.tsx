@@ -32,9 +32,6 @@ import { ExecutionStatusBadge } from './execution-status-badge'
 interface ExecutionItemProps {
   execution: Execution
   onUpdate?: (executionId: string, updates: Record<string, unknown>) => void
-  onDelete?: (executionId: string) => void
-  onViewLogs?: (executionId: string) => void
-  onViewDetails?: (executionId: string) => void
   showActions?: boolean
   compact?: boolean
   expandable?: boolean
@@ -44,9 +41,6 @@ interface ExecutionItemProps {
 export function ExecutionItem({
   execution,
   onUpdate,
-  onDelete,
-  onViewLogs,
-  onViewDetails,
   showActions = true,
   compact = false,
   expandable = false,
@@ -81,9 +75,6 @@ export function ExecutionItem({
                     <ExecutionActions
                       execution={execution}
                       onUpdate={handleStatusUpdate}
-                      onDelete={onDelete}
-                      onViewLogs={onViewLogs}
-                      onViewDetails={onViewDetails}
                     />
                   )}
                   <ChevronRight
@@ -97,10 +88,7 @@ export function ExecutionItem({
             </CollapsibleTrigger>
             <CollapsibleContent className='space-y-4'>
               <div className='border-t pt-4'>
-                <ExecutionDetails
-                  execution={execution}
-                  onViewLogs={onViewLogs}
-                />
+                <ExecutionDetails execution={execution} />
               </div>
             </CollapsibleContent>
           </Collapsible>
@@ -113,7 +101,6 @@ export function ExecutionItem({
                   execution={execution}
                   onUpdate={handleStatusUpdate}
                   onDelete={onDelete}
-                  onViewLogs={onViewLogs}
                   onViewDetails={onViewDetails}
                 />
               )}
@@ -174,14 +161,7 @@ function ExecutionHeader({
   )
 }
 
-function ExecutionDetails({
-  execution,
-  onViewLogs,
-}: {
-  execution: Execution
-  onViewLogs?: (executionId: string) => void
-}) {
-  const inlineLogs = true
+function ExecutionDetails({ execution }: { execution: Execution }) {
   return (
     <div className='space-y-3'>
       {execution.error && (
@@ -200,14 +180,7 @@ function ExecutionDetails({
         </div>
       )}
 
-      {inlineLogs ? (
-        <ExecutionLogsPannel executionId={execution.id} />
-      ) : (
-        <Button variant='outline' onClick={() => onViewLogs?.(execution.id)}>
-          <Eye className='h-4 w-4' />
-          <span>View Logs</span>
-        </Button>
-      )}
+      <ExecutionLogsPannel executionId={execution.id} />
     </div>
   )
 }
@@ -215,15 +188,9 @@ function ExecutionDetails({
 function ExecutionActions({
   execution,
   onUpdate,
-  onDelete,
-  onViewLogs,
-  onViewDetails,
 }: {
   execution: Execution
   onUpdate?: (status: string) => void
-  onDelete?: (executionId: string) => void
-  onViewLogs?: (executionId: string) => void
-  onViewDetails?: (executionId: string) => void
 }) {
   const canPause = execution.status === 'running'
   const canResume = execution.status === 'paused'

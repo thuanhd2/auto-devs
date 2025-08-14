@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Loader2, GitBranch, Bot } from 'lucide-react'
 import { projectsApi } from '@/lib/api/projects'
 import { Alert, AlertDescription } from '@/components/ui/alert'

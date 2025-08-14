@@ -78,7 +78,7 @@ const mockTaskHistory: TaskHistoryItem[] = [
   },
 ]
 
-export function TaskHistory({ open, onOpenChange, taskId }: TaskHistoryProps) {
+export function TaskHistory({ open, onOpenChange }: TaskHistoryProps) {
   // In real app, fetch history from API
   const history = mockTaskHistory
 

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useNavigate, useParams } from '@tanstack/react-router'
 import type { Task } from '@/types/task'
 import { ExternalLink, FolderOpen } from 'lucide-react'

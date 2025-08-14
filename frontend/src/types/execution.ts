@@ -1,10 +1,10 @@
 export type ExecutionStatus =
-  | 'pending'
-  | 'running'
-  | 'paused'
-  | 'completed'
-  | 'failed'
-  | 'cancelled'
+  | 'PENDING'
+  | 'RUNNING'
+  | 'PAUSED'
+  | 'COMPLETED'
+  | 'FAILED'
+  | 'CANCELLED'
 
 type LogLevel = 'debug' | 'info' | 'warn' | 'error'
 
@@ -126,32 +126,12 @@ export interface ExecutionLogListResponse {
   }
 }
 
-// UI-specific types
-interface ExecutionStatusBadgeProps {
-  status: ExecutionStatus
-  size?: 'sm' | 'md' | 'lg'
-  showIcon?: boolean
-}
-
-interface ExecutionProgressProps {
-  progress: number
-  status: ExecutionStatus
-  size?: 'sm' | 'md' | 'lg'
-  showPercentage?: boolean
-}
-
-interface ExecutionDurationProps {
-  startedAt: string
-  completedAt?: string
-  showIcon?: boolean
-}
-
 // Status colors for UI
 export const EXECUTION_STATUS_COLORS: Record<ExecutionStatus, string> = {
-  pending: 'bg-gray-100 text-gray-800',
-  running: 'bg-blue-100 text-blue-800',
-  paused: 'bg-yellow-100 text-yellow-800',
-  completed: 'bg-green-100 text-green-800',
-  failed: 'bg-red-100 text-red-800',
-  cancelled: 'bg-gray-100 text-gray-600',
+  PENDING: 'bg-gray-100 text-gray-800',
+  RUNNING: 'bg-blue-100 text-blue-800',
+  PAUSED: 'bg-yellow-100 text-yellow-800',
+  COMPLETED: 'bg-green-100 text-green-800',
+  FAILED: 'bg-red-100 text-red-800',
+  CANCELLED: 'bg-gray-100 text-gray-600',
 }

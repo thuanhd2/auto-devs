@@ -1,11 +1,9 @@
 import { useState } from 'react'
-import { useState } from 'react'
 import type { Task, TaskStatus } from '@/types/task'
 import {
   Edit,
   Trash2,
   Copy,
-  MoreVertical,
   History,
   ExternalLink,
   GitBranch,
@@ -20,12 +18,9 @@ interface TaskActionsProps {
   onEdit?: (task: Task) => void
   onDelete?: (taskId: string) => void
   onDuplicate?: (task: Task) => void
-  onStatusChange?: (taskId: string, newStatus: TaskStatus) => void
   onViewHistory?: () => void
   onStartPlanning?: (taskId: string, branchName: string, aiType: string) => void
   onApprovePlanAndStartImplement?: (taskId: string, aiType: string) => void
-  showStatusActions?: boolean
-  showGitActions?: boolean
 }
 
 export function TaskActions({
@@ -33,22 +28,16 @@ export function TaskActions({
   onEdit,
   onDelete,
   onDuplicate,
-  onStatusChange,
   onViewHistory,
   onStartPlanning,
   onApprovePlanAndStartImplement,
-  showStatusActions = true,
-  showGitActions = true,
 }: TaskActionsProps) {
   const [showBranchDialog, setShowBranchDialog] = useState(false)
-  const [showImplementationDialog, setShowImplementationDialog] = useState(false)
+  const [showImplementationDialog, setShowImplementationDialog] =
+    useState(false)
 
   const handleDelete = () => {
     onDelete?.(task.id)
-  }
-
-  const handleStatusChange = (newStatus: TaskStatus) => {
-    onStatusChange?.(task.id, newStatus)
   }
 
   const handleGitAction = (action: 'branch' | 'pr') => {

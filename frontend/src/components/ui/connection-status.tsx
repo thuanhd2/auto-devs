@@ -1,20 +1,24 @@
-
-import { cn } from '@/lib/utils'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import { Progress } from '@/components/ui/progress'
-import { 
-  WifiOff, 
-  AlertCircle, 
-  CheckCircle, 
-  Loader2, 
+import { ConnectionState } from '@/services/websocketService'
+import {
+  WifiOff,
+  AlertCircle,
+  CheckCircle,
+  Loader2,
   RefreshCw,
   MessageSquare,
-  Clock
+  Clock,
 } from 'lucide-react'
-import { ConnectionState } from '@/services/websocketService'
+import { cn } from '@/lib/utils'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Progress } from '@/components/ui/progress'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 
 export interface ConnectionStatusProps {
   connectionState: ConnectionState
@@ -38,15 +42,15 @@ export function ConnectionStatus({
   const getStatusIcon = () => {
     switch (connectionState.status) {
       case 'connected':
-        return <CheckCircle className="h-4 w-4 text-green-600" />
+        return <CheckCircle className='h-4 w-4 text-green-600' />
       case 'connecting':
-        return <Loader2 className="h-4 w-4 animate-spin text-yellow-600" />
+        return <Loader2 className='h-4 w-4 animate-spin text-yellow-600' />
       case 'disconnected':
-        return <WifiOff className="h-4 w-4 text-gray-600" />
+        return <WifiOff className='h-4 w-4 text-gray-600' />
       case 'error':
-        return <AlertCircle className="h-4 w-4 text-red-600" />
+        return <AlertCircle className='h-4 w-4 text-red-600' />
       default:
-        return <WifiOff className="h-4 w-4 text-gray-600" />
+        return <WifiOff className='h-4 w-4 text-gray-600' />
     }
   }
 
@@ -54,7 +58,7 @@ export function ConnectionStatus({
     if (connectionState.isReconnecting) {
       return `Reconnecting... (${connectionState.reconnectAttempts})`
     }
-    
+
     switch (connectionState.status) {
       case 'connected':
         return 'Connected'
@@ -90,7 +94,7 @@ export function ConnectionStatus({
         <Tooltip>
           <TooltipTrigger asChild>
             <Badge
-              variant="outline"
+              variant='outline'
               className={cn(
                 'flex items-center gap-1 px-2 py-1',
                 getStatusColor(),
@@ -98,23 +102,29 @@ export function ConnectionStatus({
               )}
             >
               {getStatusIcon()}
-              <span className="text-xs font-medium">{getStatusText()}</span>
+              <span className='text-xs font-medium'>{getStatusText()}</span>
               {queuedMessageCount > 0 && (
-                <Badge variant="secondary" className="ml-1 px-1 text-xs">
+                <Badge variant='secondary' className='ml-1 px-1 text-xs'>
                   {queuedMessageCount}
                 </Badge>
               )}
             </Badge>
           </TooltipTrigger>
           <TooltipContent>
-            <div className="text-sm">
+            <div className='text-sm'>
               <div>Status: {getStatusText()}</div>
               {connectionState.connectedAt && (
-                <div>Connected: {connectionState.connectedAt.toLocaleTimeString()}</div>
+                <div>
+                  Connected: {connectionState.connectedAt.toLocaleTimeString()}
+                </div>
               )}
-              {connectionState.disconnectedAt && connectionState.status === 'disconnected' && (
-                <div>Disconnected: {connectionState.disconnectedAt.toLocaleTimeString()}</div>
-              )}
+              {connectionState.disconnectedAt &&
+                connectionState.status === 'disconnected' && (
+                  <div>
+                    Disconnected:{' '}
+                    {connectionState.disconnectedAt.toLocaleTimeString()}
+                  </div>
+                )}
               {queuedMessageCount > 0 && (
                 <div>Queued messages: {queuedMessageCount}</div>
               )}
@@ -129,10 +139,10 @@ export function ConnectionStatus({
     return (
       <div className={cn('flex items-center gap-2', className)}>
         {getStatusIcon()}
-        <span className="text-sm text-muted-foreground">{getStatusText()}</span>
+        <span className='text-muted-foreground text-sm'>{getStatusText()}</span>
         {queuedMessageCount > 0 && (
-          <Badge variant="secondary" className="px-1 text-xs">
-            <MessageSquare className="h-3 w-3 mr-1" />
+          <Badge variant='secondary' className='px-1 text-xs'>
+            <MessageSquare className='mr-1 h-3 w-3' />
             {queuedMessageCount}
           </Badge>
         )}
@@ -143,59 +153,69 @@ export function ConnectionStatus({
   // Full variant
   return (
     <div className={cn('space-y-3', className)}>
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
+      <div className='flex items-center justify-between'>
+        <div className='flex items-center gap-2'>
           {getStatusIcon()}
-          <span className="font-medium">{getStatusText()}</span>
+          <span className='font-medium'>{getStatusText()}</span>
         </div>
-        
-        {(connectionState.status === 'disconnected' || connectionState.status === 'error') && onReconnect && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onReconnect}
-            disabled={connectionState.status === 'connecting'}
-          >
-            <RefreshCw className="h-4 w-4 mr-1" />
-            Reconnect
-          </Button>
-        )}
+
+        {(connectionState.status === 'disconnected' ||
+          connectionState.status === 'error') &&
+          onReconnect && (
+            <Button variant='outline' size='sm' onClick={onReconnect}>
+              <RefreshCw className='mr-1 h-4 w-4' />
+              Reconnect
+            </Button>
+          )}
       </div>
 
       {connectionState.isReconnecting && (
-        <div className="space-y-2">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            <span>Attempting to reconnect... (Attempt {connectionState.reconnectAttempts})</span>
+        <div className='space-y-2'>
+          <div className='text-muted-foreground flex items-center gap-2 text-sm'>
+            <Loader2 className='h-4 w-4 animate-spin' />
+            <span>
+              Attempting to reconnect... (Attempt{' '}
+              {connectionState.reconnectAttempts})
+            </span>
           </div>
-          <Progress value={(connectionState.reconnectAttempts / 10) * 100} className="h-2" />
+          <Progress
+            value={(connectionState.reconnectAttempts / 10) * 100}
+            className='h-2'
+          />
         </div>
       )}
 
       {showDetails && (
-        <div className="space-y-2 text-sm text-muted-foreground">
-          {connectionState.connectedAt && connectionState.status === 'connected' && (
-            <div className="flex items-center gap-2">
-              <Clock className="h-4 w-4" />
-              <span>Connected since {connectionState.connectedAt.toLocaleString()}</span>
-            </div>
-          )}
-          
-          {connectionState.disconnectedAt && connectionState.status !== 'connected' && (
-            <div className="flex items-center gap-2">
-              <Clock className="h-4 w-4" />
-              <span>Disconnected at {connectionState.disconnectedAt.toLocaleString()}</span>
-            </div>
-          )}
-          
+        <div className='text-muted-foreground space-y-2 text-sm'>
+          {connectionState.connectedAt &&
+            connectionState.status === 'connected' && (
+              <div className='flex items-center gap-2'>
+                <Clock className='h-4 w-4' />
+                <span>
+                  Connected since {connectionState.connectedAt.toLocaleString()}
+                </span>
+              </div>
+            )}
+
+          {connectionState.disconnectedAt &&
+            connectionState.status !== 'connected' && (
+              <div className='flex items-center gap-2'>
+                <Clock className='h-4 w-4' />
+                <span>
+                  Disconnected at{' '}
+                  {connectionState.disconnectedAt.toLocaleString()}
+                </span>
+              </div>
+            )}
+
           {queuedMessageCount > 0 && (
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <MessageSquare className="h-4 w-4" />
+            <div className='flex items-center justify-between'>
+              <div className='flex items-center gap-2'>
+                <MessageSquare className='h-4 w-4' />
                 <span>{queuedMessageCount} queued messages</span>
               </div>
               {onClearQueue && (
-                <Button variant="ghost" size="sm" onClick={onClearQueue}>
+                <Button variant='ghost' size='sm' onClick={onClearQueue}>
                   Clear Queue
                 </Button>
               )}
@@ -205,11 +225,9 @@ export function ConnectionStatus({
       )}
 
       {connectionState.status === 'error' && connectionState.lastError && (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            {connectionState.lastError}
-          </AlertDescription>
+        <Alert variant='destructive'>
+          <AlertCircle className='h-4 w-4' />
+          <AlertDescription>{connectionState.lastError}</AlertDescription>
         </Alert>
       )}
     </div>
@@ -222,15 +240,15 @@ export interface ConnectionIndicatorProps {
   size?: 'sm' | 'md' | 'lg'
 }
 
-export function ConnectionIndicator({ 
-  isConnected, 
+export function ConnectionIndicator({
+  isConnected,
   className,
-  size = 'md' 
+  size = 'md',
 }: ConnectionIndicatorProps) {
   const sizeClasses = {
     sm: 'h-2 w-2',
     md: 'h-3 w-3',
-    lg: 'h-4 w-4'
+    lg: 'h-4 w-4',
   }
 
   return (
@@ -238,9 +256,7 @@ export function ConnectionIndicator({
       className={cn(
         'rounded-full',
         sizeClasses[size],
-        isConnected 
-          ? 'bg-green-500 animate-pulse' 
-          : 'bg-red-500',
+        isConnected ? 'animate-pulse bg-green-500' : 'bg-red-500',
         className
       )}
       title={isConnected ? 'Connected' : 'Disconnected'}
@@ -259,7 +275,7 @@ export function ReconnectionProgress({
   attempt,
   maxAttempts,
   isReconnecting,
-  className
+  className,
 }: ReconnectionProgressProps) {
   if (!isReconnecting) {
     return null
@@ -269,11 +285,13 @@ export function ReconnectionProgress({
 
   return (
     <div className={cn('space-y-2', className)}>
-      <div className="flex items-center justify-between text-sm">
-        <span className="text-muted-foreground">Reconnecting...</span>
-        <span className="text-muted-foreground">{attempt}/{maxAttempts}</span>
+      <div className='flex items-center justify-between text-sm'>
+        <span className='text-muted-foreground'>Reconnecting...</span>
+        <span className='text-muted-foreground'>
+          {attempt}/{maxAttempts}
+        </span>
       </div>
-      <Progress value={progress} className="h-2" />
+      <Progress value={progress} className='h-2' />
     </div>
   )
 }
@@ -289,22 +307,22 @@ export function ConnectionError({
   error,
   onRetry,
   onDismiss,
-  className
+  className,
 }: ConnectionErrorProps) {
   return (
-    <Alert variant="destructive" className={className}>
-      <AlertCircle className="h-4 w-4" />
-      <AlertDescription className="flex items-center justify-between">
+    <Alert variant='destructive' className={className}>
+      <AlertCircle className='h-4 w-4' />
+      <AlertDescription className='flex items-center justify-between'>
         <span>{error}</span>
-        <div className="flex gap-2">
+        <div className='flex gap-2'>
           {onRetry && (
-            <Button variant="outline" size="sm" onClick={onRetry}>
-              <RefreshCw className="h-4 w-4 mr-1" />
+            <Button variant='outline' size='sm' onClick={onRetry}>
+              <RefreshCw className='mr-1 h-4 w-4' />
               Retry
             </Button>
           )}
           {onDismiss && (
-            <Button variant="ghost" size="sm" onClick={onDismiss}>
+            <Button variant='ghost' size='sm' onClick={onDismiss}>
               Dismiss
             </Button>
           )}
