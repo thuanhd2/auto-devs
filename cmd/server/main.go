@@ -72,6 +72,7 @@ func main() {
 			// Serve static files from frontend build output
 			router.Static("/assets", frontendPath+"/assets")
 			router.Static("/images", frontendPath+"/images")
+			router.Static("/sounds", frontendPath+"/sounds")
 			router.GET("/", func(c *gin.Context) {
 				c.File(frontendPath + "/index.html")
 			})

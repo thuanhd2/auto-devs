@@ -15,9 +15,10 @@ cd frontend && VITE_API_BASE_URL=/api/v1 VITE_WS_BASE_URL=ws://base_host/ws npm 
 
 cd ..
 
-echo "🏗️ Building server..."
+echo "🏗️ Building server & copy fake-cli..."
 
 go build -o $TARGET_DIR/server cmd/server/main.go
+cp -r fake-cli $TARGET_DIR/fake-cli
 
 echo "🏗️ Building worker..."
 
