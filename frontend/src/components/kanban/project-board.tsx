@@ -55,7 +55,7 @@ export function ProjectBoard({ projectId }: ProjectBoardProps) {
   const approvePlanAndStartImplementMutation = useApprovePlan()
   // WebSocket integration
   const { setCurrentProjectId } = useWebSocketProject(projectId)
-  const { subscribe, unsubscribe } = useWebSocketContext()
+  const { subscribe, unsubscribe, initializeTaskStatuses } = useWebSocketContext()
   const onTaskUpdated = useCallback((message: CentrifugeMessage) => {
     const { task_id: taskId, project_id: projectId, changes } = message.data
     // do nothing if current project id is not the same as the task's project id
@@ -90,7 +90,10 @@ export function ProjectBoard({ projectId }: ProjectBoardProps) {
     // console.log('tasks changed', tasks)
     const tasks = tasksResponse?.tasks || []
     setLocalTasks(tasks)
-  }, [tasksResponse])
+    
+    // Initialize task statuses for sound notifications
+    initializeTaskStatuses(tasks.map(task => ({ id: task.id, status: task.status })))
+  }, [tasksResponse, initializeTaskStatuses])
 
   // Auto-open task detail sheet when taskId is in URL
   useEffect(() => {
