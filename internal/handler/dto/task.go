@@ -11,12 +11,12 @@ import (
 type TaskCreateRequest struct {
 	ProjectID   uuid.UUID `json:"project_id" binding:"required" example:"123e4567-e89b-12d3-a456-426614174000"`
 	Title       string    `json:"title" binding:"required,min=1,max=255" example:"Implement user authentication"`
-	Description string    `json:"description" binding:"max=1000" example:"Add JWT-based authentication system"`
+	Description string    `json:"description" binding:"max=5000" example:"Add JWT-based authentication system"`
 }
 
 type TaskUpdateRequest struct {
 	Title       *string `json:"title,omitempty" binding:"omitempty,min=1,max=255" example:"Updated task title"`
-	Description *string `json:"description,omitempty" binding:"omitempty,max=1000" example:"Updated description"`
+	Description *string `json:"description,omitempty" binding:"omitempty,max=5000" example:"Updated description"`
 	BranchName  *string `json:"branch_name,omitempty" binding:"omitempty,max=255" example:"feature/user-auth"`
 	PullRequest *string `json:"pull_request,omitempty" binding:"omitempty,max=255" example:"https://github.com/user/repo/pull/123"`
 }
