@@ -438,7 +438,7 @@ func (p *Processor) ProcessTaskImplementation(ctx context.Context, task *asynq.T
 				// Check if execution completed successfully or failed
 				if execution.Error != "" {
 					p.logger.Error("AI execution failed", "task_id", payload.TaskID, "execution_id", execution.ID, "error", execution.Error)
-					_ = p.updateTaskStatus(context.Background(), payload.TaskID, entity.TaskStatusIMPLEMENTING) // Keep in implementing for retry
+					_ = p.updateTaskStatus(context.Background(), payload.TaskID, entity.TaskStatusPLANREVIEWING) // Keep in implementing for retry
 
 					// Mark execution as failed
 					err := p.executionRepo.MarkFailed(context.Background(), dbExecution.ID, completedAt, execution.Error)
