@@ -138,6 +138,8 @@ func (pm *ProcessManager) MonitorProcess(process *Process) error {
 
 	// Wait for process to complete
 	err := process.cmd.Wait()
+	// wait 2 seconds before raise failed to make sure executions logs are catched
+	time.Sleep(2 * time.Second)
 
 	process.mu.Lock()
 	defer process.mu.Unlock()

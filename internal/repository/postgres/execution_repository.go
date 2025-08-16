@@ -192,9 +192,9 @@ func (r *executionRepository) MarkCompleted(ctx context.Context, id uuid.UUID, c
 // MarkFailed marks an execution as failed with error
 func (r *executionRepository) MarkFailed(ctx context.Context, id uuid.UUID, completedAt time.Time, error string) error {
 	updates := map[string]interface{}{
-		"status":       entity.ExecutionStatusFailed,
-		"completed_at": completedAt,
-		"error":        error,
+		"status":        entity.ExecutionStatusFailed,
+		"completed_at":  completedAt,
+		"error_message": error,
 	}
 
 	result := r.db.WithContext(ctx).Model(&entity.Execution{}).Where("id = ?", id).Updates(updates)

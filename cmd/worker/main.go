@@ -17,9 +17,6 @@ import (
 )
 
 func main() {
-	savePidToFile()
-	defer removePidFromFile()
-
 	// Parse command line flags
 	var (
 		workerName = flag.String("worker", "default", "Worker name for identification")
@@ -51,6 +48,9 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to initialize application: %v", err)
 	}
+
+	savePidToFile(app.Config.Worktree.BaseDirectory)
+	defer removePidFromFile(app.Config.Worktree.BaseDirectory)
 
 	// Use job processor from DI container
 	processor := app.JobProcessor
@@ -112,15 +112,15 @@ func main() {
 
 var pidsFolder = "/private/var/folders/tv/531lt6yx3ss28h1b7bcpb1900000gn/T/autodevs"
 
-func savePidToFile() {
+func savePidToFile(folderPath string) {
 	pid := os.Getpid()
-	pidFile := fmt.Sprintf("%s/worker_%d.pid", pidsFolder, pid)
+	pidFile := fmt.Sprintf("%s/worker_%d.pid", folderPath, pid)
 	// create the file
 	os.WriteFile(pidFile, []byte(strconv.Itoa(pid)), 0o644)
 }
 
-func removePidFromFile() {
+func removePidFromFile(folderPath string) {
 	pid := os.Getpid()
-	pidFile := fmt.Sprintf("%s/worker_%d.pid", pidsFolder, pid)
+	pidFile := fmt.Sprintf("%s/worker_%d.pid", folderPath, pid)
 	os.Remove(pidFile)
 }
