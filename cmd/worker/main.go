@@ -110,8 +110,6 @@ func main() {
 	logger.Info("Job worker stopped")
 }
 
-var pidsFolder = "/private/var/folders/tv/531lt6yx3ss28h1b7bcpb1900000gn/T/autodevs"
-
 func savePidToFile(folderPath string) {
 	pid := os.Getpid()
 	pidFile := fmt.Sprintf("%s/worker_%d.pid", folderPath, pid)

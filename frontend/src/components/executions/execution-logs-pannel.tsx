@@ -107,6 +107,10 @@ function ExecutionLogItem({ log }: { log: ExecutionLog }) {
         case 'tool_result':
           return <Terminal className='h-4 w-4 text-purple-600' />
         case 'result':
+          const isError = logData.is_error
+          if (isError) {
+            return <AlertCircle className='h-4 w-4 text-red-600' />
+          }
           return <CheckSquare className='h-4 w-4 text-emerald-600' />
         default:
           return <AlertCircle className='h-4 w-4 text-gray-600' />
@@ -220,19 +224,7 @@ function ExecutionLogItem({ log }: { log: ExecutionLog }) {
       }
 
       if (logData.type === 'result') {
-        return (
-          <div className='rounded border-l-2 border-emerald-400 bg-emerald-50 p-2'>
-            <div className='mb-1 text-xs font-medium text-emerald-600'>
-              Execution Result ({logData.subtype})
-            </div>
-            <div className='text-sm text-gray-800'>
-              Duration: {logData.duration_ms}ms | Turns: {logData.num_turns}
-            </div>
-            {logData.result && (
-              <div className='mt-2 text-sm text-gray-700'>{logData.result}</div>
-            )}
-          </div>
-        )
+        return showResult(logData)
       }
 
       // Default fallback
@@ -279,4 +271,32 @@ function ExecutionLogItem({ log }: { log: ExecutionLog }) {
       </div>
     )
   }
+}
+
+function showResult(logData: any) {
+  const isError = logData.is_error
+  let displayClass = 'emerald'
+  if (isError) {
+    displayClass = 'red'
+  }
+  let message = logData.result
+  // if message match with `Claude AI usage limit reached|1755338400`, then format it to `Claude AI usage limit reached at 2025-08-16 12:00:00`
+  if (message.match(/Claude AI usage limit reached\|(\d+)/)) {
+    message = `Claude AI usage limit reached at ${new Date(
+      parseInt(message.split('|')[1]) * 1000
+    ).toLocaleString()}`
+  }
+  return (
+    <div
+      className={`rounded border-l-2 border-${displayClass}-400 bg-${displayClass}-50 p-2`}
+    >
+      <div className={`mb-1 text-xs font-medium text-${displayClass}-600`}>
+        Execution Result ({logData.subtype})
+      </div>
+      <div className='text-sm text-gray-800'>
+        Duration: {logData.duration_ms}ms | Turns: {logData.num_turns}
+      </div>
+      {message && <div className='mt-2 text-sm text-gray-700'>{message}</div>}
+    </div>
+  )
 }
