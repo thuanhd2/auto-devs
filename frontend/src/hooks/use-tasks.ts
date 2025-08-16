@@ -18,6 +18,14 @@ export function useTasks(projectId: string) {
   })
 }
 
+export function useTask(taskId: string) {
+  return useQuery({
+    queryKey: ['task', taskId],
+    queryFn: () => tasksApi.getTask(taskId),
+    enabled: !!taskId,
+  })
+}
+
 export function useCreateTask() {
   const queryClient = useQueryClient()
 

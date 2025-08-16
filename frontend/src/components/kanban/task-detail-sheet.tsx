@@ -1,10 +1,13 @@
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useNavigate, useParams } from '@tanstack/react-router'
+import { useQueryClient } from '@tanstack/react-query'
 import type { Task } from '@/types/task'
 import { ExternalLink, FolderOpen } from 'lucide-react'
 import { tasksApi } from '@/lib/api/tasks'
 import { getStatusColor, getStatusTitle } from '@/lib/kanban'
+import { useTask } from '@/hooks/use-tasks'
 import { useTaskExecutions } from '@/hooks/use-executions'
+import { useWebSocketContext } from '@/context/websocket-context'
 import { usePullRequestByTask } from '@/hooks/use-pull-requests'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -27,7 +30,7 @@ import { TaskMetadata } from './task-metadata'
 interface TaskDetailSheetProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  task: Task | null
+  taskId: string | null
   onEdit?: (task: Task) => void
   onDelete?: (taskId: string) => void
   onDuplicate?: (task: Task) => void
@@ -39,7 +42,7 @@ interface TaskDetailSheetProps {
 export function TaskDetailSheet({
   open,
   onOpenChange,
-  task,
+  taskId,
   onEdit,
   onDelete,
   onDuplicate,
@@ -49,8 +52,36 @@ export function TaskDetailSheet({
 }: TaskDetailSheetProps) {
   const navigate = useNavigate()
   const params = useParams({ strict: false }) as { projectId?: string }
+  const queryClient = useQueryClient()
   const [showEditForm, setShowEditForm] = useState(false)
   const [showHistory, setShowHistory] = useState(false)
+
+  // Fetch task data using the new useTask hook
+  const { data: task, isLoading } = useTask(taskId || '')
+  
+  // WebSocket integration for task updates
+  const { subscribe, unsubscribe } = useWebSocketContext()
+  
+  // Handle task updates from WebSocket
+  const handleTaskUpdate = useCallback((message: any) => {
+    if (message.data?.task?.id === taskId) {
+      // Invalidate and refetch the task query when task is updated
+      queryClient.invalidateQueries({ queryKey: ['task', taskId] })
+      
+      // Also call the onEdit callback if provided (for backward compatibility)
+      if (onEdit && message.data?.task) {
+        onEdit(message.data.task)
+      }
+    }
+  }, [taskId, queryClient, onEdit])
+
+  // Subscribe to task updates when component mounts
+  useEffect(() => {
+    if (taskId && open) {
+      subscribe('task_updated', handleTaskUpdate)
+      return () => unsubscribe('task_updated', handleTaskUpdate)
+    }
+  }, [taskId, open, subscribe, unsubscribe, handleTaskUpdate])
 
   // Handle sheet close and URL cleanup
   const handleOpenChange = (isOpen: boolean) => {
@@ -64,6 +95,19 @@ export function TaskDetailSheet({
         replace: true,
       })
     }
+  }
+
+  // Show loading state while fetching task data
+  if (isLoading && open) {
+    return (
+      <Sheet open={open} onOpenChange={handleOpenChange}>
+        <SheetContent className='overflow-y-auto sm:w-[400px] sm:max-w-[400px] lg:w-[800px] lg:max-w-none'>
+          <div className='flex items-center justify-center p-8'>
+            <div className='text-muted-foreground text-sm'>Loading task...</div>
+          </div>
+        </SheetContent>
+      </Sheet>
+    )
   }
 
   if (!task) return null

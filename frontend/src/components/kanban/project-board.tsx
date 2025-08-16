@@ -45,8 +45,8 @@ export function ProjectBoard({ projectId }: ProjectBoardProps) {
 
   const [taskDetailSheet, setTaskDetailSheet] = useState<{
     open: boolean
-    task?: Task | null
-  }>({ open: false, task: null })
+    taskId?: string | null
+  }>({ open: false, taskId: null })
 
   const { data: tasksResponse } = useTasks(projectId)
   const deleteTaskMutation = useDeleteTask()
@@ -97,20 +97,10 @@ export function ProjectBoard({ projectId }: ProjectBoardProps) {
 
   // Auto-open task detail sheet when taskId is in URL
   useEffect(() => {
-    if (currentTaskId && localTasks.length > 0) {
-      const task = localTasks.find((t) => t.id === currentTaskId)
-      if (task) {
-        setTaskDetailSheet({ open: true, task })
-      } else {
-        // Task not found, navigate back to project
-        navigate({
-          to: '/projects/$projectId',
-          params: { projectId },
-          replace: true,
-        })
-      }
+    if (currentTaskId) {
+      setTaskDetailSheet({ open: true, taskId: currentTaskId })
     }
-  }, [currentTaskId, localTasks, navigate, projectId])
+  }, [currentTaskId])
 
   // Set current project for WebSocket subscriptions
   useEffect(() => {
@@ -163,7 +153,7 @@ export function ProjectBoard({ projectId }: ProjectBoardProps) {
   }
 
   const handleViewTaskDetails = (task: Task) => {
-    setTaskDetailSheet({ open: true, task })
+    setTaskDetailSheet({ open: true, taskId: task.id })
 
     // Update URL to include task ID
     navigate({
@@ -256,7 +246,7 @@ export function ProjectBoard({ projectId }: ProjectBoardProps) {
             })
           }
         }}
-        task={taskDetailSheet.task || null}
+        taskId={taskDetailSheet.taskId || null}
         onEdit={handleEditTask}
         onDelete={handleDeleteTask}
         onDuplicate={async (task) => {
