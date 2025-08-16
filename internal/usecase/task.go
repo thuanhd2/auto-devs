@@ -1146,7 +1146,6 @@ func (u *taskUsecase) OpenWithCursor(ctx context.Context, taskID uuid.UUID, work
 	// Execute cursor command to open the workspace
 	cmd := exec.Command("cursor", ".")
 	cmd.Dir = worktreePath
-	cmd.Env = []string{}
 
 	// Start the command in the background (we don't need to wait for it to finish)
 	err := cmd.Start()

@@ -8,6 +8,8 @@ import (
 	"github.com/joho/godotenv"
 )
 
+const ENV_PREFIX = "AUTODEVS_"
+
 type Config struct {
 	Server                ServerConfig
 	Database              DatabaseConfig
@@ -116,6 +118,10 @@ func Load() *Config {
 }
 
 func getEnv(key, defaultValue string) string {
+	keyWithPrefix := ENV_PREFIX + key
+	if value := os.Getenv(keyWithPrefix); value != "" {
+		return value
+	}
 	if value := os.Getenv(key); value != "" {
 		return value
 	}
@@ -123,6 +129,12 @@ func getEnv(key, defaultValue string) string {
 }
 
 func getEnvAsInt(key string, defaultValue int) int {
+	keyWithPrefix := ENV_PREFIX + key
+	if value := os.Getenv(keyWithPrefix); value != "" {
+		if intValue, err := strconv.Atoi(value); err == nil {
+			return intValue
+		}
+	}
 	if value := os.Getenv(key); value != "" {
 		if intValue, err := strconv.Atoi(value); err == nil {
 			return intValue
@@ -132,6 +144,12 @@ func getEnvAsInt(key string, defaultValue int) int {
 }
 
 func getEnvAsInt64(key string, defaultValue int64) int64 {
+	keyWithPrefix := ENV_PREFIX + key
+	if value := os.Getenv(keyWithPrefix); value != "" {
+		if intValue, err := strconv.ParseInt(value, 10, 64); err == nil {
+			return intValue
+		}
+	}
 	if value := os.Getenv(key); value != "" {
 		if intValue, err := strconv.ParseInt(value, 10, 64); err == nil {
 			return intValue
@@ -141,6 +159,12 @@ func getEnvAsInt64(key string, defaultValue int64) int64 {
 }
 
 func getEnvAsBool(key string, defaultValue bool) bool {
+	keyWithPrefix := ENV_PREFIX + key
+	if value := os.Getenv(keyWithPrefix); value != "" {
+		if boolValue, err := strconv.ParseBool(value); err == nil {
+			return boolValue
+		}
+	}
 	if value := os.Getenv(key); value != "" {
 		if boolValue, err := strconv.ParseBool(value); err == nil {
 			return boolValue
