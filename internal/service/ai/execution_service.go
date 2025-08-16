@@ -422,9 +422,6 @@ func (es *ExecutionService) handleExecutionCompletion(execution *Execution, proc
 
 // handleExecutionError handles execution errors
 func (es *ExecutionService) handleExecutionError(execution *Execution, errorMsg string) {
-	execution.mu.Lock()
-	defer execution.mu.Unlock()
-
 	now := time.Now()
 	execution.CompletedAt = &now
 	execution.Status = ExecutionStatusFailed
