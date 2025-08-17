@@ -136,6 +136,7 @@ type CreateTaskRequest struct {
 type UpdateTaskRequest struct {
 	Title          string               `json:"title"`
 	Description    string               `json:"description"`
+	Status         *entity.TaskStatus   `json:"status"`
 	Priority       *entity.TaskPriority `json:"priority"`
 	EstimatedHours *float64             `json:"estimated_hours"`
 	ActualHours    *float64             `json:"actual_hours"`
@@ -334,6 +335,13 @@ func (u *taskUsecase) Update(ctx context.Context, id uuid.UUID, req UpdateTaskRe
 
 	if req.Description != "" {
 		task.Description = req.Description
+	}
+	if req.Status != nil {
+		// Validate status transition before updating
+		if err := entity.ValidateStatusTransition(task.Status, *req.Status); err != nil {
+			return nil, fmt.Errorf("invalid status transition: %w", err)
+		}
+		task.Status = *req.Status
 	}
 	if req.Priority != nil {
 		task.Priority = *req.Priority

@@ -60,6 +60,11 @@ export const tasksApi = {
     return response.data
   },
 
+  async changeTaskStatus(taskId: string, status: TaskStatus): Promise<Task> {
+    const response = await api.put(`${API_ENDPOINTS.TASKS}/${taskId}`, { status })
+    return response.data
+  },
+
   async deleteTask(taskId: string): Promise<void> {
     await api.delete(`${API_ENDPOINTS.TASKS}/${taskId}`)
   },

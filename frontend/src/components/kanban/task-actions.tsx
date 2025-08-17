@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { Task } from '@/types/task'
+import type { Task, TaskStatus } from '@/types/task'
 import {
   Edit,
   Trash2,
@@ -8,10 +8,12 @@ import {
   ExternalLink,
   GitBranch,
   Play,
+  ArrowUpDown,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { BranchSelectionDialog } from './branch-selection-dialog'
 import { ImplementationConfirmationDialog } from './implementation-confirmation-dialog'
+import { ChangeStatusDialog } from './change-status-dialog'
 
 interface TaskActionsProps {
   task: Task
@@ -21,6 +23,7 @@ interface TaskActionsProps {
   onViewHistory?: () => void
   onStartPlanning?: (taskId: string, branchName: string, aiType: string) => void
   onApprovePlanAndStartImplement?: (taskId: string, aiType: string) => void
+  onChangeStatus?: (taskId: string, newStatus: TaskStatus) => Promise<void>
 }
 
 export function TaskActions({
@@ -31,10 +34,12 @@ export function TaskActions({
   onViewHistory,
   onStartPlanning,
   onApprovePlanAndStartImplement,
+  onChangeStatus,
 }: TaskActionsProps) {
   const [showBranchDialog, setShowBranchDialog] = useState(false)
   const [showImplementationDialog, setShowImplementationDialog] =
     useState(false)
+  const [showChangeStatusDialog, setShowChangeStatusDialog] = useState(false)
 
   const handleDelete = () => {
     onDelete?.(task.id)
@@ -64,6 +69,12 @@ export function TaskActions({
 
   const handleImplementationConfirm = (aiType: string) => {
     onApprovePlanAndStartImplement?.(task.id, aiType)
+  }
+
+  const handleChangeStatus = async (newStatus: TaskStatus) => {
+    if (onChangeStatus) {
+      await onChangeStatus(task.id, newStatus)
+    }
   }
 
   return (
@@ -141,6 +152,17 @@ export function TaskActions({
           </Button>
         )}
 
+        {onChangeStatus && (
+          <Button 
+            variant='outline' 
+            size='sm' 
+            onClick={() => setShowChangeStatusDialog(true)}
+            title='Change task status'
+          >
+            <ArrowUpDown className='h-4 w-4' /> Change Status
+          </Button>
+        )}
+
         {onDuplicate && (
           <Button variant='outline' size='sm' onClick={() => onDuplicate(task)}>
             <Copy className='h-4 w-4' /> Duplicate
@@ -169,6 +191,14 @@ export function TaskActions({
         onOpenChange={setShowImplementationDialog}
         taskTitle={task.title}
         onConfirm={handleImplementationConfirm}
+      />
+
+      {/* Change Status Dialog */}
+      <ChangeStatusDialog
+        open={showChangeStatusDialog}
+        onOpenChange={setShowChangeStatusDialog}
+        task={task}
+        onStatusChange={handleChangeStatus}
       />
     </>
   )
