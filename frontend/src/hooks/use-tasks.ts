@@ -302,3 +302,29 @@ export function useGetTaskPlans(taskId: string) {
     enabled: !!taskId,
   })
 }
+
+export function useUpdatePlan() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({
+      taskId,
+      planId,
+      content,
+    }: {
+      taskId: string
+      planId: string
+      content: string
+    }) => tasksApi.updatePlan(taskId, planId, content),
+    onSuccess: (_, { taskId }) => {
+      // Invalidate plans query to refetch updated data
+      queryClient.invalidateQueries({
+        queryKey: [TASKS_QUERY_KEY, 'plans', taskId],
+      })
+      toast.success('Plan updated successfully')
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Failed to update plan')
+    },
+  })
+}

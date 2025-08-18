@@ -239,3 +239,7 @@ type ListBranchesResponse struct {
 	Branches []GitBranchResponse `json:"branches"`
 	Total    int                 `json:"total"`
 }
+
+type PlanUpdateRequest struct {
+	Content string `json:"content" binding:"required" example:"Implement user authentication"`
+}
