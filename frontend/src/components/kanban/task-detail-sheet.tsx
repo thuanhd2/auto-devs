@@ -202,8 +202,13 @@ function TaskExecutions({ taskId }: { taskId: string }) {
 
 // CodeChanges component for the code changes tab
 function CodeChanges({ taskId, task }: { taskId: string; task?: Task }) {
-  const { data: pullRequest, isLoading: isPRLoading, error: prError } = usePullRequestByTask(taskId)
-  const { data: diff, isLoading: isDiffLoading, error: diffError } = useTaskDiff(taskId)
+  const { data: pullRequest, isLoading: isPRLoading } =
+    usePullRequestByTask(taskId)
+  const {
+    data: diff,
+    isLoading: isDiffLoading,
+    error: diffError,
+  } = useTaskDiff(taskId)
   const [isOpeningCursor, setIsOpeningCursor] = useState(false)
 
   const handleOpenWithCursor = async () => {
@@ -273,24 +278,24 @@ function CodeChanges({ taskId, task }: { taskId: string; task?: Task }) {
 
       {/* Diff Display */}
       <div className='space-y-2'>
-        <h5 className='text-xs font-medium text-muted-foreground'>
+        <h5 className='text-muted-foreground text-xs font-medium'>
           Diff (Base Branch vs Task Branch)
         </h5>
         {diffError ? (
-          <div className='text-sm text-red-600 p-2 bg-red-50 rounded'>
+          <div className='rounded bg-red-50 p-2 text-sm text-red-600'>
             Error loading diff: {diffError.message}
           </div>
         ) : diff === undefined ? (
-          <div className='text-muted-foreground text-sm p-2 bg-muted/50 rounded'>
+          <div className='text-muted-foreground bg-muted/50 rounded p-2 text-sm'>
             Loading diff...
           </div>
         ) : diff === '' || diff === 'No code changes' ? (
-          <div className='text-muted-foreground text-sm p-2 bg-muted/50 rounded'>
+          <div className='text-muted-foreground bg-muted/50 rounded p-2 text-sm'>
             No code changes
           </div>
         ) : (
-          <div className='max-h-96 overflow-auto border rounded-md'>
-            <pre className='text-xs p-4 whitespace-pre-wrap font-mono bg-slate-50'>
+          <div className='max-h-96 overflow-auto rounded-md border'>
+            <pre className='bg-slate-50 p-4 font-mono text-xs whitespace-pre-wrap'>
               {diff}
             </pre>
           </div>
