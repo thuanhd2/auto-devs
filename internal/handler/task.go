@@ -504,3 +504,41 @@ func (h *TaskHandler) OpenWithCursor(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, response)
 }
+
+// GetTaskDiff godoc
+// @Summary Get git diff for a task
+// @Description Get the git diff between the base branch HEAD and task branch HEAD
+// @Tags tasks
+// @Accept json
+// @Produce plain
+// @Param id path string true "Task ID"
+// @Success 200 {string} string "Git diff output"
+// @Failure 400 {object} dto.ErrorResponse
+// @Failure 404 {object} dto.ErrorResponse
+// @Failure 500 {object} dto.ErrorResponse
+// @Router /api/v1/tasks/{id}/diff [get]
+func (h *TaskHandler) GetTaskDiff(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, dto.NewErrorResponse(err, http.StatusBadRequest, "Invalid task ID"))
+		return
+	}
+
+	// Get task diff
+	diff, err := h.taskUsecase.GetTaskDiff(c.Request.Context(), id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, dto.NewErrorResponse(err, http.StatusInternalServerError, "Failed to get task diff"))
+		return
+	}
+
+	// If no diff, return "no code changes" message
+	if diff == "" {
+		c.String(http.StatusOK, "No code changes")
+		return
+	}
+
+	// Return diff as plain text
+	c.Header("Content-Type", "text/plain; charset=utf-8")
+	c.String(http.StatusOK, diff)
+}

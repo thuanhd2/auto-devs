@@ -231,8 +231,9 @@ func ProvideTaskUsecase(
 	notificationUsecase usecase.NotificationUsecase,
 	worktreeUsecase usecase.WorktreeUsecase,
 	jobClient usecase.JobClientInterface,
+	gitManager *git.GitManager,
 ) usecase.TaskUsecase {
-	return usecase.NewTaskUsecase(taskRepo, pullRequestRepo, projectRepo, planRepo, notificationUsecase, worktreeUsecase, jobClient)
+	return usecase.NewTaskUsecase(taskRepo, pullRequestRepo, projectRepo, planRepo, notificationUsecase, worktreeUsecase, jobClient, gitManager)
 }
 
 // ProvideCLIManager provides a CLIManager instance

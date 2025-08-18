@@ -505,3 +505,28 @@ func (g *GitCommands) GetPendingChanges(ctx context.Context, workingDir string) 
 	// If there's any output, there are pending changes
 	return strings.TrimSpace(result.Stdout) != "", nil
 }
+
+// GetDiff returns the git diff between two refs (or working directory)
+func (g *GitCommands) GetDiff(ctx context.Context, workingDir, fromRef, toRef string) (string, error) {
+	args := []string{"diff"}
+	
+	if fromRef != "" && toRef != "" {
+		// Compare two refs
+		args = append(args, fmt.Sprintf("%s...%s", fromRef, toRef))
+	} else if fromRef != "" {
+		// Compare ref to working directory
+		args = append(args, fromRef)
+	}
+	// If both are empty, compare working directory to staged
+
+	result, err := g.executor.Execute(ctx, workingDir, args...)
+	if err != nil {
+		return "", WrapWithOperation("get-diff", err)
+	}
+
+	if result.ExitCode != 0 {
+		return "", NewGitError("get-diff", result.ExitCode, result.Command, result.Stdout, result.Stderr, nil)
+	}
+
+	return result.Stdout, nil
+}

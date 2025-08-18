@@ -328,3 +328,13 @@ export function useUpdatePlan() {
     },
   })
 }
+
+export function useTaskDiff(taskId: string) {
+  return useQuery({
+    queryKey: [TASKS_QUERY_KEY, 'diff', taskId],
+    queryFn: () => tasksApi.getTaskDiff(taskId),
+    enabled: !!taskId,
+    staleTime: 30000, // 30 seconds
+    retry: 1, // Only retry once on failure
+  })
+}

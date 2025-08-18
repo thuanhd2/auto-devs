@@ -113,4 +113,11 @@ export const tasksApi = {
       content,
     })
   },
+
+  async getTaskDiff(taskId: string): Promise<string> {
+    const response = await api.get(`${API_ENDPOINTS.TASKS}/${taskId}/diff`, {
+      responseType: 'text',
+    })
+    return response.data
+  },
 }
