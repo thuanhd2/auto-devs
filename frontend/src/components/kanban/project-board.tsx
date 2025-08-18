@@ -14,6 +14,7 @@ import {
   useDuplicateTask,
   useStartPlanning,
   useApprovePlan,
+  useChangeTaskStatus,
 } from '@/hooks/use-tasks'
 import { BoardFilters } from './board-filters'
 import { KanbanBoard } from './kanban-board'
@@ -53,6 +54,7 @@ export function ProjectBoard({ projectId }: ProjectBoardProps) {
   const duplicateTaskMutation = useDuplicateTask()
   const startPlanningMutation = useStartPlanning()
   const approvePlanAndStartImplementMutation = useApprovePlan()
+  const changeTaskStatusMutation = useChangeTaskStatus()
   // WebSocket integration
   const { setCurrentProjectId } = useWebSocketProject(projectId)
   const { subscribe, unsubscribe, initializeTaskStatuses } = useWebSocketContext()
@@ -266,7 +268,7 @@ export function ProjectBoard({ projectId }: ProjectBoardProps) {
             // Error is handled by the mutation hook
           }
         }}
-        onStatusChange={(taskId, newStatus) => {
+        onStatusChange={async (taskId, newStatus) => {
           // Find the task to apply optimistic update
           const task = localTasks.find((t) => t.id === taskId)
           if (task) {
@@ -295,6 +297,17 @@ export function ProjectBoard({ projectId }: ProjectBoardProps) {
                 toast.error('Failed to update task status')
               }
             )
+
+            // Call the actual API to update status
+            try {
+              await changeTaskStatusMutation.mutateAsync({
+                taskId,
+                status: newStatus,
+              })
+            } catch (error) {
+              // Error is handled by the mutation hook
+              console.error('Failed to update task status:', error)
+            }
           }
         }}
         onStartPlanning={handleStartPlanning}

@@ -235,3 +235,60 @@ export function useApprovePlan() {
     },
   })
 }
+
+export function useChangeTaskStatus() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({
+      taskId,
+      status,
+    }: {
+      taskId: string
+      status: Task['status']
+    }) => tasksApi.changeTaskStatus(taskId, status),
+    onMutate: async ({ taskId, status }) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: [TASKS_QUERY_KEY] })
+
+      // Snapshot the previous value
+      const previousTasks = queryClient.getQueryData([TASKS_QUERY_KEY])
+
+      // Optimistically update task status
+      queryClient.setQueryData([TASKS_QUERY_KEY], (old: any) => {
+        if (!old) return old
+        return {
+          ...old,
+          tasks: old.tasks.map((task: Task) =>
+            task.id === taskId ? { ...task, status } : task
+          ),
+        }
+      })
+
+      // Return a context object with the snapshotted value
+      return { previousTasks }
+    },
+    onSuccess: (updatedTask) => {
+      // Update individual task query
+      queryClient.setQueryData([TASKS_QUERY_KEY, updatedTask.id], updatedTask)
+
+      // Invalidate tasks list for the project
+      queryClient.invalidateQueries({
+        queryKey: [TASKS_QUERY_KEY, updatedTask.project_id],
+      })
+
+      toast.success('Task status updated successfully')
+    },
+    onError: (error: any, variables, context: any) => {
+      // Revert optimistic update on error
+      if (context?.previousTasks) {
+        queryClient.setQueryData([TASKS_QUERY_KEY], context.previousTasks)
+      }
+      toast.error(error.response?.data?.message || 'Failed to update task status')
+    },
+    onSettled: () => {
+      // Always refetch after error or success
+      queryClient.invalidateQueries({ queryKey: [TASKS_QUERY_KEY] })
+    },
+  })
+}

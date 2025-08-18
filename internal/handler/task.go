@@ -198,6 +198,9 @@ func (h *TaskHandler) UpdateTask(c *gin.Context) {
 	if req.Description != nil {
 		usecaseReq.Description = *req.Description
 	}
+	if req.Status != nil {
+		usecaseReq.Status = req.Status
+	}
 	if req.BranchName != nil {
 		usecaseReq.BranchName = req.BranchName
 	}

@@ -15,10 +15,11 @@ type TaskCreateRequest struct {
 }
 
 type TaskUpdateRequest struct {
-	Title       *string `json:"title,omitempty" binding:"omitempty,min=1,max=255" example:"Updated task title"`
-	Description *string `json:"description,omitempty" binding:"omitempty,max=5000" example:"Updated description"`
-	BranchName  *string `json:"branch_name,omitempty" binding:"omitempty,max=255" example:"feature/user-auth"`
-	PullRequest *string `json:"pull_request,omitempty" binding:"omitempty,max=255" example:"https://github.com/user/repo/pull/123"`
+	Title       *string            `json:"title,omitempty" binding:"omitempty,min=1,max=255" example:"Updated task title"`
+	Description *string            `json:"description,omitempty" binding:"omitempty,max=5000" example:"Updated description"`
+	Status      *entity.TaskStatus `json:"status,omitempty" binding:"omitempty,oneof=TODO PLANNING PLAN_REVIEWING IMPLEMENTING CODE_REVIEWING DONE CANCELLED" example:"TODO"`
+	BranchName  *string            `json:"branch_name,omitempty" binding:"omitempty,max=255" example:"feature/user-auth"`
+	PullRequest *string            `json:"pull_request,omitempty" binding:"omitempty,max=255" example:"https://github.com/user/repo/pull/123"`
 }
 
 type TaskStatusUpdateRequest struct {
