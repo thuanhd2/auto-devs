@@ -5,15 +5,15 @@ ifneq (,$(wildcard ./.env))
 endif
 
 # Default values if not set in environment
-DB_HOST ?= 127.0.0.1
-DB_PORT ?= 5432
-DB_USERNAME ?= postgres
-DB_PASSWORD ?= postgres
-DB_NAME ?= autodevs_dev
+AUTODEVS_DB_HOST ?= 127.0.0.1
+AUTODEVS_DB_PORT ?= 5432
+AUTODEVS_DB_USERNAME ?= postgres
+AUTODEVS_DB_PASSWORD ?= postgres
+AUTODEVS_DB_NAME ?= autodevs_dev
 MIGRATIONS_PATH ?= ./migrations
 
 # Database URL for migrations
-DATABASE_URL = postgres://$(DB_USERNAME):$(DB_PASSWORD)@$(DB_HOST):$(DB_PORT)/$(DB_NAME)?sslmode=disable
+DATABASE_URL = postgres://$(AUTODEVS_DB_USERNAME):$(AUTODEVS_DB_PASSWORD)@$(AUTODEVS_DB_HOST):$(AUTODEVS_DB_PORT)/$(AUTODEVS_DB_NAME)?sslmode=disable
 
 .PHONY: help
 help: ## Show this help message

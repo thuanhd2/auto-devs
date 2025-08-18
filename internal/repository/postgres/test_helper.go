@@ -40,11 +40,11 @@ func SetupTestDB(t *testing.T) *database.GormDB {
 
 	// Load .env.test from project root
 	godotenv.Load(filepath.Join(projectRoot, ".env.test"))
-	dbHost := os.Getenv("DB_HOST")
-	dbUser := os.Getenv("DB_USERNAME")
-	dbPassword := os.Getenv("DB_PASSWORD")
-	dbName := os.Getenv("DB_NAME")
-	dbPort := os.Getenv("DB_PORT")
+	dbHost := os.Getenv("AUTODEVS_DB_HOST")
+	dbUser := os.Getenv("AUTODEVS_DB_USERNAME")
+	dbPassword := os.Getenv("AUTODEVS_DB_PASSWORD")
+	dbName := os.Getenv("AUTODEVS_DB_NAME")
+	dbPort := os.Getenv("AUTODEVS_DB_PORT")
 	role := pgtestdb.DefaultRole()
 	role.Capabilities = "SUPERUSER"
 	// database.InitDB()

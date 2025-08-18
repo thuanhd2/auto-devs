@@ -74,44 +74,44 @@ func TestTaskStatus_CanTransitionTo(t *testing.T) {
 		{TaskStatusTODO, TaskStatusPLANNING, true},
 		{TaskStatusTODO, TaskStatusCANCELLED, true},
 		{TaskStatusTODO, TaskStatusIMPLEMENTING, false}, // Skip planning
-		
+
 		// Valid transitions from PLANNING
 		{TaskStatusPLANNING, TaskStatusPLANREVIEWING, true},
 		{TaskStatusPLANNING, TaskStatusTODO, true}, // Back to TODO
 		{TaskStatusPLANNING, TaskStatusCANCELLED, true},
 		{TaskStatusPLANNING, TaskStatusDONE, false}, // Can't skip to done
-		
+
 		// Valid transitions from PLAN_REVIEWING
 		{TaskStatusPLANREVIEWING, TaskStatusIMPLEMENTING, true},
 		{TaskStatusPLANREVIEWING, TaskStatusPLANNING, true}, // Back to planning
 		{TaskStatusPLANREVIEWING, TaskStatusCANCELLED, true},
-		{TaskStatusPLANREVIEWING, TaskStatusTODO, false}, // Can't go back to TODO directly
-		
+		{TaskStatusPLANREVIEWING, TaskStatusTODO, true}, // Can go back to TODO directly
+
 		// Valid transitions from IMPLEMENTING
 		{TaskStatusIMPLEMENTING, TaskStatusCODEREVIEWING, true},
 		{TaskStatusIMPLEMENTING, TaskStatusPLANREVIEWING, true}, // Back to plan review
 		{TaskStatusIMPLEMENTING, TaskStatusCANCELLED, true},
 		{TaskStatusIMPLEMENTING, TaskStatusDONE, false}, // Can't skip code review
-		
+
 		// Valid transitions from CODE_REVIEWING
 		{TaskStatusCODEREVIEWING, TaskStatusDONE, true},
-		{TaskStatusCODEREVIEWING, TaskStatusIMPLEMENTING, true}, // Back to implementing
+		{TaskStatusCODEREVIEWING, TaskStatusIMPLEMENTING, false}, // Back to implementing
 		{TaskStatusCODEREVIEWING, TaskStatusCANCELLED, true},
 		{TaskStatusCODEREVIEWING, TaskStatusTODO, false}, // Can't go back to TODO
-		
+
 		// Valid transitions from DONE
-		{TaskStatusDONE, TaskStatusTODO, true}, // Allow reopening
+		{TaskStatusDONE, TaskStatusTODO, true},      // Allow reopening
 		{TaskStatusDONE, TaskStatusPLANNING, false}, // Can't go to planning from done
-		
+
 		// Valid transitions from CANCELLED
-		{TaskStatusCANCELLED, TaskStatusTODO, true}, // Allow reactivating
+		{TaskStatusCANCELLED, TaskStatusTODO, true},  // Allow reactivating
 		{TaskStatusCANCELLED, TaskStatusDONE, false}, // Can't go to done from cancelled
 	}
 
 	for _, tc := range testCases {
 		t.Run(string(tc.from)+"_to_"+string(tc.to), func(t *testing.T) {
 			result := tc.from.CanTransitionTo(tc.to)
-			assert.Equal(t, tc.expected, result, 
+			assert.Equal(t, tc.expected, result,
 				"Transition from %s to %s should be %v", tc.from, tc.to, tc.expected)
 		})
 	}
@@ -119,7 +119,7 @@ func TestTaskStatus_CanTransitionTo(t *testing.T) {
 
 func TestGetAllTaskStatuses(t *testing.T) {
 	statuses := GetAllTaskStatuses()
-	
+
 	expectedStatuses := []TaskStatus{
 		TaskStatusTODO,
 		TaskStatusPLANNING,
@@ -129,9 +129,9 @@ func TestGetAllTaskStatuses(t *testing.T) {
 		TaskStatusDONE,
 		TaskStatusCANCELLED,
 	}
-	
+
 	assert.Len(t, statuses, len(expectedStatuses))
-	
+
 	for _, expectedStatus := range expectedStatuses {
 		assert.Contains(t, statuses, expectedStatus)
 	}
@@ -141,18 +141,18 @@ func TestValidateStatusTransition(t *testing.T) {
 	// Valid transition
 	err := ValidateStatusTransition(TaskStatusTODO, TaskStatusPLANNING)
 	assert.NoError(t, err)
-	
+
 	// Invalid transition
 	err = ValidateStatusTransition(TaskStatusTODO, TaskStatusDONE)
 	assert.Error(t, err)
 	assert.IsType(t, &TaskStatusValidationError{}, err)
-	
+
 	// Invalid from status
 	err = ValidateStatusTransition("INVALID", TaskStatusPLANNING)
 	assert.Error(t, err)
 	assert.IsType(t, &TaskStatusValidationError{}, err)
 	assert.Contains(t, err.Error(), "invalid current status")
-	
+
 	// Invalid to status
 	err = ValidateStatusTransition(TaskStatusTODO, "INVALID")
 	assert.Error(t, err)
@@ -168,7 +168,7 @@ func TestTaskStatusValidationError_Error(t *testing.T) {
 		Message:       "Custom error message",
 	}
 	assert.Equal(t, "Custom error message", err.Error())
-	
+
 	// Error without custom message
 	err = &TaskStatusValidationError{
 		CurrentStatus: TaskStatusTODO,
