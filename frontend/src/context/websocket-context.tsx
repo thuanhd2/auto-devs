@@ -8,12 +8,12 @@ import {
   ReactNode,
 } from 'react'
 import { optimisticUpdateManager } from '@/services/optimisticUpdates'
+import { soundService } from '@/services/soundService'
 import {
   websocketService,
   CentrifugeMessage,
   ConnectionState,
 } from '@/services/websocketService'
-import { soundService } from '@/services/soundService'
 
 interface WebSocketContextValue {
   // Connection state
@@ -184,7 +184,10 @@ export function WebSocketProvider({
         case 'task_created':
           // Store initial status for new tasks
           if (message.data?.id && message.data?.status) {
-            previousTaskStatusesRef.current.set(message.data.id, message.data.status)
+            previousTaskStatusesRef.current.set(
+              message.data.id,
+              message.data.status
+            )
           }
           onTaskCreated?.(message.data)
           break
@@ -192,13 +195,13 @@ export function WebSocketProvider({
           // Check for optimistic update confirmation
           confirmOptimisticPendingUpdates('task', message.data.task.id)
           console.log('task_updated !!!!!!!!', message.data)
-          
+
           // Handle sound notifications for status changes
           if (message.data.task && message.data.changes?.status) {
             const taskId = message.data.task.id
             const newStatus = message.data.task.status
             const previousStatus = previousTaskStatusesRef.current.get(taskId)
-            
+
             // Only play sound if status actually changed (not on initial load)
             if (previousStatus && previousStatus !== newStatus) {
               if (newStatus === 'PLAN_REVIEWING') {
@@ -207,11 +210,11 @@ export function WebSocketProvider({
                 soundService.playCodeCompletedSound().catch(console.warn)
               }
             }
-            
+
             // Update the stored status
             previousTaskStatusesRef.current.set(taskId, newStatus)
           }
-          
+
           onTaskUpdated?.(message.data.task, message.data.changes)
           break
         case 'task_deleted':
@@ -225,7 +228,7 @@ export function WebSocketProvider({
           const { entity_type, entity_id, old_status, new_status } =
             message.data
           console.log('task status_changed !!!!!!!!', message.data)
-          
+
           // Handle sound notifications for task status changes
           if (entity_type === 'task' && old_status !== new_status) {
             if (new_status === 'PLAN_REVIEWING') {
@@ -234,7 +237,7 @@ export function WebSocketProvider({
               soundService.playCodeCompletedSound().catch(console.warn)
             }
           }
-          
+
           onStatusChanged?.(entity_type, entity_id, old_status, new_status)
           break
         case 'user_joined':
@@ -414,11 +417,14 @@ export function WebSocketProvider({
   )
 
   // Initialize task statuses to prevent false notifications on first load
-  const initializeTaskStatuses = useCallback((tasks: Array<{ id: string; status: string }>) => {
-    tasks.forEach(task => {
-      previousTaskStatusesRef.current.set(task.id, task.status)
-    })
-  }, [])
+  const initializeTaskStatuses = useCallback(
+    (tasks: Array<{ id: string; status: string }>) => {
+      tasks.forEach((task) => {
+        previousTaskStatusesRef.current.set(task.id, task.status)
+      })
+    },
+    []
+  )
 
   const contextValue: WebSocketContextValue = {
     // Connection state

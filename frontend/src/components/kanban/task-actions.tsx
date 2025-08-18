@@ -12,8 +12,8 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { BranchSelectionDialog } from './branch-selection-dialog'
-import { ImplementationConfirmationDialog } from './implementation-confirmation-dialog'
 import { ChangeStatusDialog } from './change-status-dialog'
+import { ImplementationConfirmationDialog } from './implementation-confirmation-dialog'
 
 interface TaskActionsProps {
   task: Task
@@ -153,9 +153,9 @@ export function TaskActions({
         )}
 
         {onChangeStatus && (
-          <Button 
-            variant='outline' 
-            size='sm' 
+          <Button
+            variant='outline'
+            size='sm'
             onClick={() => setShowChangeStatusDialog(true)}
             title='Change task status'
           >

@@ -1,12 +1,12 @@
 import { useState } from 'react'
+import { z } from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
-import { ArrowRight, Loader2 } from 'lucide-react'
 import type { Task, TaskStatus } from '@/types/task'
+import { ArrowRight, Loader2 } from 'lucide-react'
 import { canTransitionTo, getStatusTitle, getStatusColor } from '@/lib/kanban'
-import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import {
   Dialog,
   DialogContent,
@@ -32,7 +32,15 @@ import {
 } from '@/components/ui/select'
 
 const changeStatusSchema = z.object({
-  status: z.enum(['TODO', 'PLANNING', 'PLAN_REVIEWING', 'IMPLEMENTING', 'CODE_REVIEWING', 'DONE', 'CANCELLED']),
+  status: z.enum([
+    'TODO',
+    'PLANNING',
+    'PLAN_REVIEWING',
+    'IMPLEMENTING',
+    'CODE_REVIEWING',
+    'DONE',
+    'CANCELLED',
+  ]),
 })
 
 type ChangeStatusFormData = z.infer<typeof changeStatusSchema>
@@ -60,8 +68,19 @@ export function ChangeStatusDialog({
   })
 
   // Get available status transitions from current status
-  const availableStatuses: TaskStatus[] = ['TODO', 'PLANNING', 'PLAN_REVIEWING', 'IMPLEMENTING', 'CODE_REVIEWING', 'DONE', 'CANCELLED']
-    .filter((status) => status !== task.status && canTransitionTo(task.status, status as TaskStatus)) as TaskStatus[]
+  const availableStatuses: TaskStatus[] = [
+    'TODO',
+    'PLANNING',
+    'PLAN_REVIEWING',
+    'IMPLEMENTING',
+    'CODE_REVIEWING',
+    'DONE',
+    'CANCELLED',
+  ].filter(
+    (status) =>
+      status !== task.status &&
+      canTransitionTo(task.status, status as TaskStatus)
+  ) as TaskStatus[]
 
   const handleSubmit = async (data: ChangeStatusFormData) => {
     if (data.status === task.status) {
@@ -90,26 +109,34 @@ export function ChangeStatusDialog({
   const selectedStatus = form.watch('status')
   const currentStatusTitle = getStatusTitle(task.status)
   const currentStatusColor = getStatusColor(task.status)
-  const selectedStatusTitle = selectedStatus ? getStatusTitle(selectedStatus) : ''
-  const selectedStatusColor = selectedStatus ? getStatusColor(selectedStatus) : ''
+  const selectedStatusTitle = selectedStatus
+    ? getStatusTitle(selectedStatus)
+    : ''
+  const selectedStatusColor = selectedStatus
+    ? getStatusColor(selectedStatus)
+    : ''
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className='sm:max-w-[425px]'>
         <DialogHeader>
           <DialogTitle>Change Task Status</DialogTitle>
           <DialogDescription>
-            Change the status of "{task.title}" to move it through your workflow.
+            Change the status of "{task.title}" to move it through your
+            workflow.
           </DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+          <form
+            onSubmit={form.handleSubmit(handleSubmit)}
+            className='space-y-6'
+          >
             {/* Current Status Display */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Current Status</label>
-              <div className="flex items-center gap-2">
-                <Badge className={currentStatusColor} variant="outline">
+            <div className='space-y-2'>
+              <label className='text-sm font-medium'>Current Status</label>
+              <div className='flex items-center gap-2'>
+                <Badge className={currentStatusColor} variant='outline'>
                   {currentStatusTitle}
                 </Badge>
               </div>
@@ -118,7 +145,7 @@ export function ChangeStatusDialog({
             {/* Status Selection */}
             <FormField
               control={form.control}
-              name="status"
+              name='status'
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>New Status</FormLabel>
@@ -129,16 +156,16 @@ export function ChangeStatusDialog({
                   >
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select new status" />
+                        <SelectValue placeholder='Select new status' />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
                       {availableStatuses.map((status) => (
                         <SelectItem key={status} value={status}>
-                          <div className="flex items-center gap-2">
-                            <Badge 
-                              className={`${getStatusColor(status)} text-xs`} 
-                              variant="outline"
+                          <div className='flex items-center gap-2'>
+                            <Badge
+                              className={`${getStatusColor(status)} text-xs`}
+                              variant='outline'
                             >
                               {getStatusTitle(status)}
                             </Badge>
@@ -154,12 +181,12 @@ export function ChangeStatusDialog({
 
             {/* Status Transition Preview */}
             {selectedStatus && selectedStatus !== task.status && (
-              <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
-                <Badge className={currentStatusColor} variant="outline">
+              <div className='bg-muted flex items-center gap-2 rounded-lg p-3'>
+                <Badge className={currentStatusColor} variant='outline'>
                   {currentStatusTitle}
                 </Badge>
-                <ArrowRight className="h-4 w-4 text-muted-foreground" />
-                <Badge className={selectedStatusColor} variant="outline">
+                <ArrowRight className='text-muted-foreground h-4 w-4' />
+                <Badge className={selectedStatusColor} variant='outline'>
                   {selectedStatusTitle}
                 </Badge>
               </div>
@@ -167,32 +194,35 @@ export function ChangeStatusDialog({
 
             {/* No Available Transitions Message */}
             {availableStatuses.length === 0 && (
-              <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                <p className="text-sm text-yellow-800">
-                  No status transitions are available from the current status "{currentStatusTitle}".
+              <div className='rounded-lg border border-yellow-200 bg-yellow-50 p-3'>
+                <p className='text-sm text-yellow-800'>
+                  No status transitions are available from the current status "
+                  {currentStatusTitle}".
                 </p>
               </div>
             )}
 
             <DialogFooter>
               <Button
-                type="button"
-                variant="outline"
+                type='button'
+                variant='outline'
                 onClick={handleCancel}
                 disabled={isSubmitting}
               >
                 Cancel
               </Button>
               <Button
-                type="submit"
+                type='submit'
                 disabled={
-                  isSubmitting || 
-                  !selectedStatus || 
+                  isSubmitting ||
+                  !selectedStatus ||
                   selectedStatus === task.status ||
                   availableStatuses.length === 0
                 }
               >
-                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {isSubmitting && (
+                  <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+                )}
                 Change Status
               </Button>
             </DialogFooter>

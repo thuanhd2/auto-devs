@@ -118,9 +118,13 @@ export function TaskDetailSheet({
                 onDuplicate={handleDuplicate}
                 onStartPlanning={onStartPlanning}
                 onApprovePlanAndStartImplement={onApprovePlanAndStartImplement}
-                onChangeStatus={onStatusChange ? async (taskId: string, newStatus: Task['status']) => {
-                  onStatusChange(taskId, newStatus)
-                } : undefined}
+                onChangeStatus={
+                  onStatusChange
+                    ? async (taskId: string, newStatus: Task['status']) => {
+                        onStatusChange(taskId, newStatus)
+                      }
+                    : undefined
+                }
               />
             </div>
 
