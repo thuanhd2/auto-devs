@@ -10,6 +10,7 @@ import (
 	"github.com/auto-devs/auto-devs/internal/entity"
 	"github.com/auto-devs/auto-devs/internal/repository"
 	"github.com/auto-devs/auto-devs/internal/service/git"
+	"github.com/auto-devs/auto-devs/internal/service/github"
 	"github.com/google/uuid"
 )
 
@@ -115,6 +116,7 @@ type TaskUsecase interface {
 
 	// Pull requests
 	GetPullRequest(ctx context.Context, taskID uuid.UUID) (*entity.PullRequest, error)
+	CreatePullRequest(ctx context.Context, taskID uuid.UUID) (*entity.PullRequest, error)
 
 	// Plans
 	GetPlansByTaskID(ctx context.Context, taskID uuid.UUID) ([]entity.Plan, error)
@@ -242,6 +244,7 @@ type taskUsecase struct {
 	worktreeUsecase     WorktreeUsecase
 	jobClient           JobClientInterface
 	gitManager          *git.GitManager
+	prCreator           *github.PRCreator
 }
 
 func NewTaskUsecase(
@@ -253,6 +256,7 @@ func NewTaskUsecase(
 	worktreeUsecase WorktreeUsecase,
 	jobClient JobClientInterface,
 	gitManager *git.GitManager,
+	prCreator *github.PRCreator,
 ) TaskUsecase {
 	return &taskUsecase{
 		taskRepo:            taskRepo,
@@ -263,6 +267,7 @@ func NewTaskUsecase(
 		worktreeUsecase:     worktreeUsecase,
 		jobClient:           jobClient,
 		gitManager:          gitManager,
+		prCreator:           prCreator,
 	}
 }
 
@@ -1160,6 +1165,70 @@ func (u *taskUsecase) GetPullRequest(ctx context.Context, taskID uuid.UUID) (*en
 	pr, err := u.pullRequestRepo.GetByTaskID(ctx, taskID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get pull request: %w", err)
+	}
+
+	return pr, nil
+}
+
+func (u *taskUsecase) CreatePullRequest(ctx context.Context, taskID uuid.UUID) (*entity.PullRequest, error) {
+	// Get the task and validate it exists
+	task, err := u.taskRepo.GetByID(ctx, taskID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get task: %w", err)
+	}
+
+	// Check if pull request already exists for this task
+	existingPR, err := u.pullRequestRepo.GetByTaskID(ctx, taskID)
+	if err == nil && existingPR != nil {
+		return nil, fmt.Errorf("pull request already exists for this task")
+	}
+
+	// Validate task has necessary information for PR creation
+	if task.BranchName == nil || *task.BranchName == "" {
+		return nil, fmt.Errorf("task does not have a branch name")
+	}
+
+	if task.BaseBranchName == nil || *task.BaseBranchName == "" {
+		return nil, fmt.Errorf("task does not have a base branch name")
+	}
+
+	// Get the project to get repository information
+	project, err := u.projectRepo.GetByID(ctx, task.ProjectID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get project: %w", err)
+	}
+
+	if project.RepositoryURL == "" {
+		return nil, fmt.Errorf("project does not have a repository URL configured")
+	}
+
+	// Set the project in the task for PRCreator
+	task.Project = project
+
+	// Create a mock execution for PRCreator compatibility
+	// In a real scenario, this would come from the latest execution
+	execution := entity.Execution{
+		ID:     uuid.New(),
+		TaskID: taskID,
+		Status: entity.ExecutionStatusCompleted,
+	}
+
+	// Get the latest plan for this task (optional)
+	plans, err := u.GetPlansByTaskID(ctx, taskID)
+	var plan *entity.Plan
+	if err == nil && len(plans) > 0 {
+		plan = &plans[0]
+	}
+
+	// Create the pull request using PRCreator
+	pr, err := u.prCreator.CreatePRFromImplementation(ctx, *task, execution, plan)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create pull request: %w", err)
+	}
+
+	// Save the pull request to database
+	if err := u.pullRequestRepo.Create(ctx, pr); err != nil {
+		return nil, fmt.Errorf("failed to save pull request: %w", err)
 	}
 
 	return pr, nil

@@ -459,6 +459,35 @@ func (h *TaskHandler) GetPullRequest(c *gin.Context) {
 	c.JSON(http.StatusOK, pr)
 }
 
+// CreatePullRequest godoc
+// @Summary Create pull request for task
+// @Description Create a new pull request for the task
+// @Tags tasks
+// @Accept json
+// @Produce json
+// @Param id path string true "Task ID"
+// @Success 201 {object} entity.PullRequest
+// @Failure 400 {object} dto.ErrorResponse
+// @Failure 404 {object} dto.ErrorResponse
+// @Failure 500 {object} dto.ErrorResponse
+// @Router /tasks/{id}/pull-request [post]
+func (h *TaskHandler) CreatePullRequest(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, dto.NewErrorResponse(err, http.StatusBadRequest, "Invalid task ID"))
+		return
+	}
+
+	pr, err := h.taskUsecase.CreatePullRequest(c.Request.Context(), id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, dto.NewErrorResponse(err, http.StatusInternalServerError, "Failed to create pull request"))
+		return
+	}
+
+	c.JSON(http.StatusCreated, pr)
+}
+
 // OpenWithCursor godoc
 // @Summary Open task workspace with Cursor
 // @Description Open the task's worktree path with Cursor editor

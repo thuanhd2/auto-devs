@@ -120,4 +120,9 @@ export const tasksApi = {
     })
     return response.data
   },
+
+  async createPullRequestForTask(taskId: string): Promise<any> {
+    const response = await api.post(`${API_ENDPOINTS.TASKS}/${taskId}/pull-request`)
+    return response.data
+  },
 }
