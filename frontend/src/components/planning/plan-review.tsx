@@ -1,5 +1,5 @@
 import type { Task } from '@/types/task'
-import { ChevronDown, RefreshCcw } from 'lucide-react'
+import { ChevronDown, RefreshCcw, FileText } from 'lucide-react'
 import { useGetTaskPlans } from '@/hooks/use-tasks'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -46,7 +46,7 @@ export function PlanReview({ task }: PlanReviewProps) {
           <h3 className='mb-2 text-lg font-medium text-red-600'>
             Error Loading Plans
           </h3>
-          <p className='text-sm text-red-500'>{error}</p>
+          <p className='text-sm text-red-500'>{error.message}</p>
           <Button onClick={() => refetch()}>Retry</Button>
         </CardContent>
       </Card>
