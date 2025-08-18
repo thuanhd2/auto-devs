@@ -1,15 +1,6 @@
 import { useState } from 'react'
 import type { Task, TaskStatus } from '@/types/task'
-import {
-  Edit,
-  Trash2,
-  Copy,
-  History,
-  ExternalLink,
-  GitBranch,
-  Play,
-  ArrowUpDown,
-} from 'lucide-react'
+import { Edit, Trash2, Copy, Play, ArrowUpDown } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { BranchSelectionDialog } from './branch-selection-dialog'
 import { ChangeStatusDialog } from './change-status-dialog'
@@ -20,7 +11,6 @@ interface TaskActionsProps {
   onEdit?: (task: Task) => void
   onDelete?: (taskId: string) => void
   onDuplicate?: (task: Task) => void
-  onViewHistory?: () => void
   onStartPlanning?: (taskId: string, branchName: string, aiType: string) => void
   onApprovePlanAndStartImplement?: (taskId: string, aiType: string) => void
   onChangeStatus?: (taskId: string, newStatus: TaskStatus) => Promise<void>
@@ -31,7 +21,6 @@ export function TaskActions({
   onEdit,
   onDelete,
   onDuplicate,
-  onViewHistory,
   onStartPlanning,
   onApprovePlanAndStartImplement,
   onChangeStatus,
@@ -43,16 +32,6 @@ export function TaskActions({
 
   const handleDelete = () => {
     onDelete?.(task.id)
-  }
-
-  const handleGitAction = (action: 'branch' | 'pr') => {
-    if (action === 'branch' && task.branch_name) {
-      // Copy branch name to clipboard
-      navigator.clipboard.writeText(task.branch_name)
-    } else if (action === 'pr' && task.pr_url) {
-      // Open PR in new tab
-      window.open(task.pr_url, '_blank')
-    }
   }
 
   const handleStartPlanning = () => {
@@ -108,44 +87,7 @@ export function TaskActions({
             Approve Plan and Start Implement
           </Button>
         )}
-        {/* Git Actions */}
-        {(task.branch_name || task.pr_url) && (
-          <div className='flex items-center gap-1'>
-            {task.branch_name && (
-              <Button
-                variant='outline'
-                size='sm'
-                onClick={() => handleGitAction('branch')}
-                title='Copy branch name'
-              >
-                <GitBranch className='h-4 w-4' />
-              </Button>
-            )}
 
-            {task.pr_url && (
-              <Button
-                variant='outline'
-                size='sm'
-                onClick={() => handleGitAction('pr')}
-                title='Open Pull Request'
-              >
-                <ExternalLink className='h-4 w-4' />
-              </Button>
-            )}
-          </div>
-        )}
-
-        {/* History Button */}
-        {onViewHistory && (
-          <Button
-            variant='outline'
-            size='sm'
-            onClick={onViewHistory}
-            title='View History'
-          >
-            <History className='h-4 w-4' /> View History
-          </Button>
-        )}
         {onEdit && (
           <Button variant='outline' size='sm' onClick={() => onEdit(task)}>
             <Edit className='h-4 w-4' /> Edit
