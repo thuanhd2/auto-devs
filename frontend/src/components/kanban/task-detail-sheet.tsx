@@ -20,7 +20,6 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { ExecutionList } from '../executions'
 import { PlanReview } from '../planning'
 import { TaskActions } from './task-actions'
-import { TaskEditForm } from './task-edit-form'
 import { TaskHistory } from './task-history'
 import { TaskMetadata } from './task-metadata'
 
@@ -49,7 +48,6 @@ export function TaskDetailSheet({
 }: TaskDetailSheetProps) {
   const navigate = useNavigate()
   const params = useParams({ strict: false }) as { projectId?: string }
-  const [showEditForm, setShowEditForm] = useState(false)
   const [showHistory, setShowHistory] = useState(false)
 
   // Handle sheet close and URL cleanup
@@ -72,18 +70,12 @@ export function TaskDetailSheet({
   const statusColor = getStatusColor(task.status)
 
   const handleEdit = () => {
-    setShowEditForm(true)
+    onEdit?.(task)
   }
 
   const handleDuplicate = () => {
     onDuplicate?.(task)
   }
-
-  const handleEditSave = (updatedTask: Task) => {
-    onEdit?.(updatedTask)
-    setShowEditForm(false)
-  }
-
   return (
     <>
       <Sheet open={open} onOpenChange={handleOpenChange}>
@@ -163,16 +155,6 @@ export function TaskDetailSheet({
           </div>
         </SheetContent>
       </Sheet>
-
-      {/* Edit Form Modal */}
-      {showEditForm && (
-        <TaskEditForm
-          open={showEditForm}
-          onOpenChange={setShowEditForm}
-          task={task}
-          onSave={handleEditSave}
-        />
-      )}
 
       {/* History Modal */}
       {showHistory && (
