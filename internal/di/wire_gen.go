@@ -54,7 +54,9 @@ func InitializeApp() (*App, error) {
 	worktreeUsecase := ProvideWorktreeUsecase(worktreeRepository, taskRepository, projectRepository, integratedWorktreeService, gitManager)
 	client := ProvideJobClient(configConfig)
 	jobClientInterface := ProvideJobClientAdapter(client)
-	taskUsecase := ProvideTaskUsecase(taskRepository, pullRequestRepository, projectRepository, planRepository, notificationUsecase, worktreeUsecase, jobClientInterface, gitManager)
+	gitHubServiceInterface := ProvideGitHubService(configConfig)
+	prCreator := ProvidePRCreator(gitHubServiceInterface, configConfig)
+	taskUsecase := ProvideTaskUsecase(taskRepository, pullRequestRepository, projectRepository, planRepository, notificationUsecase, worktreeUsecase, jobClientInterface, gitManager, prCreator)
 	executionUsecase := ProvideExecutionUsecase(executionRepository, executionLogRepository, taskRepository)
 	service := ProvideWebSocketService(configConfig)
 	cliManager, err := ProvideCLIManager()
@@ -68,8 +70,6 @@ func InitializeApp() (*App, error) {
 	if err != nil {
 		return nil, err
 	}
-	gitHubServiceInterface := ProvideGitHubService(configConfig)
-	prCreator := ProvidePRCreator(gitHubServiceInterface, configConfig)
 	processor := ProvideJobProcessor(taskUsecase, projectUsecase, worktreeUsecase, planningService, executionService, planRepository, executionRepository, executionLogRepository, service, gitManager, prCreator, pullRequestRepository, gitHubServiceInterface)
 	app := NewApp(configConfig, gormDB, projectRepository, taskRepository, planRepository, worktreeRepository, auditRepository, executionRepository, executionLogRepository, pullRequestRepository, auditUsecase, projectUsecase, taskUsecase, worktreeUsecase, notificationUsecase, executionUsecase, service, cliManager, processManager, executionService, planningService, gitManager, worktreeManager, prCreator, client, jobClientInterface, processor)
 	return app, nil
@@ -264,8 +264,9 @@ func ProvideTaskUsecase(
 	worktreeUsecase usecase.WorktreeUsecase,
 	jobClient usecase.JobClientInterface,
 	gitManager *git.GitManager,
+	prCreator *github.PRCreator,
 ) usecase.TaskUsecase {
-	return usecase.NewTaskUsecase(taskRepo, pullRequestRepo, projectRepo, planRepo, notificationUsecase, worktreeUsecase, jobClient, gitManager)
+	return usecase.NewTaskUsecase(taskRepo, pullRequestRepo, projectRepo, planRepo, notificationUsecase, worktreeUsecase, jobClient, gitManager, prCreator)
 }
 
 // ProvideCLIManager provides a CLIManager instance

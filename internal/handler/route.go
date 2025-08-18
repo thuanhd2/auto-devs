@@ -77,6 +77,7 @@ func SetupRoutes(router *gin.Engine, projectUsecase usecase.ProjectUsecase, task
 
 			// Pull request endpoints
 			tasks.GET("/:id/pull-request", taskHandler.GetPullRequest)
+			tasks.POST("/:id/pull-request", taskHandler.CreatePullRequest)
 
 			// Plan endpoints
 			tasks.GET("/:id/plans", taskHandler.GetTaskPlans)

@@ -1,11 +1,11 @@
-import { useState } from 'react'
 import { useNavigate, useParams } from '@tanstack/react-router'
+import { useState } from 'react'
 import type { Task } from '@/types/task'
 import { ExternalLink, FolderOpen } from 'lucide-react'
 import { tasksApi } from '@/lib/api/tasks'
 import { getStatusColor, getStatusTitle } from '@/lib/kanban'
 import { useTaskExecutions } from '@/hooks/use-executions'
-import { usePullRequestByTask } from '@/hooks/use-pull-requests'
+import { usePullRequestByTask, useCreatePullRequest } from '@/hooks/use-pull-requests'
 import { useTaskDiff } from '@/hooks/use-tasks'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -210,6 +210,7 @@ function CodeChanges({ taskId, task }: { taskId: string; task?: Task }) {
     error: diffError,
   } = useTaskDiff(taskId)
   const [isOpeningCursor, setIsOpeningCursor] = useState(false)
+  const createPRMutation = useCreatePullRequest()
 
   const handleOpenWithCursor = async () => {
     if (!task?.worktree_path) return
@@ -223,6 +224,16 @@ function CodeChanges({ taskId, task }: { taskId: string; task?: Task }) {
       // Error handling could be added here
     } finally {
       setIsOpeningCursor(false)
+    }
+  }
+
+  const handleCreatePR = async () => {
+    try {
+      await createPRMutation.mutateAsync(taskId)
+      // Success feedback could be added here if needed
+    } catch (error) {
+      console.error('Failed to create pull request:', error)
+      // Error handling could be added here
     }
   }
 
@@ -258,23 +269,36 @@ function CodeChanges({ taskId, task }: { taskId: string; task?: Task }) {
         </Button>
       )}
 
-      {/* Pull Request Link */}
-      {pullRequest && (
-        <div className='space-y-2'>
+      {/* Pull Request Section */}
+      <div className='space-y-2'>
+        {pullRequest ? (
+          <>
+            <Button
+              variant='outline'
+              size='sm'
+              className='w-fit'
+              onClick={() => window.open(pullRequest.github_url, '_blank')}
+            >
+              <ExternalLink className='mr-2 h-4 w-4' />
+              View Pull Request
+            </Button>
+            <div className='text-muted-foreground text-xs'>
+              #{pullRequest.github_pr_number} - {pullRequest.title}
+            </div>
+          </>
+        ) : (
           <Button
             variant='outline'
             size='sm'
             className='w-fit'
-            onClick={() => window.open(pullRequest.github_url, '_blank')}
+            onClick={handleCreatePR}
+            disabled={createPRMutation.isPending}
           >
             <ExternalLink className='mr-2 h-4 w-4' />
-            View Pull Request
+            {createPRMutation.isPending ? 'Creating...' : 'Create Pull Request'}
           </Button>
-          <div className='text-muted-foreground text-xs'>
-            #{pullRequest.github_pr_number} - {pullRequest.title}
-          </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Diff Display */}
       <div className='space-y-2'>
