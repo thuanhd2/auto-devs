@@ -1245,12 +1245,9 @@ func (u *taskUsecase) GetTaskDiff(ctx context.Context, taskID uuid.UUID) (string
 		taskBranch = *task.BranchName
 	}
 
-	// Get git commands instance from git manager
-	gitCommands := u.gitManager.GetGitCommands()
-
 	// Get diff between origin/baseBranch and current HEAD
-	fromRef := fmt.Sprintf("origin/%s", baseBranch)
-	diff, err := gitCommands.GetDiff(ctx, *task.WorktreePath, fromRef, taskBranch)
+	fromRef := baseBranch
+	diff, err := u.gitManager.GetDiff(ctx, *task.WorktreePath, fromRef, taskBranch)
 	if err != nil {
 		return "", fmt.Errorf("failed to get git diff: %w", err)
 	}

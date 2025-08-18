@@ -431,6 +431,11 @@ func (m *GitManager) ValidateGitConfig(ctx context.Context, workingDir string) (
 	return config, nil
 }
 
+// GetDiff returns the diff between two commits
+func (m *GitManager) GetDiff(ctx context.Context, workingDir, fromRef, toRef string) (string, error) {
+	return m.commands.GetDiff(ctx, workingDir, fromRef, toRef)
+}
+
 // Helper methods
 
 // executeWithRetry executes a function with retry logic

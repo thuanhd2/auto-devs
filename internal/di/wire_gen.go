@@ -7,6 +7,8 @@
 package di
 
 import (
+	"time"
+
 	"github.com/auto-devs/auto-devs/config"
 	"github.com/auto-devs/auto-devs/internal/jobs"
 	"github.com/auto-devs/auto-devs/internal/repository"
@@ -19,7 +21,6 @@ import (
 	"github.com/auto-devs/auto-devs/internal/websocket"
 	"github.com/auto-devs/auto-devs/pkg/database"
 	"github.com/google/wire"
-	"time"
 )
 
 // Injectors from wire.go:
@@ -54,7 +55,7 @@ func InitializeApp() (*App, error) {
 	worktreeUsecase := ProvideWorktreeUsecase(worktreeRepository, taskRepository, projectRepository, integratedWorktreeService, gitManager)
 	client := ProvideJobClient(configConfig)
 	jobClientInterface := ProvideJobClientAdapter(client)
-	taskUsecase := ProvideTaskUsecase(taskRepository, pullRequestRepository, projectRepository, planRepository, notificationUsecase, worktreeUsecase, jobClientInterface)
+	taskUsecase := ProvideTaskUsecase(taskRepository, pullRequestRepository, projectRepository, notificationUsecase, worktreeUsecase, jobClientInterface, gitManager)
 	executionUsecase := ProvideExecutionUsecase(executionRepository, executionLogRepository, taskRepository)
 	service := ProvideWebSocketService(configConfig)
 	cliManager, err := ProvideCLIManager()
@@ -263,8 +264,9 @@ func ProvideTaskUsecase(
 	notificationUsecase usecase.NotificationUsecase,
 	worktreeUsecase usecase.WorktreeUsecase,
 	jobClient usecase.JobClientInterface,
+	gitManager *git.GitManager,
 ) usecase.TaskUsecase {
-	return usecase.NewTaskUsecase(taskRepo, pullRequestRepo, projectRepo, planRepo, notificationUsecase, worktreeUsecase, jobClient)
+	return usecase.NewTaskUsecase(taskRepo, pullRequestRepo, projectRepo, notificationUsecase, worktreeUsecase, jobClient, gitManager)
 }
 
 // ProvideCLIManager provides a CLIManager instance
