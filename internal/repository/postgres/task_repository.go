@@ -936,3 +936,22 @@ func (r *taskRepository) ValidateProjectExists(ctx context.Context, projectID uu
 
 	return count > 0, nil
 }
+
+// GetTasksEligibleForWorktreeCleanup finds tasks that are eligible for worktree cleanup
+func (r *taskRepository) GetTasksEligibleForWorktreeCleanup(ctx context.Context, cutoffTime time.Time) ([]*entity.Task, error) {
+	var tasks []*entity.Task
+
+	query := r.db.WithContext(ctx).
+		Where("worktree_path IS NOT NULL AND worktree_path != ''").
+		Where("(status = ? AND updated_at < ?) OR (status = ? AND updated_at < ?) OR (deleted_at IS NOT NULL AND deleted_at < ?)",
+			entity.TaskStatusDONE, cutoffTime,
+			entity.TaskStatusCANCELLED, cutoffTime,
+			cutoffTime).
+		Unscoped() // Include soft-deleted records
+
+	if err := query.Find(&tasks).Error; err != nil {
+		return nil, fmt.Errorf("failed to get tasks eligible for worktree cleanup: %w", err)
+	}
+
+	return tasks, nil
+}
