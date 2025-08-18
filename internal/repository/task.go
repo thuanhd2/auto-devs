@@ -80,6 +80,9 @@ type TaskRepository interface {
 	CheckDuplicateTitle(ctx context.Context, projectID uuid.UUID, title string, excludeID *uuid.UUID) (bool, error)
 	ValidateTaskExists(ctx context.Context, taskID uuid.UUID) (bool, error)
 	ValidateProjectExists(ctx context.Context, projectID uuid.UUID) (bool, error)
+
+	// Worktree cleanup
+	GetTasksEligibleForWorktreeCleanup(ctx context.Context, cutoffTime time.Time) ([]*entity.Task, error)
 }
 
 // TaskFilters represents filtering options for tasks (moved to entity package)

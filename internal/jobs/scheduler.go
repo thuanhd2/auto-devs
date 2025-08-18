@@ -49,6 +49,22 @@ func (s *Scheduler) RegisterPeriodicTasks() error {
 	}
 
 	s.logger.Info("PR status sync job registered to run every 30 seconds")
+
+	// Create worktree cleanup job
+	worktreeCleanupJob, err := NewWorktreeCleanupJob()
+	if err != nil {
+		s.logger.Error("Failed to create worktree cleanup job", "error", err)
+		return err
+	}
+
+	// Register worktree cleanup to run every 30 minutes in cleanup queue
+	_, err = s.scheduler.Register("@every 30m", worktreeCleanupJob, asynq.Queue("cleanup"))
+	if err != nil {
+		s.logger.Error("Failed to register worktree cleanup job", "error", err)
+		return err
+	}
+
+	s.logger.Info("Worktree cleanup job registered to run every 30 minutes")
 	return nil
 }
 

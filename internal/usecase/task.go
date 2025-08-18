@@ -117,6 +117,9 @@ type TaskUsecase interface {
 
 	// Open with Cursor
 	OpenWithCursor(ctx context.Context, taskID uuid.UUID, worktreePath string) error
+
+	// Worktree cleanup
+	GetTasksEligibleForWorktreeCleanup(ctx context.Context, cutoffTime time.Time) ([]*entity.Task, error)
 }
 
 type CreateTaskRequest struct {
@@ -1154,4 +1157,9 @@ func (u *taskUsecase) OpenWithCursor(ctx context.Context, taskID uuid.UUID, work
 	}
 
 	return nil
+}
+
+// GetTasksEligibleForWorktreeCleanup retrieves tasks eligible for worktree cleanup
+func (u *taskUsecase) GetTasksEligibleForWorktreeCleanup(ctx context.Context, cutoffTime time.Time) ([]*entity.Task, error) {
+	return u.taskRepo.GetTasksEligibleForWorktreeCleanup(ctx, cutoffTime)
 }

@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"os"
+	"strings"
 	"time"
 
 	aiexecutors "github.com/auto-devs/auto-devs/internal/ai-executors"
@@ -808,6 +810,159 @@ func (p *Processor) sendPRNotification(ctx context.Context, projectID uuid.UUID,
 			p.logger.Debug("PR WebSocket notification sent successfully", "event_type", eventType, "pr_id", pr.ID)
 		}
 	}
+}
+
+// ProcessWorktreeCleanup processes worktree cleanup jobs
+func (p *Processor) ProcessWorktreeCleanup(ctx context.Context, task *asynq.Task) error {
+	p.logger.Info("Processing worktree cleanup job")
+
+	_, err := ParseWorktreeCleanupPayload(task)
+	if err != nil {
+		return fmt.Errorf("failed to parse worktree cleanup payload: %w", err)
+	}
+
+	// Calculate cutoff time (7 days ago)
+	cutoffTime := time.Now().AddDate(0, 0, -7)
+	p.logger.Info("Looking for tasks eligible for cleanup", "cutoff_time", cutoffTime)
+
+	// Get all tasks eligible for cleanup
+	eligibleTasks, err := p.taskUsecase.GetTasksEligibleForWorktreeCleanup(ctx, cutoffTime)
+	if err != nil {
+		p.logger.Error("Failed to get tasks eligible for cleanup", "error", err)
+		return fmt.Errorf("failed to get tasks eligible for cleanup: %w", err)
+	}
+
+	p.logger.Info("Found tasks eligible for cleanup", "count", len(eligibleTasks))
+
+	// Process each eligible task
+	successCount := 0
+	errorCount := 0
+
+	for _, t := range eligibleTasks {
+		if err := p.cleanupTaskWorktree(ctx, t); err != nil {
+			p.logger.Error("Failed to cleanup worktree for task",
+				"task_id", t.ID,
+				"worktree_path", *t.WorktreePath,
+				"error", err)
+			errorCount++
+		} else {
+			successCount++
+		}
+	}
+
+	p.logger.Info("Completed worktree cleanup job",
+		"total_tasks", len(eligibleTasks),
+		"successful_cleanups", successCount,
+		"failed_cleanups", errorCount)
+
+	return nil
+}
+
+// cleanupTaskWorktree performs cleanup for a single task's worktree
+func (p *Processor) cleanupTaskWorktree(ctx context.Context, task *entity.Task) error {
+	if task.WorktreePath == nil || *task.WorktreePath == "" {
+		p.logger.Warn("Task has no worktree path to cleanup", "task_id", task.ID)
+		return nil
+	}
+
+	worktreePath := *task.WorktreePath
+	p.logger.Info("Cleaning up worktree for task",
+		"task_id", task.ID,
+		"worktree_path", worktreePath,
+		"status", task.Status)
+
+	// Get project to determine base working directory
+	project, err := p.projectUsecase.GetByID(ctx, task.ProjectID)
+	if err != nil {
+		return fmt.Errorf("failed to get project: %w", err)
+	}
+
+	// Step 1: Remove git worktree
+	deleteReq := &git.DeleteWorktreeRequest{
+		WorkingDir:   project.WorktreeBasePath,
+		WorktreePath: worktreePath,
+	}
+
+	if err := p.gitManager.DeleteWorktree(ctx, deleteReq); err != nil {
+		p.logger.Warn("Failed to delete git worktree, continuing with cleanup",
+			"task_id", task.ID,
+			"error", err)
+		// Don't fail the entire cleanup if git worktree removal fails
+	} else {
+		p.logger.Info("Successfully removed git worktree", "task_id", task.ID)
+	}
+
+	// Step 2: Delete branch if it exists
+	if task.BranchName != nil && *task.BranchName != "" {
+		branchName := *task.BranchName
+		if err := p.gitManager.DeleteBranch(ctx, project.WorktreeBasePath, branchName, true); err != nil {
+			p.logger.Warn("Failed to delete branch, continuing with cleanup",
+				"task_id", task.ID,
+				"branch_name", branchName,
+				"error", err)
+			// Don't fail the entire cleanup if branch deletion fails
+		} else {
+			p.logger.Info("Successfully deleted branch",
+				"task_id", task.ID,
+				"branch_name", branchName)
+		}
+	}
+
+	// Step 3: Remove worktree folder from filesystem
+	if err := p.removeWorktreeFolder(worktreePath); err != nil {
+		p.logger.Warn("Failed to remove worktree folder",
+			"task_id", task.ID,
+			"worktree_path", worktreePath,
+			"error", err)
+		// Don't fail the entire cleanup if folder removal fails
+	} else {
+		p.logger.Info("Successfully removed worktree folder", "task_id", task.ID)
+	}
+
+	// Step 4: Update task to clear worktree path and set git status to none
+	updateReq := usecase.UpdateTaskRequest{
+		WorktreePath: new(string), // Set to empty string
+	}
+
+	if _, err := p.taskUsecase.Update(ctx, task.ID, updateReq); err != nil {
+		return fmt.Errorf("failed to update task worktree path after cleanup: %w", err)
+	}
+
+	// Update git status separately
+	if _, err := p.taskUsecase.UpdateGitStatus(ctx, task.ID, entity.TaskGitStatusNone); err != nil {
+		return fmt.Errorf("failed to update git status after cleanup: %w", err)
+	}
+
+	p.logger.Info("Successfully completed worktree cleanup for task", "task_id", task.ID)
+	return nil
+}
+
+// removeWorktreeFolder removes the worktree folder from the filesystem
+func (p *Processor) removeWorktreeFolder(worktreePath string) error {
+	// Implementation would use os.RemoveAll to delete the folder
+	// For safety, we'll add some basic validation
+	if worktreePath == "" {
+		return fmt.Errorf("empty worktree path")
+	}
+
+	// Basic safety check to ensure we're not deleting system directories
+	if strings.Contains(worktreePath, "..") ||
+		worktreePath == "/" ||
+		strings.HasPrefix(worktreePath, "/bin") ||
+		strings.HasPrefix(worktreePath, "/usr") ||
+		strings.HasPrefix(worktreePath, "/etc") ||
+		strings.HasPrefix(worktreePath, "/sys") ||
+		strings.HasPrefix(worktreePath, "/proc") {
+		return fmt.Errorf("unsafe worktree path: %s", worktreePath)
+	}
+
+	// Remove the folder
+	if err := os.RemoveAll(worktreePath); err != nil {
+		return fmt.Errorf("failed to remove worktree folder: %w", err)
+	}
+
+	p.logger.Info("Successfully removed worktree folder", "path", worktreePath)
+	return nil
 }
 
 // ProcessPRStatusSync processes PR status sync jobs
