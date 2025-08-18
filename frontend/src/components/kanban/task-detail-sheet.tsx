@@ -136,11 +136,7 @@ export function TaskDetailSheet({
               </TabsList>
 
               <TabsContent value='plan-review' className='mt-4'>
-                <PlanReview
-                  task={task}
-                  onPlanUpdate={onEdit}
-                  onStatusChange={onStatusChange}
-                />
+                <PlanReview task={task} />
               </TabsContent>
 
               <TabsContent value='code-changes' className='mt-4'>

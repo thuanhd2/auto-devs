@@ -872,6 +872,18 @@ func (r *taskRepository) GetComments(ctx context.Context, taskID uuid.UUID) ([]*
 	return commentPtrs, nil
 }
 
+// GetPlansByTaskID retrieves all plans for a task, sorted by created_at descending
+func (r *taskRepository) GetPlansByTaskID(ctx context.Context, taskID uuid.UUID) ([]entity.Plan, error) {
+	var plans []entity.Plan
+
+	result := r.db.WithContext(ctx).Where("task_id = ?", taskID).Order("created_at DESC").Find(&plans)
+	if result.Error != nil {
+		return nil, fmt.Errorf("failed to get plans: %w", result.Error)
+	}
+
+	return plans, nil
+}
+
 // UpdateComment updates a comment
 func (r *taskRepository) UpdateComment(ctx context.Context, comment *entity.TaskComment) error {
 	result := r.db.WithContext(ctx).Save(comment)

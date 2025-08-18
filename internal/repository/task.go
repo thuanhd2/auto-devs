@@ -68,6 +68,9 @@ type TaskRepository interface {
 	// Comments
 	AddComment(ctx context.Context, comment *entity.TaskComment) error
 	GetComments(ctx context.Context, taskID uuid.UUID) ([]*entity.TaskComment, error)
+
+	// Plan operations
+	GetPlansByTaskID(ctx context.Context, taskID uuid.UUID) ([]entity.Plan, error)
 	UpdateComment(ctx context.Context, comment *entity.TaskComment) error
 	DeleteComment(ctx context.Context, commentID uuid.UUID) error
 

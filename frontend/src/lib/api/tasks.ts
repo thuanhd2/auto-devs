@@ -10,6 +10,7 @@ import type {
   StartPlanningRequest,
   StartPlanningResponse,
   ApprovePlanRequest,
+  TaskPlansResponse,
 } from '@/types/task'
 
 const api = axios.create({
@@ -96,5 +97,10 @@ export const tasksApi = {
 
   async openWithCursor(taskId: string): Promise<void> {
     await api.post(`${API_ENDPOINTS.TASKS}/${taskId}/open-with-cursor`)
+  },
+
+  async getTaskPlans(taskId: string): Promise<TaskPlansResponse> {
+    const response = await api.get(`${API_ENDPOINTS.TASKS}/${taskId}/plans`)
+    return response.data
   },
 }
