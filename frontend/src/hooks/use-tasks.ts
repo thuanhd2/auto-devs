@@ -279,12 +279,14 @@ export function useChangeTaskStatus() {
 
       toast.success('Task status updated successfully')
     },
-    onError: (error: any, variables, context: any) => {
+    onError: (error: any, _variables, context: any) => {
       // Revert optimistic update on error
       if (context?.previousTasks) {
         queryClient.setQueryData([TASKS_QUERY_KEY], context.previousTasks)
       }
-      toast.error(error.response?.data?.message || 'Failed to update task status')
+      toast.error(
+        error.response?.data?.message || 'Failed to update task status'
+      )
     },
     onSettled: () => {
       // Always refetch after error or success

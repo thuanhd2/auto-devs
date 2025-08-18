@@ -95,6 +95,7 @@ var TaskStatusTransitions = map[TaskStatus][]TaskStatus{
 		TaskStatusCANCELLED,
 	},
 	TaskStatusPLANREVIEWING: {
+		TaskStatusTODO,
 		TaskStatusIMPLEMENTING,
 		TaskStatusPLANNING,
 		TaskStatusCANCELLED,
@@ -106,7 +107,7 @@ var TaskStatusTransitions = map[TaskStatus][]TaskStatus{
 	},
 	TaskStatusCODEREVIEWING: {
 		TaskStatusDONE,
-		TaskStatusIMPLEMENTING,
+		TaskStatusPLANREVIEWING,
 		TaskStatusCANCELLED,
 	},
 	TaskStatusDONE: {

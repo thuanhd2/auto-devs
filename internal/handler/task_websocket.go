@@ -109,6 +109,13 @@ func (h *TaskHandlerWithWebSocket) UpdateTask(c *gin.Context) {
 			"new": req.PullRequest,
 		}
 	}
+	if req.Status != nil && *req.Status != originalTask.Status {
+		usecaseReq.Status = req.Status
+		changes["status"] = map[string]interface{}{
+			"old": originalTask.Status,
+			"new": req.Status,
+		}
+	}
 
 	task, err := h.taskUsecase.Update(c.Request.Context(), id, usecaseReq)
 	if err != nil {

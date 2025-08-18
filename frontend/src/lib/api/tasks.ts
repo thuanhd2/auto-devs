@@ -2,6 +2,7 @@ import axios from 'axios'
 import { API_CONFIG, API_ENDPOINTS } from '@/config/api'
 import type {
   Task,
+  TaskStatus,
   CreateTaskRequest,
   UpdateTaskRequest,
   TasksResponse,
@@ -61,7 +62,9 @@ export const tasksApi = {
   },
 
   async changeTaskStatus(taskId: string, status: TaskStatus): Promise<Task> {
-    const response = await api.put(`${API_ENDPOINTS.TASKS}/${taskId}`, { status })
+    const response = await api.put(`${API_ENDPOINTS.TASKS}/${taskId}`, {
+      status,
+    })
     return response.data
   },
 
