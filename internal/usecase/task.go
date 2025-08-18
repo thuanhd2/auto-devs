@@ -115,6 +115,9 @@ type TaskUsecase interface {
 	// Pull requests
 	GetPullRequest(ctx context.Context, taskID uuid.UUID) (*entity.PullRequest, error)
 
+	// Plans
+	GetPlansByTaskID(ctx context.Context, taskID uuid.UUID) ([]entity.Plan, error)
+
 	// Open with Cursor
 	OpenWithCursor(ctx context.Context, taskID uuid.UUID, worktreePath string) error
 
@@ -1146,6 +1149,23 @@ func (u *taskUsecase) GetPullRequest(ctx context.Context, taskID uuid.UUID) (*en
 	}
 
 	return pr, nil
+}
+
+// GetPlansByTaskID retrieves all plans for a task, sorted by created_at descending
+func (u *taskUsecase) GetPlansByTaskID(ctx context.Context, taskID uuid.UUID) ([]entity.Plan, error) {
+	// Get task to validate it exists
+	_, err := u.taskRepo.GetByID(ctx, taskID)
+	if err != nil {
+		return nil, fmt.Errorf("task not found: %w", err)
+	}
+
+	// Get plans for the task
+	plans, err := u.taskRepo.GetPlansByTaskID(ctx, taskID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get plans: %w", err)
+	}
+
+	return plans, nil
 }
 
 // OpenWithCursor opens the task's worktree path with Cursor editor

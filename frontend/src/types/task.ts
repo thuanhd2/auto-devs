@@ -45,15 +45,19 @@ export interface Task {
   worktree_path?: string
   // Git information
   git_info?: TaskGitInfo
-  plans?: TaskPlan[]
 }
 
 export interface TaskPlan {
   id: string
   task_id: string
   content: string
+  status: string
   created_at: string
   updated_at: string
+}
+
+export interface TaskPlansResponse {
+  plans: TaskPlan[]
 }
 
 export interface CreateTaskRequest {

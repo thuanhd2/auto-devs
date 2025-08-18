@@ -84,6 +84,43 @@ func (h *TaskHandler) GetTask(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
+// GetTaskPlans godoc
+// @Summary Get plans for a task
+// @Description Get all plans for a specific task, sorted by created_at descending
+// @Tags tasks
+// @Accept json
+// @Produce json
+// @Param id path string true "Task ID"
+// @Success 200 {object} dto.TaskPlansResponse
+// @Failure 400 {object} dto.ErrorResponse
+// @Failure 404 {object} dto.ErrorResponse
+// @Failure 500 {object} dto.ErrorResponse
+// @Router /api/v1/tasks/{id}/plans [get]
+func (h *TaskHandler) GetTaskPlans(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, dto.NewErrorResponse(err, http.StatusBadRequest, "Invalid task ID"))
+		return
+	}
+
+	plans, err := h.taskUsecase.GetPlansByTaskID(c.Request.Context(), id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, dto.NewErrorResponse(err, http.StatusInternalServerError, "Failed to fetch task plans"))
+		return
+	}
+
+	planResponses := make([]dto.PlanResponse, len(plans))
+	for i, plan := range plans {
+		planResponses[i].FromEntity(&plan)
+	}
+
+	response := dto.TaskPlansResponse{
+		Plans: planResponses,
+	}
+	c.JSON(http.StatusOK, response)
+}
+
 // ListTasks godoc
 // @Summary List tasks with filtering
 // @Description Get a list of tasks with optional filtering by status, project, or search term

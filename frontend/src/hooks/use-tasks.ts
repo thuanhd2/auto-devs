@@ -294,3 +294,11 @@ export function useChangeTaskStatus() {
     },
   })
 }
+
+export function useGetTaskPlans(taskId: string) {
+  return useQuery({
+    queryKey: [TASKS_QUERY_KEY, 'plans', taskId],
+    queryFn: () => tasksApi.getTaskPlans(taskId),
+    enabled: !!taskId,
+  })
+}

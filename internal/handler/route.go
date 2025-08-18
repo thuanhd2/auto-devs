@@ -77,6 +77,9 @@ func SetupRoutes(router *gin.Engine, projectUsecase usecase.ProjectUsecase, task
 
 			// Pull request endpoints
 			tasks.GET("/:id/pull-request", taskHandler.GetPullRequest)
+
+			// Plan endpoints
+			tasks.GET("/:id/plans", taskHandler.GetTaskPlans)
 			
 			// Open with Cursor endpoint
 			tasks.POST("/:id/open-with-cursor", taskHandler.OpenWithCursor)
