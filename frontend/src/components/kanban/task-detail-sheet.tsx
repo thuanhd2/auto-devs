@@ -19,6 +19,8 @@ import {
 } from '@/components/ui/sheet'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { ExecutionList } from '../executions'
+import { Diff, parseDiff, Hunk } from 'react-diff-view'
+import 'react-diff-view/style/index.css'
 import { PlanReview } from '../planning'
 import { TaskActions } from './task-actions'
 import { TaskHistory } from './task-history'
@@ -200,6 +202,19 @@ function TaskExecutions({ taskId }: { taskId: string }) {
   )
 }
 
+// Helper function to parse git diff string
+function parseDiffString(diffString: string) {
+  try {
+    // React-diff-view expects unified diff format
+    // If the diff is already in the correct format, parse it directly
+    const files = parseDiff(diffString)
+    return files
+  } catch (error) {
+    console.error('Error parsing diff:', error)
+    return []
+  }
+}
+
 // CodeChanges component for the code changes tab
 function CodeChanges({ taskId, task }: { taskId: string; task?: Task }) {
   const { data: pullRequest, isLoading: isPRLoading } =
@@ -293,14 +308,50 @@ function CodeChanges({ taskId, task }: { taskId: string; task?: Task }) {
           <div className='text-muted-foreground bg-muted/50 rounded p-2 text-sm'>
             No code changes
           </div>
-        ) : (
-          <div className='max-h-96 overflow-auto rounded-md border'>
-            <pre className='bg-slate-50 p-4 font-mono text-xs whitespace-pre-wrap'>
-              {diff}
-            </pre>
-          </div>
+) : (
+          <DiffViewer diffString={diff} />
         )}
       </div>
+    </div>
+  )
+}
+
+// DiffViewer component to display formatted git diff
+function DiffViewer({ diffString }: { diffString: string }) {
+  const files = parseDiffString(diffString)
+  
+  if (files.length === 0) {
+    return (
+      <div className='max-h-96 overflow-auto rounded-md border'>
+        <pre className='bg-slate-50 p-4 font-mono text-xs whitespace-pre-wrap'>
+          {diffString}
+        </pre>
+      </div>
+    )
+  }
+
+  return (
+    <div className='max-h-96 overflow-auto rounded-md border bg-white'>
+      {files.map((file, index) => (
+        <div key={index} className='border-b last:border-b-0'>
+          <div className='bg-gray-50 px-4 py-2 text-sm font-medium text-gray-700 border-b'>
+            {file.oldPath === file.newPath ? file.newPath : `${file.oldPath} → ${file.newPath}`}
+          </div>
+          <Diff
+            key={file.oldPath + file.newPath}
+            viewType='unified'
+            diffType={file.type}
+            hunks={file.hunks}
+            className='text-xs'
+          >
+            {(hunks) =>
+              hunks.map((hunk) => (
+                <Hunk key={hunk.content} hunk={hunk} />
+              ))
+            }
+          </Diff>
+        </div>
+      ))}
     </div>
   )
 }
