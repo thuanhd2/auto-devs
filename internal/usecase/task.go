@@ -9,6 +9,7 @@ import (
 
 	"github.com/auto-devs/auto-devs/internal/entity"
 	"github.com/auto-devs/auto-devs/internal/repository"
+	"github.com/auto-devs/auto-devs/internal/service/git"
 	"github.com/google/uuid"
 )
 
@@ -123,6 +124,9 @@ type TaskUsecase interface {
 
 	// Worktree cleanup
 	GetTasksEligibleForWorktreeCleanup(ctx context.Context, cutoffTime time.Time) ([]*entity.Task, error)
+
+	// Git diff
+	GetTaskDiff(ctx context.Context, taskID uuid.UUID) (string, error)
 }
 
 type CreateTaskRequest struct {
@@ -237,6 +241,7 @@ type taskUsecase struct {
 	notificationUsecase NotificationUsecase
 	worktreeUsecase     WorktreeUsecase
 	jobClient           JobClientInterface
+	gitManager          *git.GitManager
 }
 
 func NewTaskUsecase(
@@ -247,6 +252,7 @@ func NewTaskUsecase(
 	notificationUsecase NotificationUsecase,
 	worktreeUsecase WorktreeUsecase,
 	jobClient JobClientInterface,
+	gitManager *git.GitManager,
 ) TaskUsecase {
 	return &taskUsecase{
 		taskRepo:            taskRepo,
@@ -256,6 +262,7 @@ func NewTaskUsecase(
 		notificationUsecase: notificationUsecase,
 		worktreeUsecase:     worktreeUsecase,
 		jobClient:           jobClient,
+		gitManager:          gitManager,
 	}
 }
 
@@ -1211,4 +1218,42 @@ func (u *taskUsecase) UpdateTaskPlan(ctx context.Context, taskID uuid.UUID, plan
 	}
 
 	return plan, nil
+}
+
+// GetTaskDiff returns the git diff between base branch and task branch
+func (u *taskUsecase) GetTaskDiff(ctx context.Context, taskID uuid.UUID) (string, error) {
+	// Get task to validate it exists and get branch info
+	task, err := u.taskRepo.GetByID(ctx, taskID)
+	if err != nil {
+		return "", fmt.Errorf("failed to get task: %w", err)
+	}
+
+	// If task doesn't have a worktree path, return "no code changes"
+	if task.WorktreePath == nil || *task.WorktreePath == "" {
+		return "", nil
+	}
+
+	// Get the base branch name (default to "main" if not set)
+	baseBranch := "main"
+	if task.BaseBranchName != nil && *task.BaseBranchName != "" {
+		baseBranch = *task.BaseBranchName
+	}
+
+	// Get the task branch name
+	taskBranch := "HEAD"
+	if task.BranchName != nil && *task.BranchName != "" {
+		taskBranch = *task.BranchName
+	}
+
+	// Get git commands instance from git manager
+	gitCommands := u.gitManager.GetGitCommands()
+
+	// Get diff between origin/baseBranch and current HEAD
+	fromRef := fmt.Sprintf("origin/%s", baseBranch)
+	diff, err := gitCommands.GetDiff(ctx, *task.WorktreePath, fromRef, taskBranch)
+	if err != nil {
+		return "", fmt.Errorf("failed to get git diff: %w", err)
+	}
+
+	return diff, nil
 }

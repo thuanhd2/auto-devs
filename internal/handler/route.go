@@ -85,6 +85,8 @@ func SetupRoutes(router *gin.Engine, projectUsecase usecase.ProjectUsecase, task
 			// Open with Cursor endpoint
 			tasks.POST("/:id/open-with-cursor", taskHandler.OpenWithCursor)
 
+			// Git diff endpoint
+			tasks.GET("/:id/diff", taskHandler.GetTaskDiff)
 		}
 
 		// Execution routes

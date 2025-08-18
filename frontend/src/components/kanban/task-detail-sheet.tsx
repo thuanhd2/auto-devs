@@ -6,6 +6,7 @@ import { tasksApi } from '@/lib/api/tasks'
 import { getStatusColor, getStatusTitle } from '@/lib/kanban'
 import { useTaskExecutions } from '@/hooks/use-executions'
 import { usePullRequestByTask } from '@/hooks/use-pull-requests'
+import { useTaskDiff } from '@/hooks/use-tasks'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
@@ -201,7 +202,8 @@ function TaskExecutions({ taskId }: { taskId: string }) {
 
 // CodeChanges component for the code changes tab
 function CodeChanges({ taskId, task }: { taskId: string; task?: Task }) {
-  const { data: pullRequest, isLoading, error } = usePullRequestByTask(taskId)
+  const { data: pullRequest, isLoading: isPRLoading, error: prError } = usePullRequestByTask(taskId)
+  const { data: diff, isLoading: isDiffLoading, error: diffError } = useTaskDiff(taskId)
   const [isOpeningCursor, setIsOpeningCursor] = useState(false)
 
   const handleOpenWithCursor = async () => {
@@ -219,54 +221,20 @@ function CodeChanges({ taskId, task }: { taskId: string; task?: Task }) {
     }
   }
 
+  const isLoading = isPRLoading || isDiffLoading
+
   if (isLoading) {
     return (
       <div className='flex items-center justify-center p-4'>
         <div className='text-muted-foreground text-sm'>
-          Loading pull request...
-        </div>
-      </div>
-    )
-  }
-
-  if (error) {
-    return (
-      <div className='flex items-center justify-center p-4'>
-        <div className='text-sm text-red-600'>Error loading pull request</div>
-      </div>
-    )
-  }
-
-  if (!pullRequest) {
-    return (
-      <div className='space-y-3'>
-        <div className='flex items-center gap-2'>
-          <h4 className='text-sm font-medium'>Code Changes</h4>
-        </div>
-
-        {/* Open with Cursor button */}
-        {task?.worktree_path && (
-          <Button
-            variant='outline'
-            size='sm'
-            className='w-fit'
-            onClick={handleOpenWithCursor}
-            disabled={isOpeningCursor}
-          >
-            <FolderOpen className='mr-2 h-4 w-4' />
-            {isOpeningCursor ? 'Opening...' : 'Open With Cursor'}
-          </Button>
-        )}
-
-        <div className='text-muted-foreground text-sm'>
-          No pull request created yet
+          Loading code changes...
         </div>
       </div>
     )
   }
 
   return (
-    <div className='space-y-3'>
+    <div className='space-y-4'>
       <div className='flex items-center gap-2'>
         <h4 className='text-sm font-medium'>Code Changes</h4>
       </div>
@@ -285,17 +253,48 @@ function CodeChanges({ taskId, task }: { taskId: string; task?: Task }) {
         </Button>
       )}
 
-      <Button
-        variant='outline'
-        size='sm'
-        className='w-fit'
-        onClick={() => window.open(pullRequest.github_url, '_blank')}
-      >
-        <ExternalLink className='mr-2 h-4 w-4' />
-        View Pull Request
-      </Button>
-      <div className='text-muted-foreground text-xs'>
-        #{pullRequest.github_pr_number} - {pullRequest.title}
+      {/* Pull Request Link */}
+      {pullRequest && (
+        <div className='space-y-2'>
+          <Button
+            variant='outline'
+            size='sm'
+            className='w-fit'
+            onClick={() => window.open(pullRequest.github_url, '_blank')}
+          >
+            <ExternalLink className='mr-2 h-4 w-4' />
+            View Pull Request
+          </Button>
+          <div className='text-muted-foreground text-xs'>
+            #{pullRequest.github_pr_number} - {pullRequest.title}
+          </div>
+        </div>
+      )}
+
+      {/* Diff Display */}
+      <div className='space-y-2'>
+        <h5 className='text-xs font-medium text-muted-foreground'>
+          Diff (Base Branch vs Task Branch)
+        </h5>
+        {diffError ? (
+          <div className='text-sm text-red-600 p-2 bg-red-50 rounded'>
+            Error loading diff: {diffError.message}
+          </div>
+        ) : diff === undefined ? (
+          <div className='text-muted-foreground text-sm p-2 bg-muted/50 rounded'>
+            Loading diff...
+          </div>
+        ) : diff === '' || diff === 'No code changes' ? (
+          <div className='text-muted-foreground text-sm p-2 bg-muted/50 rounded'>
+            No code changes
+          </div>
+        ) : (
+          <div className='max-h-96 overflow-auto border rounded-md'>
+            <pre className='text-xs p-4 whitespace-pre-wrap font-mono bg-slate-50'>
+              {diff}
+            </pre>
+          </div>
+        )}
       </div>
     </div>
   )
