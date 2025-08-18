@@ -103,4 +103,14 @@ export const tasksApi = {
     const response = await api.get(`${API_ENDPOINTS.TASKS}/${taskId}/plans`)
     return response.data
   },
+
+  async updatePlan(
+    taskId: string,
+    planId: string,
+    content: string
+  ): Promise<void> {
+    await api.put(`${API_ENDPOINTS.TASKS}/${taskId}/plans/${planId}`, {
+      content,
+    })
+  },
 }

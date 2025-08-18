@@ -17,7 +17,7 @@ import { PlanPreview } from './plan-preview'
 
 interface PlanEditorProps {
   initialValue: string
-  onSave: (content: string) => Promise<void> | void
+  onSave: (content: string, isAutoSave?: boolean) => Promise<void> | void
   onCancel: () => void
   isLoading?: boolean
   autoSave?: boolean
@@ -63,7 +63,7 @@ export function PlanEditor({
     const timeoutId = setTimeout(async () => {
       try {
         setIsSaving(true)
-        await onSave(content)
+        await onSave(content, true)
         setLastAutoSave(new Date())
         setIsDirty(false)
         toast.success('Auto-saved', { duration: 1000 })
@@ -125,7 +125,7 @@ export function PlanEditor({
   const handleManualSave = async () => {
     try {
       setIsSaving(true)
-      await onSave(content)
+      await onSave(content, false)
       setIsDirty(false)
       toast.success('Plan saved successfully!')
     } catch (error) {
@@ -280,17 +280,23 @@ export function PlanEditor({
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value='editor' className='flex-1 px-6 pb-6'>
+          <TabsContent
+            value='editor'
+            className='flex-1 overflow-hidden px-6 pb-6'
+          >
             <Textarea
               value={content}
               onChange={(e) => handleContentChange(e.target.value)}
               placeholder='Enter your implementation plan in Markdown format...'
-              className='h-full min-h-[400px] w-full resize-none font-mono text-sm'
+              className='h-full w-full resize-none overflow-auto font-mono text-sm'
               disabled={isLoading}
             />
           </TabsContent>
 
-          <TabsContent value='preview' className='flex-1 px-6 pb-6'>
+          <TabsContent
+            value='preview'
+            className='flex-1 overflow-hidden px-6 pb-6'
+          >
             <div className='h-full overflow-auto rounded-md border'>
               <PlanPreview content={content} />
             </div>

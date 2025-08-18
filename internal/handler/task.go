@@ -121,6 +121,56 @@ func (h *TaskHandler) GetTaskPlans(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
+// UpdatePlan godoc
+// @Summary Update a plan
+// @Description Update a plan by its ID
+// @Tags plans
+// @Accept json
+// @Produce json
+// @Param id path string true "Task ID"
+// @Param planId path string true "Plan ID"
+// @Param plan body dto.PlanUpdateRequest true "Plan update data"
+// @Success 200 {object} dto.PlanResponse
+// @Failure 400 {object} dto.ErrorResponse
+// @Failure 404 {object} dto.ErrorResponse
+// @Failure 500 {object} dto.ErrorResponse
+// @Router /api/v1/tasks/{id}/plans/{planId} [put]
+func (h *TaskHandler) UpdateTaskPlan(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, dto.NewErrorResponse(err, http.StatusBadRequest, "Invalid plan ID"))
+		return
+	}
+
+	planIdStr := c.Param("planId")
+	planId, err := uuid.Parse(planIdStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, dto.NewErrorResponse(err, http.StatusBadRequest, "Invalid plan ID"))
+		return
+	}
+
+	var req dto.PlanUpdateRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, dto.NewErrorResponse(err, http.StatusBadRequest, "Invalid request data"))
+		return
+	}
+
+	usecaseReq := usecase.UpdateTaskPlanRequest{
+		Content: req.Content,
+	}
+
+	plan, err := h.taskUsecase.UpdateTaskPlan(c.Request.Context(), id, planId, usecaseReq)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, dto.NewErrorResponse(err, http.StatusInternalServerError, "Failed to update plan"))
+		return
+	}
+
+	response := &dto.PlanResponse{}
+	response.FromEntity(plan)
+	c.JSON(http.StatusOK, response)
+}
+
 // ListTasks godoc
 // @Summary List tasks with filtering
 // @Description Get a list of tasks with optional filtering by status, project, or search term

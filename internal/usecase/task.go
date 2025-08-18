@@ -117,7 +117,7 @@ type TaskUsecase interface {
 
 	// Plans
 	GetPlansByTaskID(ctx context.Context, taskID uuid.UUID) ([]entity.Plan, error)
-
+	UpdateTaskPlan(ctx context.Context, taskID uuid.UUID, planID uuid.UUID, req UpdateTaskPlanRequest) (*entity.Plan, error)
 	// Open with Cursor
 	OpenWithCursor(ctx context.Context, taskID uuid.UUID, worktreePath string) error
 
@@ -153,6 +153,10 @@ type UpdateTaskRequest struct {
 	BranchName     *string              `json:"branch_name"`
 	PullRequest    *string              `json:"pull_request"`
 	WorktreePath   *string              `json:"worktree_path"`
+}
+
+type UpdateTaskPlanRequest struct {
+	Content string `json:"content" binding:"required"`
 }
 
 type UpdateStatusRequest struct {
@@ -229,6 +233,7 @@ type taskUsecase struct {
 	taskRepo            repository.TaskRepository
 	pullRequestRepo     repository.PullRequestRepository
 	projectRepo         repository.ProjectRepository
+	planRepo            repository.PlanRepository
 	notificationUsecase NotificationUsecase
 	worktreeUsecase     WorktreeUsecase
 	jobClient           JobClientInterface
@@ -238,6 +243,7 @@ func NewTaskUsecase(
 	taskRepo repository.TaskRepository,
 	pullRequestRepo repository.PullRequestRepository,
 	projectRepo repository.ProjectRepository,
+	planRepo repository.PlanRepository,
 	notificationUsecase NotificationUsecase,
 	worktreeUsecase WorktreeUsecase,
 	jobClient JobClientInterface,
@@ -246,6 +252,7 @@ func NewTaskUsecase(
 		taskRepo:            taskRepo,
 		pullRequestRepo:     pullRequestRepo,
 		projectRepo:         projectRepo,
+		planRepo:            planRepo,
 		notificationUsecase: notificationUsecase,
 		worktreeUsecase:     worktreeUsecase,
 		jobClient:           jobClient,
@@ -1190,4 +1197,18 @@ func (u *taskUsecase) OpenWithCursor(ctx context.Context, taskID uuid.UUID, work
 // GetTasksEligibleForWorktreeCleanup retrieves tasks eligible for worktree cleanup
 func (u *taskUsecase) GetTasksEligibleForWorktreeCleanup(ctx context.Context, cutoffTime time.Time) ([]*entity.Task, error) {
 	return u.taskRepo.GetTasksEligibleForWorktreeCleanup(ctx, cutoffTime)
+}
+
+func (u *taskUsecase) UpdateTaskPlan(ctx context.Context, taskID uuid.UUID, planID uuid.UUID, req UpdateTaskPlanRequest) (*entity.Plan, error) {
+	plan, err := u.planRepo.GetByID(ctx, planID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get plan: %w", err)
+	}
+
+	err = u.planRepo.UpdateContent(ctx, planID, req.Content)
+	if err != nil {
+		return nil, fmt.Errorf("failed to update plan: %w", err)
+	}
+
+	return plan, nil
 }

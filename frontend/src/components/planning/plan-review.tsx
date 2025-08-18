@@ -1,6 +1,7 @@
+import { useState } from 'react'
 import type { Task } from '@/types/task'
-import { ChevronDown, RefreshCcw, FileText } from 'lucide-react'
-import { useGetTaskPlans } from '@/hooks/use-tasks'
+import { ChevronDown, RefreshCcw, FileText, Pencil } from 'lucide-react'
+import { useGetTaskPlans, useUpdatePlan } from '@/hooks/use-tasks'
 import { Badge } from '@/components/ui/badge'
 import {
   Card,
@@ -14,7 +15,14 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { Button } from '../ui/button'
+import { PlanEditor } from './plan-editor'
 import { PlanPreview } from './plan-preview'
 
 interface PlanReviewProps {
@@ -25,7 +33,32 @@ interface PlanReviewProps {
 
 export function PlanReview({ task }: PlanReviewProps) {
   const { data, isLoading, error, refetch } = useGetTaskPlans(task.id)
+  const updatePlan = useUpdatePlan()
+  const [editingPlan, setEditingPlan] = useState<string | null>(null)
   const plans = data?.plans
+
+  const handleEditPlan = (planId: string) => {
+    setEditingPlan(planId)
+  }
+
+  const handleSavePlan = async (content: string, isAutoSave?: boolean) => {
+    if (!editingPlan) return
+
+    await updatePlan.mutateAsync({
+      taskId: task.id,
+      planId: editingPlan,
+      content,
+    })
+    if (!isAutoSave) {
+      setEditingPlan(null)
+    }
+  }
+
+  const handleCancelEdit = () => {
+    setEditingPlan(null)
+  }
+
+  const currentEditingPlan = plans?.find((p) => p.id === editingPlan)
 
   if (isLoading) {
     return (
@@ -70,49 +103,88 @@ export function PlanReview({ task }: PlanReviewProps) {
   }
 
   return (
-    <Card className='w-full'>
-      <CardHeader className='mb-4 flex flex-row items-center justify-between'>
-        <div className='flex flex-col'>
-          <CardTitle>Plan Review</CardTitle>
-          <CardDescription>
-            Review the plans for this task. The most recent plan appears first.
-          </CardDescription>
-        </div>
-        <div className='flex justify-end'>
-          <Button variant='outline' onClick={() => refetch()}>
-            <RefreshCcw className='mr-2 h-4 w-4' />
-            Refetch
-          </Button>
-        </div>
-      </CardHeader>
-      <CardContent className='space-y-4'>
-        {plans.map((plan, index) => (
-          <Collapsible key={plan.id} defaultOpen={index === 0}>
-            <CollapsibleTrigger className='flex w-full items-center justify-between rounded-lg border p-4 hover:bg-gray-50'>
-              <div className='flex w-full items-center justify-between gap-3'>
-                <div className='text-left'>
-                  <div className='font-medium'>Plan {plans.length - index}</div>
-                  <div className='text-sm text-gray-500'>
-                    Created {new Date(plan.created_at).toLocaleDateString()} at{' '}
-                    {new Date(plan.created_at).toLocaleTimeString()}
+    <>
+      <Card className='w-full'>
+        <CardHeader className='mb-4 flex flex-row items-center justify-between'>
+          <div className='flex flex-col'>
+            <CardTitle>Plan Review</CardTitle>
+            <CardDescription>
+              Review the plans for this task. The most recent plan appears
+              first.
+            </CardDescription>
+          </div>
+          <div className='flex justify-end'>
+            <Button variant='outline' onClick={() => refetch()}>
+              <RefreshCcw className='mr-2 h-4 w-4' />
+              Refetch
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className='space-y-4'>
+          {plans.map((plan, index) => (
+            <Collapsible key={plan.id} defaultOpen={index === 0}>
+              <CollapsibleTrigger className='flex w-full items-center justify-between rounded-lg border p-4 hover:bg-gray-50'>
+                <div className='flex w-full items-center justify-between gap-3'>
+                  <div className='text-left'>
+                    <div className='font-medium'>
+                      Plan {plans.length - index}
+                    </div>
+                    <div className='text-sm text-gray-500'>
+                      Created {new Date(plan.created_at).toLocaleDateString()}{' '}
+                      at {new Date(plan.created_at).toLocaleTimeString()}
+                    </div>
+                  </div>
+                  <div className='flex items-center gap-2'>
+                    {plan.status && (
+                      <Badge variant='outline'>{plan.status}</Badge>
+                    )}
+                    <Button
+                      variant='ghost'
+                      size='sm'
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleEditPlan(plan.id)
+                      }}
+                      className='h-8 w-8 p-0'
+                    >
+                      <Pencil className='h-4 w-4' />
+                    </Button>
                   </div>
                 </div>
-                {plan.status && (
-                  <Badge variant='outline' className='ml-2'>
-                    {plan.status}
-                  </Badge>
-                )}
-              </div>
-              <ChevronDown className='h-4 w-4 transition-transform duration-200 group-data-[state=open]:rotate-180' />
-            </CollapsibleTrigger>
-            <CollapsibleContent className='px-4 pb-4'>
-              <div className='mt-4 rounded-lg border bg-gray-50 p-4'>
-                <PlanPreview content={plan.content} className='w-full' />
-              </div>
-            </CollapsibleContent>
-          </Collapsible>
-        ))}
-      </CardContent>
-    </Card>
+                <ChevronDown className='h-4 w-4 transition-transform duration-200 group-data-[state=open]:rotate-180' />
+              </CollapsibleTrigger>
+              <CollapsibleContent className='px-4 pb-4'>
+                <div className='mt-4 rounded-lg border bg-gray-50 p-4'>
+                  <PlanPreview content={plan.content} className='w-full' />
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+          ))}
+        </CardContent>
+      </Card>
+
+      {/* Edit Plan Dialog */}
+      <Dialog
+        open={!!editingPlan}
+        onOpenChange={(open) => !open && handleCancelEdit()}
+      >
+        <DialogContent className='flex h-[80vh] max-w-6xl flex-col'>
+          <DialogHeader>
+            <DialogTitle>Edit Plan</DialogTitle>
+          </DialogHeader>
+          <div className='flex-1 overflow-auto'>
+            {currentEditingPlan && (
+              <PlanEditor
+                initialValue={currentEditingPlan.content}
+                onSave={handleSavePlan}
+                onCancel={handleCancelEdit}
+                isLoading={updatePlan.isPending}
+                autoSave={false}
+              />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   )
 }

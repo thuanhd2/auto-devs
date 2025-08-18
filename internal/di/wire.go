@@ -227,11 +227,12 @@ func ProvideTaskUsecase(
 	taskRepo repository.TaskRepository,
 	pullRequestRepo repository.PullRequestRepository,
 	projectRepo repository.ProjectRepository,
+	planRepo repository.PlanRepository,
 	notificationUsecase usecase.NotificationUsecase,
 	worktreeUsecase usecase.WorktreeUsecase,
 	jobClient usecase.JobClientInterface,
 ) usecase.TaskUsecase {
-	return usecase.NewTaskUsecase(taskRepo, pullRequestRepo, projectRepo, notificationUsecase, worktreeUsecase, jobClient)
+	return usecase.NewTaskUsecase(taskRepo, pullRequestRepo, projectRepo, planRepo, notificationUsecase, worktreeUsecase, jobClient)
 }
 
 // ProvideCLIManager provides a CLIManager instance

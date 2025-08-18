@@ -80,9 +80,11 @@ func SetupRoutes(router *gin.Engine, projectUsecase usecase.ProjectUsecase, task
 
 			// Plan endpoints
 			tasks.GET("/:id/plans", taskHandler.GetTaskPlans)
-			
+			tasks.PUT("/:id/plans/:planId", taskHandler.UpdateTaskPlan)
+
 			// Open with Cursor endpoint
 			tasks.POST("/:id/open-with-cursor", taskHandler.OpenWithCursor)
+
 		}
 
 		// Execution routes

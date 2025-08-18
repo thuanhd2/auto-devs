@@ -54,7 +54,7 @@ func InitializeApp() (*App, error) {
 	worktreeUsecase := ProvideWorktreeUsecase(worktreeRepository, taskRepository, projectRepository, integratedWorktreeService, gitManager)
 	client := ProvideJobClient(configConfig)
 	jobClientInterface := ProvideJobClientAdapter(client)
-	taskUsecase := ProvideTaskUsecase(taskRepository, pullRequestRepository, projectRepository, notificationUsecase, worktreeUsecase, jobClientInterface)
+	taskUsecase := ProvideTaskUsecase(taskRepository, pullRequestRepository, projectRepository, planRepository, notificationUsecase, worktreeUsecase, jobClientInterface)
 	executionUsecase := ProvideExecutionUsecase(executionRepository, executionLogRepository, taskRepository)
 	service := ProvideWebSocketService(configConfig)
 	cliManager, err := ProvideCLIManager()
@@ -259,11 +259,12 @@ func ProvideTaskUsecase(
 	taskRepo repository.TaskRepository,
 	pullRequestRepo repository.PullRequestRepository,
 	projectRepo repository.ProjectRepository,
+	planRepo repository.PlanRepository,
 	notificationUsecase usecase.NotificationUsecase,
 	worktreeUsecase usecase.WorktreeUsecase,
 	jobClient usecase.JobClientInterface,
 ) usecase.TaskUsecase {
-	return usecase.NewTaskUsecase(taskRepo, pullRequestRepo, projectRepo, notificationUsecase, worktreeUsecase, jobClient)
+	return usecase.NewTaskUsecase(taskRepo, pullRequestRepo, projectRepo, planRepo, notificationUsecase, worktreeUsecase, jobClient)
 }
 
 // ProvideCLIManager provides a CLIManager instance
