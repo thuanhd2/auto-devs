@@ -105,3 +105,26 @@ export interface StartPlanningResponse {
 export interface ApprovePlanRequest {
   ai_type: string
 }
+
+export function getAIs(forPlanning: boolean) {
+  const claudeCode = {
+    name: 'Claude Code',
+    value: 'claude-code',
+    description: 'Anthropic Claude Code',
+  }
+  const fakeCode = {
+    name: 'Fake Code',
+    value: 'fake-code',
+    description: 'Test/Demo AI',
+  }
+  const cursorAgent = {
+    name: 'Cursor Agent',
+    value: 'cursor-agent',
+    description: 'Cursor Agent',
+  }
+  // Cursor Agent does not support planning, so it is not included in the planning AIs
+  if (forPlanning) {
+    return [claudeCode, fakeCode]
+  }
+  return [claudeCode, fakeCode, cursorAgent]
+}

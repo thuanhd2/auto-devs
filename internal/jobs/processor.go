@@ -304,6 +304,9 @@ func (p *Processor) getAiExecutor(aiType string) (ai.AiCodingCli, error) {
 	case "fake-code":
 		aiExecutor := aiexecutors.NewFakeCodeExecutor()
 		return aiExecutor, nil
+	case "cursor-agent":
+		aiExecutor := aiexecutors.NewCursorAgentExecutor()
+		return aiExecutor, nil
 	default:
 		return nil, fmt.Errorf("invalid execution type: %s", aiType)
 	}

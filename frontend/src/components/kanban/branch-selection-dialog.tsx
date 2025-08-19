@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { getAIs } from '@/types/task'
 import { Loader2, GitBranch, Bot } from 'lucide-react'
 import { projectsApi } from '@/lib/api/projects'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -105,6 +106,8 @@ export function BranchSelectionDialog({
     setError('')
   }
 
+  const ais = getAIs(true)
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className='sm:max-w-[425px]'>
@@ -178,22 +181,16 @@ export function BranchSelectionDialog({
                     <SelectValue placeholder='Select AI type' />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value='claude-code'>
-                      <div className='flex items-center gap-2'>
-                        <span>Claude Code</span>
-                        <span className='text-muted-foreground text-xs'>
-                          (Production AI)
-                        </span>
-                      </div>
-                    </SelectItem>
-                    <SelectItem value='fake-code'>
-                      <div className='flex items-center gap-2'>
-                        <span>Fake Code</span>
-                        <span className='text-muted-foreground text-xs'>
-                          (Test/Demo AI)
-                        </span>
-                      </div>
-                    </SelectItem>
+                    {ais.map((ai) => (
+                      <SelectItem key={ai.value} value={ai.value}>
+                        <div className='flex items-center gap-2'>
+                          <span>{ai.name}</span>
+                          <span className='text-muted-foreground text-xs'>
+                            ({ai.description})
+                          </span>
+                        </div>
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>

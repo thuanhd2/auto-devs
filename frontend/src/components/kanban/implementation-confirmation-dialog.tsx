@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { getAIs } from '@/types/task'
 import { Bot, Play } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -55,6 +56,8 @@ export function ImplementationConfirmationDialog({
     onOpenChange(false)
   }
 
+  const ais = getAIs(false)
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className='sm:max-w-[425px]'>
@@ -80,22 +83,16 @@ export function ImplementationConfirmationDialog({
                 <SelectValue placeholder='Select AI type' />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value='claude-code'>
-                  <div className='flex items-center gap-2'>
-                    <span>Claude Code</span>
-                    <span className='text-muted-foreground text-xs'>
-                      (Production AI)
-                    </span>
-                  </div>
-                </SelectItem>
-                <SelectItem value='fake-code'>
-                  <div className='flex items-center gap-2'>
-                    <span>Fake Code</span>
-                    <span className='text-muted-foreground text-xs'>
-                      (Test/Demo AI)
-                    </span>
-                  </div>
-                </SelectItem>
+                {ais.map((ai) => (
+                  <SelectItem key={ai.value} value={ai.value}>
+                    <div className='flex items-center gap-2'>
+                      <span>{ai.name}</span>
+                      <span className='text-muted-foreground text-xs'>
+                        ({ai.description})
+                      </span>
+                    </div>
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>

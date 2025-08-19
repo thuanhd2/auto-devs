@@ -1,5 +1,7 @@
 package aiexecutors
 
+const NOT_SUPPORT_PLANNING = "NOT_SUPPORT_PLANNING"
+
 type PlanOutput struct {
 	Type            string      `json:"type"`
 	Message         PlanMessage `json:"message"`
