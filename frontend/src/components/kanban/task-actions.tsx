@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import type { Task, TaskStatus } from '@/types/task'
-import { Edit, Trash2, Copy, Play, ArrowUpDown } from 'lucide-react'
+import { Edit, Trash2, Copy, Play, ArrowUpDown, FolderOpen } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { tasksApi } from '@/lib/api/tasks'
 import { BranchSelectionDialog } from './branch-selection-dialog'
 import { ChangeStatusDialog } from './change-status-dialog'
 import { ImplementationConfirmationDialog } from './implementation-confirmation-dialog'
@@ -29,6 +30,7 @@ export function TaskActions({
   const [showImplementationDialog, setShowImplementationDialog] =
     useState(false)
   const [showChangeStatusDialog, setShowChangeStatusDialog] = useState(false)
+  const [isOpeningCursor, setIsOpeningCursor] = useState(false)
 
   const handleDelete = () => {
     onDelete?.(task.id)
@@ -54,6 +56,22 @@ export function TaskActions({
     if (onChangeStatus) {
       await onChangeStatus(task.id, newStatus)
     }
+  }
+
+  const handleOpenWithCursor = async () => {
+    if (!task?.worktree_path) return
+
+    try {
+      setIsOpeningCursor(true)
+      await tasksApi.openWithCursor(task.id)
+      // Success feedback could be added here if needed
+    } catch (error) {
+      console.error('Failed to open with Cursor:', error)
+      // Error handling could be added here
+    } finally {
+      setIsOpeningCursor(false)
+    }
+  }
   }
 
   return (
@@ -85,6 +103,20 @@ export function TaskActions({
           >
             <Play className='mr-1 h-4 w-4' />
             Approve Plan and Start Implement
+          </Button>
+        )}
+
+        {/* Open With Cursor button */}
+        {task?.worktree_path && (
+          <Button
+            variant='outline'
+            size='sm'
+            onClick={handleOpenWithCursor}
+            disabled={isOpeningCursor}
+            title='Open task workspace with Cursor'
+          >
+            <FolderOpen className='mr-1 h-4 w-4' />
+            {isOpeningCursor ? 'Opening...' : 'Open With Cursor'}
           </Button>
         )}
 

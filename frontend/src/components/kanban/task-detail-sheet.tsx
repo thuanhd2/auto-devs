@@ -1,7 +1,7 @@
 import { useNavigate, useParams } from '@tanstack/react-router'
 import { useState } from 'react'
 import type { Task } from '@/types/task'
-import { ExternalLink, FolderOpen } from 'lucide-react'
+import { ExternalLink } from 'lucide-react'
 import { tasksApi } from '@/lib/api/tasks'
 import { getStatusColor, getStatusTitle } from '@/lib/kanban'
 import { useTaskExecutions } from '@/hooks/use-executions'
@@ -224,23 +224,7 @@ function CodeChanges({ taskId, task }: { taskId: string; task?: Task }) {
     isLoading: isDiffLoading,
     error: diffError,
   } = useTaskDiff(taskId)
-  const [isOpeningCursor, setIsOpeningCursor] = useState(false)
-  const createPRMutation = useCreatePullRequest()
-
-  const handleOpenWithCursor = async () => {
-    if (!task?.worktree_path) return
-
-    try {
-      setIsOpeningCursor(true)
-      await tasksApi.openWithCursor(taskId)
-      // Success feedback could be added here if needed
-    } catch (error) {
-      console.error('Failed to open with Cursor:', error)
-      // Error handling could be added here
-    } finally {
-      setIsOpeningCursor(false)
-    }
-  }
+const createPRMutation = useCreatePullRequest()
 
   const handleCreatePR = async () => {
     try {
@@ -270,19 +254,7 @@ function CodeChanges({ taskId, task }: { taskId: string; task?: Task }) {
         <h4 className='text-sm font-medium'>Code Changes</h4>
       </div>
 
-      {/* Open with Cursor button */}
-      {task?.worktree_path && (
-        <Button
-          variant='outline'
-          size='sm'
-          className='w-fit'
-          onClick={handleOpenWithCursor}
-          disabled={isOpeningCursor}
-        >
-          <FolderOpen className='mr-2 h-4 w-4' />
-          {isOpeningCursor ? 'Opening...' : 'Open With Cursor'}
-        </Button>
-      )}
+
 
       {/* Pull Request Section */}
       <div className='space-y-2'>
