@@ -3,6 +3,7 @@ package usecase
 import (
 	"context"
 	"fmt"
+	"os"
 	"os/exec"
 	"strings"
 	"time"
@@ -1260,6 +1261,15 @@ func (u *taskUsecase) OpenWithCursor(ctx context.Context, taskID uuid.UUID, work
 	// Execute cursor command to open the workspace
 	cmd := exec.Command("cursor", ".")
 	cmd.Dir = worktreePath
+
+	env := os.Environ()
+	// remove all envs that start with "AUTODEVS_"
+	for _, env := range env {
+		if strings.HasPrefix(env, "AUTODEVS_") {
+			cmd.Env = append(cmd.Env, env)
+		}
+	}
+	cmd.Env = env
 
 	// Start the command in the background (we don't need to wait for it to finish)
 	err := cmd.Start()

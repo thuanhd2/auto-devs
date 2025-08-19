@@ -1,11 +1,15 @@
-import { useNavigate, useParams } from '@tanstack/react-router'
 import { useState } from 'react'
+import { useNavigate, useParams } from '@tanstack/react-router'
 import type { Task } from '@/types/task'
 import { ExternalLink } from 'lucide-react'
-import { tasksApi } from '@/lib/api/tasks'
+import { Diff, parseDiff, Hunk } from 'react-diff-view'
+import 'react-diff-view/style/index.css'
 import { getStatusColor, getStatusTitle } from '@/lib/kanban'
 import { useTaskExecutions } from '@/hooks/use-executions'
-import { usePullRequestByTask, useCreatePullRequest } from '@/hooks/use-pull-requests'
+import {
+  usePullRequestByTask,
+  useCreatePullRequest,
+} from '@/hooks/use-pull-requests'
 import { useTaskDiff } from '@/hooks/use-tasks'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -19,8 +23,6 @@ import {
 } from '@/components/ui/sheet'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { ExecutionList } from '../executions'
-import { Diff, parseDiff, Hunk } from 'react-diff-view'
-import 'react-diff-view/style/index.css'
 import { PlanReview } from '../planning'
 import { TaskActions } from './task-actions'
 import { TaskHistory } from './task-history'
@@ -139,7 +141,7 @@ export function TaskDetailSheet({
               </TabsContent>
 
               <TabsContent value='code-changes' className='mt-4'>
-                <CodeChanges taskId={task.id} task={task} />
+                <CodeChanges taskId={task.id} />
               </TabsContent>
 
               <TabsContent value='executions' className='mt-4'>
@@ -216,7 +218,7 @@ function parseDiffString(diffString: string) {
 }
 
 // CodeChanges component for the code changes tab
-function CodeChanges({ taskId, task }: { taskId: string; task?: Task }) {
+function CodeChanges({ taskId }: { taskId: string }) {
   const { data: pullRequest, isLoading: isPRLoading } =
     usePullRequestByTask(taskId)
   const {
@@ -224,7 +226,7 @@ function CodeChanges({ taskId, task }: { taskId: string; task?: Task }) {
     isLoading: isDiffLoading,
     error: diffError,
   } = useTaskDiff(taskId)
-const createPRMutation = useCreatePullRequest()
+  const createPRMutation = useCreatePullRequest()
 
   const handleCreatePR = async () => {
     try {
@@ -253,8 +255,6 @@ const createPRMutation = useCreatePullRequest()
       <div className='flex items-center gap-2'>
         <h4 className='text-sm font-medium'>Code Changes</h4>
       </div>
-
-
 
       {/* Pull Request Section */}
       <div className='space-y-2'>
@@ -304,7 +304,7 @@ const createPRMutation = useCreatePullRequest()
           <div className='text-muted-foreground bg-muted/50 rounded p-2 text-sm'>
             No code changes
           </div>
-) : (
+        ) : (
           <DiffViewer diffString={diff} />
         )}
       </div>
@@ -315,7 +315,7 @@ const createPRMutation = useCreatePullRequest()
 // DiffViewer component to display formatted git diff
 function DiffViewer({ diffString }: { diffString: string }) {
   const files = parseDiffString(diffString)
-  
+
   if (files.length === 0) {
     return (
       <div className='max-h-96 overflow-auto rounded-md border'>
@@ -330,8 +330,10 @@ function DiffViewer({ diffString }: { diffString: string }) {
     <div className='max-h-96 overflow-auto rounded-md border bg-white'>
       {files.map((file, index) => (
         <div key={index} className='border-b last:border-b-0'>
-          <div className='bg-gray-50 px-4 py-2 text-sm font-medium text-gray-700 border-b'>
-            {file.oldPath === file.newPath ? file.newPath : `${file.oldPath} → ${file.newPath}`}
+          <div className='border-b bg-gray-50 px-4 py-2 text-sm font-medium text-gray-700'>
+            {file.oldPath === file.newPath
+              ? file.newPath
+              : `${file.oldPath} → ${file.newPath}`}
           </div>
           <Diff
             key={file.oldPath + file.newPath}
@@ -341,9 +343,7 @@ function DiffViewer({ diffString }: { diffString: string }) {
             className='text-xs'
           >
             {(hunks) =>
-              hunks.map((hunk) => (
-                <Hunk key={hunk.content} hunk={hunk} />
-              ))
+              hunks.map((hunk) => <Hunk key={hunk.content} hunk={hunk} />)
             }
           </Diff>
         </div>

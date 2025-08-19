@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import type { Task, TaskStatus } from '@/types/task'
 import { Edit, Trash2, Copy, Play, ArrowUpDown, FolderOpen } from 'lucide-react'
-import { Button } from '@/components/ui/button'
 import { tasksApi } from '@/lib/api/tasks'
+import { Button } from '@/components/ui/button'
 import { BranchSelectionDialog } from './branch-selection-dialog'
 import { ChangeStatusDialog } from './change-status-dialog'
 import { ImplementationConfirmationDialog } from './implementation-confirmation-dialog'
@@ -71,7 +71,6 @@ export function TaskActions({
     } finally {
       setIsOpeningCursor(false)
     }
-  }
   }
 
   return (
