@@ -18,6 +18,7 @@ import {
 } from '@/hooks/use-tasks'
 import { BoardFilters } from './board-filters'
 import { KanbanBoard } from './kanban-board'
+import { useDoneTasks } from '@/hooks/use-tasks'
 import { TaskDetailSheet } from './task-detail-sheet'
 import { TaskFormModal } from './task-form-modal'
 
@@ -33,6 +34,7 @@ export function ProjectBoard({ projectId }: ProjectBoardProps) {
   const [filters, setFilters] = useState<TaskFilters>({})
   const [searchQuery, setSearchQuery] = useState('')
   const [localTasks, setLocalTasks] = useState<Task[]>([])
+  const [showDoneTasks, setShowDoneTasks] = useState(false)
 
   // Get taskId from either route params or search params
   const currentTaskId = routeParams.taskId || searchParams.taskId
@@ -50,6 +52,7 @@ export function ProjectBoard({ projectId }: ProjectBoardProps) {
   }>({ open: false, task: null })
 
   const { data: tasksResponse } = useTasks(projectId)
+  const { data: doneTasksResponse } = useDoneTasks(projectId, showDoneTasks)
   const deleteTaskMutation = useDeleteTask()
   const duplicateTaskMutation = useDuplicateTask()
   const startPlanningMutation = useStartPlanning()
@@ -90,15 +93,20 @@ export function ProjectBoard({ projectId }: ProjectBoardProps) {
 
   // Keep local tasks in sync with server data
   useEffect(() => {
-    // console.log('tasks changed', tasks)
-    const tasks = tasksResponse?.tasks || []
-    setLocalTasks(tasks)
+    const baseTasks = tasksResponse?.tasks || []
+    let merged = baseTasks
+    if (showDoneTasks) {
+      const done = doneTasksResponse?.tasks || []
+      const existing = new Set(baseTasks.map((t) => t.id))
+      merged = [...baseTasks, ...done.filter((t) => !existing.has(t.id))]
+    }
+    setLocalTasks(merged)
 
     // Initialize task statuses for sound notifications
     initializeTaskStatuses(
-      tasks.map((task) => ({ id: task.id, status: task.status }))
+      merged.map((task: Task) => ({ id: task.id, status: task.status }))
     )
-  }, [tasksResponse, initializeTaskStatuses])
+  }, [tasksResponse, doneTasksResponse, showDoneTasks, initializeTaskStatuses])
 
   // Auto-open task detail sheet when taskId is in URL
   useEffect(() => {
@@ -235,6 +243,8 @@ export function ProjectBoard({ projectId }: ProjectBoardProps) {
           onDeleteTask={handleDeleteTask}
           onViewTaskDetails={handleViewTaskDetails}
           searchQuery={searchQuery}
+          showDoneTasks={showDoneTasks}
+          onLoadDoneTasks={() => setShowDoneTasks(true)}
         />
       </div>
 

@@ -23,6 +23,8 @@ interface KanbanColumnProps {
   onViewTaskDetails?: (task: Task) => void
   selectedTaskId?: string | null
   isSelectedColumn?: boolean
+  onLoadDoneTasks?: () => void
+  showLoadDoneAction?: boolean
 }
 
 export function KanbanColumn({
@@ -32,6 +34,8 @@ export function KanbanColumn({
   onViewTaskDetails,
   selectedTaskId,
   isSelectedColumn = false,
+  onLoadDoneTasks,
+  showLoadDoneAction = false,
 }: KanbanColumnProps) {
   const { isOver, setNodeRef } = useDroppable({
     id: column.id,
@@ -66,6 +70,17 @@ export function KanbanColumn({
               className='h-7 w-7 p-0 transition-transform duration-200 hover:scale-105'
             >
               <Plus className='h-3 w-3' />
+            </Button>
+          )}
+
+          {column.id === 'DONE' && showLoadDoneAction && (
+            <Button
+              variant='outline'
+              size='sm'
+              onClick={onLoadDoneTasks}
+              className='h-7 px-2 text-xs'
+            >
+              Load tasks
             </Button>
           )}
 

@@ -27,6 +27,8 @@ interface KanbanBoardProps {
   onViewTaskDetails?: (task: Task) => void
   isCompactView?: boolean
   searchQuery?: string
+  showDoneTasks?: boolean
+  onLoadDoneTasks?: () => void
 }
 
 export function KanbanBoard({
@@ -37,6 +39,8 @@ export function KanbanBoard({
   onDeleteTask,
   onViewTaskDetails,
   searchQuery = '',
+  showDoneTasks = false,
+  onLoadDoneTasks,
 }: KanbanBoardProps) {
   const [localTasks, setLocalTasks] = useState<Task[]>(tasks)
   const updateTaskMutation = useUpdateTask()
@@ -96,11 +100,14 @@ export function KanbanBoard({
     }
 
     filteredTasks.forEach((task) => {
+      if (task.status === 'DONE' && !showDoneTasks) {
+        return
+      }
       grouped[task.status].push(task)
     })
 
     return grouped
-  }, [filteredTasks])
+  }, [filteredTasks, showDoneTasks])
 
   const handleDragStart = (_event: DragStartEvent) => {}
 
@@ -190,6 +197,8 @@ export function KanbanBoard({
                   onViewTaskDetails={onViewTaskDetails}
                   selectedTaskId={selectedTaskId}
                   isSelectedColumn={selectedColumnId === column.id}
+                  showLoadDoneAction={column.id === 'DONE' && !showDoneTasks}
+                  onLoadDoneTasks={column.id === 'DONE' ? onLoadDoneTasks : undefined}
                 />
               </div>
             ))}
