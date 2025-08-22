@@ -90,6 +90,10 @@ func SetupRoutes(router *gin.Engine, projectUsecase usecase.ProjectUsecase, task
 			tasks.GET("/:id/diff", taskHandler.GetTaskDiff)
 		}
 
+		// Project-scoped task routes
+		v1.GET("/projects/:project_id/tasks", taskHandler.ListTasksByProject)
+		v1.GET("/projects/:project_id/tasks/done", taskHandler.ListDoneTasksByProject)
+
 		// Execution routes
 		executions := v1.Group("/executions")
 		{

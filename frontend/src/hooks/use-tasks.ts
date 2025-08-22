@@ -18,6 +18,14 @@ export function useTasks(projectId: string) {
   })
 }
 
+export function useDoneTasks(projectId: string, enabled: boolean) {
+  return useQuery({
+    queryKey: [TASKS_QUERY_KEY, projectId, 'done'],
+    queryFn: () => tasksApi.getDoneTasks(projectId),
+    enabled: !!projectId && enabled,
+  })
+}
+
 export function useCreateTask() {
   const queryClient = useQueryClient()
 

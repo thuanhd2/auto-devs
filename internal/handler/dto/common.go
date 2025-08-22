@@ -37,6 +37,7 @@ type TaskFilterQuery struct {
 	Status    *string    `form:"status" binding:"omitempty,oneof=TODO PLANNING PLAN_REVIEWING IMPLEMENTING CODE_REVIEWING DONE CANCELLED" example:"TODO"`
 	ProjectID *string    `form:"project_id" binding:"omitempty,uuid" example:"123e4567-e89b-12d3-a456-426614174000"`
 	Search    *string    `form:"search" binding:"omitempty,max=255" example:"authentication"`
+    IncludeDone *bool     `form:"include_done" example:"false"`
 }
 
 // Helper functions

@@ -21,29 +21,21 @@ const api = axios.create({
 export const tasksApi = {
   async getTasks(
     projectId: string,
-    filters?: TaskFilters
+    filters?: TaskFilters & { include_done?: boolean }
   ): Promise<TasksResponse> {
     const params = new URLSearchParams()
-    params.append('project_id', projectId)
-
-    if (filters) {
-      if (filters.status && filters.status.length > 0) {
-        filters.status.forEach((status) => params.append('status', status))
-      }
-      if (filters.search) {
-        params.append('search', filters.search)
-      }
-      if (filters.sortBy) {
-        params.append('sort_by', filters.sortBy)
-      }
-      if (filters.sortOrder) {
-        params.append('sort_order', filters.sortOrder)
-      }
+    if (filters?.include_done) {
+      params.append('include_done', 'true')
     }
-
+    // Switch to project-scoped endpoint and exclude DONE by default
     const response = await api.get(
-      `${API_ENDPOINTS.TASKS}?${params.toString()}`
+      `/projects/${projectId}/tasks${params.toString() ? `?${params.toString()}` : ''}`
     )
+    return response.data
+  },
+
+  async getDoneTasks(projectId: string): Promise<TasksResponse> {
+    const response = await api.get(`/projects/${projectId}/tasks/done`)
     return response.data
   },
 
