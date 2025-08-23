@@ -53,6 +53,14 @@ type ExecutionLogResponse struct {
 	Timestamp   time.Time       `json:"timestamp" example:"2024-01-01T00:00:00Z"`
 	Source      string          `json:"source" example:"stdout"`
 	Metadata    interface{}     `json:"metadata,omitempty"`
+    // Structured fields
+    LogType       string      `json:"log_type,omitempty" example:"assistant"`
+    ToolName      string      `json:"tool_name,omitempty" example:"read_file"`
+    ToolUseID     string      `json:"tool_use_id,omitempty" example:"toolu_01ABC..."`
+    ParsedContent interface{} `json:"parsed_content,omitempty"`
+    IsError       *bool       `json:"is_error,omitempty"`
+    DurationMs    *int        `json:"duration_ms,omitempty" example:"1234"`
+    NumTurns      *int        `json:"num_turns,omitempty" example:"5"`
 	CreatedAt   time.Time       `json:"created_at" example:"2024-01-01T00:00:00Z"`
 	Line        int             `json:"line" example:"1"`
 }
@@ -80,6 +88,9 @@ type ExecutionLogFilterQuery struct {
 	Levels     []string   `form:"levels" example:"info,error"`
 	Source     *string    `form:"source" example:"stdout"`
 	Sources    []string   `form:"sources" example:"stdout,stderr"`
+    LogType    *string    `form:"log_type" example:"assistant"`
+    ToolName   *string    `form:"tool_name" example:"read_file"`
+    ToolUseID  *string    `form:"tool_use_id" example:"toolu_01ABC..."`
 	Search     *string    `form:"search" example:"error"`
 	TimeAfter  *time.Time `form:"time_after" example:"2024-01-01T00:00:00Z"`
 	TimeBefore *time.Time `form:"time_before" example:"2024-12-31T23:59:59Z"`
@@ -139,6 +150,12 @@ func ToExecutionLogResponse(log *entity.ExecutionLog) ExecutionLogResponse {
 		Message:     log.Message,
 		Timestamp:   log.Timestamp,
 		Source:      log.Source,
+        LogType:     log.LogType,
+        ToolName:    log.ToolName,
+        ToolUseID:   log.ToolUseID,
+        IsError:     log.IsError,
+        DurationMs:  log.DurationMs,
+        NumTurns:    log.NumTurns,
 		CreatedAt:   log.CreatedAt,
 		Line:        log.Line,
 	}
@@ -147,6 +164,10 @@ func ToExecutionLogResponse(log *entity.ExecutionLog) ExecutionLogResponse {
 		// Parse metadata if needed
 		response.Metadata = log.Metadata
 	}
+
+    if log.ParsedContent != nil {
+        response.ParsedContent = log.ParsedContent
+    }
 
 	return response
 }

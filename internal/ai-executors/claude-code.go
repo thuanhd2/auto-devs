@@ -1,12 +1,12 @@
 package aiexecutors
 
 import (
-	"context"
-	"encoding/json"
-	"fmt"
-	"strings"
+    "context"
+    "encoding/json"
+    "fmt"
+    "strings"
 
-	"github.com/auto-devs/auto-devs/internal/entity"
+    "github.com/auto-devs/auto-devs/internal/entity"
 )
 
 type ClaudeCodeExecutor struct{}
@@ -34,17 +34,60 @@ func (e *ClaudeCodeExecutor) GetImplementationCommand(ctx context.Context, task 
 }
 
 func (e *ClaudeCodeExecutor) ParseOutputToLogs(output string) []*entity.ExecutionLog {
-	lines := strings.Split(output, "\n")
-	logs := make([]*entity.ExecutionLog, len(lines))
-	for i, line := range lines {
-		logs[i] = &entity.ExecutionLog{
-			Message: line,
-			Level:   entity.LogLevelInfo,
-			Source:  "stdout",
-			Line:    i,
-		}
-	}
-	return logs
+    lines := strings.Split(output, "\n")
+    logs := make([]*entity.ExecutionLog, 0, len(lines))
+    for i, line := range lines {
+        if strings.TrimSpace(line) == "" {
+            continue
+        }
+        logItem := &entity.ExecutionLog{
+            Message: line,
+            Level:   entity.LogLevelInfo,
+            Source:  "stdout",
+            Line:    i,
+        }
+
+        // Attempt to parse structured stream-json from Claude Code
+        var generic map[string]interface{}
+        if err := json.Unmarshal([]byte(line), &generic); err == nil {
+            // Extract type and message fields if present
+            if t, ok := generic["type"].(string); ok {
+                logItem.LogType = t
+            }
+            if msg, ok := generic["message"].(map[string]interface{}); ok {
+                // Look for tool use content
+                if content, ok := msg["content"].([]interface{}); ok && len(content) > 0 {
+                    // We only keep structured content as parsed_content
+                    logItem.ParsedContent = entity.JSONB{"content": content}
+                    // try to find tool_use info
+                    for _, c := range content {
+                        if m, ok := c.(map[string]interface{}); ok {
+                            typeVal, _ := m["type"].(string)
+                            if typeVal == "tool_use" {
+                                if id, _ := m["id"].(string); id != "" {
+                                    logItem.ToolUseID = id
+                                }
+                                if name, _ := m["name"].(string); name != "" {
+                                    logItem.ToolName = name
+                                }
+                            } else if typeVal == "tool_result" {
+                                t := false
+                                logItem.IsError = &t
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Also propagate the entire parsed JSON as parsed_content if nothing else
+            if logItem.ParsedContent == nil {
+                logItem.ParsedContent = entity.JSONB(generic)
+            }
+        }
+
+        logs = append(logs, logItem)
+    }
+    return logs
 }
 
 func (e *ClaudeCodeExecutor) getImplementationPrompt(_ context.Context, task *entity.Task) (string, error) {
