@@ -1,5 +1,4 @@
 import { useEffect, useState, useRef } from 'react'
-import { ExecutionLog } from '@/types/execution'
 import { AlertTriangle } from 'lucide-react'
 import { useExecution } from '@/hooks/use-executions'
 import { ScrollArea } from '@/components/ui/scroll-area'
