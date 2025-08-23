@@ -40,6 +40,14 @@ export interface ExecutionLog {
   metadata?: unknown
   created_at: string
   line: number
+  // New structured fields
+  log_type?: string
+  tool_name?: string
+  tool_use_id?: string
+  parsed_content?: any
+  is_error?: boolean
+  duration_ms?: number
+  num_turns?: number
 }
 
 export interface ExecutionWithLogs extends Execution {
