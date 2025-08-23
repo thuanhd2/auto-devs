@@ -228,51 +228,51 @@ func (h *TaskHandler) ListTasks(c *gin.Context) {
 // @Tags tasks
 // @Accept json
 // @Produce json
-// @Param project_id path string true "Project ID"
+// @Param id path string true "Project ID"
 // @Success 200 {object} dto.TaskListResponse
 // @Failure 400 {object} dto.ErrorResponse
 // @Failure 500 {object} dto.ErrorResponse
-// @Router /api/v1/projects/{project_id}/tasks [get]
+// @Router /api/v1/projects/{id}/tasks [get]
 func (h *TaskHandler) ListTasksByProject(c *gin.Context) {
-	projectIDStr := c.Param("project_id")
+	projectIDStr := c.Param("id")
 	projectID, err := uuid.Parse(projectIDStr)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, dto.NewErrorResponse(err, http.StatusBadRequest, "Invalid project ID"))
 		return
 	}
 
-    // Read optional include_done query flag (default false)
-    includeDone := false
-    if v := c.Query("include_done"); v != "" {
-        if v == "1" || v == "true" || v == "True" {
-            includeDone = true
-        }
-    }
+	// Read optional include_done query flag (default false)
+	includeDone := false
+	if v := c.Query("include_done"); v != "" {
+		if v == "1" || v == "true" || v == "True" {
+			includeDone = true
+		}
+	}
 
-    var tasks []*entity.Task
-    if includeDone {
-        tasks, err = h.taskUsecase.GetByProjectID(c.Request.Context(), projectID)
-    } else {
-        // Exclude DONE by default
-        tasks, err = h.taskUsecase.GetByStatuses(c.Request.Context(), []entity.TaskStatus{
-            entity.TaskStatusTODO,
-            entity.TaskStatusPLANNING,
-            entity.TaskStatusPLANREVIEWING,
-            entity.TaskStatusIMPLEMENTING,
-            entity.TaskStatusCODEREVIEWING,
-            entity.TaskStatusCANCELLED,
-        })
-        // Filter to this project since GetByStatuses is global
-        if err == nil {
-            filtered := make([]*entity.Task, 0, len(tasks))
-            for _, t := range tasks {
-                if t.ProjectID == projectID {
-                    filtered = append(filtered, t)
-                }
-            }
-            tasks = filtered
-        }
-    }
+	var tasks []*entity.Task
+	if includeDone {
+		tasks, err = h.taskUsecase.GetByProjectID(c.Request.Context(), projectID)
+	} else {
+		// Exclude DONE by default
+		tasks, err = h.taskUsecase.GetByStatuses(c.Request.Context(), []entity.TaskStatus{
+			entity.TaskStatusTODO,
+			entity.TaskStatusPLANNING,
+			entity.TaskStatusPLANREVIEWING,
+			entity.TaskStatusIMPLEMENTING,
+			entity.TaskStatusCODEREVIEWING,
+			entity.TaskStatusCANCELLED,
+		})
+		// Filter to this project since GetByStatuses is global
+		if err == nil {
+			filtered := make([]*entity.Task, 0, len(tasks))
+			for _, t := range tasks {
+				if t.ProjectID == projectID {
+					filtered = append(filtered, t)
+				}
+			}
+			tasks = filtered
+		}
+	}
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, dto.NewErrorResponse(err, http.StatusInternalServerError, "Failed to fetch tasks"))
 		return
@@ -288,34 +288,34 @@ func (h *TaskHandler) ListTasksByProject(c *gin.Context) {
 // @Tags tasks
 // @Accept json
 // @Produce json
-// @Param project_id path string true "Project ID"
+// @Param id path string true "Project ID"
 // @Success 200 {object} dto.TaskListResponse
 // @Failure 400 {object} dto.ErrorResponse
 // @Failure 500 {object} dto.ErrorResponse
-// @Router /api/v1/projects/{project_id}/tasks/done [get]
+// @Router /api/v1/projects/{id}/tasks/done [get]
 func (h *TaskHandler) ListDoneTasksByProject(c *gin.Context) {
-    projectIDStr := c.Param("project_id")
-    projectID, err := uuid.Parse(projectIDStr)
-    if err != nil {
-        c.JSON(http.StatusBadRequest, dto.NewErrorResponse(err, http.StatusBadRequest, "Invalid project ID"))
-        return
-    }
+	projectIDStr := c.Param("id")
+	projectID, err := uuid.Parse(projectIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, dto.NewErrorResponse(err, http.StatusBadRequest, "Invalid project ID"))
+		return
+	}
 
-    tasks, err := h.taskUsecase.GetByStatuses(c.Request.Context(), []entity.TaskStatus{entity.TaskStatusDONE})
-    if err != nil {
-        c.JSON(http.StatusInternalServerError, dto.NewErrorResponse(err, http.StatusInternalServerError, "Failed to fetch tasks"))
-        return
-    }
-    // Filter to this project
-    filtered := make([]*entity.Task, 0, len(tasks))
-    for _, t := range tasks {
-        if t.ProjectID == projectID {
-            filtered = append(filtered, t)
-        }
-    }
+	tasks, err := h.taskUsecase.GetByStatuses(c.Request.Context(), []entity.TaskStatus{entity.TaskStatusDONE})
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, dto.NewErrorResponse(err, http.StatusInternalServerError, "Failed to fetch tasks"))
+		return
+	}
+	// Filter to this project
+	filtered := make([]*entity.Task, 0, len(tasks))
+	for _, t := range tasks {
+		if t.ProjectID == projectID {
+			filtered = append(filtered, t)
+		}
+	}
 
-    response := dto.TaskListResponseFromEntities(filtered)
-    c.JSON(http.StatusOK, response)
+	response := dto.TaskListResponseFromEntities(filtered)
+	c.JSON(http.StatusOK, response)
 }
 
 // UpdateTask godoc

@@ -57,6 +57,10 @@ func SetupRoutes(router *gin.Engine, projectUsecase usecase.ProjectUsecase, task
 			projects.POST("/:id/git/reinit", projectHandler.ReinitGitRepository)
 			// Git branches endpoint
 			projects.GET("/:id/branches", projectHandler.ListBranches)
+
+			// Project-scoped task routes
+			projects.GET("/:id/tasks", taskHandler.ListTasksByProject)
+			projects.GET("/:id/tasks/done", taskHandler.ListDoneTasksByProject)
 		}
 
 		// Task routes
@@ -89,10 +93,6 @@ func SetupRoutes(router *gin.Engine, projectUsecase usecase.ProjectUsecase, task
 			// Git diff endpoint
 			tasks.GET("/:id/diff", taskHandler.GetTaskDiff)
 		}
-
-		// Project-scoped task routes
-		v1.GET("/projects/:project_id/tasks", taskHandler.ListTasksByProject)
-		v1.GET("/projects/:project_id/tasks/done", taskHandler.ListDoneTasksByProject)
 
 		// Execution routes
 		executions := v1.Group("/executions")
