@@ -37,6 +37,14 @@ type ExecutionLog struct {
 	Timestamp time.Time `json:"timestamp" gorm:"not null;index"`
 	Source    string    `json:"source" gorm:"type:varchar(50)"`       // stdout, stderr, system, etc.
 	Metadata  JSONB     `json:"metadata,omitempty" gorm:"type:jsonb"` // Additional metadata as JSON
+    // Structured fields parsed by backend
+    LogType       string `json:"log_type" gorm:"type:varchar(20);index"`
+    ToolName      string `json:"tool_name,omitempty" gorm:"type:varchar(100);index"`
+    ToolUseID     string `json:"tool_use_id,omitempty" gorm:"type:varchar(100);index"`
+    ParsedContent JSONB  `json:"parsed_content,omitempty" gorm:"type:jsonb"`
+    IsError       *bool  `json:"is_error,omitempty" gorm:"type:boolean"`
+    DurationMs    *int   `json:"duration_ms,omitempty" gorm:"type:int"`
+    NumTurns      *int   `json:"num_turns,omitempty" gorm:"type:int"`
 	CreatedAt time.Time `json:"created_at" gorm:"autoCreateTime"`
 	UpdatedAt time.Time `json:"updated_at" gorm:"autoUpdateTime"`
 	Line      int       `json:"line" gorm:"type:int"`

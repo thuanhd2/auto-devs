@@ -177,13 +177,20 @@ func (r *executionLogRepository) insertOrUpdateLog(ctx context.Context, log *ent
 	} else {
 		// Log exists, update it
 		// Preserve the original ID and created_at
-		updateData := map[string]interface{}{
-			"message":   log.Message,
-			"log_level": log.Level,
-			"source":    log.Source,
-			"metadata":  log.Metadata,
-			"timestamp": log.Timestamp,
-		}
+    updateData := map[string]interface{}{
+        "message":        log.Message,
+        "log_level":      log.Level,
+        "source":         log.Source,
+        "metadata":       log.Metadata,
+        "timestamp":      log.Timestamp,
+        "log_type":       log.LogType,
+        "tool_name":      log.ToolName,
+        "tool_use_id":    log.ToolUseID,
+        "parsed_content": log.ParsedContent,
+        "is_error":       log.IsError,
+        "duration_ms":    log.DurationMs,
+        "num_turns":      log.NumTurns,
+    }
 
 		if err := r.db.WithContext(ctx).Model(&existingLog).Updates(updateData).Error; err != nil {
 			return fmt.Errorf("failed to update execution log: %w", err)

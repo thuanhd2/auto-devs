@@ -1,6 +1,3 @@
-import { useEffect, useState, useRef } from 'react'
-import { ExecutionLog } from '@/types/execution'
-import { AlertTriangle } from 'lucide-react'
 import {
   AlertCircle,
   Bot,
@@ -9,107 +6,179 @@ import {
   Terminal,
   User,
 } from 'lucide-react'
-import { useExecution } from '@/hooks/use-executions'
-import { Button } from '@/components/ui/button'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog'
-import { ScrollArea } from '@/components/ui/scroll-area'
+import { ExecutionLog } from '@/types/execution'
 
-interface ExecutionLogsModalProps {
-  open: boolean
-  executionId: string | null
-  onClose: () => void
+interface StructuredLogItemProps {
+  log: ExecutionLog
 }
 
-export function ExecutionLogsModal({
-  open,
-  executionId,
-  onClose,
-}: ExecutionLogsModalProps) {
-  // const { logs, isLoading, error } = useExecutionLogs(executionId)
-  const { data: execution, isLoading, error } = useExecution(executionId)
-  const logs = (execution?.logs || []).sort((a, b) => a.line - b.line)
-  const scrollAreaRef = useRef<HTMLDivElement>(null)
-  const [prevLogsLength, setPrevLogsLength] = useState(0)
+export function StructuredLogItem({ log }: StructuredLogItemProps) {
+  // Use structured fields if available, fallback to raw message parsing
+  if (log.log_type && log.parsed_content) {
+    return <StructuredLogRenderer log={log} />
+  }
 
-  // Auto scroll to bottom when new logs arrive
-  useEffect(() => {
-    if (logs.length > prevLogsLength && scrollAreaRef.current) {
-      const scrollContainer = scrollAreaRef.current.querySelector(
-        '[data-radix-scroll-area-viewport]'
-      )
-      if (scrollContainer) {
-        scrollContainer.scrollTo({
-          top: scrollContainer.scrollHeight,
-          behavior: 'smooth',
-        })
-      }
+  // Fallback to legacy JSON parsing for backward compatibility
+  return <LegacyLogRenderer log={log} />
+}
+
+// Helper function to format result messages
+function formatResultMessage(message: string): string {
+  // Handle Claude AI usage limit message format
+  if (message.match(/Claude AI usage limit reached\|(\d+)/)) {
+    const timestamp = parseInt(message.split('|')[1]) * 1000
+    return `Claude AI usage limit reached at ${new Date(timestamp).toLocaleString()}`
+  }
+  return message
+}
+
+function StructuredLogRenderer({ log }: { log: ExecutionLog }) {
+  const { log_type, tool_name, tool_use_id, parsed_content, is_error, duration_ms, num_turns } = log
+
+  const getIcon = () => {
+    switch (log_type) {
+      case 'user':
+        return <User className='h-4 w-4 text-blue-600' />
+      case 'assistant':
+        return <Bot className='h-4 w-4 text-green-600' />
+      case 'tool_result':
+        return <Terminal className='h-4 w-4 text-purple-600' />
+      case 'result':
+        return <CheckSquare className='h-4 w-4 text-emerald-600' />
+      default:
+        return <AlertCircle className='h-4 w-4 text-gray-600' />
     }
-    setPrevLogsLength(logs.length)
-  }, [logs.length, prevLogsLength])
-  return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className='sm:w-[400px] sm:max-w-[400px] lg:h-[80vh] lg:w-[80vw] lg:max-w-none'>
-        <DialogHeader>
-          <DialogTitle>Execution Logs</DialogTitle>
-        </DialogHeader>
-        <div className='h-[60vh]'>
-          {isLoading && (
-            <div className='text-muted-foreground text-sm'>Loading logs...</div>
-          )}
-          {error && (
-            <div className='mb-2 flex items-center gap-2 rounded border border-red-200 bg-red-50 p-2 text-red-700'>
-              <AlertTriangle className='h-4 w-4' />
-              <span>{error.message}</span>
-            </div>
-          )}
-          {!isLoading && !error && (
-            <ScrollArea
-              ref={scrollAreaRef}
-              className='h-full rounded border p-2 text-xs'
-              stickToBottom
-            >
-              {logs ? (
-                logs.map((log, index) => (
-                  <div
-                    key={log.id}
-                    className={`animate-in fade-in-0 slide-in-from-bottom-2 duration-300 ${
-                      index >= prevLogsLength ? 'animate-in' : ''
-                    }`}
-                    style={{
-                      animationDelay:
-                        index >= prevLogsLength
-                          ? `${(index - prevLogsLength) * 50}ms`
-                          : '10ms',
-                    }}
-                  >
-                    <ExecutionLogItem log={log} />
+  }
+
+  const formatContent = () => {
+    switch (log_type) {
+      case 'user':
+        return (
+          <div className='text-sm text-blue-700'>
+            {parsed_content?.text || 'User message'}
+          </div>
+        )
+
+      case 'assistant':
+        if (parsed_content?.content) {
+          return parsed_content.content.map((item: any, index: number) => {
+            if (item.type === 'text') {
+              return (
+                <div
+                  key={index}
+                  className='text-sm whitespace-pre-wrap text-gray-800'
+                >
+                  {item.text}
+                </div>
+              )
+            }
+            if (item.type === 'tool_use') {
+              return (
+                <div
+                  key={index}
+                  className='rounded border-l-2 border-orange-400 bg-orange-50 p-2'
+                >
+                  <div className='mb-2 flex items-center gap-2'>
+                    <Settings className='h-3 w-3 text-orange-600' />
+                    <span className='text-xs font-medium text-orange-600'>
+                      Tool: {item.name}
+                    </span>
                   </div>
-                ))
-              ) : (
-                <span className='text-muted-foreground'>
-                  No logs to display.
-                </span>
-              )}
-            </ScrollArea>
-          )}
+                  {item.input && (
+                    <div className='text-xs text-gray-600'>
+                      {typeof item.input === 'object'
+                        ? JSON.stringify(item.input, null, 2)
+                        : item.input}
+                    </div>
+                  )}
+                </div>
+              )
+            }
+            return (
+              <div key={index} className='text-sm'>
+                {JSON.stringify(item)}
+              </div>
+            )
+          })
+        }
+        return <div className='text-sm text-green-700'>Assistant message</div>
+
+      case 'tool_result':
+        return (
+          <div className='rounded border-l-2 border-purple-400 bg-purple-50 p-2'>
+            <div className='mb-1 text-xs font-medium text-purple-600'>
+              Tool Result {tool_use_id && `(${tool_use_id})`}
+            </div>
+            <div className='text-sm text-gray-800'>
+              {parsed_content?.content || 'Tool execution result'}
+            </div>
+          </div>
+        )
+
+      case 'result':
+        return (
+          <div className={`rounded border-l-2 ${
+            is_error 
+              ? 'border-red-400 bg-red-50' 
+              : 'border-emerald-400 bg-emerald-50'
+          } p-2`}>
+            <div className={`mb-1 text-xs font-medium ${
+              is_error ? 'text-red-600' : 'text-emerald-600'
+            }`}>
+              Execution Result
+            </div>
+            <div className='text-sm text-gray-800'>
+              {duration_ms && `Duration: ${duration_ms}ms`}
+              {num_turns && ` | Turns: ${num_turns}`}
+            </div>
+            {parsed_content?.result && (
+              <div className='mt-2 text-sm text-gray-700'>
+                {formatResultMessage(parsed_content.result)}
+              </div>
+            )}
+            {is_error && (
+              <div className='mt-2 text-sm text-red-600'>
+                Error: {parsed_content?.error || 'Unknown error'}
+              </div>
+            )}
+          </div>
+        )
+
+      default:
+        return (
+          <div className='text-sm text-gray-600'>
+            {JSON.stringify(parsed_content, null, 2)}
+          </div>
+        )
+    }
+  }
+
+  return (
+    <div className='mb-3 border-b border-gray-100 pb-3 last:border-b-0'>
+      <div className='flex items-start gap-2'>
+        <div className='mt-1 flex-shrink-0'>{getIcon()}</div>
+        <div className='min-w-0 flex-1'>
+          <div className='mb-1 flex items-center gap-2'>
+            <span className='text-xs font-medium text-gray-500'>
+              {log_type}
+            </span>
+            {tool_name && (
+              <span className='text-xs text-gray-400'>
+                Tool: {tool_name}
+              </span>
+            )}
+            <span className='text-xs text-gray-400'>
+              {new Date(log.timestamp).toLocaleTimeString()}
+            </span>
+          </div>
+          <div className='space-y-2'>{formatContent()}</div>
         </div>
-        <DialogFooter>
-          <Button variant='outline' onClick={onClose}>
-            Close
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </div>
   )
 }
 
-function ExecutionLogItem({ log }: { log: ExecutionLog }) {
+function LegacyLogRenderer({ log }: { log: ExecutionLog }) {
   const message = log.message
   if (!message) {
     return null
@@ -248,17 +317,39 @@ function ExecutionLogItem({ log }: { log: ExecutionLog }) {
         return <div className='text-sm text-green-700'>Assistant message</div>
       }
 
-      if (logData.type === 'result') {
+      if (logData.type === 'tool_result') {
         return (
-          <div className='rounded border-l-2 border-emerald-400 bg-emerald-50 p-2'>
-            <div className='mb-1 text-xs font-medium text-emerald-600'>
+          <div className='rounded border-l-2 border-purple-400 bg-purple-50 p-2'>
+            <div className='mb-1 text-xs font-medium text-purple-600'>
+              Tool Result ({logData.tool_use_id})
+            </div>
+            <div className='text-sm text-gray-800'>
+              {logData.content || 'Tool execution result'}
+            </div>
+          </div>
+        )
+      }
+
+      if (logData.type === 'result') {
+        const isError = logData.is_error
+        return (
+          <div className={`rounded border-l-2 ${
+            isError 
+              ? 'border-red-400 bg-red-50' 
+              : 'border-emerald-400 bg-emerald-50'
+          } p-2`}>
+            <div className={`mb-1 text-xs font-medium ${
+              isError ? 'text-red-600' : 'text-emerald-600'
+            }`}>
               Execution Result ({logData.subtype})
             </div>
             <div className='text-sm text-gray-800'>
               Duration: {logData.duration_ms}ms | Turns: {logData.num_turns}
             </div>
             {logData.result && (
-              <div className='mt-2 text-sm text-gray-700'>{logData.result}</div>
+              <div className='mt-2 text-sm text-gray-700'>
+                {formatResultMessage(logData.result)}
+              </div>
             )}
           </div>
         )
@@ -295,7 +386,7 @@ function ExecutionLogItem({ log }: { log: ExecutionLog }) {
     return (
       <div className='mb-3 border-b border-gray-100 pb-3 last:border-b-0'>
         <div className='flex items-start gap-2'>
-          <AlertTriangle className='mt-1 h-4 w-4 text-red-600' />
+          <AlertCircle className='mt-1 h-4 w-4 text-red-600' />
           <div className='min-w-0 flex-1'>
             <div className='mb-1 text-xs font-medium text-red-600'>
               Invalid log format

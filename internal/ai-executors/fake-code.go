@@ -1,14 +1,14 @@
 package aiexecutors
 
 import (
-	"context"
-	"encoding/json"
-	"fmt"
-	"os"
-	"path/filepath"
-	"strings"
+    "context"
+    "encoding/json"
+    "fmt"
+    "os"
+    "path/filepath"
+    "strings"
 
-	"github.com/auto-devs/auto-devs/internal/entity"
+    "github.com/auto-devs/auto-devs/internal/entity"
 )
 
 type FakeCodeExecutor struct{}
@@ -48,17 +48,48 @@ func (e *FakeCodeExecutor) GetImplementationCommand(ctx context.Context, task *e
 }
 
 func (e *FakeCodeExecutor) ParseOutputToLogs(output string) []*entity.ExecutionLog {
-	lines := strings.Split(output, "\n")
-	logs := make([]*entity.ExecutionLog, len(lines))
-	for i, line := range lines {
-		logs[i] = &entity.ExecutionLog{
-			Message: line,
-			Level:   entity.LogLevelInfo,
-			Source:  "stdout",
-			Line:    i,
-		}
-	}
-	return logs
+    lines := strings.Split(output, "\n")
+    logs := make([]*entity.ExecutionLog, 0, len(lines))
+    for i, line := range lines {
+        if strings.TrimSpace(line) == "" {
+            continue
+        }
+        logItem := &entity.ExecutionLog{
+            Message: line,
+            Level:   entity.LogLevelInfo,
+            Source:  "stdout",
+            Line:    i,
+        }
+        // The fake cli emits Claude-like stream-json; try to parse
+        var generic map[string]interface{}
+        if err := json.Unmarshal([]byte(line), &generic); err == nil {
+            if t, ok := generic["type"].(string); ok {
+                logItem.LogType = t
+            }
+            if msg, ok := generic["message"].(map[string]interface{}); ok {
+                if content, ok := msg["content"].([]interface{}); ok && len(content) > 0 {
+                    logItem.ParsedContent = entity.JSONB{"content": content}
+                    for _, c := range content {
+                        if m, ok := c.(map[string]interface{}); ok {
+                            if ct, _ := m["type"].(string); ct == "tool_use" {
+                                if id, _ := m["id"].(string); id != "" {
+                                    logItem.ToolUseID = id
+                                }
+                                if name, _ := m["name"].(string); name != "" {
+                                    logItem.ToolName = name
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            if logItem.ParsedContent == nil {
+                logItem.ParsedContent = entity.JSONB(generic)
+            }
+        }
+        logs = append(logs, logItem)
+    }
+    return logs
 }
 
 func (e *FakeCodeExecutor) getImplementationPrompt(_ context.Context, task *entity.Task) (string, error) {
