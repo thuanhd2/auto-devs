@@ -81,6 +81,7 @@ func (gs *GitHubServiceV2) CreatePullRequest(ctx context.Context, repo, base, he
 	// Create pull request
 	ghPR, resp, err := gs.client.PullRequests.Create(ctx, owner, name, prRequest)
 	if err != nil {
+		fmt.Println("failed to create pull request: %w", err)
 		// Update rate limiter from response
 		if resp != nil {
 			gs.rateLimiter.UpdateFromGitHubResponse(resp)
