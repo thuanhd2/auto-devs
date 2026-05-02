@@ -1,3 +1,4 @@
+import { ExecutionLog } from '@/types/execution'
 import {
   AlertCircle,
   Bot,
@@ -6,7 +7,6 @@ import {
   Terminal,
   User,
 } from 'lucide-react'
-import { ExecutionLog } from '@/types/execution'
 
 interface StructuredLogItemProps {
   log: ExecutionLog
@@ -33,7 +33,16 @@ function formatResultMessage(message: string): string {
 }
 
 function StructuredLogRenderer({ log }: { log: ExecutionLog }) {
-  const { log_type, tool_name, tool_use_id, parsed_content, is_error, duration_ms, num_turns } = log
+  const {
+    log_type,
+    tool_name,
+    tool_use_id,
+    parsed_content,
+    is_error,
+    duration_ms,
+    num_turns,
+    created_at,
+  } = log
 
   const getIcon = () => {
     switch (log_type) {
@@ -117,14 +126,18 @@ function StructuredLogRenderer({ log }: { log: ExecutionLog }) {
 
       case 'result':
         return (
-          <div className={`rounded border-l-2 ${
-            is_error 
-              ? 'border-red-400 bg-red-50' 
-              : 'border-emerald-400 bg-emerald-50'
-          } p-2`}>
-            <div className={`mb-1 text-xs font-medium ${
-              is_error ? 'text-red-600' : 'text-emerald-600'
-            }`}>
+          <div
+            className={`rounded border-l-2 ${
+              is_error
+                ? 'border-red-400 bg-red-50'
+                : 'border-emerald-400 bg-emerald-50'
+            } p-2`}
+          >
+            <div
+              className={`mb-1 text-xs font-medium ${
+                is_error ? 'text-red-600' : 'text-emerald-600'
+              }`}
+            >
               Execution Result
             </div>
             <div className='text-sm text-gray-800'>
@@ -163,12 +176,10 @@ function StructuredLogRenderer({ log }: { log: ExecutionLog }) {
               {log_type}
             </span>
             {tool_name && (
-              <span className='text-xs text-gray-400'>
-                Tool: {tool_name}
-              </span>
+              <span className='text-xs text-gray-400'>Tool: {tool_name}</span>
             )}
             <span className='text-xs text-gray-400'>
-              {new Date(log.timestamp).toLocaleTimeString()}
+              {new Date(created_at).toLocaleTimeString()}
             </span>
           </div>
           <div className='space-y-2'>{formatContent()}</div>
@@ -333,14 +344,18 @@ function LegacyLogRenderer({ log }: { log: ExecutionLog }) {
       if (logData.type === 'result') {
         const isError = logData.is_error
         return (
-          <div className={`rounded border-l-2 ${
-            isError 
-              ? 'border-red-400 bg-red-50' 
-              : 'border-emerald-400 bg-emerald-50'
-          } p-2`}>
-            <div className={`mb-1 text-xs font-medium ${
-              isError ? 'text-red-600' : 'text-emerald-600'
-            }`}>
+          <div
+            className={`rounded border-l-2 ${
+              isError
+                ? 'border-red-400 bg-red-50'
+                : 'border-emerald-400 bg-emerald-50'
+            } p-2`}
+          >
+            <div
+              className={`mb-1 text-xs font-medium ${
+                isError ? 'text-red-600' : 'text-emerald-600'
+              }`}
+            >
               Execution Result ({logData.subtype})
             </div>
             <div className='text-sm text-gray-800'>
