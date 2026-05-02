@@ -1,12 +1,12 @@
 package aiexecutors
 
 import (
-    "context"
-    "encoding/json"
-    "fmt"
-    "strings"
+	"context"
+	"encoding/json"
+	"fmt"
+	"strings"
 
-    "github.com/auto-devs/auto-devs/internal/entity"
+	"github.com/auto-devs/auto-devs/internal/entity"
 )
 
 type ClaudeCodeExecutor struct{}
@@ -115,10 +115,10 @@ func (e *ClaudeCodeExecutor) generatePlanningPrompt(task entity.Task) (string, e
 
 func (e *ClaudeCodeExecutor) ParseOutputToPlan(output string) (string, error) {
 	lines := strings.Split(output, "\n")
-	// find the line that contains "name":"ExitPlanMode"
+	// find the line that contains "name":"ExitPlanMode" and "type": "tool_use"
 	planResultLine := ""
 	for _, line := range lines {
-		if strings.Contains(line, "name\":\"ExitPlanMode\"") {
+		if strings.Contains(line, "name\":\"ExitPlanMode\"") && strings.Contains(line, "type\":\"tool_use\"") {
 			planResultLine = line
 			break
 		}
