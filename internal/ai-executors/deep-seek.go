@@ -10,6 +10,19 @@ import (
 	"github.com/auto-devs/auto-devs/internal/entity"
 )
 
+/*
+Deep Seek is essentially claude-code with ENVs forced-set to use the Deep Seek API.
+See more at: https://api-docs.deepseek.com/guides/agent_integrations/claude_code
+
+To run Deep Seek CLI, you need to assign the following ENVs to AUTODEVS:
+- AUTODEVS_DEEPSEEK_BASE_URL: https://api.deepseek.com/anthropic
+- AUTODEVS_DEEPSEEK_AUTH_TOKEN: Deep Seek token
+- AUTODEVS_DEEPSEEK_MODEL: deepseek-v4-pro
+- AUTODEVS_DEEPSEEK_DEFAULT_OPUS_MODEL: deepseek-v4-pro
+- AUTODEVS_DEEPSEEK_DEFAULT_SONNET_MODEL: deepseek-v4-pro
+- AUTODEVS_DEEPSEEK_DEFAULT_HAIKU_MODEL: deepseek-v4-flash
+*/
+
 type DeepSeekExecutor struct{}
 
 func NewDeepSeekExecutor() *DeepSeekExecutor {
