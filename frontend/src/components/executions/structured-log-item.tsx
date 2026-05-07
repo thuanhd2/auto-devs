@@ -6,6 +6,7 @@ import {
   Settings,
   Terminal,
   User,
+  Brain,
 } from 'lucide-react'
 
 interface StructuredLogItemProps {
@@ -42,6 +43,7 @@ function StructuredLogRenderer({ log }: { log: ExecutionLog }) {
     duration_ms,
     num_turns,
     created_at,
+    line,
   } = log
 
   const getIcon = () => {
@@ -59,14 +61,144 @@ function StructuredLogRenderer({ log }: { log: ExecutionLog }) {
     }
   }
 
+  const renderToolUseInput = (item: any) => {
+    if (!item.input) return null
+    const itemInput = item.input
+    if (item.name === 'Write') {
+      const content = itemInput.content
+      const filePath = itemInput.file_path
+      return (
+        <div className='text-xs text-gray-600'>
+          <div className='font-medium'>File Path: {filePath}</div>
+          <div className='font-medium'>Content:</div>
+          <div className='text-gray-600'>{content}</div>
+        </div>
+      )
+    }
+    if (item.name === 'TodoWrite') {
+      /*
+      {
+    "id": "call_00_DC722InNrctp97JcSrQe6473",
+    "input": {
+        "todos": [
+            {
+                "activeForm": "Reading the guidebook section 8",
+                "content": "Read the guidebook section 8 and understand its current structure",
+                "status": "completed"
+            },
+            {
+                "activeForm": "Exploring admin generator code files",
+                "content": "Explore admin/generators/ GoAdmin files for each sub-section's actual implementation",
+                "status": "completed"
+            },
+            {
+                "activeForm": "Cross-referencing discrepancies and planning fixes",
+                "content": "Cross-reference each discrepancy item and plan exact fixes",
+                "status": "completed"
+            },
+            {
+                "activeForm": "Producing detailed implementation plan",
+                "content": "Produce detailed implementation plan for each sub-section",
+                "status": "completed"
+            }
+        ]
+    },
+    "name": "TodoWrite",
+    "type": "tool_use"
+}
+      */
+      const todos = itemInput.todos
+      return (
+        <div className='text-xs text-gray-600'>
+          {todos.map((todo: any) => (
+            <div key={todo.id}>
+              <span
+                className={`mr-2 rounded px-1.5 py-0.5 text-xs font-medium ${
+                  todo.status === 'completed'
+                    ? 'bg-green-100 text-green-700'
+                    : todo.status === 'in_progress'
+                      ? 'bg-yellow-100 text-yellow-700'
+                      : 'bg-gray-100 text-gray-700'
+                }`}
+              >
+                {todo.status}
+              </span>
+              <span className='text-xs text-gray-600'>{todo.content}</span>
+            </div>
+          ))}
+        </div>
+      )
+    }
+    return (
+      <div className='text-xs text-gray-600'>
+        {typeof itemInput === 'object'
+          ? JSON.stringify(itemInput, null, 2)
+          : itemInput}
+      </div>
+    )
+  }
+
+  const renderUserMessage = (content: any) => {
+    if (typeof content === 'string') {
+      return <div className='text-sm text-blue-700'>{content}</div>
+    }
+    // if content is an array, render each item
+    if (Array.isArray(content)) {
+      return (
+        <div className='text-sm text-blue-700'>
+          {content.map((item: any) => {
+            return renderUserMessage(item)
+          })}
+        </div>
+      )
+    }
+    if (typeof content === 'object') {
+      if (Array.isArray(content.content)) {
+        return renderUserMessage(content.content)
+      }
+      if (typeof content.content === 'string' && content.content.length > 0) {
+        return <div className='text-sm text-blue-700'>{content.content}</div>
+      }
+      if (typeof content.text === 'string' && content.text.length > 0) {
+        console.log("USE MESSAGE TEXT", content);
+        return <div className='text-sm text-blue-700'>{content.text}</div>
+      }
+    }
+    console.log("USE MESSAGE CONTENT", content);
+    return (
+      <div className='text-sm text-blue-700'>{JSON.stringify(content)}</div>
+    )
+  }
+
+  const renderToolResult = (item: any) => {
+    if (typeof item.content === 'string') {
+      return <div className='text-xs text-gray-600'>{item.content}</div>
+    }
+
+    // if item.content is an array, render each item
+    if (Array.isArray(item.content)) {
+      return (
+        <div className='text-xs text-gray-600'>
+          {item.content.map((item: any) => (
+            <div key={item.id}>{item.text}</div>
+          ))}
+        </div>
+      )
+    }
+
+    return (
+      <div className='text-xs text-gray-600'>
+        {JSON.stringify(item.content)}
+      </div>
+    )
+  }
+
   const formatContent = () => {
     switch (log_type) {
       case 'user':
-        return (
-          <div className='text-sm text-blue-700'>
-            {parsed_content?.text || 'User message'}
-          </div>
-        )
+        return parsed_content.content.map((item: any) => {
+          return renderUserMessage(item)
+        })
 
       case 'assistant':
         if (parsed_content?.content) {
@@ -93,13 +225,23 @@ function StructuredLogRenderer({ log }: { log: ExecutionLog }) {
                       Tool: {item.name}
                     </span>
                   </div>
-                  {item.input && (
-                    <div className='text-xs text-gray-600'>
-                      {typeof item.input === 'object'
-                        ? JSON.stringify(item.input, null, 2)
-                        : item.input}
-                    </div>
-                  )}
+                  {renderToolUseInput(item)}
+                </div>
+              )
+            }
+            if (item.type === 'thinking') {
+              return (
+                <div key={index} className='text-xs text-gray-600'>
+                  <Brain className='h-3 w-3 text-gray-600' />
+                  <div className='text-gray-600'>{item.thinking}</div>
+                </div>
+              )
+            }
+            if (item.type === 'tool_result') {
+              return (
+                <div key={index} className='text-xs text-gray-600'>
+                  <Terminal className='h-3 w-3 text-gray-600' />
+                  {renderToolResult(item)}
                 </div>
               )
             }
@@ -180,6 +322,9 @@ function StructuredLogRenderer({ log }: { log: ExecutionLog }) {
             )}
             <span className='text-xs text-gray-400'>
               {new Date(created_at).toLocaleTimeString()}
+            </span>
+            <span className='text-xs text-gray-400'>
+              Line: {line}
             </span>
           </div>
           <div className='space-y-2'>{formatContent()}</div>
