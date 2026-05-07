@@ -122,9 +122,14 @@ export function getAIs(forPlanning: boolean) {
     value: 'cursor-agent',
     description: 'Cursor Agent',
   }
+  const deepSeek = {
+    name: 'Deep Seek',
+    value: 'deep-seek',
+    description: 'Deep Seek',
+  }
   // Cursor Agent does not support planning, so it is not included in the planning AIs
   if (forPlanning) {
-    return [claudeCode, fakeCode]
+    return [claudeCode, deepSeek, fakeCode]
   }
-  return [claudeCode, fakeCode, cursorAgent]
+  return [claudeCode, deepSeek, fakeCode, cursorAgent]
 }

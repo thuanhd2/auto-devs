@@ -205,7 +205,7 @@ func (p *Processor) ProcessTaskPlanning(ctx context.Context, task *asynq.Task) e
 		return fmt.Errorf("failed to get AI executor: %w", err)
 	}
 
-	execution, err := p.executionService.StartExecution(projectTask, aiExecutor, true)
+	execution, injectEnvVars, err := p.executionService.StartExecution(projectTask, aiExecutor, true)
 	if err != nil {
 		p.logger.Error("Failed to start AI execution", "task_id", payload.TaskID, "error", err)
 		return fmt.Errorf("failed to start AI execution: %w", err)
@@ -231,7 +231,7 @@ func (p *Processor) ProcessTaskPlanning(ctx context.Context, task *asynq.Task) e
 	execution.RegisterStdoutChannel(stdoutChannel)
 	execution.RegisterStderrChannel(stderrChannel)
 
-	p.executionService.RunExecution(execution)
+	p.executionService.RunExecution(execution, injectEnvVars)
 
 	go func() {
 		for {
@@ -306,6 +306,9 @@ func (p *Processor) getAiExecutor(aiType string) (ai.AiCodingCli, error) {
 		return aiExecutor, nil
 	case "cursor-agent":
 		aiExecutor := aiexecutors.NewCursorAgentExecutor()
+		return aiExecutor, nil
+	case "deep-seek":
+		aiExecutor := aiexecutors.NewDeepSeekExecutor()
 		return aiExecutor, nil
 	default:
 		return nil, fmt.Errorf("invalid execution type: %s", aiType)
@@ -396,7 +399,7 @@ func (p *Processor) ProcessTaskImplementation(ctx context.Context, task *asynq.T
 		p.logger.Error("Failed to get AI executor", "task_id", payload.TaskID, "error", err)
 		return fmt.Errorf("failed to get AI executor: %w", err)
 	}
-	execution, err := p.executionService.StartExecution(projectTask, aiExecutor, false)
+	execution, injectEnvVars, err := p.executionService.StartExecution(projectTask, aiExecutor, false)
 	if err != nil {
 		// Revert task status on failure
 		_ = p.updateTaskStatus(ctx, payload.TaskID, entity.TaskStatusPLANREVIEWING)
@@ -431,7 +434,7 @@ func (p *Processor) ProcessTaskImplementation(ctx context.Context, task *asynq.T
 	execution.RegisterStdoutChannel(stdoutChannel)
 	execution.RegisterStderrChannel(stderrChannel)
 
-	p.executionService.RunExecution(execution)
+	p.executionService.RunExecution(execution, injectEnvVars)
 
 	go func() {
 		for {

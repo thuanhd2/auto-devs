@@ -30,25 +30,25 @@ func TestNewExecutionService(t *testing.T) {
 
 type FakeAiCodingCli struct{}
 
-func (f *FakeAiCodingCli) GetPlanningCommand(ctx context.Context, task *entity.Task) (string, string, error) {
+func (f *FakeAiCodingCli) GetPlanningCommand(ctx context.Context, task *entity.Task) (string, string, map[string]string, error) {
 	projectPath, err := os.Getwd()
 	if err != nil {
-		return "", "", err
+		return "", "", nil, err
 	}
 	projectRootPath := filepath.Join(projectPath, "../../../")
 	fakeCliPath := filepath.Join(projectRootPath, "fake-cli", "fake.sh")
 
-	return fakeCliPath, "hello world", nil
+	return fakeCliPath, "hello world", nil, nil
 }
 
-func (f *FakeAiCodingCli) GetImplementationCommand(ctx context.Context, task *entity.Task) (string, string, error) {
+func (f *FakeAiCodingCli) GetImplementationCommand(ctx context.Context, task *entity.Task) (string, string, map[string]string, error) {
 	projectPath, err := os.Getwd()
 	if err != nil {
-		return "", "", err
+		return "", "", nil, err
 	}
 	projectRootPath := filepath.Join(projectPath, "../../../")
 	fakeCliPath := filepath.Join(projectRootPath, "fake-cli", "fake.sh")
-	return fakeCliPath, "hello world", nil
+	return fakeCliPath, "hello world", nil, nil
 }
 
 func (f *FakeAiCodingCli) ParseOutputToLogs(output string) []*entity.ExecutionLog {
@@ -86,7 +86,7 @@ func TestExecutionService_StartExecution(t *testing.T) {
 		WorktreePath: &worktreePath,
 	}
 
-	execution, err := es.StartExecution(&task, NewFakeAiCodingCli(), true)
+	execution, injectEnvVars, err := es.StartExecution(&task, NewFakeAiCodingCli(), true)
 	require.NoError(t, err)
 
 	assert.NotNil(t, execution)
@@ -95,6 +95,7 @@ func TestExecutionService_StartExecution(t *testing.T) {
 	assert.Equal(t, 0.0, execution.Progress)
 	assert.NotEmpty(t, execution.ID)
 	assert.NotNil(t, execution.StartedAt)
+	assert.Nil(t, injectEnvVars)
 
 	// Wait a bit for execution to start
 	time.Sleep(100 * time.Millisecond)
@@ -131,7 +132,7 @@ func TestExecutionService_CancelExecution(t *testing.T) {
 		WorktreePath: &worktreePath,
 	}
 
-	execution, err := es.StartExecution(&task, NewFakeAiCodingCli(), true)
+	execution, injectEnvVars, err := es.StartExecution(&task, NewFakeAiCodingCli(), true)
 	require.NoError(t, err)
 
 	// Wait a bit for execution to start
@@ -146,6 +147,7 @@ func TestExecutionService_CancelExecution(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, ExecutionStatusCancelled, retrieved.Status)
 	assert.NotNil(t, retrieved.CompletedAt)
+	assert.Nil(t, injectEnvVars)
 }
 
 func TestExecutionService_PauseResumeExecution(t *testing.T) {
@@ -163,7 +165,7 @@ func TestExecutionService_PauseResumeExecution(t *testing.T) {
 		WorktreePath: &worktreePath,
 	}
 
-	execution, err := es.StartExecution(&task, NewFakeAiCodingCli(), true)
+	execution, injectEnvVars, err := es.StartExecution(&task, NewFakeAiCodingCli(), true)
 	require.NoError(t, err)
 
 	// Wait a bit for execution to start
@@ -176,6 +178,7 @@ func TestExecutionService_PauseResumeExecution(t *testing.T) {
 	retrieved, err := es.GetExecution(execution.ID)
 	require.NoError(t, err)
 	assert.Equal(t, ExecutionStatusPaused, retrieved.Status)
+	assert.Nil(t, injectEnvVars)
 
 	// Resume the execution
 	err = es.ResumeExecution(execution.ID)
@@ -184,6 +187,7 @@ func TestExecutionService_PauseResumeExecution(t *testing.T) {
 	retrieved, err = es.GetExecution(execution.ID)
 	require.NoError(t, err)
 	assert.Equal(t, ExecutionStatusRunning, retrieved.Status)
+	assert.Nil(t, injectEnvVars)
 }
 
 func TestExecutionService_ListExecutions(t *testing.T) {
@@ -203,10 +207,10 @@ func TestExecutionService_ListExecutions(t *testing.T) {
 		ID: uuid.New(),
 	}
 
-	execution1, err := es.StartExecution(&task1, NewFakeAiCodingCli(), true)
+	execution1, injectEnvVars, err := es.StartExecution(&task1, NewFakeAiCodingCli(), true)
 	require.NoError(t, err)
 
-	execution2, err := es.StartExecution(&task2, NewFakeAiCodingCli(), true)
+	execution2, injectEnvVars, err := es.StartExecution(&task2, NewFakeAiCodingCli(), true)
 	require.NoError(t, err)
 
 	// Wait a bit for executions to start
@@ -224,6 +228,7 @@ func TestExecutionService_ListExecutions(t *testing.T) {
 
 	assert.True(t, executionIDs[execution1.ID])
 	assert.True(t, executionIDs[execution2.ID])
+	assert.Nil(t, injectEnvVars)
 }
 
 func TestExecutionService_RealTimeUpdates(t *testing.T) {
@@ -247,7 +252,7 @@ func TestExecutionService_RealTimeUpdates(t *testing.T) {
 		WorktreePath: &worktreePath,
 	}
 
-	execution, err := es.StartExecution(&task, NewFakeAiCodingCli(), true)
+	execution, injectEnvVars, err := es.StartExecution(&task, NewFakeAiCodingCli(), true)
 	require.NoError(t, err)
 
 	// Wait a bit for updates to be sent
@@ -261,6 +266,7 @@ func TestExecutionService_RealTimeUpdates(t *testing.T) {
 		assert.Equal(t, execution.ID, updates[0].ExecutionID)
 		assert.Equal(t, ExecutionStatusPending, updates[0].Status)
 		assert.Equal(t, 0.0, updates[0].Progress)
+		assert.Nil(t, injectEnvVars)
 	}
 }
 

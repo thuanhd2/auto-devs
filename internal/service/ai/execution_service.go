@@ -93,30 +93,31 @@ func (es *ExecutionService) SetUpdateCallback(callback func(update ExecutionUpda
 }
 
 type AiCodingCli interface {
-	GetPlanningCommand(context.Context, *entity.Task) (string, string, error)
-	GetImplementationCommand(context.Context, *entity.Task) (string, string, error)
+	GetPlanningCommand(context.Context, *entity.Task) (string, string, map[string]string, error)
+	GetImplementationCommand(context.Context, *entity.Task) (string, string, map[string]string, error)
 	ParseOutputToLogs(output string) []*entity.ExecutionLog
 	ParseOutputToPlan(output string) (string, error)
 }
 
 // StartExecution starts a new AI execution
-func (es *ExecutionService) StartExecution(task *entity.Task, cli AiCodingCli, isForPlanning bool) (*Execution, error) {
+func (es *ExecutionService) StartExecution(task *entity.Task, cli AiCodingCli, isForPlanning bool) (*Execution, map[string]string, error) {
 	executionID := uuid.New().String()
 	ctx, cancel := context.WithCancel(context.Background())
 
 	var command, input string
+	var injectEnvVars map[string]string
 	var err error
 	if isForPlanning {
-		command, input, err = cli.GetPlanningCommand(ctx, task)
+		command, input, injectEnvVars, err = cli.GetPlanningCommand(ctx, task)
 	} else {
-		command, input, err = cli.GetImplementationCommand(ctx, task)
+		command, input, injectEnvVars, err = cli.GetImplementationCommand(ctx, task)
 	}
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	if task.WorktreePath == nil {
-		return nil, fmt.Errorf("worktree path is not set")
+		return nil, nil, fmt.Errorf("worktree path is not set")
 	}
 
 	workingDir := *task.WorktreePath
@@ -139,11 +140,11 @@ func (es *ExecutionService) StartExecution(task *entity.Task, cli AiCodingCli, i
 	es.executions[executionID] = execution
 	es.mu.Unlock()
 
-	return execution, nil
+	return execution, injectEnvVars, nil
 }
 
-func (es *ExecutionService) RunExecution(execution *Execution) (*Execution, error) {
-	go es.runExecution(execution)
+func (es *ExecutionService) RunExecution(execution *Execution, injectEnvVars map[string]string) (*Execution, error) {
+	go es.runExecution(execution, injectEnvVars)
 	return execution, nil
 }
 
@@ -260,7 +261,7 @@ func (es *ExecutionService) ResumeExecution(executionID string) error {
 }
 
 // runExecution runs the actual execution workflow
-func (es *ExecutionService) runExecution(execution *Execution) {
+func (es *ExecutionService) runExecution(execution *Execution, injectEnvVars map[string]string) {
 	defer func() {
 		// Cleanup on completion
 		es.mu.Lock()
@@ -276,7 +277,7 @@ func (es *ExecutionService) runExecution(execution *Execution) {
 	command := execution.Command
 
 	// Step 2: Start process
-	process, err := es.processManager.SpawnProcess(command, execution.WorkingDir, execution.Input)
+	process, err := es.processManager.SpawnProcess(command, execution.WorkingDir, execution.Input, injectEnvVars)
 	if err != nil {
 		es.handleExecutionError(execution, fmt.Sprintf("Failed to start process: %v", err))
 		return

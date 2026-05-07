@@ -1,6 +1,6 @@
 #!/bin/bash
 # check all databases that has name starts with auto_devs_vk and remove them all
-PREFFIX="azasend_za_test_"
+PREFFIX="testdb_tpl_"
 db_list=$(psql -d postgres -c "SELECT datname FROM pg_database WHERE datname LIKE '$PREFFIX%'")
 for db in $db_list; do
     # do not process if db is not starts with PREFFIX

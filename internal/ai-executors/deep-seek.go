@@ -4,36 +4,58 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/auto-devs/auto-devs/internal/entity"
 )
 
-type ClaudeCodeExecutor struct{}
+type DeepSeekExecutor struct{}
 
-func NewClaudeCodeExecutor() *ClaudeCodeExecutor {
-	return &ClaudeCodeExecutor{}
+func NewDeepSeekExecutor() *DeepSeekExecutor {
+	return &DeepSeekExecutor{}
 }
 
-func (e *ClaudeCodeExecutor) GetPlanningCommand(ctx context.Context, task *entity.Task) (string, string, map[string]string, error) {
+const ENV_PREFIX = "AUTODEVS_"
+
+func getEnv(key, defaultValue string) string {
+	keyWithPrefix := ENV_PREFIX + key
+	if value := os.Getenv(keyWithPrefix); value != "" {
+		return value
+	}
+	return defaultValue
+}
+
+func (e *DeepSeekExecutor) getEnvVars() map[string]string {
+	return map[string]string{
+		"ANTHROPIC_BASE_URL":             getEnv("DEEPSEEK_BASE_URL", "https://api.deepseek.com/anthropic"),
+		"ANTHROPIC_AUTH_TOKEN":           getEnv("DEEPSEEK_AUTH_TOKEN", ""),
+		"ANTHROPIC_MODEL":                getEnv("DEEPSEEK_MODEL", "deepseek-v4-pro"),
+		"ANTHROPIC_DEFAULT_OPUS_MODEL":   getEnv("DEEPSEEK_DEFAULT_OPUS_MODEL", "deepseek-v4-pro"),
+		"ANTHROPIC_DEFAULT_SONNET_MODEL": getEnv("DEEPSEEK_DEFAULT_SONNET_MODEL", "deepseek-v4-pro"),
+		"ANTHROPIC_DEFAULT_HAIKU_MODEL":  getEnv("DEEPSEEK_DEFAULT_HAIKU_MODEL", "deepseek-v4-flash"),
+	}
+}
+
+func (e *DeepSeekExecutor) GetPlanningCommand(ctx context.Context, task *entity.Task) (string, string, map[string]string, error) {
 	command := "npx -y @anthropic-ai/claude-code@latest -p --permission-mode=plan --verbose --output-format=stream-json"
 	prompt, err := e.generatePlanningPrompt(*task)
 	if err != nil {
 		return "", "", nil, err
 	}
-	return command, prompt, nil, nil
+	return command, prompt, e.getEnvVars(), nil
 }
 
-func (e *ClaudeCodeExecutor) GetImplementationCommand(ctx context.Context, task *entity.Task) (string, string, map[string]string, error) {
+func (e *DeepSeekExecutor) GetImplementationCommand(ctx context.Context, task *entity.Task) (string, string, map[string]string, error) {
 	command := "npx -y @anthropic-ai/claude-code@latest -p --dangerously-skip-permissions --verbose --output-format=stream-json"
 	prompt, err := e.getImplementationPrompt(ctx, task)
 	if err != nil {
 		return "", "", nil, err
 	}
-	return command, prompt, nil, nil
+	return command, prompt, e.getEnvVars(), nil
 }
 
-func (e *ClaudeCodeExecutor) ParseOutputToLogs(output string) []*entity.ExecutionLog {
+func (e *DeepSeekExecutor) ParseOutputToLogs(output string) []*entity.ExecutionLog {
 	lines := strings.Split(output, "\n")
 	logs := make([]*entity.ExecutionLog, 0, len(lines))
 	for i, line := range lines {
@@ -90,7 +112,7 @@ func (e *ClaudeCodeExecutor) ParseOutputToLogs(output string) []*entity.Executio
 	return logs
 }
 
-func (e *ClaudeCodeExecutor) getImplementationPrompt(_ context.Context, task *entity.Task) (string, error) {
+func (e *DeepSeekExecutor) getImplementationPrompt(_ context.Context, task *entity.Task) (string, error) {
 	if len(task.Plans) == 0 {
 		return "", fmt.Errorf("no plan found for task")
 	}
@@ -104,7 +126,7 @@ func (e *ClaudeCodeExecutor) getImplementationPrompt(_ context.Context, task *en
 }
 
 // generatePlanningPrompt creates a structured prompt for AI planning phase
-func (e *ClaudeCodeExecutor) generatePlanningPrompt(task entity.Task) (string, error) {
+func (e *DeepSeekExecutor) generatePlanningPrompt(task entity.Task) (string, error) {
 	prompt := fmt.Sprintf(`
 	Plan for bellow task, only output the plan, no other text:
 	Task: %s
@@ -113,7 +135,7 @@ func (e *ClaudeCodeExecutor) generatePlanningPrompt(task entity.Task) (string, e
 	return prompt, nil
 }
 
-func (e *ClaudeCodeExecutor) ParseOutputToPlan(output string) (string, error) {
+func (e *DeepSeekExecutor) ParseOutputToPlan(output string) (string, error) {
 	lines := strings.Split(output, "\n")
 	// find the line that contains "name":"ExitPlanMode" and "type": "tool_use"
 	planResultLine := ""

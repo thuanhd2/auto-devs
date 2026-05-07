@@ -60,7 +60,7 @@ func NewProcessManager() *ProcessManager {
 }
 
 // SpawnProcess creates and starts a new AI execution process
-func (pm *ProcessManager) SpawnProcess(command string, workDir string, input string) (*Process, error) {
+func (pm *ProcessManager) SpawnProcess(command string, workDir string, input string, injectEnvVars map[string]string) (*Process, error) {
 	log.Println("Spawning process", command, workDir, input)
 	// Generate unique process ID
 	processID := generateProcessID()
@@ -89,6 +89,13 @@ func (pm *ProcessManager) SpawnProcess(command string, workDir string, input str
 		"AI_PROCESS_ID="+processID,
 		"AI_WORK_DIR="+workDir,
 	)
+
+	// Inject environment variables
+	if len(injectEnvVars) > 0 {
+		for key, value := range injectEnvVars {
+			cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", key, value))
+		}
+	}
 
 	// Setup stdout and stderr pipes
 	stdout, err := cmd.StdoutPipe()
