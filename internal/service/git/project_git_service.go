@@ -117,8 +117,7 @@ func (s *ProjectGitService) ListBranches(ctx context.Context, worktreeBasePath s
 	}
 
 	branches, err := s.gitManager.commands.ListBranches(ctx, worktreeBasePath, &ListBranchesOptions{
-		Remote: true,
-		All:    true,
+		Sort: "-committerdate",
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to list branches: %w", err)

@@ -236,6 +236,9 @@ func (g *GitCommands) ListBranches(ctx context.Context, workingDir string, optio
 		if options.NoMerged != "" {
 			args = append(args, "--no-merged", options.NoMerged)
 		}
+		if options.Sort != "" {
+			args = append(args, "--sort="+options.Sort)
+		}
 	}
 
 	result, err := g.executor.Execute(ctx, workingDir, args...)
@@ -385,6 +388,7 @@ type ListBranchesOptions struct {
 	All      bool
 	Merged   string
 	NoMerged string
+	Sort     string // e.g. "-committerdate"
 }
 
 // CommitInfo represents information about a Git commit

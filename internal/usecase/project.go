@@ -619,5 +619,10 @@ func (u *projectUsecase) ListBranches(ctx context.Context, projectID uuid.UUID) 
 		return gitBranches[i].IsCurrent
 	})
 
+	const maxBranches = 30
+	if len(gitBranches) > maxBranches {
+		gitBranches = gitBranches[:maxBranches]
+	}
+
 	return gitBranches, nil
 }
