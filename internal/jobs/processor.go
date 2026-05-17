@@ -351,47 +351,68 @@ func (p *Processor) ProcessTaskImplementation(ctx context.Context, task *asynq.T
 
 	p.logger.Info("Updated task status to IMPLEMENTING")
 
-	// Step 2: Get the task and check if it has git worktree
+	// Step 2: Get project details
+	project, err := p.projectUsecase.GetByID(ctx, payload.ProjectID)
+	if err != nil {
+		_ = p.updateTaskStatus(ctx, payload.TaskID, entity.TaskStatusTODO)
+		p.logger.Error("Failed to get project",
+			"project_id", payload.ProjectID, "error", err)
+		return fmt.Errorf("failed to get project: %w", err)
+	}
+
+	p.logger.Info("Got project details")
+
+	// Step 3: Get the task and create worktree if missing
 	projectTask, err := p.taskUsecase.GetByID(ctx, payload.TaskID)
 	if err != nil {
-		// Revert task status on failure
-		_ = p.updateTaskStatus(ctx, payload.TaskID, entity.TaskStatusPLANREVIEWING)
+		_ = p.updateTaskStatus(ctx, payload.TaskID, entity.TaskStatusTODO)
 		p.logger.Error("Failed to get task", "task_id", payload.TaskID, "error", err)
 		return fmt.Errorf("failed to get task: %w", err)
 	}
 
-	// Check if task has worktree path
+	// Create worktree if it doesn't exist (handles direct implementation without planning)
 	if projectTask.WorktreePath == nil || *projectTask.WorktreePath == "" {
-		// Revert task status on failure
-		_ = p.updateTaskStatus(ctx, payload.TaskID, entity.TaskStatusPLANREVIEWING)
-		p.logger.Error("Task does not have worktree path", "task_id", payload.TaskID)
-		return fmt.Errorf("task does not have worktree path set")
+		worktree, err := p.createWorktree(ctx, project, projectTask)
+		if err != nil {
+			_ = p.updateTaskStatus(ctx, payload.TaskID, entity.TaskStatusTODO)
+			p.logger.Error("Failed to create worktree",
+				"task_id", payload.TaskID, "error", err)
+			return fmt.Errorf("failed to create worktree: %w", err)
+		}
+
+		p.logger.Info("Created worktree for direct implementation")
+
+		err = p.updateTaskWithGitInfo(ctx, payload.TaskID, worktree.BranchName, worktree.WorktreePath)
+		if err != nil {
+			_ = p.cleanupWorktree(ctx, worktree.WorktreePath)
+			_ = p.updateTaskStatus(ctx, payload.TaskID, entity.TaskStatusTODO)
+			p.logger.Error("Failed to update task with git info",
+				"task_id", payload.TaskID, "error", err)
+			return fmt.Errorf("failed to update task with git info: %w", err)
+		}
+
+		p.logger.Info("Updated task with git info")
+
+		// Reload task after worktree creation
+		projectTask, err = p.taskUsecase.GetByID(ctx, payload.TaskID)
+		if err != nil {
+			_ = p.updateTaskStatus(ctx, payload.TaskID, entity.TaskStatusTODO)
+			p.logger.Error("Failed to get task", "task_id", payload.TaskID, "error", err)
+			return fmt.Errorf("failed to get task: %w", err)
+		}
+	} else {
+		p.logger.Info("Task already has valid worktree path", "task_id", payload.TaskID, "worktree_path", *projectTask.WorktreePath)
 	}
 
-	p.logger.Info("Task has valid worktree path", "task_id", payload.TaskID, "worktree_path", *projectTask.WorktreePath)
-
-	// Step 3: Get the approved plan for the task
+	// Step 4: Get the plan if available (plan is optional for direct implementation)
 	plan, err := p.planRepo.GetByTaskID(ctx, payload.TaskID)
-	if err != nil {
-		// Revert task status on failure
-		_ = p.updateTaskStatus(ctx, payload.TaskID, entity.TaskStatusPLANREVIEWING)
-		p.logger.Error("Failed to get plan for task", "task_id", payload.TaskID, "error", err)
-		return fmt.Errorf("failed to get plan for task: %w", err)
+	if err == nil && plan != nil &&
+		(plan.Status == entity.PlanStatusAPPROVED || plan.Status == entity.PlanStatusREVIEWING) {
+		projectTask.Plans = []entity.Plan{*plan}
+		p.logger.Info("Plan found and attached to task", "task_id", payload.TaskID, "plan_id", plan.ID)
+	} else {
+		p.logger.Info("No approved plan found, implementing directly from task description", "task_id", payload.TaskID)
 	}
-
-	// TODO: Need approve plan first
-	// Step 4: Validate plan status - ensure it's APPROVED
-	if plan.Status != entity.PlanStatusAPPROVED && plan.Status != entity.PlanStatusREVIEWING {
-		// Revert task status on failure
-		_ = p.updateTaskStatus(ctx, payload.TaskID, entity.TaskStatusPLANREVIEWING)
-		p.logger.Error("Plan is not approved", "task_id", payload.TaskID, "plan_status", plan.Status)
-		return fmt.Errorf("plan is not approved, current status: %s", plan.Status)
-	}
-
-	p.logger.Info("Plan is approved and ready for implementation", "task_id", payload.TaskID, "plan_id", plan.ID)
-
-	// Step 5: inject plan to task
-	projectTask.Plans = []entity.Plan{*plan}
 
 	// Step 6: Start AI execution using executionService.StartExecution()
 	aiExecutor, err := p.getAiExecutor(payload.AIType)
@@ -401,8 +422,7 @@ func (p *Processor) ProcessTaskImplementation(ctx context.Context, task *asynq.T
 	}
 	execution, injectEnvVars, err := p.executionService.StartExecution(projectTask, aiExecutor, false)
 	if err != nil {
-		// Revert task status on failure
-		_ = p.updateTaskStatus(ctx, payload.TaskID, entity.TaskStatusPLANREVIEWING)
+		_ = p.updateTaskStatus(ctx, payload.TaskID, entity.TaskStatusTODO)
 		p.logger.Error("Failed to start AI execution", "task_id", payload.TaskID, "error", err)
 		return fmt.Errorf("failed to start AI execution: %w", err)
 	}
@@ -418,8 +438,7 @@ func (p *Processor) ProcessTaskImplementation(ctx context.Context, task *asynq.T
 
 	err = p.executionRepo.Create(ctx, dbExecution)
 	if err != nil {
-		// Revert task status on failure
-		_ = p.updateTaskStatus(ctx, payload.TaskID, entity.TaskStatusPLANREVIEWING)
+		_ = p.updateTaskStatus(ctx, payload.TaskID, entity.TaskStatusTODO)
 		p.logger.Error("Failed to save execution to database", "task_id", payload.TaskID, "execution_id", execution.ID, "error", err)
 		return fmt.Errorf("failed to save execution to database: %w", err)
 	}
@@ -446,7 +465,7 @@ func (p *Processor) ProcessTaskImplementation(ctx context.Context, task *asynq.T
 				// Check if execution completed successfully or failed
 				if execution.Error != "" {
 					p.logger.Error("AI execution failed", "task_id", payload.TaskID, "execution_id", execution.ID, "error", execution.Error)
-					_ = p.updateTaskStatus(context.Background(), payload.TaskID, entity.TaskStatusPLANREVIEWING) // Keep in implementing for retry
+					_ = p.updateTaskStatus(context.Background(), payload.TaskID, entity.TaskStatusTODO)
 
 					// Mark execution as failed
 					err := p.executionRepo.MarkFailed(context.Background(), dbExecution.ID, completedAt, execution.Error)
