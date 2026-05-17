@@ -335,6 +335,15 @@ func (p *Processor) ProcessTaskImplementation(ctx context.Context, task *asynq.T
 		return fmt.Errorf("failed to get task: %w", err)
 	}
 
+	// Determine fallback status for error recovery.
+	// Tasks arriving from the planning flow (PLANREVIEWING → IMPLEMENTING) should revert
+	// to PLANREVIEWING on failure so the approved plan context is preserved.
+	// Direct-implementation tasks (TODO → IMPLEMENTING) revert to TODO.
+	fallbackStatus := entity.TaskStatusTODO
+	if currentTask.Status == entity.TaskStatusPLANREVIEWING {
+		fallbackStatus = entity.TaskStatusPLANREVIEWING
+	}
+
 	// Only update status to IMPLEMENTING if it's not already IMPLEMENTING
 	// This handles cases where the status was already updated by the handler
 	if currentTask.Status != entity.TaskStatusIMPLEMENTING {
@@ -354,7 +363,7 @@ func (p *Processor) ProcessTaskImplementation(ctx context.Context, task *asynq.T
 	// Step 2: Get project details
 	project, err := p.projectUsecase.GetByID(ctx, payload.ProjectID)
 	if err != nil {
-		_ = p.updateTaskStatus(ctx, payload.TaskID, entity.TaskStatusTODO)
+		_ = p.updateTaskStatus(ctx, payload.TaskID, fallbackStatus)
 		p.logger.Error("Failed to get project",
 			"project_id", payload.ProjectID, "error", err)
 		return fmt.Errorf("failed to get project: %w", err)
@@ -365,7 +374,7 @@ func (p *Processor) ProcessTaskImplementation(ctx context.Context, task *asynq.T
 	// Step 3: Get the task and create worktree if missing
 	projectTask, err := p.taskUsecase.GetByID(ctx, payload.TaskID)
 	if err != nil {
-		_ = p.updateTaskStatus(ctx, payload.TaskID, entity.TaskStatusTODO)
+		_ = p.updateTaskStatus(ctx, payload.TaskID, fallbackStatus)
 		p.logger.Error("Failed to get task", "task_id", payload.TaskID, "error", err)
 		return fmt.Errorf("failed to get task: %w", err)
 	}
@@ -374,7 +383,7 @@ func (p *Processor) ProcessTaskImplementation(ctx context.Context, task *asynq.T
 	if projectTask.WorktreePath == nil || *projectTask.WorktreePath == "" {
 		worktree, err := p.createWorktree(ctx, project, projectTask)
 		if err != nil {
-			_ = p.updateTaskStatus(ctx, payload.TaskID, entity.TaskStatusTODO)
+			_ = p.updateTaskStatus(ctx, payload.TaskID, fallbackStatus)
 			p.logger.Error("Failed to create worktree",
 				"task_id", payload.TaskID, "error", err)
 			return fmt.Errorf("failed to create worktree: %w", err)
@@ -385,7 +394,7 @@ func (p *Processor) ProcessTaskImplementation(ctx context.Context, task *asynq.T
 		err = p.updateTaskWithGitInfo(ctx, payload.TaskID, worktree.BranchName, worktree.WorktreePath)
 		if err != nil {
 			_ = p.cleanupWorktree(ctx, worktree.WorktreePath)
-			_ = p.updateTaskStatus(ctx, payload.TaskID, entity.TaskStatusTODO)
+			_ = p.updateTaskStatus(ctx, payload.TaskID, fallbackStatus)
 			p.logger.Error("Failed to update task with git info",
 				"task_id", payload.TaskID, "error", err)
 			return fmt.Errorf("failed to update task with git info: %w", err)
@@ -396,7 +405,7 @@ func (p *Processor) ProcessTaskImplementation(ctx context.Context, task *asynq.T
 		// Reload task after worktree creation
 		projectTask, err = p.taskUsecase.GetByID(ctx, payload.TaskID)
 		if err != nil {
-			_ = p.updateTaskStatus(ctx, payload.TaskID, entity.TaskStatusTODO)
+			_ = p.updateTaskStatus(ctx, payload.TaskID, fallbackStatus)
 			p.logger.Error("Failed to get task", "task_id", payload.TaskID, "error", err)
 			return fmt.Errorf("failed to get task: %w", err)
 		}
@@ -422,7 +431,7 @@ func (p *Processor) ProcessTaskImplementation(ctx context.Context, task *asynq.T
 	}
 	execution, injectEnvVars, err := p.executionService.StartExecution(projectTask, aiExecutor, false)
 	if err != nil {
-		_ = p.updateTaskStatus(ctx, payload.TaskID, entity.TaskStatusTODO)
+		_ = p.updateTaskStatus(ctx, payload.TaskID, fallbackStatus)
 		p.logger.Error("Failed to start AI execution", "task_id", payload.TaskID, "error", err)
 		return fmt.Errorf("failed to start AI execution: %w", err)
 	}
@@ -438,7 +447,7 @@ func (p *Processor) ProcessTaskImplementation(ctx context.Context, task *asynq.T
 
 	err = p.executionRepo.Create(ctx, dbExecution)
 	if err != nil {
-		_ = p.updateTaskStatus(ctx, payload.TaskID, entity.TaskStatusTODO)
+		_ = p.updateTaskStatus(ctx, payload.TaskID, fallbackStatus)
 		p.logger.Error("Failed to save execution to database", "task_id", payload.TaskID, "execution_id", execution.ID, "error", err)
 		return fmt.Errorf("failed to save execution to database: %w", err)
 	}
@@ -465,7 +474,7 @@ func (p *Processor) ProcessTaskImplementation(ctx context.Context, task *asynq.T
 				// Check if execution completed successfully or failed
 				if execution.Error != "" {
 					p.logger.Error("AI execution failed", "task_id", payload.TaskID, "execution_id", execution.ID, "error", execution.Error)
-					_ = p.updateTaskStatus(context.Background(), payload.TaskID, entity.TaskStatusTODO)
+					_ = p.updateTaskStatus(context.Background(), payload.TaskID, fallbackStatus)
 
 					// Mark execution as failed
 					err := p.executionRepo.MarkFailed(context.Background(), dbExecution.ID, completedAt, execution.Error)
