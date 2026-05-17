@@ -265,6 +265,12 @@ func (p *Processor) ProcessTaskPlanning(ctx context.Context, task *asynq.Task) e
 						err = p.savePlanAndUpdateStatus(backgroundCtx, payload.TaskID, planContent)
 						if err != nil {
 							p.logger.Error("Failed to save plan", "error", err, "execution_id", dbExecution.ID)
+						} else if payload.AutoImplement {
+							p.logger.Info("Auto-implement enabled, enqueuing implementation job", "task_id", payload.TaskID)
+							_, err := p.taskUsecase.ApprovePlan(backgroundCtx, payload.TaskID, payload.AIType)
+							if err != nil {
+								p.logger.Error("Failed to auto-enqueue implementation job", "error", err, "task_id", payload.TaskID)
+							}
 						}
 					}
 				}

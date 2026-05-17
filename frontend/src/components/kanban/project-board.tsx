@@ -191,12 +191,13 @@ export function ProjectBoard({ projectId }: ProjectBoardProps) {
   const handleStartPlanning = async (
     taskId: string,
     branchName: string,
-    aiType: string
+    aiType: string,
+    autoImplement: boolean
   ) => {
     try {
       await startPlanningMutation.mutateAsync({
         taskId,
-        request: { branch_name: branchName, ai_type: aiType },
+        request: { branch_name: branchName, ai_type: aiType, auto_implement: autoImplement },
       })
     } catch (error) {
       // Error is handled by the mutation hook

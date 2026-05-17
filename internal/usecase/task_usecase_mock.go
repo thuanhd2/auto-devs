@@ -2381,8 +2381,8 @@ func (_c *TaskUsecaseMock_SearchTasks_Call) RunAndReturn(run func(ctx context.Co
 }
 
 // StartPlanning provides a mock function for the type TaskUsecaseMock
-func (_mock *TaskUsecaseMock) StartPlanning(ctx context.Context, taskID uuid.UUID, branchName string, aiType string) (string, error) {
-	ret := _mock.Called(ctx, taskID, branchName, aiType)
+func (_mock *TaskUsecaseMock) StartPlanning(ctx context.Context, taskID uuid.UUID, branchName string, aiType string, autoImplement bool) (string, error) {
+	ret := _mock.Called(ctx, taskID, branchName, aiType, autoImplement)
 
 	if len(ret) == 0 {
 		panic("no return value specified for StartPlanning")
@@ -2416,13 +2416,13 @@ type TaskUsecaseMock_StartPlanning_Call struct {
 //   - taskID
 //   - branchName
 //   - aiType
-func (_e *TaskUsecaseMock_Expecter) StartPlanning(ctx interface{}, taskID interface{}, branchName interface{}, aiType interface{}) *TaskUsecaseMock_StartPlanning_Call {
-	return &TaskUsecaseMock_StartPlanning_Call{Call: _e.mock.On("StartPlanning", ctx, taskID, branchName, aiType)}
+func (_e *TaskUsecaseMock_Expecter) StartPlanning(ctx interface{}, taskID interface{}, branchName interface{}, aiType interface{}, autoImplement interface{}) *TaskUsecaseMock_StartPlanning_Call {
+	return &TaskUsecaseMock_StartPlanning_Call{Call: _e.mock.On("StartPlanning", ctx, taskID, branchName, aiType, autoImplement)}
 }
 
-func (_c *TaskUsecaseMock_StartPlanning_Call) Run(run func(ctx context.Context, taskID uuid.UUID, branchName string, aiType string)) *TaskUsecaseMock_StartPlanning_Call {
+func (_c *TaskUsecaseMock_StartPlanning_Call) Run(run func(ctx context.Context, taskID uuid.UUID, branchName string, aiType string, autoImplement bool)) *TaskUsecaseMock_StartPlanning_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(uuid.UUID), args[2].(string), args[3].(string))
+		run(args[0].(context.Context), args[1].(uuid.UUID), args[2].(string), args[3].(string), args[4].(bool))
 	})
 	return _c
 }
@@ -2432,7 +2432,7 @@ func (_c *TaskUsecaseMock_StartPlanning_Call) Return(s string, err error) *TaskU
 	return _c
 }
 
-func (_c *TaskUsecaseMock_StartPlanning_Call) RunAndReturn(run func(ctx context.Context, taskID uuid.UUID, branchName string, aiType string) (string, error)) *TaskUsecaseMock_StartPlanning_Call {
+func (_c *TaskUsecaseMock_StartPlanning_Call) RunAndReturn(run func(ctx context.Context, taskID uuid.UUID, branchName string, aiType string, autoImplement bool) (string, error)) *TaskUsecaseMock_StartPlanning_Call {
 	_c.Call.Return(run)
 	return _c
 }

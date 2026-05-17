@@ -4,6 +4,7 @@ import { Loader2, GitBranch, Bot } from 'lucide-react'
 import { projectsApi } from '@/lib/api/projects'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   Dialog,
   DialogContent,
@@ -32,7 +33,7 @@ interface BranchSelectionDialogProps {
   onOpenChange: (open: boolean) => void
   projectId: string
   taskTitle: string
-  onBranchSelected: (branchName: string, aiType: string) => void
+  onBranchSelected: (branchName: string, aiType: string, autoImplement: boolean) => void
   mode?: 'planning' | 'implementing'
 }
 
@@ -49,6 +50,7 @@ export function BranchSelectionDialog({
   const [selectedAIType, setSelectedAIType] = useState<string>('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string>('')
+  const [autoImplement, setAutoImplement] = useState(false)
 
   const localStorageKey =
     mode === 'implementing'
@@ -93,10 +95,11 @@ export function BranchSelectionDialog({
   const handleConfirm = () => {
     if (selectedBranch && selectedAIType) {
       localStorage.setItem(localStorageKey, selectedAIType)
-      onBranchSelected(selectedBranch, selectedAIType)
+      onBranchSelected(selectedBranch, selectedAIType, autoImplement)
       onOpenChange(false)
       setSelectedBranch('')
       setSelectedAIType(localStorage.getItem(localStorageKey) || 'claude-code')
+      setAutoImplement(false)
     }
   }
 
@@ -198,6 +201,22 @@ export function BranchSelectionDialog({
                   </SelectContent>
                 </Select>
               </div>
+
+              {mode === 'planning' && (
+                <div className='flex items-center space-x-2 pt-2'>
+                  <Checkbox
+                    id='auto-implement'
+                    checked={autoImplement}
+                    onCheckedChange={(checked) => setAutoImplement(checked === true)}
+                  />
+                  <label
+                    htmlFor='auto-implement'
+                    className='text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70'
+                  >
+                    Auto implement after planning complete
+                  </label>
+                </div>
+              )}
             </>
           )}
         </div>

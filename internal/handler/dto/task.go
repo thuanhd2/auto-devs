@@ -213,8 +213,9 @@ func TaskStatusAnalyticsResponseFromEntity(analytics *entity.TaskStatusAnalytics
 
 // Start Planning DTOs
 type StartPlanningRequest struct {
-	BranchName string `json:"branch_name" binding:"required" example:"main"`
-	AIType     string `json:"ai_type" binding:"required" example:"claude-code"`
+	BranchName    string `json:"branch_name" binding:"required" example:"main"`
+	AIType        string `json:"ai_type" binding:"required" example:"claude-code"`
+	AutoImplement bool   `json:"auto_implement"`
 }
 
 type StartPlanningResponse struct {
