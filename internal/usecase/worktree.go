@@ -559,8 +559,8 @@ func (w *worktreeUsecase) validateTaskEligibility(ctx context.Context, taskID uu
 	}
 
 	// Check if task is in a status that allows worktree creation
-	if task.Status != entity.TaskStatusPLANNING {
-		return fmt.Errorf("task must be in PLANNING status to create worktree")
+	if task.Status != entity.TaskStatusPLANNING && task.Status != entity.TaskStatusIMPLEMENTING {
+		return fmt.Errorf("task must be in PLANNING or IMPLEMENTING status to create worktree")
 	}
 
 	// Check if task already has a worktree
