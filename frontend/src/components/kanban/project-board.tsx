@@ -15,6 +15,7 @@ import {
   useStartPlanning,
   useApprovePlan,
   useChangeTaskStatus,
+  useStartImplementingDirect,
 } from '@/hooks/use-tasks'
 import { BoardFilters } from './board-filters'
 import { KanbanBoard } from './kanban-board'
@@ -58,6 +59,7 @@ export function ProjectBoard({ projectId }: ProjectBoardProps) {
   const startPlanningMutation = useStartPlanning()
   const approvePlanAndStartImplementMutation = useApprovePlan()
   const changeTaskStatusMutation = useChangeTaskStatus()
+  const startImplementingDirectMutation = useStartImplementingDirect()
   // WebSocket integration
   const { setCurrentProjectId } = useWebSocketProject(projectId)
   const { subscribe, unsubscribe, initializeTaskStatuses } =
@@ -215,6 +217,21 @@ export function ProjectBoard({ projectId }: ProjectBoardProps) {
     }
   }
 
+  const handleImplementDirect = async (
+    taskId: string,
+    branchName: string,
+    aiType: string
+  ) => {
+    try {
+      await startImplementingDirectMutation.mutateAsync({
+        taskId,
+        request: { branch_name: branchName, ai_type: aiType },
+      })
+    } catch (error) {
+      // Error is handled by the mutation hook
+    }
+  }
+
   return (
     <div className='flex h-full flex-col'>
       {/* <BoardToolbar
@@ -325,6 +342,7 @@ export function ProjectBoard({ projectId }: ProjectBoardProps) {
         }}
         onStartPlanning={handleStartPlanning}
         onApprovePlanAndStartImplement={handleApprovePlanAndStartImplement}
+        onImplementDirect={handleImplementDirect}
       />
     </div>
   )

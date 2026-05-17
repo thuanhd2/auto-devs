@@ -291,6 +291,73 @@ func (h *TaskHandlerWithWebSocket) StartPlanning(c *gin.Context) {
 	c.JSON(http.StatusOK, planningResponse)
 }
 
+// StartImplementingDirect skips planning and starts implementation directly with WebSocket notification
+func (h *TaskHandlerWithWebSocket) StartImplementingDirect(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, dto.NewErrorResponse(err, http.StatusBadRequest, "Invalid task ID"))
+		return
+	}
+
+	var req dto.StartImplementingDirectRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, dto.NewErrorResponse(err, http.StatusBadRequest, "Invalid request data"))
+		return
+	}
+
+	originalTask, err := h.taskUsecase.GetByID(c.Request.Context(), id)
+	if err != nil {
+		c.JSON(http.StatusNotFound, dto.NewErrorResponse(err, http.StatusNotFound, "Task not found"))
+		return
+	}
+
+	if originalTask.Status != entity.TaskStatusTODO {
+		c.JSON(http.StatusBadRequest, dto.NewErrorResponse(nil, http.StatusBadRequest, "Task must be in TODO status to start implementing directly"))
+		return
+	}
+
+	// Immediately update task status to IMPLEMENTING for instant UI feedback
+	updatedTask, err := h.taskUsecase.UpdateStatus(c.Request.Context(), id, entity.TaskStatusIMPLEMENTING)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, dto.NewErrorResponse(err, http.StatusInternalServerError, "Failed to update task status"))
+		return
+	}
+
+	response := dto.TaskResponseFromEntity(updatedTask)
+
+	changes := map[string]interface{}{
+		"status": map[string]interface{}{
+			"old": originalTask.Status,
+			"new": updatedTask.Status,
+		},
+	}
+
+	if err := h.wsService.NotifyTaskUpdated(updatedTask.ID, updatedTask.ProjectID, changes, response); err != nil {
+		log.Printf("Failed to send WebSocket notification for task update: %v", err)
+	}
+
+	if err := h.wsService.NotifyStatusChanged(updatedTask.ID, updatedTask.ProjectID, "task", string(originalTask.Status), string(updatedTask.Status)); err != nil {
+		log.Printf("Failed to send WebSocket notification for status change: %v", err)
+	}
+
+	jobID, err := h.TaskHandler.taskUsecase.StartImplementingDirect(c.Request.Context(), id, req.BranchName, req.AIType)
+	if err != nil {
+		// Revert status if job enqueueing fails
+		_, revertErr := h.taskUsecase.UpdateStatus(c.Request.Context(), id, entity.TaskStatusTODO)
+		if revertErr != nil {
+			log.Printf("Failed to revert task status after job enqueueing failed: %v", revertErr)
+		}
+		c.JSON(http.StatusInternalServerError, dto.NewErrorResponse(err, http.StatusInternalServerError, "Failed to start implementing directly"))
+		return
+	}
+
+	c.JSON(http.StatusOK, dto.StartPlanningResponse{
+		Message: "Implementation started successfully",
+		JobID:   jobID,
+	})
+}
+
 // ApprovePlan approves a plan and starts implementation with WebSocket notification
 func (h *TaskHandlerWithWebSocket) ApprovePlan(c *gin.Context) {
 	idStr := c.Param("id")

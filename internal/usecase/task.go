@@ -113,6 +113,7 @@ type TaskUsecase interface {
 	// Planning workflow
 	StartPlanning(ctx context.Context, taskID uuid.UUID, branchName string, aiType string) (string, error) // returns job ID
 	ApprovePlan(ctx context.Context, taskID uuid.UUID, aiType string) (string, error)                      // returns job ID
+	StartImplementingDirect(ctx context.Context, taskID uuid.UUID, branchName string, aiType string) (string, error) // returns job ID
 	ListGitBranches(ctx context.Context, projectID uuid.UUID) ([]GitBranch, error)
 
 	// Pull requests
@@ -1141,6 +1142,38 @@ func (u *taskUsecase) ApprovePlan(ctx context.Context, taskID uuid.UUID, aiType 
 	// to provide immediate UI feedback with WebSocket notifications
 
 	// Enqueue the implementation job using asynq client
+	payload := &TaskImplementationPayload{
+		TaskID:    taskID,
+		ProjectID: task.ProjectID,
+		AIType:    aiType,
+	}
+
+	jobID, err := u.jobClient.EnqueueTaskImplementation(payload, 0)
+	if err != nil {
+		return "", fmt.Errorf("failed to enqueue implementation job: %w", err)
+	}
+
+	return jobID, nil
+}
+
+// StartImplementingDirect skips planning and goes directly from TODO to IMPLEMENTING
+func (u *taskUsecase) StartImplementingDirect(ctx context.Context, taskID uuid.UUID, branchName string, aiType string) (string, error) {
+	task, err := u.taskRepo.GetByID(ctx, taskID)
+	if err != nil {
+		return "", fmt.Errorf("failed to get task: %w", err)
+	}
+
+	if task.Status != entity.TaskStatusTODO {
+		return "", fmt.Errorf("task must be in TODO status to start implementing directly, current status: %s", task.Status)
+	}
+
+	_, err = u.Update(ctx, taskID, UpdateTaskRequest{
+		BaseBranchName: &branchName,
+	})
+	if err != nil {
+		return "", fmt.Errorf("failed to update task with branch name: %w", err)
+	}
+
 	payload := &TaskImplementationPayload{
 		TaskID:    taskID,
 		ProjectID: task.ProjectID,

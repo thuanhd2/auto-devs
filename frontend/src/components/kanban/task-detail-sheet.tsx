@@ -38,6 +38,7 @@ interface TaskDetailSheetProps {
   onStatusChange?: (taskId: string, newStatus: Task['status']) => void
   onStartPlanning?: (taskId: string, branchName: string, aiType: string) => void
   onApprovePlanAndStartImplement?: (taskId: string, aiType: string) => void
+  onImplementDirect?: (taskId: string, branchName: string, aiType: string) => void
 }
 
 export function TaskDetailSheet({
@@ -50,6 +51,7 @@ export function TaskDetailSheet({
   onStatusChange,
   onStartPlanning,
   onApprovePlanAndStartImplement,
+  onImplementDirect,
 }: TaskDetailSheetProps) {
   const navigate = useNavigate()
   const params = useParams({ strict: false }) as { projectId?: string }
@@ -115,6 +117,7 @@ export function TaskDetailSheet({
                 onDuplicate={handleDuplicate}
                 onStartPlanning={onStartPlanning}
                 onApprovePlanAndStartImplement={onApprovePlanAndStartImplement}
+                onImplementDirect={onImplementDirect}
                 onChangeStatus={
                   onStatusChange
                     ? async (taskId: string, newStatus: Task['status']) => {

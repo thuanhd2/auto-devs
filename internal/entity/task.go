@@ -87,6 +87,7 @@ func GetAllTaskPriorities() []TaskPriority {
 var TaskStatusTransitions = map[TaskStatus][]TaskStatus{
 	TaskStatusTODO: {
 		TaskStatusPLANNING,
+		TaskStatusIMPLEMENTING,
 		TaskStatusCANCELLED,
 	},
 	TaskStatusPLANNING: {

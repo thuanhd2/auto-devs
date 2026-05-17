@@ -244,6 +244,52 @@ export function useApprovePlan() {
   })
 }
 
+export function useStartImplementingDirect() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({
+      taskId,
+      request,
+    }: {
+      taskId: string
+      request: { branch_name: string; ai_type: string }
+    }) => tasksApi.startImplementingDirect(taskId, request),
+    onMutate: async ({ taskId }) => {
+      await queryClient.cancelQueries({ queryKey: [TASKS_QUERY_KEY] })
+      const previousTasks = queryClient.getQueryData([TASKS_QUERY_KEY])
+
+      queryClient.setQueryData([TASKS_QUERY_KEY], (old: any) => {
+        if (!old) return old
+        return {
+          ...old,
+          tasks: old.tasks.map((task: Task) =>
+            task.id === taskId
+              ? { ...task, status: 'IMPLEMENTING' as Task['status'] }
+              : task
+          ),
+        }
+      })
+
+      return { previousTasks }
+    },
+    onSuccess: (response) => {
+      toast.success(`Implementation started. Job ID: ${response.job_id}`)
+    },
+    onError: (error: any, _variables, context: any) => {
+      if (context?.previousTasks) {
+        queryClient.setQueryData([TASKS_QUERY_KEY], context.previousTasks)
+      }
+      toast.error(
+        error.response?.data?.message || 'Failed to start implementing directly'
+      )
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: [TASKS_QUERY_KEY] })
+    },
+  })
+}
+
 export function useChangeTaskStatus() {
   const queryClient = useQueryClient()
 

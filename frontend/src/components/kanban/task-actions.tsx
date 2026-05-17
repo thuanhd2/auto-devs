@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { Task, TaskStatus } from '@/types/task'
-import { Edit, Trash2, Copy, Play, ArrowUpDown, FolderOpen } from 'lucide-react'
+import { Edit, Trash2, Copy, Play, ArrowUpDown, FolderOpen, Zap } from 'lucide-react'
 import { tasksApi } from '@/lib/api/tasks'
 import { Button } from '@/components/ui/button'
 import { BranchSelectionDialog } from './branch-selection-dialog'
@@ -15,6 +15,7 @@ interface TaskActionsProps {
   onStartPlanning?: (taskId: string, branchName: string, aiType: string) => void
   onApprovePlanAndStartImplement?: (taskId: string, aiType: string) => void
   onChangeStatus?: (taskId: string, newStatus: TaskStatus) => Promise<void>
+  onImplementDirect?: (taskId: string, branchName: string, aiType: string) => void
 }
 
 export function TaskActions({
@@ -25,8 +26,10 @@ export function TaskActions({
   onStartPlanning,
   onApprovePlanAndStartImplement,
   onChangeStatus,
+  onImplementDirect,
 }: TaskActionsProps) {
   const [showBranchDialog, setShowBranchDialog] = useState(false)
+  const [showDirectImplementDialog, setShowDirectImplementDialog] = useState(false)
   const [showImplementationDialog, setShowImplementationDialog] =
     useState(false)
   const [showChangeStatusDialog, setShowChangeStatusDialog] = useState(false)
@@ -42,6 +45,10 @@ export function TaskActions({
 
   const handleBranchSelected = (branchName: string, aiType: string) => {
     onStartPlanning?.(task.id, branchName, aiType)
+  }
+
+  const handleDirectImplementBranchSelected = (branchName: string, aiType: string) => {
+    onImplementDirect?.(task.id, branchName, aiType)
   }
 
   const handleApprovePlanAndStartImplement = () => {
@@ -87,6 +94,20 @@ export function TaskActions({
           >
             <Play className='mr-1 h-4 w-4' />
             Start Planning
+          </Button>
+        )}
+
+        {/* Implement Directly - Only show for TODO tasks */}
+        {task.status === 'TODO' && onImplementDirect && (
+          <Button
+            variant='default'
+            size='sm'
+            onClick={() => setShowDirectImplementDialog(true)}
+            title='Skip planning and implement directly'
+            className='bg-orange-600 text-white hover:bg-orange-700'
+          >
+            <Zap className='mr-1 h-4 w-4' />
+            Implement Directly
           </Button>
         )}
 
@@ -156,6 +177,16 @@ export function TaskActions({
         projectId={task.project_id}
         taskTitle={task.title}
         onBranchSelected={handleBranchSelected}
+      />
+
+      {/* Direct Implement Branch Selection Dialog */}
+      <BranchSelectionDialog
+        open={showDirectImplementDialog}
+        onOpenChange={setShowDirectImplementDialog}
+        projectId={task.project_id}
+        taskTitle={task.title}
+        onBranchSelected={handleDirectImplementBranchSelected}
+        mode='implementing'
       />
 
       {/* Implementation Confirmation Dialog */}
