@@ -73,7 +73,7 @@ func TestTaskStatus_CanTransitionTo(t *testing.T) {
 		// Valid transitions from TODO
 		{TaskStatusTODO, TaskStatusPLANNING, true},
 		{TaskStatusTODO, TaskStatusCANCELLED, true},
-		{TaskStatusTODO, TaskStatusIMPLEMENTING, false}, // Skip planning
+		{TaskStatusTODO, TaskStatusIMPLEMENTING, true}, // Direct implementation
 
 		// Valid transitions from PLANNING
 		{TaskStatusPLANNING, TaskStatusPLANREVIEWING, true},

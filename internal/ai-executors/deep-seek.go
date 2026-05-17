@@ -126,15 +126,19 @@ func (e *DeepSeekExecutor) ParseOutputToLogs(output string) []*entity.ExecutionL
 }
 
 func (e *DeepSeekExecutor) getImplementationPrompt(_ context.Context, task *entity.Task) (string, error) {
-	if len(task.Plans) == 0 {
-		return "", fmt.Errorf("no plan found for task")
+	var prompt string
+	if len(task.Plans) > 0 {
+		prompt = fmt.Sprintf(`
+		Task: %s
+		Task Description: %s
+		Plan: %s
+		`, task.Title, task.Description, task.Plans[0].Content)
+	} else {
+		prompt = fmt.Sprintf(`
+		Task: %s
+		Task Description: %s
+		`, task.Title, task.Description)
 	}
-
-	prompt := fmt.Sprintf(`
-	Task: %s
-	Task Description: %s
-	Plan: %s
-	`, task.Title, task.Description, task.Plans[0].Content)
 	return prompt, nil
 }
 
