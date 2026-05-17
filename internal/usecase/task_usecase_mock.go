@@ -2924,3 +2924,50 @@ func (_c *TaskUsecaseMock_ValidateStatusTransition_Call) RunAndReturn(run func(c
 	_c.Call.Return(run)
 	return _c
 }
+
+// AppendErrorLog provides a mock function for the type TaskUsecaseMock
+func (_mock *TaskUsecaseMock) AppendErrorLog(ctx context.Context, taskID uuid.UUID, errorMsg string) error {
+	ret := _mock.Called(ctx, taskID, errorMsg)
+
+	if len(ret) == 0 {
+		panic("no return value specified for AppendErrorLog")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, string) error); ok {
+		r0 = returnFunc(ctx, taskID, errorMsg)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// TaskUsecaseMock_AppendErrorLog_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'AppendErrorLog'
+type TaskUsecaseMock_AppendErrorLog_Call struct {
+	*mock.Call
+}
+
+// AppendErrorLog is a helper method to define mock.On call
+//   - ctx
+//   - taskID
+//   - errorMsg
+func (_e *TaskUsecaseMock_Expecter) AppendErrorLog(ctx interface{}, taskID interface{}, errorMsg interface{}) *TaskUsecaseMock_AppendErrorLog_Call {
+	return &TaskUsecaseMock_AppendErrorLog_Call{Call: _e.mock.On("AppendErrorLog", ctx, taskID, errorMsg)}
+}
+
+func (_c *TaskUsecaseMock_AppendErrorLog_Call) Run(run func(ctx context.Context, taskID uuid.UUID, errorMsg string)) *TaskUsecaseMock_AppendErrorLog_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(uuid.UUID), args[2].(string))
+	})
+	return _c
+}
+
+func (_c *TaskUsecaseMock_AppendErrorLog_Call) Return(err error) *TaskUsecaseMock_AppendErrorLog_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *TaskUsecaseMock_AppendErrorLog_Call) RunAndReturn(run func(ctx context.Context, taskID uuid.UUID, errorMsg string) error) *TaskUsecaseMock_AppendErrorLog_Call {
+	_c.Call.Return(run)
+	return _c
+}

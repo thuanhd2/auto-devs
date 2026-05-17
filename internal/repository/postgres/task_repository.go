@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -966,4 +967,46 @@ func (r *taskRepository) GetTasksEligibleForWorktreeCleanup(ctx context.Context,
 	}
 
 	return tasks, nil
+}
+
+// AppendErrorLog appends an error message to the task's error_logs column, keeping at most 1000 entries.
+func (r *taskRepository) AppendErrorLog(ctx context.Context, taskID uuid.UUID, errorMsg string) error {
+	var raw struct {
+		ErrorLogsJSON string `gorm:"column:error_logs"`
+	}
+
+	if err := r.db.WithContext(ctx).
+		Model(&entity.Task{}).
+		Select("error_logs").
+		Where("id = ?", taskID).
+		Scan(&raw).Error; err != nil {
+		return fmt.Errorf("failed to read task error logs: %w", err)
+	}
+
+	var logs []string
+	if raw.ErrorLogsJSON != "" {
+		_ = json.Unmarshal([]byte(raw.ErrorLogsJSON), &logs)
+	}
+
+	entry := fmt.Sprintf("[%s] %s", time.Now().UTC().Format(time.RFC3339), errorMsg)
+	logs = append(logs, entry)
+
+	const maxEntries = 1000
+	if len(logs) > maxEntries {
+		logs = logs[len(logs)-maxEntries:]
+	}
+
+	logsJSON, err := json.Marshal(logs)
+	if err != nil {
+		return fmt.Errorf("failed to marshal error logs: %w", err)
+	}
+
+	if err := r.db.WithContext(ctx).
+		Model(&entity.Task{}).
+		Where("id = ?", taskID).
+		Update("error_logs", string(logsJSON)).Error; err != nil {
+		return fmt.Errorf("failed to update task error logs: %w", err)
+	}
+
+	return nil
 }

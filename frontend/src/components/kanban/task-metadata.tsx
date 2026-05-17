@@ -7,6 +7,7 @@ import {
   ExternalLink,
   Activity,
   FolderOpen,
+  AlertTriangle,
 } from 'lucide-react'
 import { getStatusColor, getStatusTitle } from '@/lib/kanban'
 import { Badge } from '@/components/ui/badge'
@@ -181,6 +182,36 @@ export function TaskMetadata({
               <p className='text-xs text-gray-500'>
                 Status history tracking coming soon...
               </p>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Error Logs */}
+      {task.error_logs && task.error_logs.length > 0 && (
+        <>
+          <Separator />
+          <div>
+            <div className='mb-3 flex items-center gap-2'>
+              <AlertTriangle className='h-4 w-4 text-red-500' />
+              <h4 className='text-sm font-medium text-gray-700'>
+                Error Logs
+              </h4>
+              <span className='rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-600'>
+                {task.error_logs.length}
+              </span>
+            </div>
+            <div className='max-h-64 overflow-y-auto rounded-md border border-red-200 bg-red-50 p-3'>
+              <div className='space-y-1'>
+                {task.error_logs.map((log, index) => (
+                  <p
+                    key={index}
+                    className='break-all font-mono text-xs text-red-700'
+                  >
+                    {log}
+                  </p>
+                ))}
+              </div>
             </div>
           </div>
         </>

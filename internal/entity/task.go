@@ -287,7 +287,9 @@ type Task struct {
 	CreatedAt      time.Time      `json:"created_at" gorm:"autoCreateTime"`
 	UpdatedAt      time.Time      `json:"updated_at" gorm:"autoUpdateTime"`
 	DeletedAt      gorm.DeletedAt `json:"deleted_at,omitempty" gorm:"index"`
-	BaseBranchName *string        `json:"base_branch_name,omitempty" gorm:"size:255"`
+	BaseBranchName  *string  `json:"base_branch_name,omitempty" gorm:"size:255"`
+	ErrorLogEntries []string `json:"error_logs,omitempty" gorm:"-"`
+	ErrorLogsJSON   string   `json:"-" gorm:"column:error_logs;type:text"`
 
 	// Relationships
 	Project    *Project       `json:"project,omitempty" gorm:"foreignKey:ProjectID"`
@@ -572,6 +574,13 @@ func (t *Task) BeforeCreate(tx *gorm.DB) error {
 	} else {
 		t.TagsJSON = "[]"
 	}
+	if len(t.ErrorLogEntries) > 0 {
+		logsJSON, err := json.Marshal(t.ErrorLogEntries)
+		if err != nil {
+			return err
+		}
+		t.ErrorLogsJSON = string(logsJSON)
+	}
 	return nil
 }
 
@@ -586,13 +595,25 @@ func (t *Task) BeforeUpdate(tx *gorm.DB) error {
 	} else {
 		t.TagsJSON = "[]"
 	}
+	if len(t.ErrorLogEntries) > 0 {
+		logsJSON, err := json.Marshal(t.ErrorLogEntries)
+		if err != nil {
+			return err
+		}
+		t.ErrorLogsJSON = string(logsJSON)
+	}
 	return nil
 }
 
 // AfterFind GORM hook to convert TagsJSON to Tags after loading
 func (t *Task) AfterFind(tx *gorm.DB) error {
 	if t.TagsJSON != "" {
-		return json.Unmarshal([]byte(t.TagsJSON), &t.Tags)
+		if err := json.Unmarshal([]byte(t.TagsJSON), &t.Tags); err != nil {
+			return err
+		}
+	}
+	if t.ErrorLogsJSON != "" {
+		_ = json.Unmarshal([]byte(t.ErrorLogsJSON), &t.ErrorLogEntries)
 	}
 	return nil
 }

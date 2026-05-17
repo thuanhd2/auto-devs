@@ -45,6 +45,8 @@ export interface Task {
   worktree_path?: string
   // Git information
   git_info?: TaskGitInfo
+  // Error logs
+  error_logs?: string[]
 }
 
 export interface TaskPlan {
