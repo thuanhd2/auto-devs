@@ -29,10 +29,11 @@ func NewJobClientAdapter(client ClientInterface) usecase.JobClientInterface {
 func (a *JobClientAdapter) EnqueueTaskPlanning(payload *usecase.TaskPlanningPayload, delay time.Duration) (string, error) {
 	// Convert usecase payload to jobs package payload
 	jobPayload := &TaskPlanningPayload{
-		TaskID:     payload.TaskID,
-		BranchName: payload.BranchName,
-		ProjectID:  payload.ProjectID,
-		AIType:     payload.AIType,
+		TaskID:        payload.TaskID,
+		BranchName:    payload.BranchName,
+		ProjectID:     payload.ProjectID,
+		AIType:        payload.AIType,
+		AutoImplement: payload.AutoImplement,
 	}
 
 	// Enqueue the job

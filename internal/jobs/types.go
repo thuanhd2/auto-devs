@@ -18,10 +18,11 @@ const (
 
 // TaskPlanningPayload represents the payload for task planning jobs
 type TaskPlanningPayload struct {
-	TaskID     uuid.UUID `json:"task_id"`
-	BranchName string    `json:"branch_name"`
-	ProjectID  uuid.UUID `json:"project_id"`
-	AIType     string    `json:"ai_type"`
+	TaskID        uuid.UUID `json:"task_id"`
+	BranchName    string    `json:"branch_name"`
+	ProjectID     uuid.UUID `json:"project_id"`
+	AIType        string    `json:"ai_type"`
+	AutoImplement bool      `json:"auto_implement"`
 }
 
 // TaskImplementationPayload represents the payload for task implementation jobs
@@ -42,12 +43,13 @@ type WorktreeCleanupPayload struct {
 }
 
 // NewTaskPlanningJob creates a new task planning job
-func NewTaskPlanningJob(taskID uuid.UUID, branchName string, projectID uuid.UUID, aiType string) (*asynq.Task, error) {
+func NewTaskPlanningJob(taskID uuid.UUID, branchName string, projectID uuid.UUID, aiType string, autoImplement bool) (*asynq.Task, error) {
 	payload := TaskPlanningPayload{
-		TaskID:     taskID,
-		BranchName: branchName,
-		ProjectID:  projectID,
-		AIType:     aiType,
+		TaskID:        taskID,
+		BranchName:    branchName,
+		ProjectID:     projectID,
+		AIType:        aiType,
+		AutoImplement: autoImplement,
 	}
 
 	data, err := json.Marshal(payload)

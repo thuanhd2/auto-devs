@@ -35,7 +35,7 @@ func (c *Client) Close() error {
 
 // EnqueueTaskPlanning enqueues a task planning job
 func (c *Client) EnqueueTaskPlanning(payload *TaskPlanningPayload, delay time.Duration) (*asynq.TaskInfo, error) {
-	task, err := NewTaskPlanningJob(payload.TaskID, payload.BranchName, payload.ProjectID, payload.AIType)
+	task, err := NewTaskPlanningJob(payload.TaskID, payload.BranchName, payload.ProjectID, payload.AIType, payload.AutoImplement)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create task planning job: %w", err)
 	}

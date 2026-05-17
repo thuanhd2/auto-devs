@@ -23,10 +23,11 @@ type JobClientInterface interface {
 
 // TaskPlanningPayload represents the payload for task planning jobs
 type TaskPlanningPayload struct {
-	TaskID     uuid.UUID `json:"task_id"`
-	BranchName string    `json:"branch_name"`
-	ProjectID  uuid.UUID `json:"project_id"`
-	AIType     string    `json:"ai_type"`
+	TaskID        uuid.UUID `json:"task_id"`
+	BranchName    string    `json:"branch_name"`
+	ProjectID     uuid.UUID `json:"project_id"`
+	AIType        string    `json:"ai_type"`
+	AutoImplement bool      `json:"auto_implement"`
 }
 
 // TaskImplementationPayload represents the payload for task implementation jobs
@@ -111,7 +112,7 @@ type TaskUsecase interface {
 	ValidateGitStatusTransition(ctx context.Context, taskID uuid.UUID, newGitStatus entity.TaskGitStatus) error
 
 	// Planning workflow
-	StartPlanning(ctx context.Context, taskID uuid.UUID, branchName string, aiType string) (string, error) // returns job ID
+	StartPlanning(ctx context.Context, taskID uuid.UUID, branchName string, aiType string, autoImplement bool) (string, error) // returns job ID
 	ApprovePlan(ctx context.Context, taskID uuid.UUID, aiType string) (string, error)                      // returns job ID
 	StartImplementingDirect(ctx context.Context, taskID uuid.UUID, branchName string, aiType string) (string, error) // returns job ID
 	ListGitBranches(ctx context.Context, projectID uuid.UUID) ([]GitBranch, error)
@@ -1089,7 +1090,7 @@ func (u *taskUsecase) ValidateGitStatusTransition(ctx context.Context, taskID uu
 }
 
 // StartPlanning starts the planning process for a task
-func (u *taskUsecase) StartPlanning(ctx context.Context, taskID uuid.UUID, branchName string, aiType string) (string, error) {
+func (u *taskUsecase) StartPlanning(ctx context.Context, taskID uuid.UUID, branchName string, aiType string, autoImplement bool) (string, error) {
 	// Get task to validate it exists and is in TODO status
 	task, err := u.taskRepo.GetByID(ctx, taskID)
 	if err != nil {
@@ -1111,10 +1112,11 @@ func (u *taskUsecase) StartPlanning(ctx context.Context, taskID uuid.UUID, branc
 
 	// Enqueue the planning job using asynq client
 	payload := &TaskPlanningPayload{
-		TaskID:     taskID,
-		BranchName: branchName,
-		ProjectID:  task.ProjectID,
-		AIType:     aiType,
+		TaskID:        taskID,
+		BranchName:    branchName,
+		ProjectID:     task.ProjectID,
+		AIType:        aiType,
+		AutoImplement: autoImplement,
 	}
 
 	jobID, err := u.jobClient.EnqueueTaskPlanning(payload, 0)

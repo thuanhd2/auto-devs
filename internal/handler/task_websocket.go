@@ -273,7 +273,7 @@ func (h *TaskHandlerWithWebSocket) StartPlanning(c *gin.Context) {
 	}
 
 	// Start the background planning job using the usecase
-	jobID, err := h.TaskHandler.taskUsecase.StartPlanning(c.Request.Context(), id, req.BranchName, req.AIType)
+	jobID, err := h.TaskHandler.taskUsecase.StartPlanning(c.Request.Context(), id, req.BranchName, req.AIType, req.AutoImplement)
 	if err != nil {
 		// Revert status if job enqueueing fails
 		_, revertErr := h.taskUsecase.UpdateStatus(c.Request.Context(), id, entity.TaskStatusTODO)

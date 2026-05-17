@@ -12,7 +12,7 @@ interface TaskActionsProps {
   onEdit?: (task: Task) => void
   onDelete?: (taskId: string) => void
   onDuplicate?: (task: Task) => void
-  onStartPlanning?: (taskId: string, branchName: string, aiType: string) => void
+  onStartPlanning?: (taskId: string, branchName: string, aiType: string, autoImplement: boolean) => void
   onApprovePlanAndStartImplement?: (taskId: string, aiType: string) => void
   onChangeStatus?: (taskId: string, newStatus: TaskStatus) => Promise<void>
   onImplementDirect?: (taskId: string, branchName: string, aiType: string) => void
@@ -43,11 +43,11 @@ export function TaskActions({
     setShowBranchDialog(true)
   }
 
-  const handleBranchSelected = (branchName: string, aiType: string) => {
-    onStartPlanning?.(task.id, branchName, aiType)
+  const handleBranchSelected = (branchName: string, aiType: string, autoImplement: boolean) => {
+    onStartPlanning?.(task.id, branchName, aiType, autoImplement)
   }
 
-  const handleDirectImplementBranchSelected = (branchName: string, aiType: string) => {
+  const handleDirectImplementBranchSelected = (branchName: string, aiType: string, _autoImplement: boolean) => {
     onImplementDirect?.(task.id, branchName, aiType)
   }
 

@@ -95,6 +95,7 @@ export interface TasksResponse {
 export interface StartPlanningRequest {
   branch_name: string
   ai_type: string
+  auto_implement?: boolean
 }
 
 export interface StartPlanningResponse {
