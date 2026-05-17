@@ -1163,7 +1163,8 @@ func (u *taskUsecase) StartImplementingDirect(ctx context.Context, taskID uuid.U
 		return "", fmt.Errorf("failed to get task: %w", err)
 	}
 
-	if task.Status != entity.TaskStatusTODO {
+	if task.Status != entity.TaskStatusTODO && task.Status != entity.TaskStatusIMPLEMENTING {
+		// Need check with IMPLEMENTING status for case status is changed by handler
 		return "", fmt.Errorf("task must be in TODO status to start implementing directly, current status: %s", task.Status)
 	}
 
