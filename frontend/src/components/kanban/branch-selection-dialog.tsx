@@ -33,6 +33,7 @@ interface BranchSelectionDialogProps {
   projectId: string
   taskTitle: string
   onBranchSelected: (branchName: string, aiType: string) => void
+  mode?: 'planning' | 'implementing'
 }
 
 export function BranchSelectionDialog({
@@ -41,6 +42,7 @@ export function BranchSelectionDialog({
   projectId,
   taskTitle,
   onBranchSelected,
+  mode = 'planning',
 }: BranchSelectionDialogProps) {
   const [branches, setBranches] = useState<GitBranch[]>([])
   const [selectedBranch, setSelectedBranch] = useState<string>('')
@@ -48,11 +50,16 @@ export function BranchSelectionDialog({
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string>('')
 
+  const localStorageKey =
+    mode === 'implementing'
+      ? 'ai_preference_implementing'
+      : 'ai_preference_planning'
+
   // Load AI type preference from localStorage
   useEffect(() => {
-    const savedPlanningAI = localStorage.getItem('ai_preference_planning')
-    setSelectedAIType(savedPlanningAI || 'claude-code') // Default to claude-code
-  }, [])
+    const savedAI = localStorage.getItem(localStorageKey)
+    setSelectedAIType(savedAI || 'claude-code')
+  }, [localStorageKey])
 
   const fetchBranches = useCallback(async () => {
     setLoading(true)
@@ -85,28 +92,22 @@ export function BranchSelectionDialog({
 
   const handleConfirm = () => {
     if (selectedBranch && selectedAIType) {
-      // Save AI type preference to localStorage
-      localStorage.setItem('ai_preference_planning', selectedAIType)
-
+      localStorage.setItem(localStorageKey, selectedAIType)
       onBranchSelected(selectedBranch, selectedAIType)
       onOpenChange(false)
       setSelectedBranch('')
-      setSelectedAIType(
-        localStorage.getItem('ai_preference_planning') || 'claude-code'
-      )
+      setSelectedAIType(localStorage.getItem(localStorageKey) || 'claude-code')
     }
   }
 
   const handleCancel = () => {
     onOpenChange(false)
     setSelectedBranch('')
-    setSelectedAIType(
-      localStorage.getItem('ai_preference_planning') || 'claude-code'
-    )
+    setSelectedAIType(localStorage.getItem(localStorageKey) || 'claude-code')
     setError('')
   }
 
-  const ais = getAIs(true)
+  const ais = getAIs(mode === 'planning')
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -114,10 +115,13 @@ export function BranchSelectionDialog({
         <DialogHeader>
           <DialogTitle className='flex items-center gap-2'>
             <GitBranch className='h-5 w-5' />
-            Start Planning
+            {mode === 'implementing' ? 'Start Implementation' : 'Start Planning'}
           </DialogTitle>
           <DialogDescription>
-            Select a branch to start planning for task:{' '}
+            Select a branch to{' '}
+            {mode === 'implementing'
+              ? 'start implementing task directly:'
+              : 'start planning for task:'}{' '}
             <strong>{taskTitle}</strong>
           </DialogDescription>
         </DialogHeader>
@@ -205,8 +209,13 @@ export function BranchSelectionDialog({
           <Button
             onClick={handleConfirm}
             disabled={!selectedBranch || !selectedAIType || loading}
+            className={
+              mode === 'implementing'
+                ? 'bg-orange-600 hover:bg-orange-700 text-white'
+                : undefined
+            }
           >
-            Start Planning
+            {mode === 'implementing' ? 'Start Implementing' : 'Start Planning'}
           </Button>
         </DialogFooter>
       </DialogContent>

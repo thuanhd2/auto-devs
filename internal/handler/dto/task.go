@@ -243,3 +243,9 @@ type ListBranchesResponse struct {
 type PlanUpdateRequest struct {
 	Content string `json:"content" binding:"required" example:"Implement user authentication"`
 }
+
+// Start Implementing Direct DTOs
+type StartImplementingDirectRequest struct {
+	BranchName string `json:"branch_name" binding:"required" example:"main"`
+	AIType     string `json:"ai_type" binding:"required" example:"claude-code"`
+}
