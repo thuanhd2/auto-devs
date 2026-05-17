@@ -344,9 +344,26 @@ func (h *TaskHandlerWithWebSocket) StartImplementingDirect(c *gin.Context) {
 	jobID, err := h.TaskHandler.taskUsecase.StartImplementingDirect(c.Request.Context(), id, req.BranchName, req.AIType)
 	if err != nil {
 		// Revert status if job enqueueing fails
-		_, revertErr := h.taskUsecase.UpdateStatus(c.Request.Context(), id, entity.TaskStatusTODO)
+		revertedTask, revertErr := h.taskUsecase.UpdateStatus(c.Request.Context(), id, entity.TaskStatusTODO)
 		if revertErr != nil {
 			log.Printf("Failed to revert task status after job enqueueing failed: %v", revertErr)
+		} else {
+			revertResponse := dto.TaskResponseFromEntity(revertedTask)
+
+			revertChanges := map[string]interface{}{
+				"status": map[string]interface{}{
+					"old": updatedTask.Status,
+					"new": revertedTask.Status,
+				},
+			}
+
+			if err := h.wsService.NotifyTaskUpdated(revertedTask.ID, revertedTask.ProjectID, revertChanges, revertResponse); err != nil {
+				log.Printf("Failed to send WebSocket notification for reverted task update: %v", err)
+			}
+
+			if err := h.wsService.NotifyStatusChanged(revertedTask.ID, revertedTask.ProjectID, "task", string(updatedTask.Status), string(revertedTask.Status)); err != nil {
+				log.Printf("Failed to send WebSocket notification for reverted status change: %v", err)
+			}
 		}
 		c.JSON(http.StatusInternalServerError, dto.NewErrorResponse(err, http.StatusInternalServerError, "Failed to start implementing directly"))
 		return
