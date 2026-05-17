@@ -86,6 +86,9 @@ type TaskRepository interface {
 
 	// Worktree cleanup
 	GetTasksEligibleForWorktreeCleanup(ctx context.Context, cutoffTime time.Time) ([]*entity.Task, error)
+
+	// Error logs
+	AppendErrorLog(ctx context.Context, taskID uuid.UUID, errorMsg string) error
 }
 
 // TaskFilters represents filtering options for tasks (moved to entity package)

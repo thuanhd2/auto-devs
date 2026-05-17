@@ -132,6 +132,9 @@ type TaskUsecase interface {
 
 	// Git diff
 	GetTaskDiff(ctx context.Context, taskID uuid.UUID) (string, error)
+
+	// Error logs
+	AppendErrorLog(ctx context.Context, taskID uuid.UUID, errorMsg string) error
 }
 
 type CreateTaskRequest struct {
@@ -1368,4 +1371,8 @@ func (u *taskUsecase) GetTaskDiff(ctx context.Context, taskID uuid.UUID) (string
 	}
 
 	return diff, nil
+}
+
+func (u *taskUsecase) AppendErrorLog(ctx context.Context, taskID uuid.UUID, errorMsg string) error {
+	return u.taskRepo.AppendErrorLog(ctx, taskID, errorMsg)
 }

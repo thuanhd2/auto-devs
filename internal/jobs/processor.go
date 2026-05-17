@@ -151,6 +151,7 @@ func (p *Processor) ProcessTaskPlanning(ctx context.Context, task *asynq.Task) e
 	if err != nil {
 		// Revert task status on failure
 		_ = p.updateTaskStatus(ctx, payload.TaskID, entity.TaskStatusTODO)
+		_ = p.taskUsecase.AppendErrorLog(ctx, payload.TaskID, fmt.Sprintf("Failed to get project: %s", err.Error()))
 		p.logger.Error("Failed to get project",
 			"project_id", payload.ProjectID, "error", err)
 		return fmt.Errorf("failed to get project: %w", err)
@@ -171,6 +172,7 @@ func (p *Processor) ProcessTaskPlanning(ctx context.Context, task *asynq.Task) e
 		if err != nil {
 			// Update task status back to TODO on failure
 			_ = p.updateTaskStatus(ctx, payload.TaskID, entity.TaskStatusTODO)
+			_ = p.taskUsecase.AppendErrorLog(ctx, payload.TaskID, fmt.Sprintf("Failed to create worktree: %s", err.Error()))
 			p.logger.Error("Failed to create worktree",
 				"task_id", payload.TaskID, "error", err)
 			return fmt.Errorf("failed to create worktree: %w", err)
@@ -184,6 +186,7 @@ func (p *Processor) ProcessTaskPlanning(ctx context.Context, task *asynq.Task) e
 			// Cleanup worktree on failure
 			_ = p.cleanupWorktree(ctx, worktree.WorktreePath)
 			_ = p.updateTaskStatus(ctx, payload.TaskID, entity.TaskStatusTODO)
+			_ = p.taskUsecase.AppendErrorLog(ctx, payload.TaskID, fmt.Sprintf("Failed to update task with git info: %s", err.Error()))
 			p.logger.Error("Failed to update task with git info",
 				"task_id", payload.TaskID, "error", err)
 			return fmt.Errorf("failed to update task with git info: %w", err)
@@ -244,6 +247,7 @@ func (p *Processor) ProcessTaskPlanning(ctx context.Context, task *asynq.Task) e
 				if execution.Error != "" {
 					p.logger.Error("AI Planning execution failed", "task_id", payload.TaskID, "execution_id", execution.ID, "error", execution.Error)
 					_ = p.updateTaskStatus(backgroundCtx, payload.TaskID, entity.TaskStatusTODO)
+					_ = p.taskUsecase.AppendErrorLog(backgroundCtx, payload.TaskID, fmt.Sprintf("Planning failed: %s", execution.Error))
 					err := p.executionRepo.MarkFailed(backgroundCtx, dbExecution.ID, completedAt, execution.Error)
 					if err != nil {
 						p.logger.Error("Failed to mark execution as failed", "error", err, "execution_id", dbExecution.ID)
@@ -370,6 +374,7 @@ func (p *Processor) ProcessTaskImplementation(ctx context.Context, task *asynq.T
 	project, err := p.projectUsecase.GetByID(ctx, payload.ProjectID)
 	if err != nil {
 		_ = p.updateTaskStatus(ctx, payload.TaskID, fallbackStatus)
+		_ = p.taskUsecase.AppendErrorLog(ctx, payload.TaskID, fmt.Sprintf("Failed to get project: %s", err.Error()))
 		p.logger.Error("Failed to get project",
 			"project_id", payload.ProjectID, "error", err)
 		return fmt.Errorf("failed to get project: %w", err)
@@ -390,6 +395,7 @@ func (p *Processor) ProcessTaskImplementation(ctx context.Context, task *asynq.T
 		worktree, err := p.createWorktree(ctx, project, projectTask)
 		if err != nil {
 			_ = p.updateTaskStatus(ctx, payload.TaskID, fallbackStatus)
+			_ = p.taskUsecase.AppendErrorLog(ctx, payload.TaskID, fmt.Sprintf("Failed to create worktree: %s", err.Error()))
 			p.logger.Error("Failed to create worktree",
 				"task_id", payload.TaskID, "error", err)
 			return fmt.Errorf("failed to create worktree: %w", err)
@@ -401,6 +407,7 @@ func (p *Processor) ProcessTaskImplementation(ctx context.Context, task *asynq.T
 		if err != nil {
 			_ = p.cleanupWorktree(ctx, worktree.WorktreePath)
 			_ = p.updateTaskStatus(ctx, payload.TaskID, fallbackStatus)
+			_ = p.taskUsecase.AppendErrorLog(ctx, payload.TaskID, fmt.Sprintf("Failed to update task with git info: %s", err.Error()))
 			p.logger.Error("Failed to update task with git info",
 				"task_id", payload.TaskID, "error", err)
 			return fmt.Errorf("failed to update task with git info: %w", err)
@@ -481,6 +488,7 @@ func (p *Processor) ProcessTaskImplementation(ctx context.Context, task *asynq.T
 				if execution.Error != "" {
 					p.logger.Error("AI execution failed", "task_id", payload.TaskID, "execution_id", execution.ID, "error", execution.Error)
 					_ = p.updateTaskStatus(context.Background(), payload.TaskID, fallbackStatus)
+					_ = p.taskUsecase.AppendErrorLog(context.Background(), payload.TaskID, fmt.Sprintf("Implementation failed: %s", execution.Error))
 
 					// Mark execution as failed
 					err := p.executionRepo.MarkFailed(context.Background(), dbExecution.ID, completedAt, execution.Error)

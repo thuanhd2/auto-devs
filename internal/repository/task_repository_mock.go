@@ -2454,3 +2454,50 @@ func (_c *TaskRepositoryMock_ValidateTaskExists_Call) RunAndReturn(run func(ctx 
 	_c.Call.Return(run)
 	return _c
 }
+
+// AppendErrorLog provides a mock function for the type TaskRepositoryMock
+func (_mock *TaskRepositoryMock) AppendErrorLog(ctx context.Context, taskID uuid.UUID, errorMsg string) error {
+	ret := _mock.Called(ctx, taskID, errorMsg)
+
+	if len(ret) == 0 {
+		panic("no return value specified for AppendErrorLog")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, string) error); ok {
+		r0 = returnFunc(ctx, taskID, errorMsg)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// TaskRepositoryMock_AppendErrorLog_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'AppendErrorLog'
+type TaskRepositoryMock_AppendErrorLog_Call struct {
+	*mock.Call
+}
+
+// AppendErrorLog is a helper method to define mock.On call
+//   - ctx
+//   - taskID
+//   - errorMsg
+func (_e *TaskRepositoryMock_Expecter) AppendErrorLog(ctx interface{}, taskID interface{}, errorMsg interface{}) *TaskRepositoryMock_AppendErrorLog_Call {
+	return &TaskRepositoryMock_AppendErrorLog_Call{Call: _e.mock.On("AppendErrorLog", ctx, taskID, errorMsg)}
+}
+
+func (_c *TaskRepositoryMock_AppendErrorLog_Call) Run(run func(ctx context.Context, taskID uuid.UUID, errorMsg string)) *TaskRepositoryMock_AppendErrorLog_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(uuid.UUID), args[2].(string))
+	})
+	return _c
+}
+
+func (_c *TaskRepositoryMock_AppendErrorLog_Call) Return(err error) *TaskRepositoryMock_AppendErrorLog_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *TaskRepositoryMock_AppendErrorLog_Call) RunAndReturn(run func(ctx context.Context, taskID uuid.UUID, errorMsg string) error) *TaskRepositoryMock_AppendErrorLog_Call {
+	_c.Call.Return(run)
+	return _c
+}
