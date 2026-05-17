@@ -62,6 +62,7 @@ type TaskResponse struct {
 	BranchName   *string              `json:"branch_name,omitempty" example:"feature/user-auth"`
 	PullRequest  *string              `json:"pull_request,omitempty" example:"https://github.com/user/repo/pull/123"`
 	WorktreePath *string              `json:"worktree_path,omitempty" example:"/tmp/worktrees/task-123"`
+	ErrorLogs    []string             `json:"error_logs,omitempty"`
 	CreatedAt    time.Time            `json:"created_at" example:"2024-01-15T10:30:00Z"`
 	UpdatedAt    time.Time            `json:"updated_at" example:"2024-01-15T10:30:00Z"`
 }
@@ -141,6 +142,7 @@ func (t *TaskResponse) FromEntity(task *entity.Task) {
 	t.BranchName = task.BranchName
 	t.PullRequest = task.PullRequest
 	t.WorktreePath = task.WorktreePath
+	t.ErrorLogs = task.ErrorLogEntries
 	t.CreatedAt = task.CreatedAt
 	t.UpdatedAt = task.UpdatedAt
 }
