@@ -140,9 +140,11 @@ func (r *projectRepository) GetAllWithParams(ctx context.Context, params reposit
 	}
 	query = query.Order(orderClause)
 
-	// Apply pagination
-	offset := (params.Page - 1) * params.PageSize
-	query = query.Offset(offset).Limit(params.PageSize)
+	// Apply pagination (PageSize == 0 means load all)
+	if params.PageSize > 0 {
+		offset := (params.Page - 1) * params.PageSize
+		query = query.Offset(offset).Limit(params.PageSize)
+	}
 
 	// Execute query
 	result := query.Find(&projects)

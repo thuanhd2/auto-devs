@@ -102,7 +102,7 @@ func (h *ProjectHandler) ListProjects(c *gin.Context) {
 	sortBy := c.DefaultQuery("sort_by", "created_at")
 	sortOrder := c.DefaultQuery("sort_order", "desc")
 	page := 1
-	pageSize := 10
+	pageSize := 0
 
 	if pageStr := c.Query("page"); pageStr != "" {
 		if p, err := strconv.Atoi(pageStr); err == nil && p > 0 {
@@ -111,7 +111,7 @@ func (h *ProjectHandler) ListProjects(c *gin.Context) {
 	}
 
 	if sizeStr := c.Query("page_size"); sizeStr != "" {
-		if s, err := strconv.Atoi(sizeStr); err == nil && s > 0 && s <= 100 {
+		if s, err := strconv.Atoi(sizeStr); err == nil && s >= 0 {
 			pageSize = s
 		}
 	}
