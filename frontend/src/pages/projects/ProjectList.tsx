@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { formatDistanceToNow } from 'date-fns'
 import { Link } from '@tanstack/react-router'
-import type { ProjectFilters } from '@/types/project'
+import type { Project, ProjectFilters } from '@/types/project'
 import {
   Plus,
   Search,
@@ -290,7 +290,15 @@ export function ProjectList() {
   )
 }
 
-function ProjectCard({ project }: { project: any }) {
+function ProjectCard({ project }: { project: Project }) {
+  const counts = project.active_task_counts
+  const hasActiveTasks =
+    counts &&
+    (counts.planning > 0 ||
+      counts.plan_reviewing > 0 ||
+      counts.implementing > 0 ||
+      counts.code_reviewing > 0)
+
   return (
     <Link to='/projects/$projectId' params={{ projectId: project.id }}>
       <Card className='group transition-shadow hover:shadow-md'>
@@ -316,6 +324,31 @@ function ProjectCard({ project }: { project: any }) {
               {project.repository_url || 'No repository URL'}
             </span>
           </div>
+
+          {hasActiveTasks && (
+            <div className='flex flex-wrap gap-1'>
+              {counts.planning > 0 && (
+                <Badge variant='outline' className='border-blue-300 bg-blue-50 text-blue-700 dark:border-blue-700 dark:bg-blue-950 dark:text-blue-300'>
+                  Planning: {counts.planning}
+                </Badge>
+              )}
+              {counts.plan_reviewing > 0 && (
+                <Badge variant='outline' className='border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-300'>
+                  Plan Review: {counts.plan_reviewing}
+                </Badge>
+              )}
+              {counts.implementing > 0 && (
+                <Badge variant='outline' className='border-purple-300 bg-purple-50 text-purple-700 dark:border-purple-700 dark:bg-purple-950 dark:text-purple-300'>
+                  Implementing: {counts.implementing}
+                </Badge>
+              )}
+              {counts.code_reviewing > 0 && (
+                <Badge variant='outline' className='border-orange-300 bg-orange-50 text-orange-700 dark:border-orange-700 dark:bg-orange-950 dark:text-orange-300'>
+                  Code Review: {counts.code_reviewing}
+                </Badge>
+              )}
+            </div>
+          )}
 
           <div className='text-muted-foreground flex items-center justify-between text-sm'>
             <div className='flex items-center gap-2'>
