@@ -1,3 +1,10 @@
+export interface ActiveTaskCounts {
+  planning: number
+  plan_reviewing: number
+  implementing: number
+  code_reviewing: number
+}
+
 export interface Project {
   id: string
   name: string
@@ -7,6 +14,7 @@ export interface Project {
   init_workspace_script?: string
   created_at: string
   updated_at: string
+  active_task_counts: ActiveTaskCounts
 }
 
 export interface CreateProjectRequest {

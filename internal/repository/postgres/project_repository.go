@@ -185,6 +185,46 @@ func (r *projectRepository) GetTaskStatistics(ctx context.Context, projectID uui
 	return taskCounts, nil
 }
 
+// GetActiveTaskCountsBatch retrieves active task counts for multiple projects in a single query
+func (r *projectRepository) GetActiveTaskCountsBatch(ctx context.Context, projectIDs []uuid.UUID) (map[uuid.UUID]repository.ActiveTaskCounts, error) {
+	if len(projectIDs) == 0 {
+		return map[uuid.UUID]repository.ActiveTaskCounts{}, nil
+	}
+
+	var results []struct {
+		ProjectID     uuid.UUID `gorm:"column:project_id"`
+		Planning      int       `gorm:"column:planning"`
+		PlanReviewing int       `gorm:"column:plan_reviewing"`
+		Implementing  int       `gorm:"column:implementing"`
+		CodeReviewing int       `gorm:"column:code_reviewing"`
+	}
+
+	err := r.db.WithContext(ctx).Raw(`
+		SELECT project_id,
+			COUNT(CASE WHEN status = 'PLANNING' THEN 1 END) as planning,
+			COUNT(CASE WHEN status = 'PLAN_REVIEWING' THEN 1 END) as plan_reviewing,
+			COUNT(CASE WHEN status = 'IMPLEMENTING' THEN 1 END) as implementing,
+			COUNT(CASE WHEN status = 'CODE_REVIEWING' THEN 1 END) as code_reviewing
+		FROM tasks
+		WHERE project_id IN ? AND deleted_at IS NULL AND is_archived = false
+		GROUP BY project_id
+	`, projectIDs).Scan(&results).Error
+	if err != nil {
+		return nil, fmt.Errorf("failed to get active task counts batch: %w", err)
+	}
+
+	counts := make(map[uuid.UUID]repository.ActiveTaskCounts, len(results))
+	for _, r := range results {
+		counts[r.ProjectID] = repository.ActiveTaskCounts{
+			Planning:      r.Planning,
+			PlanReviewing: r.PlanReviewing,
+			Implementing:  r.Implementing,
+			CodeReviewing: r.CodeReviewing,
+		}
+	}
+	return counts, nil
+}
+
 // GetLastActivityAt retrieves the last activity timestamp for a project
 func (r *projectRepository) GetLastActivityAt(ctx context.Context, projectID uuid.UUID) (*time.Time, error) {
 	var lastActivity sql.NullTime

@@ -280,6 +280,63 @@ func (_c *ProjectRepositoryMock_Delete_Call) RunAndReturn(run func(ctx context.C
 	return _c
 }
 
+// GetActiveTaskCountsBatch provides a mock function for the type ProjectRepositoryMock
+func (_mock *ProjectRepositoryMock) GetActiveTaskCountsBatch(ctx context.Context, projectIDs []uuid.UUID) (map[uuid.UUID]ActiveTaskCounts, error) {
+	ret := _mock.Called(ctx, projectIDs)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetActiveTaskCountsBatch")
+	}
+
+	var r0 map[uuid.UUID]ActiveTaskCounts
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, []uuid.UUID) (map[uuid.UUID]ActiveTaskCounts, error)); ok {
+		return returnFunc(ctx, projectIDs)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, []uuid.UUID) map[uuid.UUID]ActiveTaskCounts); ok {
+		r0 = returnFunc(ctx, projectIDs)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(map[uuid.UUID]ActiveTaskCounts)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, []uuid.UUID) error); ok {
+		r1 = returnFunc(ctx, projectIDs)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// ProjectRepositoryMock_GetActiveTaskCountsBatch_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetActiveTaskCountsBatch'
+type ProjectRepositoryMock_GetActiveTaskCountsBatch_Call struct {
+	*mock.Call
+}
+
+// GetActiveTaskCountsBatch is a helper method to define mock.On call
+//   - ctx
+//   - projectIDs
+func (_e *ProjectRepositoryMock_Expecter) GetActiveTaskCountsBatch(ctx interface{}, projectIDs interface{}) *ProjectRepositoryMock_GetActiveTaskCountsBatch_Call {
+	return &ProjectRepositoryMock_GetActiveTaskCountsBatch_Call{Call: _e.mock.On("GetActiveTaskCountsBatch", ctx, projectIDs)}
+}
+
+func (_c *ProjectRepositoryMock_GetActiveTaskCountsBatch_Call) Run(run func(ctx context.Context, projectIDs []uuid.UUID)) *ProjectRepositoryMock_GetActiveTaskCountsBatch_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].([]uuid.UUID))
+	})
+	return _c
+}
+
+func (_c *ProjectRepositoryMock_GetActiveTaskCountsBatch_Call) Return(counts map[uuid.UUID]ActiveTaskCounts, err error) *ProjectRepositoryMock_GetActiveTaskCountsBatch_Call {
+	_c.Call.Return(counts, err)
+	return _c
+}
+
+func (_c *ProjectRepositoryMock_GetActiveTaskCountsBatch_Call) RunAndReturn(run func(ctx context.Context, projectIDs []uuid.UUID) (map[uuid.UUID]ActiveTaskCounts, error)) *ProjectRepositoryMock_GetActiveTaskCountsBatch_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetAllWithParams provides a mock function for the type ProjectRepositoryMock
 func (_mock *ProjectRepositoryMock) GetAllWithParams(ctx context.Context, params GetProjectsParams) ([]*entity.Project, int, error) {
 	ret := _mock.Called(ctx, params)

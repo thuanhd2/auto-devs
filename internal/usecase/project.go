@@ -60,10 +60,11 @@ type GetProjectsParams struct {
 }
 
 type GetProjectsResult struct {
-	Projects []*entity.Project `json:"projects"`
-	Total    int               `json:"total"`
-	Page     int               `json:"page"`
-	PageSize int               `json:"page_size"`
+	Projects         []*entity.Project                    `json:"projects"`
+	Total            int                                  `json:"total"`
+	Page             int                                  `json:"page"`
+	PageSize         int                                  `json:"page_size"`
+	ActiveTaskCounts map[uuid.UUID]repository.ActiveTaskCounts `json:"active_task_counts"`
 }
 
 type ProjectStatistics struct {
@@ -269,11 +270,21 @@ func (u *projectUsecase) GetAll(ctx context.Context, params GetProjectsParams) (
 		return nil, fmt.Errorf("failed to get projects: %w", err)
 	}
 
+	projectIDs := make([]uuid.UUID, len(projects))
+	for i, p := range projects {
+		projectIDs[i] = p.ID
+	}
+	activeTaskCounts, err := u.projectRepo.GetActiveTaskCountsBatch(ctx, projectIDs)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get active task counts: %w", err)
+	}
+
 	return &GetProjectsResult{
-		Projects: projects,
-		Total:    total,
-		Page:     params.Page,
-		PageSize: params.PageSize,
+		Projects:         projects,
+		Total:            total,
+		Page:             params.Page,
+		PageSize:         params.PageSize,
+		ActiveTaskCounts: activeTaskCounts,
 	}, nil
 }
 

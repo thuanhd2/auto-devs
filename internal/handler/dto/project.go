@@ -24,16 +24,24 @@ type ProjectUpdateRequest struct {
 	InitWorkspaceScript *string `json:"init_workspace_script,omitempty" example:"npm install && npm run build"`
 }
 
+type ActiveTaskCounts struct {
+	Planning      int `json:"planning"`
+	PlanReviewing int `json:"plan_reviewing"`
+	Implementing  int `json:"implementing"`
+	CodeReviewing int `json:"code_reviewing"`
+}
+
 // Project response DTOs
 type ProjectResponse struct {
-	ID                  uuid.UUID `json:"id" example:"123e4567-e89b-12d3-a456-426614174000"`
-	Name                string    `json:"name" example:"My Project"`
-	Description         string    `json:"description" example:"Project description"`
-	RepositoryURL       string    `json:"repository_url,omitempty" example:"https://github.com/user/repo.git"`
-	WorktreeBasePath    string    `json:"worktree_base_path,omitempty" example:"/tmp/projects/repo"`
-	InitWorkspaceScript string    `json:"init_workspace_script,omitempty" example:"npm install && npm run build"`
-	CreatedAt           time.Time `json:"created_at" example:"2024-01-15T10:30:00Z"`
-	UpdatedAt           time.Time `json:"updated_at" example:"2024-01-15T10:30:00Z"`
+	ID                  uuid.UUID      `json:"id" example:"123e4567-e89b-12d3-a456-426614174000"`
+	Name                string         `json:"name" example:"My Project"`
+	Description         string         `json:"description" example:"Project description"`
+	RepositoryURL       string         `json:"repository_url,omitempty" example:"https://github.com/user/repo.git"`
+	WorktreeBasePath    string         `json:"worktree_base_path,omitempty" example:"/tmp/projects/repo"`
+	InitWorkspaceScript string         `json:"init_workspace_script,omitempty" example:"npm install && npm run build"`
+	CreatedAt           time.Time      `json:"created_at" example:"2024-01-15T10:30:00Z"`
+	UpdatedAt           time.Time      `json:"updated_at" example:"2024-01-15T10:30:00Z"`
+	ActiveTaskCounts    ActiveTaskCounts `json:"active_task_counts"`
 }
 
 type ProjectWithTasksResponse struct {
@@ -144,7 +152,16 @@ func ProjectListResponseFromEntities(projects []*entity.Project) ProjectListResp
 func ProjectListResponseFromResult(result *usecase.GetProjectsResult) ProjectListResponse {
 	responses := make([]ProjectResponse, len(result.Projects))
 	for i, project := range result.Projects {
-		responses[i] = ProjectResponseFromEntity(project)
+		resp := ProjectResponseFromEntity(project)
+		if counts, ok := result.ActiveTaskCounts[project.ID]; ok {
+			resp.ActiveTaskCounts = ActiveTaskCounts{
+				Planning:      counts.Planning,
+				PlanReviewing: counts.PlanReviewing,
+				Implementing:  counts.Implementing,
+				CodeReviewing: counts.CodeReviewing,
+			}
+		}
+		responses[i] = resp
 	}
 	return ProjectListResponse{
 		Projects: responses,

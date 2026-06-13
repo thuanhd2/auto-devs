@@ -8,14 +8,22 @@ import (
 	"github.com/google/uuid"
 )
 
+type ActiveTaskCounts struct {
+	Planning      int
+	PlanReviewing int
+	Implementing  int
+	CodeReviewing int
+}
+
 type ProjectRepository interface {
 	Create(ctx context.Context, project *entity.Project) error
 	GetByID(ctx context.Context, id uuid.UUID) (*entity.Project, error)
-GetAllWithParams(ctx context.Context, params GetProjectsParams) ([]*entity.Project, int, error)
+	GetAllWithParams(ctx context.Context, params GetProjectsParams) ([]*entity.Project, int, error)
 	Update(ctx context.Context, project *entity.Project) error
 	Delete(ctx context.Context, id uuid.UUID) error
-GetTaskStatistics(ctx context.Context, projectID uuid.UUID) (map[entity.TaskStatus]int, error)
+	GetTaskStatistics(ctx context.Context, projectID uuid.UUID) (map[entity.TaskStatus]int, error)
 	GetLastActivityAt(ctx context.Context, projectID uuid.UUID) (*time.Time, error)
+	GetActiveTaskCountsBatch(ctx context.Context, projectIDs []uuid.UUID) (map[uuid.UUID]ActiveTaskCounts, error)
 	Archive(ctx context.Context, id uuid.UUID) error
 	Restore(ctx context.Context, id uuid.UUID) error
 	CheckNameExists(ctx context.Context, name string, excludeID *uuid.UUID) (bool, error)
