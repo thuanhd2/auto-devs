@@ -245,8 +245,8 @@ func (u *projectUsecase) GetAll(ctx context.Context, params GetProjectsParams) (
 	if params.Page <= 0 {
 		params.Page = 1
 	}
-	if params.PageSize <= 0 {
-		params.PageSize = 10
+	if params.PageSize < 0 {
+		params.PageSize = 0
 	}
 	if params.PageSize > 100 {
 		params.PageSize = 100

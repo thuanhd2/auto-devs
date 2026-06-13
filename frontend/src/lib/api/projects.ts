@@ -33,6 +33,9 @@ export const projectsApi = {
       }
     }
 
+    // Always load all projects
+    params.append('page_size', '0')
+
     // Default to show only non-archived projects if not specified
     if (!params.has('archived')) {
       params.append('archived', 'false')
