@@ -10,7 +10,9 @@ interface ExecutionLogsPannelProps {
 
 export function ExecutionLogsPannel({ executionId }: ExecutionLogsPannelProps) {
   const { data: execution, isLoading, error } = useExecution(executionId)
-  const logs = (execution?.logs || []).sort((a, b) => a.line - b.line)
+  const logs = (execution?.logs || [])
+    .filter(log => log.log_type !== 'system')
+    .sort((a, b) => a.line - b.line)
   const scrollAreaRef = useRef<HTMLDivElement>(null)
   const [prevLogsLength, setPrevLogsLength] = useState(0)
 

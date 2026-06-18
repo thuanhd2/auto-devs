@@ -14,6 +14,8 @@ interface StructuredLogItemProps {
 }
 
 export function StructuredLogItem({ log }: StructuredLogItemProps) {
+  if (log.log_type === 'system') return null
+
   // Use structured fields if available, fallback to raw message parsing
   if (log.log_type && log.parsed_content) {
     return <StructuredLogRenderer log={log} />
@@ -342,6 +344,8 @@ function LegacyLogRenderer({ log }: { log: ExecutionLog }) {
 
   try {
     const logData = JSON.parse(message)
+
+    if (logData.type === 'system') return null
 
     // Get icon based on message type
     const getIcon = () => {
