@@ -16,7 +16,7 @@ func NewClaudeCodeExecutor() *ClaudeCodeExecutor {
 }
 
 func (e *ClaudeCodeExecutor) GetPlanningCommand(ctx context.Context, task *entity.Task) (string, string, map[string]string, error) {
-	command := "npx -y @anthropic-ai/claude-code@latest -p --plan --verbose --output-format=stream-json"
+	command := "npx -y @anthropic-ai/claude-code@latest -p --permission-mode=plan --verbose --output-format=stream-json"
 	prompt, err := e.generatePlanningPrompt(*task)
 	if err != nil {
 		return "", "", nil, err
