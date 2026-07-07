@@ -11,11 +11,12 @@ import (
 )
 
 // SetupRoutes configures all API routes and middleware
-func SetupRoutes(router *gin.Engine, projectUsecase usecase.ProjectUsecase, taskUsecase usecase.TaskUsecase, executionUsecase usecase.ExecutionUsecase, db *database.GormDB, wsService *websocket.Service) {
+func SetupRoutes(router *gin.Engine, projectUsecase usecase.ProjectUsecase, taskUsecase usecase.TaskUsecase, executionUsecase usecase.ExecutionUsecase, worktreeUsecase usecase.WorktreeUsecase, db *database.GormDB, wsService *websocket.Service) {
 	// Initialize handlers
 	projectHandler := NewProjectHandlerWithWebSocket(projectUsecase, wsService)
 	taskHandler := NewTaskHandlerWithWebSocket(taskUsecase, wsService)
 	executionHandler := NewExecutionHandler(executionUsecase)
+	worktreeHandler := NewWorktreeHandler(worktreeUsecase)
 	wsHandler := wsService.GetHandler()
 
 	// Global middleware
@@ -105,5 +106,8 @@ func SetupRoutes(router *gin.Engine, projectUsecase usecase.ProjectUsecase, task
 			executions.DELETE("/:id", executionHandler.DeleteExecution)
 			executions.GET("/:id/logs", executionHandler.GetExecutionLogs)
 		}
+
+		// Worktree routes
+		RegisterWorktreeRoutes(v1, worktreeHandler)
 	}
 }
