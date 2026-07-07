@@ -44,10 +44,11 @@ type WorktreeUsecase interface {
 }
 
 type CreateWorktreeRequest struct {
-	TaskID     uuid.UUID `json:"task_id" binding:"required"`
-	ProjectID  uuid.UUID `json:"project_id" binding:"required"`
-	TaskTitle  string    `json:"task_title" binding:"required"`
-	Repository string    `json:"repository,omitempty"` // Optional repository URL to clone
+	TaskID         uuid.UUID `json:"task_id" binding:"required"`
+	ProjectID      uuid.UUID `json:"project_id" binding:"required"`
+	TaskTitle      string    `json:"task_title" binding:"required"`
+	BaseBranchName string    `json:"base_branch_name,omitempty"` // Optional base branch override
+	Repository     string    `json:"repository,omitempty"`       // Optional repository URL to clone
 }
 
 type CleanupWorktreeRequest struct {
@@ -150,7 +151,9 @@ func (w *worktreeUsecase) CreateWorktreeForTask(ctx context.Context, req CreateW
 	}
 
 	taskBranchName := ""
-	if task.BaseBranchName != nil {
+	if req.BaseBranchName != "" {
+		taskBranchName = req.BaseBranchName
+	} else if task.BaseBranchName != nil {
 		taskBranchName = *task.BaseBranchName
 	} else {
 		taskBranchName = "main"
@@ -559,8 +562,8 @@ func (w *worktreeUsecase) validateTaskEligibility(ctx context.Context, taskID uu
 	}
 
 	// Check if task is in a status that allows worktree creation
-	if task.Status != entity.TaskStatusPLANNING && task.Status != entity.TaskStatusIMPLEMENTING {
-		return fmt.Errorf("task must be in PLANNING or IMPLEMENTING status to create worktree")
+	if task.Status != entity.TaskStatusTODO && task.Status != entity.TaskStatusPLANNING && task.Status != entity.TaskStatusIMPLEMENTING {
+		return fmt.Errorf("task must be in TODO, PLANNING or IMPLEMENTING status to create worktree")
 	}
 
 	// Check if task already has a worktree

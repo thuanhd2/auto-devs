@@ -34,7 +34,7 @@ interface BranchSelectionDialogProps {
   projectId: string
   taskTitle: string
   onBranchSelected: (branchName: string, aiType: string, autoImplement: boolean) => void
-  mode?: 'planning' | 'implementing'
+  mode?: 'planning' | 'implementing' | 'worktree'
 }
 
 export function BranchSelectionDialog({
@@ -55,7 +55,9 @@ export function BranchSelectionDialog({
   const localStorageKey =
     mode === 'implementing'
       ? 'ai_preference_implementing'
-      : 'ai_preference_planning'
+      : mode === 'worktree'
+        ? 'ai_preference_planning'
+        : 'ai_preference_planning'
 
   // Load AI type preference from localStorage
   useEffect(() => {
@@ -93,8 +95,10 @@ export function BranchSelectionDialog({
   }, [open, projectId, fetchBranches])
 
   const handleConfirm = () => {
-    if (selectedBranch && selectedAIType) {
-      localStorage.setItem(localStorageKey, selectedAIType)
+    if (selectedBranch && (mode === 'worktree' || selectedAIType)) {
+      if (mode !== 'worktree') {
+        localStorage.setItem(localStorageKey, selectedAIType)
+      }
       onBranchSelected(selectedBranch, selectedAIType, autoImplement)
       onOpenChange(false)
       setSelectedBranch('')
@@ -110,7 +114,7 @@ export function BranchSelectionDialog({
     setError('')
   }
 
-  const ais = getAIs(mode === 'planning')
+  const ais = getAIs(mode === 'planning' || mode === 'worktree')
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -118,13 +122,15 @@ export function BranchSelectionDialog({
         <DialogHeader>
           <DialogTitle className='flex items-center gap-2'>
             <GitBranch className='h-5 w-5' />
-            {mode === 'implementing' ? 'Start Implementation' : 'Start Planning'}
+            {mode === 'implementing' ? 'Start Implementation' : mode === 'worktree' ? 'Create Worktree' : 'Start Planning'}
           </DialogTitle>
           <DialogDescription>
             Select a branch to{' '}
             {mode === 'implementing'
               ? 'start implementing task directly:'
-              : 'start planning for task:'}{' '}
+              : mode === 'worktree'
+                ? 'create worktree for task:'
+                : 'start planning for task:'}{' '}
             <strong>{taskTitle}</strong>
           </DialogDescription>
         </DialogHeader>
@@ -175,6 +181,7 @@ export function BranchSelectionDialog({
                 )}
               </div>
 
+              {mode !== 'worktree' && (
               <div className='space-y-2'>
                 <label className='flex items-center gap-2 text-sm font-medium'>
                   <Bot className='h-4 w-4' />
@@ -201,6 +208,7 @@ export function BranchSelectionDialog({
                   </SelectContent>
                 </Select>
               </div>
+              )}
 
               {mode === 'planning' && (
                 <div className='flex items-center space-x-2 pt-2'>
@@ -227,14 +235,16 @@ export function BranchSelectionDialog({
           </Button>
           <Button
             onClick={handleConfirm}
-            disabled={!selectedBranch || !selectedAIType || loading}
+            disabled={!selectedBranch || (mode !== 'worktree' && !selectedAIType) || loading}
             className={
               mode === 'implementing'
                 ? 'bg-orange-600 hover:bg-orange-700 text-white'
-                : undefined
+                : mode === 'worktree'
+                  ? 'bg-purple-600 hover:bg-purple-700 text-white'
+                  : undefined
             }
           >
-            {mode === 'implementing' ? 'Start Implementing' : 'Start Planning'}
+            {mode === 'implementing' ? 'Start Implementing' : mode === 'worktree' ? 'Create Worktree' : 'Start Planning'}
           </Button>
         </DialogFooter>
       </DialogContent>

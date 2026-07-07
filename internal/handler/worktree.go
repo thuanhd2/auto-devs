@@ -43,10 +43,11 @@ func (h *WorktreeHandler) CreateWorktreeForTask(c *gin.Context) {
 
 	// Convert DTO to usecase request
 	usecaseReq := usecase.CreateWorktreeRequest{
-		TaskID:     req.TaskID,
-		ProjectID:  req.ProjectID,
-		TaskTitle:  req.TaskTitle,
-		Repository: req.Repository,
+		TaskID:         req.TaskID,
+		ProjectID:      req.ProjectID,
+		TaskTitle:      req.TaskTitle,
+		BaseBranchName: req.BaseBranchName,
+		Repository:     req.Repository,
 	}
 
 	worktree, err := h.worktreeUsecase.CreateWorktreeForTask(c.Request.Context(), usecaseReq)

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { getAIs } from '@/types/task'
 import { Bot, Play } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   Dialog,
   DialogContent,
@@ -22,7 +23,8 @@ interface ImplementationConfirmationDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   taskTitle: string
-  onConfirm: (aiType: string) => void
+  onConfirm: (aiType: string, autoImplement?: boolean) => void
+  mode?: 'implementing' | 'planning'
 }
 
 export function ImplementationConfirmationDialog({
@@ -30,33 +32,46 @@ export function ImplementationConfirmationDialog({
   onOpenChange,
   taskTitle,
   onConfirm,
+  mode,
 }: ImplementationConfirmationDialogProps) {
   const [selectedAIType, setSelectedAIType] = useState<string>('')
+  const [autoImplement, setAutoImplement] = useState(false)
+
+  const localStorageKey =
+    mode === 'planning' ? 'ai_preference_planning' : 'ai_preference_implementing'
 
   // Load AI type preference from localStorage
   useEffect(() => {
-    const savedImplementingAI =
+    const savedAI =
+      localStorage.getItem(localStorageKey) ||
       localStorage.getItem('ai_preference_implementing') ||
       localStorage.getItem('ai_preference_planning') ||
       'claude-code'
-    setSelectedAIType(savedImplementingAI)
-  }, [])
+    setSelectedAIType(savedAI)
+  }, [localStorageKey])
 
   const handleConfirm = () => {
     if (selectedAIType) {
-      // Save AI type preference to localStorage
-      localStorage.setItem('ai_preference_implementing', selectedAIType)
-
-      onConfirm(selectedAIType)
+      localStorage.setItem(localStorageKey, selectedAIType)
+      onConfirm(selectedAIType, mode === 'planning' ? autoImplement : undefined)
       onOpenChange(false)
+      setAutoImplement(false)
     }
   }
 
   const handleCancel = () => {
     onOpenChange(false)
+    setAutoImplement(false)
   }
 
-  const ais = getAIs(false)
+  const isPlanning = mode === 'planning'
+  const ais = getAIs(isPlanning)
+
+  const title = isPlanning ? 'Start Planning' : 'Approve Plan and Start Implementation'
+  const description = isPlanning
+    ? `Select AI assistant to start planning for task:`
+    : `Approve the plan and start implementing for task:`
+  const confirmLabel = isPlanning ? 'Start Planning' : 'Approve and Start Implementation'
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -64,11 +79,10 @@ export function ImplementationConfirmationDialog({
         <DialogHeader>
           <DialogTitle className='flex items-center gap-2'>
             <Play className='h-5 w-5' />
-            Approve Plan and Start Implementation
+            {title}
           </DialogTitle>
           <DialogDescription>
-            Approve the plan and start implementing for task:{' '}
-            <strong>{taskTitle}</strong>
+            {description} <strong>{taskTitle}</strong>
           </DialogDescription>
         </DialogHeader>
 
@@ -96,14 +110,34 @@ export function ImplementationConfirmationDialog({
               </SelectContent>
             </Select>
           </div>
+
+          {isPlanning && (
+            <div className='flex items-center space-x-2 pt-2'>
+              <Checkbox
+                id='auto-implement-confirmation'
+                checked={autoImplement}
+                onCheckedChange={(checked) => setAutoImplement(checked === true)}
+              />
+              <label
+                htmlFor='auto-implement-confirmation'
+                className='text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70'
+              >
+                Auto implement after planning complete
+              </label>
+            </div>
+          )}
         </div>
 
         <DialogFooter>
           <Button variant='outline' onClick={handleCancel}>
             Cancel
           </Button>
-          <Button onClick={handleConfirm} disabled={!selectedAIType}>
-            Approve and Start Implementation
+          <Button
+            onClick={handleConfirm}
+            disabled={!selectedAIType}
+            className={isPlanning ? 'bg-blue-600 hover:bg-blue-700 text-white' : undefined}
+          >
+            {confirmLabel}
           </Button>
         </DialogFooter>
       </DialogContent>
