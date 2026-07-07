@@ -7,6 +7,7 @@ import type {
 } from '@/types/task'
 import { toast } from 'sonner'
 import { tasksApi } from '@/lib/api/tasks'
+import { worktreesApi } from '@/lib/api/worktrees'
 
 const TASKS_QUERY_KEY = 'tasks'
 
@@ -379,6 +380,21 @@ export function useUpdatePlan() {
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.message || 'Failed to update plan')
+    },
+  })
+}
+
+export function useCreateWorktree(projectId: string) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: worktreesApi.createWorktree,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [TASKS_QUERY_KEY, projectId] })
+      toast.success('Worktree created successfully')
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Failed to create worktree')
     },
   })
 }

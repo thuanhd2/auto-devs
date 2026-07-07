@@ -51,7 +51,7 @@ func (e *DeepSeekExecutor) getEnvVars() map[string]string {
 }
 
 func (e *DeepSeekExecutor) GetPlanningCommand(ctx context.Context, task *entity.Task) (string, string, map[string]string, error) {
-	command := "npx -y @anthropic-ai/claude-code@latest -p --permission-mode=plan --verbose --output-format=stream-json"
+	command := "npx -y @anthropic-ai/claude-code@2.1.119 -p --permission-mode=plan --verbose --output-format=stream-json"
 	prompt, err := e.generatePlanningPrompt(*task)
 	if err != nil {
 		return "", "", nil, err
@@ -60,7 +60,7 @@ func (e *DeepSeekExecutor) GetPlanningCommand(ctx context.Context, task *entity.
 }
 
 func (e *DeepSeekExecutor) GetImplementationCommand(ctx context.Context, task *entity.Task) (string, string, map[string]string, error) {
-	command := "npx -y @anthropic-ai/claude-code@latest -p --dangerously-skip-permissions --verbose --output-format=stream-json"
+	command := "npx -y @anthropic-ai/claude-code@2.1.119 -p --dangerously-skip-permissions --verbose --output-format=stream-json"
 	prompt, err := e.getImplementationPrompt(ctx, task)
 	if err != nil {
 		return "", "", nil, err

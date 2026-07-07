@@ -39,6 +39,7 @@ interface TaskDetailSheetProps {
   onStartPlanning?: (taskId: string, branchName: string, aiType: string, autoImplement: boolean) => void
   onApprovePlanAndStartImplement?: (taskId: string, aiType: string) => void
   onImplementDirect?: (taskId: string, branchName: string, aiType: string) => void
+  onCreateWorktree?: (taskId: string, branchName: string) => void
 }
 
 export function TaskDetailSheet({
@@ -52,6 +53,7 @@ export function TaskDetailSheet({
   onStartPlanning,
   onApprovePlanAndStartImplement,
   onImplementDirect,
+  onCreateWorktree,
 }: TaskDetailSheetProps) {
   const navigate = useNavigate()
   const params = useParams({ strict: false }) as { projectId?: string }
@@ -118,6 +120,7 @@ export function TaskDetailSheet({
                 onStartPlanning={onStartPlanning}
                 onApprovePlanAndStartImplement={onApprovePlanAndStartImplement}
                 onImplementDirect={onImplementDirect}
+                onCreateWorktree={onCreateWorktree}
                 onChangeStatus={
                   onStatusChange
                     ? async (taskId: string, newStatus: Task['status']) => {

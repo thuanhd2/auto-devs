@@ -16,6 +16,7 @@ import {
   useApprovePlan,
   useChangeTaskStatus,
   useStartImplementingDirect,
+  useCreateWorktree,
 } from '@/hooks/use-tasks'
 import { BoardFilters } from './board-filters'
 import { KanbanBoard } from './kanban-board'
@@ -60,6 +61,7 @@ export function ProjectBoard({ projectId }: ProjectBoardProps) {
   const approvePlanAndStartImplementMutation = useApprovePlan()
   const changeTaskStatusMutation = useChangeTaskStatus()
   const startImplementingDirectMutation = useStartImplementingDirect()
+  const createWorktreeMutation = useCreateWorktree(projectId)
   // WebSocket integration
   const { setCurrentProjectId } = useWebSocketProject(projectId)
   const { subscribe, unsubscribe, initializeTaskStatuses } =
@@ -233,6 +235,21 @@ export function ProjectBoard({ projectId }: ProjectBoardProps) {
     }
   }
 
+  const handleCreateWorktree = async (taskId: string, branchName: string) => {
+    const task = localTasks.find((t) => t.id === taskId)
+    if (!task) return
+    try {
+      await createWorktreeMutation.mutateAsync({
+        taskId,
+        projectId,
+        taskTitle: task.title,
+        baseBranchName: branchName,
+      })
+    } catch (error) {
+      // Error is handled by the mutation hook
+    }
+  }
+
   return (
     <div className='flex h-full flex-col'>
       {/* <BoardToolbar
@@ -344,6 +361,7 @@ export function ProjectBoard({ projectId }: ProjectBoardProps) {
         onStartPlanning={handleStartPlanning}
         onApprovePlanAndStartImplement={handleApprovePlanAndStartImplement}
         onImplementDirect={handleImplementDirect}
+        onCreateWorktree={handleCreateWorktree}
       />
     </div>
   )
