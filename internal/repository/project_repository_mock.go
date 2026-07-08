@@ -327,8 +327,8 @@ func (_c *ProjectRepositoryMock_GetActiveTaskCountsBatch_Call) Run(run func(ctx 
 	return _c
 }
 
-func (_c *ProjectRepositoryMock_GetActiveTaskCountsBatch_Call) Return(counts map[uuid.UUID]ActiveTaskCounts, err error) *ProjectRepositoryMock_GetActiveTaskCountsBatch_Call {
-	_c.Call.Return(counts, err)
+func (_c *ProjectRepositoryMock_GetActiveTaskCountsBatch_Call) Return(uUIDToActiveTaskCounts map[uuid.UUID]ActiveTaskCounts, err error) *ProjectRepositoryMock_GetActiveTaskCountsBatch_Call {
+	_c.Call.Return(uUIDToActiveTaskCounts, err)
 	return _c
 }
 

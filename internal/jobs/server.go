@@ -78,6 +78,7 @@ func (s *Server) RegisterHandlers() {
 	s.mux.HandleFunc(TypeTaskImplementation, s.processor.ProcessTaskImplementation)
 	s.mux.HandleFunc(TypePRStatusSync, s.processor.ProcessPRStatusSync)
 	s.mux.HandleFunc(TypeWorktreeCleanup, s.processor.ProcessWorktreeCleanup)
+	s.mux.HandleFunc(TypeWorktreeCreate, s.processor.ProcessWorktreeCreate)
 }
 
 // Start starts the job server

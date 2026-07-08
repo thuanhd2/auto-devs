@@ -146,3 +146,58 @@ func (_c *JobClientInterfaceMock_EnqueueTaskPlanning_Call) RunAndReturn(run func
 	_c.Call.Return(run)
 	return _c
 }
+
+// EnqueueWorktreeCreate provides a mock function for the type JobClientInterfaceMock
+func (_mock *JobClientInterfaceMock) EnqueueWorktreeCreate(payload *WorktreeCreatePayload, delay time.Duration) (string, error) {
+	ret := _mock.Called(payload, delay)
+
+	if len(ret) == 0 {
+		panic("no return value specified for EnqueueWorktreeCreate")
+	}
+
+	var r0 string
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(*WorktreeCreatePayload, time.Duration) (string, error)); ok {
+		return returnFunc(payload, delay)
+	}
+	if returnFunc, ok := ret.Get(0).(func(*WorktreeCreatePayload, time.Duration) string); ok {
+		r0 = returnFunc(payload, delay)
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+	if returnFunc, ok := ret.Get(1).(func(*WorktreeCreatePayload, time.Duration) error); ok {
+		r1 = returnFunc(payload, delay)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// JobClientInterfaceMock_EnqueueWorktreeCreate_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'EnqueueWorktreeCreate'
+type JobClientInterfaceMock_EnqueueWorktreeCreate_Call struct {
+	*mock.Call
+}
+
+// EnqueueWorktreeCreate is a helper method to define mock.On call
+//   - payload
+//   - delay
+func (_e *JobClientInterfaceMock_Expecter) EnqueueWorktreeCreate(payload interface{}, delay interface{}) *JobClientInterfaceMock_EnqueueWorktreeCreate_Call {
+	return &JobClientInterfaceMock_EnqueueWorktreeCreate_Call{Call: _e.mock.On("EnqueueWorktreeCreate", payload, delay)}
+}
+
+func (_c *JobClientInterfaceMock_EnqueueWorktreeCreate_Call) Run(run func(payload *WorktreeCreatePayload, delay time.Duration)) *JobClientInterfaceMock_EnqueueWorktreeCreate_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(*WorktreeCreatePayload), args[1].(time.Duration))
+	})
+	return _c
+}
+
+func (_c *JobClientInterfaceMock_EnqueueWorktreeCreate_Call) Return(s string, err error) *JobClientInterfaceMock_EnqueueWorktreeCreate_Call {
+	_c.Call.Return(s, err)
+	return _c
+}
+
+func (_c *JobClientInterfaceMock_EnqueueWorktreeCreate_Call) RunAndReturn(run func(payload *WorktreeCreatePayload, delay time.Duration) (string, error)) *JobClientInterfaceMock_EnqueueWorktreeCreate_Call {
+	_c.Call.Return(run)
+	return _c
+}

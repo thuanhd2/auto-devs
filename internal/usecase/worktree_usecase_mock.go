@@ -236,6 +236,63 @@ func (_c *WorktreeUsecaseMock_CreateWorktreeForTask_Call) RunAndReturn(run func(
 	return _c
 }
 
+// EnqueueWorktreeCreation provides a mock function for the type WorktreeUsecaseMock
+func (_mock *WorktreeUsecaseMock) EnqueueWorktreeCreation(ctx context.Context, req CreateWorktreeRequest) (*entity.Worktree, error) {
+	ret := _mock.Called(ctx, req)
+
+	if len(ret) == 0 {
+		panic("no return value specified for EnqueueWorktreeCreation")
+	}
+
+	var r0 *entity.Worktree
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, CreateWorktreeRequest) (*entity.Worktree, error)); ok {
+		return returnFunc(ctx, req)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, CreateWorktreeRequest) *entity.Worktree); ok {
+		r0 = returnFunc(ctx, req)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*entity.Worktree)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, CreateWorktreeRequest) error); ok {
+		r1 = returnFunc(ctx, req)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// WorktreeUsecaseMock_EnqueueWorktreeCreation_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'EnqueueWorktreeCreation'
+type WorktreeUsecaseMock_EnqueueWorktreeCreation_Call struct {
+	*mock.Call
+}
+
+// EnqueueWorktreeCreation is a helper method to define mock.On call
+//   - ctx
+//   - req
+func (_e *WorktreeUsecaseMock_Expecter) EnqueueWorktreeCreation(ctx interface{}, req interface{}) *WorktreeUsecaseMock_EnqueueWorktreeCreation_Call {
+	return &WorktreeUsecaseMock_EnqueueWorktreeCreation_Call{Call: _e.mock.On("EnqueueWorktreeCreation", ctx, req)}
+}
+
+func (_c *WorktreeUsecaseMock_EnqueueWorktreeCreation_Call) Run(run func(ctx context.Context, req CreateWorktreeRequest)) *WorktreeUsecaseMock_EnqueueWorktreeCreation_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(CreateWorktreeRequest))
+	})
+	return _c
+}
+
+func (_c *WorktreeUsecaseMock_EnqueueWorktreeCreation_Call) Return(worktree *entity.Worktree, err error) *WorktreeUsecaseMock_EnqueueWorktreeCreation_Call {
+	_c.Call.Return(worktree, err)
+	return _c
+}
+
+func (_c *WorktreeUsecaseMock_EnqueueWorktreeCreation_Call) RunAndReturn(run func(ctx context.Context, req CreateWorktreeRequest) (*entity.Worktree, error)) *WorktreeUsecaseMock_EnqueueWorktreeCreation_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetActiveWorktreesCount provides a mock function for the type WorktreeUsecaseMock
 func (_mock *WorktreeUsecaseMock) GetActiveWorktreesCount(ctx context.Context, projectID uuid.UUID) (int, error) {
 	ret := _mock.Called(ctx, projectID)
@@ -665,6 +722,52 @@ func (_c *WorktreeUsecaseMock_InitializeWorktree_Call) Return(err error) *Worktr
 }
 
 func (_c *WorktreeUsecaseMock_InitializeWorktree_Call) RunAndReturn(run func(ctx context.Context, worktreeID uuid.UUID) error) *WorktreeUsecaseMock_InitializeWorktree_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// ProcessWorktreeCreation provides a mock function for the type WorktreeUsecaseMock
+func (_mock *WorktreeUsecaseMock) ProcessWorktreeCreation(ctx context.Context, worktreeID uuid.UUID) error {
+	ret := _mock.Called(ctx, worktreeID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ProcessWorktreeCreation")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID) error); ok {
+		r0 = returnFunc(ctx, worktreeID)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// WorktreeUsecaseMock_ProcessWorktreeCreation_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ProcessWorktreeCreation'
+type WorktreeUsecaseMock_ProcessWorktreeCreation_Call struct {
+	*mock.Call
+}
+
+// ProcessWorktreeCreation is a helper method to define mock.On call
+//   - ctx
+//   - worktreeID
+func (_e *WorktreeUsecaseMock_Expecter) ProcessWorktreeCreation(ctx interface{}, worktreeID interface{}) *WorktreeUsecaseMock_ProcessWorktreeCreation_Call {
+	return &WorktreeUsecaseMock_ProcessWorktreeCreation_Call{Call: _e.mock.On("ProcessWorktreeCreation", ctx, worktreeID)}
+}
+
+func (_c *WorktreeUsecaseMock_ProcessWorktreeCreation_Call) Run(run func(ctx context.Context, worktreeID uuid.UUID)) *WorktreeUsecaseMock_ProcessWorktreeCreation_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(uuid.UUID))
+	})
+	return _c
+}
+
+func (_c *WorktreeUsecaseMock_ProcessWorktreeCreation_Call) Return(err error) *WorktreeUsecaseMock_ProcessWorktreeCreation_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *WorktreeUsecaseMock_ProcessWorktreeCreation_Call) RunAndReturn(run func(ctx context.Context, worktreeID uuid.UUID) error) *WorktreeUsecaseMock_ProcessWorktreeCreation_Call {
 	_c.Call.Return(run)
 	return _c
 }

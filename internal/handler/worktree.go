@@ -19,14 +19,17 @@ func NewWorktreeHandler(worktreeUsecase usecase.WorktreeUsecase) *WorktreeHandle
 	}
 }
 
-// CreateWorktreeForTask creates a worktree for a task
+// CreateWorktreeForTask enqueues asynchronous worktree creation for a task
 // @Summary Create worktree for task
-// @Description Create a new Git worktree for a specific task
+// @Description Enqueue creation of a new Git worktree for a specific task. The
+// @Description worktree is created asynchronously in a background job to avoid
+// @Description request timeouts; the response returns a record with "creating"
+// @Description status that transitions to "active" once the job finishes.
 // @Tags worktrees
 // @Accept json
 // @Produce json
 // @Param request body dto.CreateWorktreeRequest true "Create worktree request"
-// @Success 201 {object} dto.WorktreeResponse
+// @Success 202 {object} dto.WorktreeResponse
 // @Failure 400 {object} dto.ErrorResponse
 // @Failure 404 {object} dto.ErrorResponse
 // @Failure 500 {object} dto.ErrorResponse
@@ -50,18 +53,18 @@ func (h *WorktreeHandler) CreateWorktreeForTask(c *gin.Context) {
 		Repository:     req.Repository,
 	}
 
-	worktree, err := h.worktreeUsecase.CreateWorktreeForTask(c.Request.Context(), usecaseReq)
+	worktree, err := h.worktreeUsecase.EnqueueWorktreeCreation(c.Request.Context(), usecaseReq)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, dto.ErrorResponse{
-			Error:   "Failed to create worktree",
+			Error:   "Failed to enqueue worktree creation",
 			Message: err.Error(),
 		})
 		return
 	}
 
-	c.JSON(http.StatusCreated, dto.WorktreeResponse{
+	c.JSON(http.StatusAccepted, dto.WorktreeResponse{
 		Worktree: worktree,
-		Message:  "Worktree created successfully",
+		Message:  "Worktree creation started",
 	})
 }
 

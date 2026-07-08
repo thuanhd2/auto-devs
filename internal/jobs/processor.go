@@ -860,6 +860,50 @@ func (p *Processor) sendPRNotification(ctx context.Context, projectID uuid.UUID,
 	}
 }
 
+// ProcessWorktreeCreate processes worktree creation jobs. It performs the slow git
+// worktree creation off the HTTP request path and notifies clients when done.
+func (p *Processor) ProcessWorktreeCreate(ctx context.Context, task *asynq.Task) error {
+	p.logger.Info("Processing worktree create job")
+
+	payload, err := ParseWorktreeCreatePayload(task)
+	if err != nil {
+		return fmt.Errorf("failed to parse worktree create payload: %w", err)
+	}
+
+	if err := p.worktreeUsecase.ProcessWorktreeCreation(ctx, payload.WorktreeID); err != nil {
+		p.logger.Error("Failed to process worktree creation",
+			"worktree_id", payload.WorktreeID, "error", err)
+		p.notifyWorktreeStatus(payload.TaskID, payload.ProjectID, string(entity.WorktreeStatusError))
+		return fmt.Errorf("failed to process worktree creation: %w", err)
+	}
+
+	p.notifyWorktreeStatus(payload.TaskID, payload.ProjectID, string(entity.WorktreeStatusActive))
+	p.logger.Info("Worktree create job completed", "worktree_id", payload.WorktreeID)
+	return nil
+}
+
+// notifyWorktreeStatus best-effort notifies clients about a worktree status change
+// so the UI can refresh once async creation finishes.
+func (p *Processor) notifyWorktreeStatus(taskID, projectID uuid.UUID, status string) {
+	if p.redisBroker != nil {
+		if err := p.redisBroker.PublishStatusChanged(taskID, projectID,
+			"worktree", string(entity.WorktreeStatusCreating), status); err != nil {
+			p.logger.Warn("Failed to publish worktree status via Redis broker",
+				"task_id", taskID, "error", err)
+		} else {
+			return
+		}
+	}
+
+	if p.wsService != nil {
+		if err := p.wsService.NotifyStatusChanged(taskID, projectID,
+			"worktree", string(entity.WorktreeStatusCreating), status); err != nil {
+			p.logger.Warn("Failed to notify worktree status via WebSocket",
+				"task_id", taskID, "error", err)
+		}
+	}
+}
+
 // ProcessWorktreeCleanup processes worktree cleanup jobs
 func (p *Processor) ProcessWorktreeCleanup(ctx context.Context, task *asynq.Task) error {
 	p.logger.Info("Processing worktree cleanup job")

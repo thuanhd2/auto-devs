@@ -6,6 +6,7 @@ package usecase
 
 import (
 	"context"
+	"time"
 
 	"github.com/auto-devs/auto-devs/internal/entity"
 	"github.com/google/uuid"
@@ -140,6 +141,53 @@ func (_c *TaskUsecaseMock_AddDependency_Call) Return(err error) *TaskUsecaseMock
 }
 
 func (_c *TaskUsecaseMock_AddDependency_Call) RunAndReturn(run func(ctx context.Context, taskID uuid.UUID, dependsOnTaskID uuid.UUID, dependencyType string) error) *TaskUsecaseMock_AddDependency_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// AppendErrorLog provides a mock function for the type TaskUsecaseMock
+func (_mock *TaskUsecaseMock) AppendErrorLog(ctx context.Context, taskID uuid.UUID, errorMsg string) error {
+	ret := _mock.Called(ctx, taskID, errorMsg)
+
+	if len(ret) == 0 {
+		panic("no return value specified for AppendErrorLog")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, string) error); ok {
+		r0 = returnFunc(ctx, taskID, errorMsg)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// TaskUsecaseMock_AppendErrorLog_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'AppendErrorLog'
+type TaskUsecaseMock_AppendErrorLog_Call struct {
+	*mock.Call
+}
+
+// AppendErrorLog is a helper method to define mock.On call
+//   - ctx
+//   - taskID
+//   - errorMsg
+func (_e *TaskUsecaseMock_Expecter) AppendErrorLog(ctx interface{}, taskID interface{}, errorMsg interface{}) *TaskUsecaseMock_AppendErrorLog_Call {
+	return &TaskUsecaseMock_AppendErrorLog_Call{Call: _e.mock.On("AppendErrorLog", ctx, taskID, errorMsg)}
+}
+
+func (_c *TaskUsecaseMock_AppendErrorLog_Call) Run(run func(ctx context.Context, taskID uuid.UUID, errorMsg string)) *TaskUsecaseMock_AppendErrorLog_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(uuid.UUID), args[2].(string))
+	})
+	return _c
+}
+
+func (_c *TaskUsecaseMock_AppendErrorLog_Call) Return(err error) *TaskUsecaseMock_AppendErrorLog_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *TaskUsecaseMock_AppendErrorLog_Call) RunAndReturn(run func(ctx context.Context, taskID uuid.UUID, errorMsg string) error) *TaskUsecaseMock_AppendErrorLog_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -588,6 +636,63 @@ func (_c *TaskUsecaseMock_Create_Call) Return(task *entity.Task, err error) *Tas
 }
 
 func (_c *TaskUsecaseMock_Create_Call) RunAndReturn(run func(ctx context.Context, req CreateTaskRequest) (*entity.Task, error)) *TaskUsecaseMock_Create_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// CreatePullRequest provides a mock function for the type TaskUsecaseMock
+func (_mock *TaskUsecaseMock) CreatePullRequest(ctx context.Context, taskID uuid.UUID) (*entity.PullRequest, error) {
+	ret := _mock.Called(ctx, taskID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for CreatePullRequest")
+	}
+
+	var r0 *entity.PullRequest
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID) (*entity.PullRequest, error)); ok {
+		return returnFunc(ctx, taskID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID) *entity.PullRequest); ok {
+		r0 = returnFunc(ctx, taskID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*entity.PullRequest)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID) error); ok {
+		r1 = returnFunc(ctx, taskID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// TaskUsecaseMock_CreatePullRequest_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CreatePullRequest'
+type TaskUsecaseMock_CreatePullRequest_Call struct {
+	*mock.Call
+}
+
+// CreatePullRequest is a helper method to define mock.On call
+//   - ctx
+//   - taskID
+func (_e *TaskUsecaseMock_Expecter) CreatePullRequest(ctx interface{}, taskID interface{}) *TaskUsecaseMock_CreatePullRequest_Call {
+	return &TaskUsecaseMock_CreatePullRequest_Call{Call: _e.mock.On("CreatePullRequest", ctx, taskID)}
+}
+
+func (_c *TaskUsecaseMock_CreatePullRequest_Call) Run(run func(ctx context.Context, taskID uuid.UUID)) *TaskUsecaseMock_CreatePullRequest_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(uuid.UUID))
+	})
+	return _c
+}
+
+func (_c *TaskUsecaseMock_CreatePullRequest_Call) Return(pullRequest *entity.PullRequest, err error) *TaskUsecaseMock_CreatePullRequest_Call {
+	_c.Call.Return(pullRequest, err)
+	return _c
+}
+
+func (_c *TaskUsecaseMock_CreatePullRequest_Call) RunAndReturn(run func(ctx context.Context, taskID uuid.UUID) (*entity.PullRequest, error)) *TaskUsecaseMock_CreatePullRequest_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -1533,6 +1638,63 @@ func (_c *TaskUsecaseMock_GetParentTask_Call) RunAndReturn(run func(ctx context.
 	return _c
 }
 
+// GetPlansByTaskID provides a mock function for the type TaskUsecaseMock
+func (_mock *TaskUsecaseMock) GetPlansByTaskID(ctx context.Context, taskID uuid.UUID) ([]entity.Plan, error) {
+	ret := _mock.Called(ctx, taskID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetPlansByTaskID")
+	}
+
+	var r0 []entity.Plan
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID) ([]entity.Plan, error)); ok {
+		return returnFunc(ctx, taskID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID) []entity.Plan); ok {
+		r0 = returnFunc(ctx, taskID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]entity.Plan)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID) error); ok {
+		r1 = returnFunc(ctx, taskID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// TaskUsecaseMock_GetPlansByTaskID_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetPlansByTaskID'
+type TaskUsecaseMock_GetPlansByTaskID_Call struct {
+	*mock.Call
+}
+
+// GetPlansByTaskID is a helper method to define mock.On call
+//   - ctx
+//   - taskID
+func (_e *TaskUsecaseMock_Expecter) GetPlansByTaskID(ctx interface{}, taskID interface{}) *TaskUsecaseMock_GetPlansByTaskID_Call {
+	return &TaskUsecaseMock_GetPlansByTaskID_Call{Call: _e.mock.On("GetPlansByTaskID", ctx, taskID)}
+}
+
+func (_c *TaskUsecaseMock_GetPlansByTaskID_Call) Run(run func(ctx context.Context, taskID uuid.UUID)) *TaskUsecaseMock_GetPlansByTaskID_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(uuid.UUID))
+	})
+	return _c
+}
+
+func (_c *TaskUsecaseMock_GetPlansByTaskID_Call) Return(plans []entity.Plan, err error) *TaskUsecaseMock_GetPlansByTaskID_Call {
+	_c.Call.Return(plans, err)
+	return _c
+}
+
+func (_c *TaskUsecaseMock_GetPlansByTaskID_Call) RunAndReturn(run func(ctx context.Context, taskID uuid.UUID) ([]entity.Plan, error)) *TaskUsecaseMock_GetPlansByTaskID_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetPullRequest provides a mock function for the type TaskUsecaseMock
 func (_mock *TaskUsecaseMock) GetPullRequest(ctx context.Context, taskID uuid.UUID) (*entity.PullRequest, error) {
 	ret := _mock.Called(ctx, taskID)
@@ -1761,6 +1923,61 @@ func (_c *TaskUsecaseMock_GetSubtasks_Call) RunAndReturn(run func(ctx context.Co
 	return _c
 }
 
+// GetTaskDiff provides a mock function for the type TaskUsecaseMock
+func (_mock *TaskUsecaseMock) GetTaskDiff(ctx context.Context, taskID uuid.UUID) (string, error) {
+	ret := _mock.Called(ctx, taskID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetTaskDiff")
+	}
+
+	var r0 string
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID) (string, error)); ok {
+		return returnFunc(ctx, taskID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID) string); ok {
+		r0 = returnFunc(ctx, taskID)
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID) error); ok {
+		r1 = returnFunc(ctx, taskID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// TaskUsecaseMock_GetTaskDiff_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetTaskDiff'
+type TaskUsecaseMock_GetTaskDiff_Call struct {
+	*mock.Call
+}
+
+// GetTaskDiff is a helper method to define mock.On call
+//   - ctx
+//   - taskID
+func (_e *TaskUsecaseMock_Expecter) GetTaskDiff(ctx interface{}, taskID interface{}) *TaskUsecaseMock_GetTaskDiff_Call {
+	return &TaskUsecaseMock_GetTaskDiff_Call{Call: _e.mock.On("GetTaskDiff", ctx, taskID)}
+}
+
+func (_c *TaskUsecaseMock_GetTaskDiff_Call) Run(run func(ctx context.Context, taskID uuid.UUID)) *TaskUsecaseMock_GetTaskDiff_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(uuid.UUID))
+	})
+	return _c
+}
+
+func (_c *TaskUsecaseMock_GetTaskDiff_Call) Return(s string, err error) *TaskUsecaseMock_GetTaskDiff_Call {
+	_c.Call.Return(s, err)
+	return _c
+}
+
+func (_c *TaskUsecaseMock_GetTaskDiff_Call) RunAndReturn(run func(ctx context.Context, taskID uuid.UUID) (string, error)) *TaskUsecaseMock_GetTaskDiff_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetTaskStatistics provides a mock function for the type TaskUsecaseMock
 func (_mock *TaskUsecaseMock) GetTaskStatistics(ctx context.Context, projectID uuid.UUID) (*entity.TaskStatistics, error) {
 	ret := _mock.Called(ctx, projectID)
@@ -1928,6 +2145,63 @@ func (_c *TaskUsecaseMock_GetTasksByTags_Call) Return(tasks []*entity.Task, err 
 }
 
 func (_c *TaskUsecaseMock_GetTasksByTags_Call) RunAndReturn(run func(ctx context.Context, tags []string) ([]*entity.Task, error)) *TaskUsecaseMock_GetTasksByTags_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// GetTasksEligibleForWorktreeCleanup provides a mock function for the type TaskUsecaseMock
+func (_mock *TaskUsecaseMock) GetTasksEligibleForWorktreeCleanup(ctx context.Context, cutoffTime time.Time) ([]*entity.Task, error) {
+	ret := _mock.Called(ctx, cutoffTime)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetTasksEligibleForWorktreeCleanup")
+	}
+
+	var r0 []*entity.Task
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, time.Time) ([]*entity.Task, error)); ok {
+		return returnFunc(ctx, cutoffTime)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, time.Time) []*entity.Task); ok {
+		r0 = returnFunc(ctx, cutoffTime)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]*entity.Task)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, time.Time) error); ok {
+		r1 = returnFunc(ctx, cutoffTime)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// TaskUsecaseMock_GetTasksEligibleForWorktreeCleanup_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetTasksEligibleForWorktreeCleanup'
+type TaskUsecaseMock_GetTasksEligibleForWorktreeCleanup_Call struct {
+	*mock.Call
+}
+
+// GetTasksEligibleForWorktreeCleanup is a helper method to define mock.On call
+//   - ctx
+//   - cutoffTime
+func (_e *TaskUsecaseMock_Expecter) GetTasksEligibleForWorktreeCleanup(ctx interface{}, cutoffTime interface{}) *TaskUsecaseMock_GetTasksEligibleForWorktreeCleanup_Call {
+	return &TaskUsecaseMock_GetTasksEligibleForWorktreeCleanup_Call{Call: _e.mock.On("GetTasksEligibleForWorktreeCleanup", ctx, cutoffTime)}
+}
+
+func (_c *TaskUsecaseMock_GetTasksEligibleForWorktreeCleanup_Call) Run(run func(ctx context.Context, cutoffTime time.Time)) *TaskUsecaseMock_GetTasksEligibleForWorktreeCleanup_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(time.Time))
+	})
+	return _c
+}
+
+func (_c *TaskUsecaseMock_GetTasksEligibleForWorktreeCleanup_Call) Return(tasks []*entity.Task, err error) *TaskUsecaseMock_GetTasksEligibleForWorktreeCleanup_Call {
+	_c.Call.Return(tasks, err)
+	return _c
+}
+
+func (_c *TaskUsecaseMock_GetTasksEligibleForWorktreeCleanup_Call) RunAndReturn(run func(ctx context.Context, cutoffTime time.Time) ([]*entity.Task, error)) *TaskUsecaseMock_GetTasksEligibleForWorktreeCleanup_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -2275,6 +2549,53 @@ func (_c *TaskUsecaseMock_ListGitBranches_Call) RunAndReturn(run func(ctx contex
 	return _c
 }
 
+// OpenWithCursor provides a mock function for the type TaskUsecaseMock
+func (_mock *TaskUsecaseMock) OpenWithCursor(ctx context.Context, taskID uuid.UUID, worktreePath string) error {
+	ret := _mock.Called(ctx, taskID, worktreePath)
+
+	if len(ret) == 0 {
+		panic("no return value specified for OpenWithCursor")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, string) error); ok {
+		r0 = returnFunc(ctx, taskID, worktreePath)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// TaskUsecaseMock_OpenWithCursor_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'OpenWithCursor'
+type TaskUsecaseMock_OpenWithCursor_Call struct {
+	*mock.Call
+}
+
+// OpenWithCursor is a helper method to define mock.On call
+//   - ctx
+//   - taskID
+//   - worktreePath
+func (_e *TaskUsecaseMock_Expecter) OpenWithCursor(ctx interface{}, taskID interface{}, worktreePath interface{}) *TaskUsecaseMock_OpenWithCursor_Call {
+	return &TaskUsecaseMock_OpenWithCursor_Call{Call: _e.mock.On("OpenWithCursor", ctx, taskID, worktreePath)}
+}
+
+func (_c *TaskUsecaseMock_OpenWithCursor_Call) Run(run func(ctx context.Context, taskID uuid.UUID, worktreePath string)) *TaskUsecaseMock_OpenWithCursor_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(uuid.UUID), args[2].(string))
+	})
+	return _c
+}
+
+func (_c *TaskUsecaseMock_OpenWithCursor_Call) Return(err error) *TaskUsecaseMock_OpenWithCursor_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *TaskUsecaseMock_OpenWithCursor_Call) RunAndReturn(run func(ctx context.Context, taskID uuid.UUID, worktreePath string) error) *TaskUsecaseMock_OpenWithCursor_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // RemoveDependency provides a mock function for the type TaskUsecaseMock
 func (_mock *TaskUsecaseMock) RemoveDependency(ctx context.Context, taskID uuid.UUID, dependsOnTaskID uuid.UUID) error {
 	ret := _mock.Called(ctx, taskID, dependsOnTaskID)
@@ -2380,12 +2701,12 @@ func (_c *TaskUsecaseMock_SearchTasks_Call) RunAndReturn(run func(ctx context.Co
 	return _c
 }
 
-// StartPlanning provides a mock function for the type TaskUsecaseMock
-func (_mock *TaskUsecaseMock) StartPlanning(ctx context.Context, taskID uuid.UUID, branchName string, aiType string, autoImplement bool) (string, error) {
-	ret := _mock.Called(ctx, taskID, branchName, aiType, autoImplement)
+// StartImplementingDirect provides a mock function for the type TaskUsecaseMock
+func (_mock *TaskUsecaseMock) StartImplementingDirect(ctx context.Context, taskID uuid.UUID, branchName string, aiType string) (string, error) {
+	ret := _mock.Called(ctx, taskID, branchName, aiType)
 
 	if len(ret) == 0 {
-		panic("no return value specified for StartPlanning")
+		panic("no return value specified for StartImplementingDirect")
 	}
 
 	var r0 string
@@ -2406,6 +2727,63 @@ func (_mock *TaskUsecaseMock) StartPlanning(ctx context.Context, taskID uuid.UUI
 	return r0, r1
 }
 
+// TaskUsecaseMock_StartImplementingDirect_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'StartImplementingDirect'
+type TaskUsecaseMock_StartImplementingDirect_Call struct {
+	*mock.Call
+}
+
+// StartImplementingDirect is a helper method to define mock.On call
+//   - ctx
+//   - taskID
+//   - branchName
+//   - aiType
+func (_e *TaskUsecaseMock_Expecter) StartImplementingDirect(ctx interface{}, taskID interface{}, branchName interface{}, aiType interface{}) *TaskUsecaseMock_StartImplementingDirect_Call {
+	return &TaskUsecaseMock_StartImplementingDirect_Call{Call: _e.mock.On("StartImplementingDirect", ctx, taskID, branchName, aiType)}
+}
+
+func (_c *TaskUsecaseMock_StartImplementingDirect_Call) Run(run func(ctx context.Context, taskID uuid.UUID, branchName string, aiType string)) *TaskUsecaseMock_StartImplementingDirect_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(uuid.UUID), args[2].(string), args[3].(string))
+	})
+	return _c
+}
+
+func (_c *TaskUsecaseMock_StartImplementingDirect_Call) Return(s string, err error) *TaskUsecaseMock_StartImplementingDirect_Call {
+	_c.Call.Return(s, err)
+	return _c
+}
+
+func (_c *TaskUsecaseMock_StartImplementingDirect_Call) RunAndReturn(run func(ctx context.Context, taskID uuid.UUID, branchName string, aiType string) (string, error)) *TaskUsecaseMock_StartImplementingDirect_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// StartPlanning provides a mock function for the type TaskUsecaseMock
+func (_mock *TaskUsecaseMock) StartPlanning(ctx context.Context, taskID uuid.UUID, branchName string, aiType string, autoImplement bool) (string, error) {
+	ret := _mock.Called(ctx, taskID, branchName, aiType, autoImplement)
+
+	if len(ret) == 0 {
+		panic("no return value specified for StartPlanning")
+	}
+
+	var r0 string
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, string, string, bool) (string, error)); ok {
+		return returnFunc(ctx, taskID, branchName, aiType, autoImplement)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, string, string, bool) string); ok {
+		r0 = returnFunc(ctx, taskID, branchName, aiType, autoImplement)
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID, string, string, bool) error); ok {
+		r1 = returnFunc(ctx, taskID, branchName, aiType, autoImplement)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
 // TaskUsecaseMock_StartPlanning_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'StartPlanning'
 type TaskUsecaseMock_StartPlanning_Call struct {
 	*mock.Call
@@ -2416,6 +2794,7 @@ type TaskUsecaseMock_StartPlanning_Call struct {
 //   - taskID
 //   - branchName
 //   - aiType
+//   - autoImplement
 func (_e *TaskUsecaseMock_Expecter) StartPlanning(ctx interface{}, taskID interface{}, branchName interface{}, aiType interface{}, autoImplement interface{}) *TaskUsecaseMock_StartPlanning_Call {
 	return &TaskUsecaseMock_StartPlanning_Call{Call: _e.mock.On("StartPlanning", ctx, taskID, branchName, aiType, autoImplement)}
 }
@@ -2773,6 +3152,65 @@ func (_c *TaskUsecaseMock_UpdateStatusWithHistory_Call) RunAndReturn(run func(ct
 	return _c
 }
 
+// UpdateTaskPlan provides a mock function for the type TaskUsecaseMock
+func (_mock *TaskUsecaseMock) UpdateTaskPlan(ctx context.Context, taskID uuid.UUID, planID uuid.UUID, req UpdateTaskPlanRequest) (*entity.Plan, error) {
+	ret := _mock.Called(ctx, taskID, planID, req)
+
+	if len(ret) == 0 {
+		panic("no return value specified for UpdateTaskPlan")
+	}
+
+	var r0 *entity.Plan
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, uuid.UUID, UpdateTaskPlanRequest) (*entity.Plan, error)); ok {
+		return returnFunc(ctx, taskID, planID, req)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, uuid.UUID, UpdateTaskPlanRequest) *entity.Plan); ok {
+		r0 = returnFunc(ctx, taskID, planID, req)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*entity.Plan)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID, uuid.UUID, UpdateTaskPlanRequest) error); ok {
+		r1 = returnFunc(ctx, taskID, planID, req)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// TaskUsecaseMock_UpdateTaskPlan_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UpdateTaskPlan'
+type TaskUsecaseMock_UpdateTaskPlan_Call struct {
+	*mock.Call
+}
+
+// UpdateTaskPlan is a helper method to define mock.On call
+//   - ctx
+//   - taskID
+//   - planID
+//   - req
+func (_e *TaskUsecaseMock_Expecter) UpdateTaskPlan(ctx interface{}, taskID interface{}, planID interface{}, req interface{}) *TaskUsecaseMock_UpdateTaskPlan_Call {
+	return &TaskUsecaseMock_UpdateTaskPlan_Call{Call: _e.mock.On("UpdateTaskPlan", ctx, taskID, planID, req)}
+}
+
+func (_c *TaskUsecaseMock_UpdateTaskPlan_Call) Run(run func(ctx context.Context, taskID uuid.UUID, planID uuid.UUID, req UpdateTaskPlanRequest)) *TaskUsecaseMock_UpdateTaskPlan_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(uuid.UUID), args[2].(uuid.UUID), args[3].(UpdateTaskPlanRequest))
+	})
+	return _c
+}
+
+func (_c *TaskUsecaseMock_UpdateTaskPlan_Call) Return(plan *entity.Plan, err error) *TaskUsecaseMock_UpdateTaskPlan_Call {
+	_c.Call.Return(plan, err)
+	return _c
+}
+
+func (_c *TaskUsecaseMock_UpdateTaskPlan_Call) RunAndReturn(run func(ctx context.Context, taskID uuid.UUID, planID uuid.UUID, req UpdateTaskPlanRequest) (*entity.Plan, error)) *TaskUsecaseMock_UpdateTaskPlan_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // UpdateTemplate provides a mock function for the type TaskUsecaseMock
 func (_mock *TaskUsecaseMock) UpdateTemplate(ctx context.Context, id uuid.UUID, req UpdateTemplateRequest) (*entity.TaskTemplate, error) {
 	ret := _mock.Called(ctx, id, req)
@@ -2921,53 +3359,6 @@ func (_c *TaskUsecaseMock_ValidateStatusTransition_Call) Return(err error) *Task
 }
 
 func (_c *TaskUsecaseMock_ValidateStatusTransition_Call) RunAndReturn(run func(ctx context.Context, taskID uuid.UUID, newStatus entity.TaskStatus) error) *TaskUsecaseMock_ValidateStatusTransition_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// AppendErrorLog provides a mock function for the type TaskUsecaseMock
-func (_mock *TaskUsecaseMock) AppendErrorLog(ctx context.Context, taskID uuid.UUID, errorMsg string) error {
-	ret := _mock.Called(ctx, taskID, errorMsg)
-
-	if len(ret) == 0 {
-		panic("no return value specified for AppendErrorLog")
-	}
-
-	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, string) error); ok {
-		r0 = returnFunc(ctx, taskID, errorMsg)
-	} else {
-		r0 = ret.Error(0)
-	}
-	return r0
-}
-
-// TaskUsecaseMock_AppendErrorLog_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'AppendErrorLog'
-type TaskUsecaseMock_AppendErrorLog_Call struct {
-	*mock.Call
-}
-
-// AppendErrorLog is a helper method to define mock.On call
-//   - ctx
-//   - taskID
-//   - errorMsg
-func (_e *TaskUsecaseMock_Expecter) AppendErrorLog(ctx interface{}, taskID interface{}, errorMsg interface{}) *TaskUsecaseMock_AppendErrorLog_Call {
-	return &TaskUsecaseMock_AppendErrorLog_Call{Call: _e.mock.On("AppendErrorLog", ctx, taskID, errorMsg)}
-}
-
-func (_c *TaskUsecaseMock_AppendErrorLog_Call) Run(run func(ctx context.Context, taskID uuid.UUID, errorMsg string)) *TaskUsecaseMock_AppendErrorLog_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(uuid.UUID), args[2].(string))
-	})
-	return _c
-}
-
-func (_c *TaskUsecaseMock_AppendErrorLog_Call) Return(err error) *TaskUsecaseMock_AppendErrorLog_Call {
-	_c.Call.Return(err)
-	return _c
-}
-
-func (_c *TaskUsecaseMock_AppendErrorLog_Call) RunAndReturn(run func(ctx context.Context, taskID uuid.UUID, errorMsg string) error) *TaskUsecaseMock_AppendErrorLog_Call {
 	_c.Call.Return(run)
 	return _c
 }

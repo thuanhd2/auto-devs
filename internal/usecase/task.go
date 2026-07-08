@@ -19,6 +19,7 @@ import (
 type JobClientInterface interface {
 	EnqueueTaskPlanning(payload *TaskPlanningPayload, delay time.Duration) (string, error)
 	EnqueueTaskImplementation(payload *TaskImplementationPayload, delay time.Duration) (string, error)
+	EnqueueWorktreeCreate(payload *WorktreeCreatePayload, delay time.Duration) (string, error)
 }
 
 // TaskPlanningPayload represents the payload for task planning jobs
@@ -35,6 +36,13 @@ type TaskImplementationPayload struct {
 	TaskID    uuid.UUID `json:"task_id"`
 	ProjectID uuid.UUID `json:"project_id"`
 	AIType    string    `json:"ai_type"`
+}
+
+// WorktreeCreatePayload represents the payload for worktree creation jobs
+type WorktreeCreatePayload struct {
+	WorktreeID uuid.UUID `json:"worktree_id"`
+	TaskID     uuid.UUID `json:"task_id"`
+	ProjectID  uuid.UUID `json:"project_id"`
 }
 
 type TaskUsecase interface {

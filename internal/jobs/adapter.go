@@ -10,6 +10,7 @@ import (
 type ClientInterface interface {
 	EnqueueTaskPlanningString(payload *TaskPlanningPayload, delay time.Duration) (string, error)
 	EnqueueTaskImplementationString(payload *TaskImplementationPayload, delay time.Duration) (string, error)
+	EnqueueWorktreeCreateString(payload *WorktreeCreatePayload, delay time.Duration) (string, error)
 	Close() error
 }
 
@@ -56,6 +57,24 @@ func (a *JobClientAdapter) EnqueueTaskImplementation(payload *usecase.TaskImplem
 
 	// Enqueue the job
 	jobID, err := a.client.EnqueueTaskImplementationString(jobPayload, delay)
+	if err != nil {
+		return "", err
+	}
+
+	return jobID, nil
+}
+
+// EnqueueWorktreeCreate enqueues a worktree creation job
+func (a *JobClientAdapter) EnqueueWorktreeCreate(payload *usecase.WorktreeCreatePayload, delay time.Duration) (string, error) {
+	// Convert usecase payload to jobs package payload
+	jobPayload := &WorktreeCreatePayload{
+		WorktreeID: payload.WorktreeID,
+		TaskID:     payload.TaskID,
+		ProjectID:  payload.ProjectID,
+	}
+
+	// Enqueue the job
+	jobID, err := a.client.EnqueueWorktreeCreateString(jobPayload, delay)
 	if err != nil {
 		return "", err
 	}

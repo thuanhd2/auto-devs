@@ -16,6 +16,13 @@ import (
 type WorktreeUsecase interface {
 	// Basic worktree lifecycle management
 	CreateWorktreeForTask(ctx context.Context, req CreateWorktreeRequest) (*entity.Worktree, error)
+	// EnqueueWorktreeCreation creates a placeholder worktree record with "creating"
+	// status and dispatches the heavy git work to a background job so the HTTP
+	// request returns immediately instead of timing out.
+	EnqueueWorktreeCreation(ctx context.Context, req CreateWorktreeRequest) (*entity.Worktree, error)
+	// ProcessWorktreeCreation performs the actual git worktree creation for a
+	// previously enqueued record. It is meant to be called from the background worker.
+	ProcessWorktreeCreation(ctx context.Context, worktreeID uuid.UUID) error
 	CleanupWorktreeForTask(ctx context.Context, req CleanupWorktreeRequest) error
 	GetWorktreeByTaskID(ctx context.Context, taskID uuid.UUID) (*entity.Worktree, error)
 	GetWorktreesByProjectID(ctx context.Context, projectID uuid.UUID) ([]*entity.Worktree, error)
@@ -101,6 +108,7 @@ type worktreeUsecase struct {
 	projectRepo           repository.ProjectRepository
 	integratedWorktreeSvc *worktreesvc.IntegratedWorktreeService
 	gitManager            *git.GitManager
+	jobClient             JobClientInterface
 	logger                *slog.Logger
 }
 
@@ -110,6 +118,7 @@ func NewWorktreeUsecase(
 	projectRepo repository.ProjectRepository,
 	integratedWorktreeSvc *worktreesvc.IntegratedWorktreeService,
 	gitManager *git.GitManager,
+	jobClient JobClientInterface,
 ) WorktreeUsecase {
 	return &worktreeUsecase{
 		worktreeRepo:          worktreeRepo,
@@ -117,6 +126,7 @@ func NewWorktreeUsecase(
 		projectRepo:           projectRepo,
 		integratedWorktreeSvc: integratedWorktreeSvc,
 		gitManager:            gitManager,
+		jobClient:             jobClient,
 		logger:                slog.Default().With("component", "worktree-usecase"),
 	}
 }
@@ -212,6 +222,166 @@ func (w *worktreeUsecase) CreateWorktreeForTask(ctx context.Context, req CreateW
 		"branch_name", branchName)
 
 	return worktree, nil
+}
+
+// EnqueueWorktreeCreation validates the request, creates a "creating" worktree
+// record and dispatches the slow git work to a background job. It returns quickly
+// so the HTTP request does not block on git operations / init scripts.
+func (w *worktreeUsecase) EnqueueWorktreeCreation(ctx context.Context, req CreateWorktreeRequest) (*entity.Worktree, error) {
+	w.logger.Info("Enqueueing worktree creation for task",
+		"task_id", req.TaskID,
+		"project_id", req.ProjectID,
+		"task_title", req.TaskTitle)
+
+	if w.jobClient == nil {
+		return nil, fmt.Errorf("job client is not configured for async worktree creation")
+	}
+
+	// Step 1: Validate task eligibility for worktree creation
+	if err := w.validateTaskEligibility(ctx, req.TaskID); err != nil {
+		return nil, fmt.Errorf("task not eligible for worktree creation: %w", err)
+	}
+
+	// Step 2: Check if worktree already exists for this task
+	existingWorktree, err := w.worktreeRepo.GetByTaskID(ctx, req.TaskID)
+	if err == nil && existingWorktree != nil {
+		return nil, fmt.Errorf("worktree already exists for task %s", req.TaskID)
+	}
+
+	// Step 3: Validate project exists
+	if _, err := w.projectRepo.GetByID(ctx, req.ProjectID); err != nil {
+		return nil, fmt.Errorf("failed to get project: %w", err)
+	}
+
+	// Step 4: Generate branch name (pure string operation, safe to run inline)
+	branchName, err := w.gitManager.GenerateBranchName(req.TaskID.String(), req.TaskTitle)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate branch name: %w", err)
+	}
+
+	// Step 5: Reserve the deterministic worktree path up front. The path is derived
+	// purely from project/task IDs (no filesystem work) and matches what the
+	// background job produces, so we can satisfy the unique constraint on
+	// worktree_path without waiting for the git worktree to be created.
+	worktreePath, err := w.integratedWorktreeSvc.GenerateWorktreePath(req.ProjectID.String(), req.TaskID.String())
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate worktree path: %w", err)
+	}
+
+	// Step 6: Create the worktree record in "creating" status. The path is filled in
+	// now (reserved); the background job creates it on disk and flips status to active.
+	worktree := &entity.Worktree{
+		TaskID:       req.TaskID,
+		ProjectID:    req.ProjectID,
+		BranchName:   branchName,
+		WorktreePath: worktreePath,
+		Status:       entity.WorktreeStatusCreating,
+	}
+	if err := w.worktreeRepo.Create(ctx, worktree); err != nil {
+		return nil, fmt.Errorf("failed to create worktree record: %w", err)
+	}
+
+	// Step 7: Dispatch the heavy git work to a background job
+	if _, err := w.jobClient.EnqueueWorktreeCreate(&WorktreeCreatePayload{
+		WorktreeID: worktree.ID,
+		TaskID:     worktree.TaskID,
+		ProjectID:  worktree.ProjectID,
+	}, 0); err != nil {
+		// Roll back: mark the record as error so it is not left dangling in "creating"
+		worktree.Status = entity.WorktreeStatusError
+		if updateErr := w.worktreeRepo.Update(ctx, worktree); updateErr != nil {
+			w.logger.Error("Failed to mark worktree as error after enqueue failure",
+				"worktree_id", worktree.ID, "error", updateErr)
+		}
+		return nil, fmt.Errorf("failed to enqueue worktree creation job: %w", err)
+	}
+
+	w.logger.Info("Worktree creation enqueued",
+		"worktree_id", worktree.ID,
+		"task_id", req.TaskID,
+		"branch_name", branchName)
+
+	return worktree, nil
+}
+
+// ProcessWorktreeCreation performs the actual (slow) git worktree creation for a
+// previously enqueued worktree record. It is designed to run inside a background
+// worker and updates the worktree status to "active" on success or "error" on failure.
+func (w *worktreeUsecase) ProcessWorktreeCreation(ctx context.Context, worktreeID uuid.UUID) error {
+	worktree, err := w.worktreeRepo.GetByID(ctx, worktreeID)
+	if err != nil {
+		return fmt.Errorf("worktree not found: %w", err)
+	}
+
+	// Idempotency: if a retry runs after a previously successful attempt, skip.
+	if worktree.Status == entity.WorktreeStatusActive {
+		w.logger.Info("Worktree already active, skipping creation", "worktree_id", worktreeID)
+		return nil
+	}
+
+	w.logger.Info("Processing worktree creation",
+		"worktree_id", worktreeID,
+		"task_id", worktree.TaskID,
+		"project_id", worktree.ProjectID)
+
+	project, err := w.projectRepo.GetByID(ctx, worktree.ProjectID)
+	if err != nil {
+		return fmt.Errorf("failed to get project: %w", err)
+	}
+
+	task, err := w.taskRepo.GetByID(ctx, worktree.TaskID)
+	if err != nil {
+		return fmt.Errorf("failed to get task: %w", err)
+	}
+
+	baseBranchName := "main"
+	if task.BaseBranchName != nil && *task.BaseBranchName != "" {
+		baseBranchName = *task.BaseBranchName
+	}
+
+	// The slow part: create the git worktree and run the init workspace script.
+	worktreePath, err := w.integratedWorktreeSvc.CreateTaskWorktree(ctx, &worktreesvc.CreateTaskWorktreeRequest{
+		ProjectID:           worktree.ProjectID.String(),
+		TaskID:              worktree.TaskID.String(),
+		TaskTitle:           task.Title,
+		ProjectWorkDir:      project.WorktreeBasePath,
+		ProjectMainBranch:   baseBranchName,
+		InitWorkspaceScript: project.InitWorkspaceScript,
+	})
+	if err != nil {
+		// Mark the worktree as error so the UI can surface the failure. Returning the
+		// error lets asynq retry the job according to its retry policy.
+		worktree.Status = entity.WorktreeStatusError
+		if updateErr := w.worktreeRepo.Update(ctx, worktree); updateErr != nil {
+			w.logger.Error("Failed to update worktree status to error",
+				"worktree_id", worktreeID, "error", updateErr)
+		}
+		if gitErr := w.updateTaskGitStatus(ctx, worktree.TaskID, entity.TaskGitStatusError); gitErr != nil {
+			w.logger.Warn("Failed to update task git status to error", "error", gitErr)
+		}
+		return fmt.Errorf("failed to create worktree: %w", err)
+	}
+
+	// Persist the created path/branch and mark the worktree as active.
+	worktree.WorktreePath = worktreePath.WorktreePath
+	worktree.BranchName = worktreePath.BranchName
+	worktree.Status = entity.WorktreeStatusActive
+	if err := w.worktreeRepo.Update(ctx, worktree); err != nil {
+		return fmt.Errorf("failed to update worktree record: %w", err)
+	}
+
+	// Update task with Git information
+	if err := w.updateTaskWithGitInfo(ctx, worktree.TaskID, worktreePath.BranchName, worktreePath.WorktreePath); err != nil {
+		w.logger.Warn("Failed to update task with Git info", "error", err)
+	}
+
+	w.logger.Info("Successfully created worktree for task",
+		"worktree_id", worktreeID,
+		"task_id", worktree.TaskID,
+		"worktree_path", worktreePath.WorktreePath,
+		"branch_name", worktreePath.BranchName)
+
+	return nil
 }
 
 // CleanupWorktreeForTask implements basic worktree cleanup

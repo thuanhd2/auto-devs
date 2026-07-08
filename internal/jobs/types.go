@@ -14,6 +14,7 @@ const (
 	TypeTaskImplementation = "task:implementation"
 	TypePRStatusSync       = "pr:status_sync"
 	TypeWorktreeCleanup    = "worktree:cleanup"
+	TypeWorktreeCreate     = "worktree:create"
 )
 
 // TaskPlanningPayload represents the payload for task planning jobs
@@ -40,6 +41,13 @@ type PRStatusSyncPayload struct {
 // WorktreeCleanupPayload represents the payload for worktree cleanup jobs
 type WorktreeCleanupPayload struct {
 	// Empty payload since this job processes all eligible tasks
+}
+
+// WorktreeCreatePayload represents the payload for worktree creation jobs
+type WorktreeCreatePayload struct {
+	WorktreeID uuid.UUID `json:"worktree_id"`
+	TaskID     uuid.UUID `json:"task_id"`
+	ProjectID  uuid.UUID `json:"project_id"`
 }
 
 // NewTaskPlanningJob creates a new task planning job
@@ -132,6 +140,31 @@ func ParseWorktreeCleanupPayload(task *asynq.Task) (*WorktreeCleanupPayload, err
 	var payload WorktreeCleanupPayload
 	if err := json.Unmarshal(task.Payload(), &payload); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal worktree cleanup payload: %w", err)
+	}
+	return &payload, nil
+}
+
+// NewWorktreeCreateJob creates a new worktree creation job
+func NewWorktreeCreateJob(worktreeID, taskID, projectID uuid.UUID) (*asynq.Task, error) {
+	payload := WorktreeCreatePayload{
+		WorktreeID: worktreeID,
+		TaskID:     taskID,
+		ProjectID:  projectID,
+	}
+
+	data, err := json.Marshal(payload)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal worktree create payload: %w", err)
+	}
+
+	return asynq.NewTask(TypeWorktreeCreate, data), nil
+}
+
+// ParseWorktreeCreatePayload parses the worktree create payload from asynq task
+func ParseWorktreeCreatePayload(task *asynq.Task) (*WorktreeCreatePayload, error) {
+	var payload WorktreeCreatePayload
+	if err := json.Unmarshal(task.Payload(), &payload); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal worktree create payload: %w", err)
 	}
 	return &payload, nil
 }

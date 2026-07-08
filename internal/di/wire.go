@@ -218,8 +218,9 @@ func ProvideWorktreeUsecase(
 	projectRepo repository.ProjectRepository,
 	integratedWorktreeSvc *worktreesvc.IntegratedWorktreeService,
 	gitManager *git.GitManager,
+	jobClient usecase.JobClientInterface,
 ) usecase.WorktreeUsecase {
-	return usecase.NewWorktreeUsecase(worktreeRepo, taskRepo, projectRepo, integratedWorktreeSvc, gitManager)
+	return usecase.NewWorktreeUsecase(worktreeRepo, taskRepo, projectRepo, integratedWorktreeSvc, gitManager, jobClient)
 }
 
 // ProvideTaskUsecase provides a TaskUsecase instance

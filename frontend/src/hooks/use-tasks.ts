@@ -391,7 +391,7 @@ export function useCreateWorktree(projectId: string) {
     mutationFn: worktreesApi.createWorktree,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [TASKS_QUERY_KEY, projectId] })
-      toast.success('Worktree created successfully')
+      toast.success('Worktree creation started')
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.message || 'Failed to create worktree')

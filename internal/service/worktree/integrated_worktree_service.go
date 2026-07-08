@@ -53,6 +53,13 @@ func NewIntegratedWorktreeService(config *IntegratedConfig) (*IntegratedWorktree
 	}, nil
 }
 
+// GenerateWorktreePath returns the deterministic worktree path for a task without
+// creating anything on disk. Useful for reserving the path (e.g. in a DB record)
+// before the actual worktree is created asynchronously.
+func (iws *IntegratedWorktreeService) GenerateWorktreePath(projectID, taskID string) (string, error) {
+	return iws.worktreeManager.GenerateWorktreePath(projectID, taskID)
+}
+
 // CreateTaskWorktree creates a complete worktree setup for a task
 func (iws *IntegratedWorktreeService) CreateTaskWorktree(ctx context.Context, request *CreateTaskWorktreeRequest) (*TaskWorktreeInfo, error) {
 	iws.logger.Info("Creating task worktree",

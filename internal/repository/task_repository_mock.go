@@ -6,6 +6,7 @@ package repository
 
 import (
 	"context"
+	"time"
 
 	"github.com/auto-devs/auto-devs/internal/entity"
 	"github.com/google/uuid"
@@ -129,6 +130,53 @@ func (_c *TaskRepositoryMock_AddDependency_Call) Return(err error) *TaskReposito
 }
 
 func (_c *TaskRepositoryMock_AddDependency_Call) RunAndReturn(run func(ctx context.Context, taskID uuid.UUID, dependsOnTaskID uuid.UUID, dependencyType string) error) *TaskRepositoryMock_AddDependency_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// AppendErrorLog provides a mock function for the type TaskRepositoryMock
+func (_mock *TaskRepositoryMock) AppendErrorLog(ctx context.Context, taskID uuid.UUID, errorMsg string) error {
+	ret := _mock.Called(ctx, taskID, errorMsg)
+
+	if len(ret) == 0 {
+		panic("no return value specified for AppendErrorLog")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, string) error); ok {
+		r0 = returnFunc(ctx, taskID, errorMsg)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// TaskRepositoryMock_AppendErrorLog_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'AppendErrorLog'
+type TaskRepositoryMock_AppendErrorLog_Call struct {
+	*mock.Call
+}
+
+// AppendErrorLog is a helper method to define mock.On call
+//   - ctx
+//   - taskID
+//   - errorMsg
+func (_e *TaskRepositoryMock_Expecter) AppendErrorLog(ctx interface{}, taskID interface{}, errorMsg interface{}) *TaskRepositoryMock_AppendErrorLog_Call {
+	return &TaskRepositoryMock_AppendErrorLog_Call{Call: _e.mock.On("AppendErrorLog", ctx, taskID, errorMsg)}
+}
+
+func (_c *TaskRepositoryMock_AppendErrorLog_Call) Run(run func(ctx context.Context, taskID uuid.UUID, errorMsg string)) *TaskRepositoryMock_AppendErrorLog_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(uuid.UUID), args[2].(string))
+	})
+	return _c
+}
+
+func (_c *TaskRepositoryMock_AppendErrorLog_Call) Return(err error) *TaskRepositoryMock_AppendErrorLog_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *TaskRepositoryMock_AppendErrorLog_Call) RunAndReturn(run func(ctx context.Context, taskID uuid.UUID, errorMsg string) error) *TaskRepositoryMock_AppendErrorLog_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -1388,6 +1436,63 @@ func (_c *TaskRepositoryMock_GetParentTask_Call) RunAndReturn(run func(ctx conte
 	return _c
 }
 
+// GetPlansByTaskID provides a mock function for the type TaskRepositoryMock
+func (_mock *TaskRepositoryMock) GetPlansByTaskID(ctx context.Context, taskID uuid.UUID) ([]entity.Plan, error) {
+	ret := _mock.Called(ctx, taskID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetPlansByTaskID")
+	}
+
+	var r0 []entity.Plan
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID) ([]entity.Plan, error)); ok {
+		return returnFunc(ctx, taskID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID) []entity.Plan); ok {
+		r0 = returnFunc(ctx, taskID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]entity.Plan)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID) error); ok {
+		r1 = returnFunc(ctx, taskID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// TaskRepositoryMock_GetPlansByTaskID_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetPlansByTaskID'
+type TaskRepositoryMock_GetPlansByTaskID_Call struct {
+	*mock.Call
+}
+
+// GetPlansByTaskID is a helper method to define mock.On call
+//   - ctx
+//   - taskID
+func (_e *TaskRepositoryMock_Expecter) GetPlansByTaskID(ctx interface{}, taskID interface{}) *TaskRepositoryMock_GetPlansByTaskID_Call {
+	return &TaskRepositoryMock_GetPlansByTaskID_Call{Call: _e.mock.On("GetPlansByTaskID", ctx, taskID)}
+}
+
+func (_c *TaskRepositoryMock_GetPlansByTaskID_Call) Run(run func(ctx context.Context, taskID uuid.UUID)) *TaskRepositoryMock_GetPlansByTaskID_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(uuid.UUID))
+	})
+	return _c
+}
+
+func (_c *TaskRepositoryMock_GetPlansByTaskID_Call) Return(plans []entity.Plan, err error) *TaskRepositoryMock_GetPlansByTaskID_Call {
+	_c.Call.Return(plans, err)
+	return _c
+}
+
+func (_c *TaskRepositoryMock_GetPlansByTaskID_Call) RunAndReturn(run func(ctx context.Context, taskID uuid.UUID) ([]entity.Plan, error)) *TaskRepositoryMock_GetPlansByTaskID_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetStatusAnalytics provides a mock function for the type TaskRepositoryMock
 func (_mock *TaskRepositoryMock) GetStatusAnalytics(ctx context.Context, projectID uuid.UUID) (*entity.TaskStatusAnalytics, error) {
 	ret := _mock.Called(ctx, projectID)
@@ -1726,6 +1831,63 @@ func (_c *TaskRepositoryMock_GetTasksByTags_Call) Return(tasks []*entity.Task, e
 }
 
 func (_c *TaskRepositoryMock_GetTasksByTags_Call) RunAndReturn(run func(ctx context.Context, tags []string) ([]*entity.Task, error)) *TaskRepositoryMock_GetTasksByTags_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// GetTasksEligibleForWorktreeCleanup provides a mock function for the type TaskRepositoryMock
+func (_mock *TaskRepositoryMock) GetTasksEligibleForWorktreeCleanup(ctx context.Context, cutoffTime time.Time) ([]*entity.Task, error) {
+	ret := _mock.Called(ctx, cutoffTime)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetTasksEligibleForWorktreeCleanup")
+	}
+
+	var r0 []*entity.Task
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, time.Time) ([]*entity.Task, error)); ok {
+		return returnFunc(ctx, cutoffTime)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, time.Time) []*entity.Task); ok {
+		r0 = returnFunc(ctx, cutoffTime)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]*entity.Task)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, time.Time) error); ok {
+		r1 = returnFunc(ctx, cutoffTime)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// TaskRepositoryMock_GetTasksEligibleForWorktreeCleanup_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetTasksEligibleForWorktreeCleanup'
+type TaskRepositoryMock_GetTasksEligibleForWorktreeCleanup_Call struct {
+	*mock.Call
+}
+
+// GetTasksEligibleForWorktreeCleanup is a helper method to define mock.On call
+//   - ctx
+//   - cutoffTime
+func (_e *TaskRepositoryMock_Expecter) GetTasksEligibleForWorktreeCleanup(ctx interface{}, cutoffTime interface{}) *TaskRepositoryMock_GetTasksEligibleForWorktreeCleanup_Call {
+	return &TaskRepositoryMock_GetTasksEligibleForWorktreeCleanup_Call{Call: _e.mock.On("GetTasksEligibleForWorktreeCleanup", ctx, cutoffTime)}
+}
+
+func (_c *TaskRepositoryMock_GetTasksEligibleForWorktreeCleanup_Call) Run(run func(ctx context.Context, cutoffTime time.Time)) *TaskRepositoryMock_GetTasksEligibleForWorktreeCleanup_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(time.Time))
+	})
+	return _c
+}
+
+func (_c *TaskRepositoryMock_GetTasksEligibleForWorktreeCleanup_Call) Return(tasks []*entity.Task, err error) *TaskRepositoryMock_GetTasksEligibleForWorktreeCleanup_Call {
+	_c.Call.Return(tasks, err)
+	return _c
+}
+
+func (_c *TaskRepositoryMock_GetTasksEligibleForWorktreeCleanup_Call) RunAndReturn(run func(ctx context.Context, cutoffTime time.Time) ([]*entity.Task, error)) *TaskRepositoryMock_GetTasksEligibleForWorktreeCleanup_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -2451,53 +2613,6 @@ func (_c *TaskRepositoryMock_ValidateTaskExists_Call) Return(b bool, err error) 
 }
 
 func (_c *TaskRepositoryMock_ValidateTaskExists_Call) RunAndReturn(run func(ctx context.Context, taskID uuid.UUID) (bool, error)) *TaskRepositoryMock_ValidateTaskExists_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// AppendErrorLog provides a mock function for the type TaskRepositoryMock
-func (_mock *TaskRepositoryMock) AppendErrorLog(ctx context.Context, taskID uuid.UUID, errorMsg string) error {
-	ret := _mock.Called(ctx, taskID, errorMsg)
-
-	if len(ret) == 0 {
-		panic("no return value specified for AppendErrorLog")
-	}
-
-	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, string) error); ok {
-		r0 = returnFunc(ctx, taskID, errorMsg)
-	} else {
-		r0 = ret.Error(0)
-	}
-	return r0
-}
-
-// TaskRepositoryMock_AppendErrorLog_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'AppendErrorLog'
-type TaskRepositoryMock_AppendErrorLog_Call struct {
-	*mock.Call
-}
-
-// AppendErrorLog is a helper method to define mock.On call
-//   - ctx
-//   - taskID
-//   - errorMsg
-func (_e *TaskRepositoryMock_Expecter) AppendErrorLog(ctx interface{}, taskID interface{}, errorMsg interface{}) *TaskRepositoryMock_AppendErrorLog_Call {
-	return &TaskRepositoryMock_AppendErrorLog_Call{Call: _e.mock.On("AppendErrorLog", ctx, taskID, errorMsg)}
-}
-
-func (_c *TaskRepositoryMock_AppendErrorLog_Call) Run(run func(ctx context.Context, taskID uuid.UUID, errorMsg string)) *TaskRepositoryMock_AppendErrorLog_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(uuid.UUID), args[2].(string))
-	})
-	return _c
-}
-
-func (_c *TaskRepositoryMock_AppendErrorLog_Call) Return(err error) *TaskRepositoryMock_AppendErrorLog_Call {
-	_c.Call.Return(err)
-	return _c
-}
-
-func (_c *TaskRepositoryMock_AppendErrorLog_Call) RunAndReturn(run func(ctx context.Context, taskID uuid.UUID, errorMsg string) error) *TaskRepositoryMock_AppendErrorLog_Call {
 	_c.Call.Return(run)
 	return _c
 }

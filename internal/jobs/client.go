@@ -103,6 +103,41 @@ func (c *Client) EnqueueTaskImplementationString(payload *TaskImplementationPayl
 	return taskInfo.ID, nil
 }
 
+// EnqueueWorktreeCreate enqueues a worktree creation job
+func (c *Client) EnqueueWorktreeCreate(payload *WorktreeCreatePayload, delay time.Duration) (*asynq.TaskInfo, error) {
+	task, err := NewWorktreeCreateJob(payload.WorktreeID, payload.TaskID, payload.ProjectID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create worktree create job: %w", err)
+	}
+
+	// Set task options
+	opts := []asynq.Option{
+		asynq.MaxRetry(2),
+		asynq.Timeout(10 * time.Minute), // Init workspace script can take a few minutes
+		asynq.Queue("critical"),         // Worktree creation blocks the user workflow
+	}
+
+	if delay > 0 {
+		opts = append(opts, asynq.ProcessIn(delay))
+	}
+
+	taskInfo, err := c.client.Enqueue(task, opts...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to enqueue worktree create job: %w", err)
+	}
+
+	return taskInfo, nil
+}
+
+// EnqueueWorktreeCreateString enqueues a worktree creation job and returns job ID as string
+func (c *Client) EnqueueWorktreeCreateString(payload *WorktreeCreatePayload, delay time.Duration) (string, error) {
+	taskInfo, err := c.EnqueueWorktreeCreate(payload, delay)
+	if err != nil {
+		return "", err
+	}
+	return taskInfo.ID, nil
+}
+
 // GetTaskInfo retrieves information about a task
 func (c *Client) GetTaskInfo(queue, taskID string) (*asynq.TaskInfo, error) {
 	// Note: asynq.Client doesn't have GetTaskInfo method

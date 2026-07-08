@@ -51,9 +51,9 @@ func InitializeApp() (*App, error) {
 	if err != nil {
 		return nil, err
 	}
-	worktreeUsecase := ProvideWorktreeUsecase(worktreeRepository, taskRepository, projectRepository, integratedWorktreeService, gitManager)
 	client := ProvideJobClient(configConfig)
 	jobClientInterface := ProvideJobClientAdapter(client)
+	worktreeUsecase := ProvideWorktreeUsecase(worktreeRepository, taskRepository, projectRepository, integratedWorktreeService, gitManager, jobClientInterface)
 	gitHubServiceInterface := ProvideGitHubService(configConfig)
 	prCreator := ProvidePRCreator(gitHubServiceInterface, configConfig)
 	taskUsecase := ProvideTaskUsecase(taskRepository, pullRequestRepository, projectRepository, planRepository, notificationUsecase, worktreeUsecase, jobClientInterface, gitManager, prCreator)
@@ -250,8 +250,9 @@ func ProvideWorktreeUsecase(
 	projectRepo repository.ProjectRepository,
 	integratedWorktreeSvc *worktree.IntegratedWorktreeService,
 	gitManager *git.GitManager,
+	jobClient usecase.JobClientInterface,
 ) usecase.WorktreeUsecase {
-	return usecase.NewWorktreeUsecase(worktreeRepo, taskRepo, projectRepo, integratedWorktreeSvc, gitManager)
+	return usecase.NewWorktreeUsecase(worktreeRepo, taskRepo, projectRepo, integratedWorktreeSvc, gitManager, jobClient)
 }
 
 // ProvideTaskUsecase provides a TaskUsecase instance
