@@ -6,11 +6,31 @@ import { StructuredLogItem } from './structured-log-item'
 
 interface ExecutionLogsPannelProps {
   executionId: string | null
+  selectedLogTypes?: string[]
 }
 
-export function ExecutionLogsPannel({ executionId }: ExecutionLogsPannelProps) {
+function getLogType(log: { log_type?: string; message?: string }): string | undefined {
+  if (log.log_type) return log.log_type
+  if (log.message) {
+    try {
+      return JSON.parse(log.message).type
+    } catch {
+      return undefined
+    }
+  }
+  return undefined
+}
+
+export function ExecutionLogsPannel({ executionId, selectedLogTypes }: ExecutionLogsPannelProps) {
   const { data: execution, isLoading, error } = useExecution(executionId)
-  const logs = (execution?.logs || []).sort((a, b) => a.line - b.line)
+  const allLogs = (execution?.logs || []).sort((a, b) => a.line - b.line)
+  const logs =
+    !selectedLogTypes || selectedLogTypes.length === 0
+      ? allLogs
+      : allLogs.filter((log) => {
+          const t = getLogType(log)
+          return !t || selectedLogTypes.includes(t)
+        })
   const scrollAreaRef = useRef<HTMLDivElement>(null)
   const [prevLogsLength, setPrevLogsLength] = useState(0)
 

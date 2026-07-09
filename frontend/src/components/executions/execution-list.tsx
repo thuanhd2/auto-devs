@@ -13,6 +13,7 @@ import {
   XCircle,
   AlertTriangle,
   SquareTerminal,
+  Filter,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
@@ -26,6 +27,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { ExecutionItem } from './execution-item'
 
 interface ExecutionListProps {
@@ -44,6 +51,13 @@ interface ExecutionListProps {
   expandable?: boolean
   className?: string
 }
+
+const LOG_TYPE_OPTIONS = [
+  { value: 'user', label: 'User' },
+  { value: 'assistant', label: 'Assistant' },
+  { value: 'tool_result', label: 'System' },
+  { value: 'result', label: 'Result' },
+]
 
 const statusStats = (executions: Execution[]) => {
   const stats = executions.reduce(
@@ -78,6 +92,13 @@ export function ExecutionList({
   className,
 }: ExecutionListProps) {
   const [searchTerm, setSearchTerm] = useState('')
+  const [selectedLogTypes, setSelectedLogTypes] = useState<string[]>([])
+
+  const toggleLogType = (type: string) => {
+    setSelectedLogTypes((prev) =>
+      prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type]
+    )
+  }
 
   const stats = statusStats(executions)
   const hasActiveExecutions = stats.running > 0 || stats.pending > 0
@@ -132,6 +153,28 @@ export function ExecutionList({
         </div>
 
         <div className='flex items-center gap-2'>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant='outline' size='sm' className='gap-1'>
+                <Filter className='h-4 w-4' />
+                {selectedLogTypes.length === 0
+                  ? 'All sources'
+                  : `${selectedLogTypes.length} source${selectedLogTypes.length > 1 ? 's' : ''}`}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align='end'>
+              {LOG_TYPE_OPTIONS.map((opt) => (
+                <DropdownMenuCheckboxItem
+                  key={opt.value}
+                  checked={selectedLogTypes.includes(opt.value)}
+                  onCheckedChange={() => toggleLogType(opt.value)}
+                >
+                  {opt.label}
+                </DropdownMenuCheckboxItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
           {onRefresh && (
             <Button
               variant='outline'
@@ -247,6 +290,7 @@ export function ExecutionList({
               onUpdate={onUpdateExecution}
               compact={compact}
               expandable={expandable}
+              selectedLogTypes={selectedLogTypes}
             />
           ))}
         </div>
