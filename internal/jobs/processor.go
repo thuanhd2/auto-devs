@@ -685,11 +685,17 @@ func (p *Processor) createWorktree(ctx context.Context, project *entity.Project,
 		"task_id", task.ID,
 		"branch_name", task.BranchName)
 
-	// Create worktree from the specified branch
+	baseBranchName := ""
+	if task.BaseBranchName != nil {
+		baseBranchName = *task.BaseBranchName
+	}
+
+	// Create worktree from the task's base branch (set during StartPlanning / Create Worktree)
 	worktree, err := p.worktreeUsecase.CreateWorktreeForTask(ctx, usecase.CreateWorktreeRequest{
-		TaskID:    task.ID,
-		ProjectID: project.ID,
-		TaskTitle: task.Title,
+		TaskID:         task.ID,
+		ProjectID:      project.ID,
+		TaskTitle:      task.Title,
+		BaseBranchName: baseBranchName,
 	})
 	if err != nil {
 		p.logger.Error("Failed to create worktree",

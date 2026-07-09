@@ -45,9 +45,10 @@ type WorktreeCleanupPayload struct {
 
 // WorktreeCreatePayload represents the payload for worktree creation jobs
 type WorktreeCreatePayload struct {
-	WorktreeID uuid.UUID `json:"worktree_id"`
-	TaskID     uuid.UUID `json:"task_id"`
-	ProjectID  uuid.UUID `json:"project_id"`
+	WorktreeID     uuid.UUID `json:"worktree_id"`
+	TaskID         uuid.UUID `json:"task_id"`
+	ProjectID      uuid.UUID `json:"project_id"`
+	BaseBranchName string    `json:"base_branch_name,omitempty"`
 }
 
 // NewTaskPlanningJob creates a new task planning job
@@ -145,11 +146,12 @@ func ParseWorktreeCleanupPayload(task *asynq.Task) (*WorktreeCleanupPayload, err
 }
 
 // NewWorktreeCreateJob creates a new worktree creation job
-func NewWorktreeCreateJob(worktreeID, taskID, projectID uuid.UUID) (*asynq.Task, error) {
+func NewWorktreeCreateJob(worktreeID, taskID, projectID uuid.UUID, baseBranchName string) (*asynq.Task, error) {
 	payload := WorktreeCreatePayload{
-		WorktreeID: worktreeID,
-		TaskID:     taskID,
-		ProjectID:  projectID,
+		WorktreeID:     worktreeID,
+		TaskID:         taskID,
+		ProjectID:      projectID,
+		BaseBranchName: baseBranchName,
 	}
 
 	data, err := json.Marshal(payload)

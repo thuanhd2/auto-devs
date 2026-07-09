@@ -74,11 +74,12 @@ export function TaskActions({
   }
 
   const handlePlanningWithWorktreeConfirm = (aiType: string, autoImplement?: boolean) => {
-    onStartPlanning?.(task.id, task.branch_name || '', aiType, autoImplement ?? false)
+    // Pass base branch (not worktree branch) so backend does not overwrite BaseBranchName
+    onStartPlanning?.(task.id, task.base_branch_name || '', aiType, autoImplement ?? false)
   }
 
   const handleImplementWithWorktreeConfirm = (aiType: string) => {
-    onImplementDirect?.(task.id, task.branch_name || '', aiType)
+    onImplementDirect?.(task.id, task.base_branch_name || '', aiType)
   }
 
   const handleApprovePlanAndStartImplement = () => {

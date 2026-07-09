@@ -105,7 +105,7 @@ func (c *Client) EnqueueTaskImplementationString(payload *TaskImplementationPayl
 
 // EnqueueWorktreeCreate enqueues a worktree creation job
 func (c *Client) EnqueueWorktreeCreate(payload *WorktreeCreatePayload, delay time.Duration) (*asynq.TaskInfo, error) {
-	task, err := NewWorktreeCreateJob(payload.WorktreeID, payload.TaskID, payload.ProjectID)
+	task, err := NewWorktreeCreateJob(payload.WorktreeID, payload.TaskID, payload.ProjectID, payload.BaseBranchName)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create worktree create job: %w", err)
 	}

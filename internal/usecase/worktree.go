@@ -160,13 +160,11 @@ func (w *worktreeUsecase) CreateWorktreeForTask(ctx context.Context, req CreateW
 		return nil, fmt.Errorf("failed to get task: %w", err)
 	}
 
-	taskBranchName := ""
-	if req.BaseBranchName != "" {
-		taskBranchName = req.BaseBranchName
-	} else if task.BaseBranchName != nil {
-		taskBranchName = *task.BaseBranchName
-	} else {
-		taskBranchName = "main"
+	baseBranchName := resolveBaseBranchName(req.BaseBranchName, task.BaseBranchName)
+
+	// Persist the selected base branch so PR creation / diffs use it (not the worktree branch).
+	if err := w.persistTaskBaseBranch(ctx, task, baseBranchName); err != nil {
+		return nil, err
 	}
 
 	// Step 4: Generate unique branch name using naming conventions
@@ -175,13 +173,13 @@ func (w *worktreeUsecase) CreateWorktreeForTask(ctx context.Context, req CreateW
 		return nil, fmt.Errorf("failed to generate branch name: %w", err)
 	}
 
-	// Step 5: Create Git worktree from main branch
+	// Step 5: Create Git worktree from the selected base branch
 	worktreePath, err := w.integratedWorktreeSvc.CreateTaskWorktree(ctx, &worktreesvc.CreateTaskWorktreeRequest{
 		ProjectID:           req.ProjectID.String(),
 		TaskID:              req.TaskID.String(),
 		TaskTitle:           req.TaskTitle,
 		ProjectWorkDir:      project.WorktreeBasePath,
-		ProjectMainBranch:   taskBranchName,
+		ProjectMainBranch:   baseBranchName,
 		InitWorkspaceScript: project.InitWorkspaceScript,
 	})
 	if err != nil {
@@ -202,7 +200,8 @@ func (w *worktreeUsecase) CreateWorktreeForTask(ctx context.Context, req CreateW
 
 	w.logger.Info("Worktree created successfully=============",
 		"worktree_path", worktreePath.WorktreePath,
-		"branch_name", branchName)
+		"branch_name", branchName,
+		"base_branch_name", baseBranchName)
 
 	// Step 7: Update worktree record with path and set status to active
 	worktree.WorktreePath = worktreePath.WorktreePath
@@ -211,7 +210,7 @@ func (w *worktreeUsecase) CreateWorktreeForTask(ctx context.Context, req CreateW
 		return nil, fmt.Errorf("failed to update worktree record: %w", err)
 	}
 
-	// Step 8: Update task with Git information
+	// Step 8: Update task with Git information (worktree branch only; base branch already saved)
 	if err := w.updateTaskWithGitInfo(ctx, req.TaskID, branchName, worktreePath.WorktreePath); err != nil {
 		w.logger.Warn("Failed to update task with Git info", "error", err)
 	}
@@ -248,9 +247,19 @@ func (w *worktreeUsecase) EnqueueWorktreeCreation(ctx context.Context, req Creat
 		return nil, fmt.Errorf("worktree already exists for task %s", req.TaskID)
 	}
 
-	// Step 3: Validate project exists
+	// Step 3: Validate project and task exist; persist selected base branch
 	if _, err := w.projectRepo.GetByID(ctx, req.ProjectID); err != nil {
 		return nil, fmt.Errorf("failed to get project: %w", err)
+	}
+
+	task, err := w.taskRepo.GetByID(ctx, req.TaskID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get task: %w", err)
+	}
+
+	baseBranchName := resolveBaseBranchName(req.BaseBranchName, task.BaseBranchName)
+	if err := w.persistTaskBaseBranch(ctx, task, baseBranchName); err != nil {
+		return nil, err
 	}
 
 	// Step 4: Generate branch name (pure string operation, safe to run inline)
@@ -283,9 +292,10 @@ func (w *worktreeUsecase) EnqueueWorktreeCreation(ctx context.Context, req Creat
 
 	// Step 7: Dispatch the heavy git work to a background job
 	if _, err := w.jobClient.EnqueueWorktreeCreate(&WorktreeCreatePayload{
-		WorktreeID: worktree.ID,
-		TaskID:     worktree.TaskID,
-		ProjectID:  worktree.ProjectID,
+		WorktreeID:     worktree.ID,
+		TaskID:         worktree.TaskID,
+		ProjectID:      worktree.ProjectID,
+		BaseBranchName: baseBranchName,
 	}, 0); err != nil {
 		// Roll back: mark the record as error so it is not left dangling in "creating"
 		worktree.Status = entity.WorktreeStatusError
@@ -299,7 +309,8 @@ func (w *worktreeUsecase) EnqueueWorktreeCreation(ctx context.Context, req Creat
 	w.logger.Info("Worktree creation enqueued",
 		"worktree_id", worktree.ID,
 		"task_id", req.TaskID,
-		"branch_name", branchName)
+		"branch_name", branchName,
+		"base_branch_name", baseBranchName)
 
 	return worktree, nil
 }
@@ -334,10 +345,7 @@ func (w *worktreeUsecase) ProcessWorktreeCreation(ctx context.Context, worktreeI
 		return fmt.Errorf("failed to get task: %w", err)
 	}
 
-	baseBranchName := "main"
-	if task.BaseBranchName != nil && *task.BaseBranchName != "" {
-		baseBranchName = *task.BaseBranchName
-	}
+	baseBranchName := resolveBaseBranchName("", task.BaseBranchName)
 
 	// The slow part: create the git worktree and run the init workspace script.
 	worktreePath, err := w.integratedWorktreeSvc.CreateTaskWorktree(ctx, &worktreesvc.CreateTaskWorktreeRequest{
@@ -742,6 +750,27 @@ func (w *worktreeUsecase) validateTaskEligibility(ctx context.Context, taskID uu
 		return fmt.Errorf("task already has a worktree")
 	}
 
+	return nil
+}
+
+func resolveBaseBranchName(requestBase string, taskBase *string) string {
+	if requestBase != "" {
+		return requestBase
+	}
+	if taskBase != nil && *taskBase != "" {
+		return *taskBase
+	}
+	return "main"
+}
+
+func (w *worktreeUsecase) persistTaskBaseBranch(ctx context.Context, task *entity.Task, baseBranchName string) error {
+	if task.BaseBranchName != nil && *task.BaseBranchName == baseBranchName {
+		return nil
+	}
+	task.BaseBranchName = &baseBranchName
+	if err := w.taskRepo.Update(ctx, task); err != nil {
+		return fmt.Errorf("failed to save base branch name: %w", err)
+	}
 	return nil
 }
 

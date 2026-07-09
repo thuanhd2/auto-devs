@@ -40,9 +40,10 @@ type TaskImplementationPayload struct {
 
 // WorktreeCreatePayload represents the payload for worktree creation jobs
 type WorktreeCreatePayload struct {
-	WorktreeID uuid.UUID `json:"worktree_id"`
-	TaskID     uuid.UUID `json:"task_id"`
-	ProjectID  uuid.UUID `json:"project_id"`
+	WorktreeID     uuid.UUID `json:"worktree_id"`
+	TaskID         uuid.UUID `json:"task_id"`
+	ProjectID      uuid.UUID `json:"project_id"`
+	BaseBranchName string    `json:"base_branch_name,omitempty"`
 }
 
 type TaskUsecase interface {
@@ -1113,12 +1114,15 @@ func (u *taskUsecase) StartPlanning(ctx context.Context, taskID uuid.UUID, branc
 		return "", fmt.Errorf("task must be in TODO or PLANNING status to start planning, current status: %s", task.Status)
 	}
 
-	// Update task with branch name
-	_, err = u.Update(ctx, taskID, UpdateTaskRequest{
-		BaseBranchName: &branchName,
-	})
-	if err != nil {
-		return "", fmt.Errorf("failed to update task with branch name: %w", err)
+	// Persist base branch only when the caller selected one (not when reusing an
+	// existing worktree, which often passes the worktree/feature branch name).
+	if branchName != "" && (task.BranchName == nil || branchName != *task.BranchName) {
+		_, err = u.Update(ctx, taskID, UpdateTaskRequest{
+			BaseBranchName: &branchName,
+		})
+		if err != nil {
+			return "", fmt.Errorf("failed to update task with base branch name: %w", err)
+		}
 	}
 
 	// Enqueue the planning job using asynq client
@@ -1181,11 +1185,15 @@ func (u *taskUsecase) StartImplementingDirect(ctx context.Context, taskID uuid.U
 		return "", fmt.Errorf("task must be in TODO status to start implementing directly, current status: %s", task.Status)
 	}
 
-	_, err = u.Update(ctx, taskID, UpdateTaskRequest{
-		BaseBranchName: &branchName,
-	})
-	if err != nil {
-		return "", fmt.Errorf("failed to update task with branch name: %w", err)
+	// Persist base branch only when the caller selected one (not when reusing an
+	// existing worktree, which often passes the worktree/feature branch name).
+	if branchName != "" && (task.BranchName == nil || branchName != *task.BranchName) {
+		_, err = u.Update(ctx, taskID, UpdateTaskRequest{
+			BaseBranchName: &branchName,
+		})
+		if err != nil {
+			return "", fmt.Errorf("failed to update task with base branch name: %w", err)
+		}
 	}
 
 	payload := &TaskImplementationPayload{

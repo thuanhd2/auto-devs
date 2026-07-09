@@ -68,9 +68,10 @@ func (a *JobClientAdapter) EnqueueTaskImplementation(payload *usecase.TaskImplem
 func (a *JobClientAdapter) EnqueueWorktreeCreate(payload *usecase.WorktreeCreatePayload, delay time.Duration) (string, error) {
 	// Convert usecase payload to jobs package payload
 	jobPayload := &WorktreeCreatePayload{
-		WorktreeID: payload.WorktreeID,
-		TaskID:     payload.TaskID,
-		ProjectID:  payload.ProjectID,
+		WorktreeID:     payload.WorktreeID,
+		TaskID:         payload.TaskID,
+		ProjectID:      payload.ProjectID,
+		BaseBranchName: payload.BaseBranchName,
 	}
 
 	// Enqueue the job

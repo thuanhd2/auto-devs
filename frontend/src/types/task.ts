@@ -37,6 +37,7 @@ export interface Task {
   description: string
   status: TaskStatus
   plan: string
+  base_branch_name?: string
   branch_name: string
   pr_url: string
   created_at: string
