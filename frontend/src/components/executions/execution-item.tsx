@@ -35,6 +35,7 @@ interface ExecutionItemProps {
   compact?: boolean
   expandable?: boolean
   className?: string
+  selectedLogTypes?: string[]
 }
 
 export function ExecutionItem({
@@ -44,6 +45,7 @@ export function ExecutionItem({
   compact = false,
   expandable = false,
   className,
+  selectedLogTypes,
 }: ExecutionItemProps) {
   const [isExpanded, setIsExpanded] = useState(false)
   const isActive =
@@ -87,7 +89,7 @@ export function ExecutionItem({
             </CollapsibleTrigger>
             <CollapsibleContent className='space-y-4'>
               <div className='border-t pt-4'>
-                <ExecutionDetails execution={execution} />
+                <ExecutionDetails execution={execution} selectedLogTypes={selectedLogTypes} />
               </div>
             </CollapsibleContent>
           </Collapsible>
@@ -102,7 +104,7 @@ export function ExecutionItem({
                 />
               )}
             </div>
-            {!compact && <ExecutionDetails execution={execution} />}
+            {!compact && <ExecutionDetails execution={execution} selectedLogTypes={selectedLogTypes} />}
           </div>
         )}
       </CardContent>
@@ -158,7 +160,13 @@ function ExecutionHeader({
   )
 }
 
-function ExecutionDetails({ execution }: { execution: Execution }) {
+function ExecutionDetails({
+  execution,
+  selectedLogTypes,
+}: {
+  execution: Execution
+  selectedLogTypes?: string[]
+}) {
   return (
     <div className='space-y-3'>
       {execution.error && (
@@ -177,7 +185,7 @@ function ExecutionDetails({ execution }: { execution: Execution }) {
         </div>
       )}
 
-      <ExecutionLogsPannel executionId={execution.id} />
+      <ExecutionLogsPannel executionId={execution.id} selectedLogTypes={selectedLogTypes} />
     </div>
   )
 }
