@@ -273,7 +273,7 @@ func (h *TaskHandlerWithWebSocket) StartPlanning(c *gin.Context) {
 	}
 
 	// Start the background planning job using the usecase
-	jobID, err := h.TaskHandler.taskUsecase.StartPlanning(c.Request.Context(), id, req.BranchName, req.AIType, req.AutoImplement)
+	jobID, err := h.TaskHandler.taskUsecase.StartPlanning(c.Request.Context(), id, req.BranchName, req.AIType, req.AutoImplement, req.UseRemoteBranch)
 	if err != nil {
 		// Revert status if job enqueueing fails
 		_, revertErr := h.taskUsecase.UpdateStatus(c.Request.Context(), id, entity.TaskStatusTODO)
@@ -341,7 +341,7 @@ func (h *TaskHandlerWithWebSocket) StartImplementingDirect(c *gin.Context) {
 		log.Printf("Failed to send WebSocket notification for status change: %v", err)
 	}
 
-	jobID, err := h.TaskHandler.taskUsecase.StartImplementingDirect(c.Request.Context(), id, req.BranchName, req.AIType)
+	jobID, err := h.TaskHandler.taskUsecase.StartImplementingDirect(c.Request.Context(), id, req.BranchName, req.AIType, req.UseRemoteBranch)
 	if err != nil {
 		// Revert status if job enqueueing fails
 		revertedTask, revertErr := h.taskUsecase.UpdateStatus(c.Request.Context(), id, entity.TaskStatusTODO)

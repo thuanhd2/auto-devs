@@ -443,7 +443,7 @@ func (h *TaskHandler) StartPlanning(c *gin.Context) {
 	}
 
 	// Start planning (this will enqueue a background job)
-	jobID, err := h.taskUsecase.StartPlanning(c.Request.Context(), id, req.BranchName, req.AIType, req.AutoImplement)
+	jobID, err := h.taskUsecase.StartPlanning(c.Request.Context(), id, req.BranchName, req.AIType, req.AutoImplement, req.UseRemoteBranch)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, dto.NewErrorResponse(err, http.StatusInternalServerError, "Failed to start planning"))
 		return

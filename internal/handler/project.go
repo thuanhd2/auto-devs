@@ -370,7 +370,9 @@ func (h *ProjectHandler) ListBranches(c *gin.Context) {
 		return
 	}
 
-	branches, err := h.projectUsecase.ListBranches(c.Request.Context(), id)
+	includeRemote := c.Query("include_remote") == "true"
+
+	branches, err := h.projectUsecase.ListBranches(c.Request.Context(), id, includeRemote)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, dto.NewErrorResponse(err, http.StatusInternalServerError, "Failed to list branches"))
 		return
@@ -382,6 +384,7 @@ func (h *ProjectHandler) ListBranches(c *gin.Context) {
 		branchResponses[i] = dto.GitBranchResponse{
 			Name:        branch.Name,
 			IsCurrent:   branch.IsCurrent,
+			IsRemote:    branch.IsRemote,
 			LastCommit:  branch.LastCommit,
 			LastUpdated: branch.LastUpdated,
 		}

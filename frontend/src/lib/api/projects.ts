@@ -91,17 +91,22 @@ export const projectsApi = {
     await api.post(`${API_ENDPOINTS.PROJECTS}/${projectId}/git/reinit`)
   },
 
-  async getProjectBranches(projectId: string): Promise<{
+  async getProjectBranches(
+    projectId: string,
+    includeRemote?: boolean
+  ): Promise<{
     branches: Array<{
       name: string
       is_current: boolean
+      is_remote?: boolean
       last_commit: string
       last_updated: string
     }>
     total: number
   }> {
+    const params = includeRemote ? '?include_remote=true' : ''
     const response = await api.get(
-      `${API_ENDPOINTS.PROJECTS}/${projectId}/branches`
+      `${API_ENDPOINTS.PROJECTS}/${projectId}/branches${params}`
     )
     return response.data
   },

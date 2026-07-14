@@ -19,18 +19,20 @@ const (
 
 // TaskPlanningPayload represents the payload for task planning jobs
 type TaskPlanningPayload struct {
-	TaskID        uuid.UUID `json:"task_id"`
-	BranchName    string    `json:"branch_name"`
-	ProjectID     uuid.UUID `json:"project_id"`
-	AIType        string    `json:"ai_type"`
-	AutoImplement bool      `json:"auto_implement"`
+	TaskID          uuid.UUID `json:"task_id"`
+	BranchName      string    `json:"branch_name"`
+	ProjectID       uuid.UUID `json:"project_id"`
+	AIType          string    `json:"ai_type"`
+	AutoImplement   bool      `json:"auto_implement"`
+	UseRemoteBranch bool      `json:"use_remote_branch"`
 }
 
 // TaskImplementationPayload represents the payload for task implementation jobs
 type TaskImplementationPayload struct {
-	TaskID    uuid.UUID `json:"task_id"`
-	ProjectID uuid.UUID `json:"project_id"`
-	AIType    string    `json:"ai_type"`
+	TaskID          uuid.UUID `json:"task_id"`
+	ProjectID       uuid.UUID `json:"project_id"`
+	AIType          string    `json:"ai_type"`
+	UseRemoteBranch bool      `json:"use_remote_branch"`
 }
 
 // PRStatusSyncPayload represents the payload for PR status sync jobs
@@ -45,10 +47,11 @@ type WorktreeCleanupPayload struct {
 
 // WorktreeCreatePayload represents the payload for worktree creation jobs
 type WorktreeCreatePayload struct {
-	WorktreeID     uuid.UUID `json:"worktree_id"`
-	TaskID         uuid.UUID `json:"task_id"`
-	ProjectID      uuid.UUID `json:"project_id"`
-	BaseBranchName string    `json:"base_branch_name,omitempty"`
+	WorktreeID      uuid.UUID `json:"worktree_id"`
+	TaskID          uuid.UUID `json:"task_id"`
+	ProjectID       uuid.UUID `json:"project_id"`
+	BaseBranchName  string    `json:"base_branch_name,omitempty"`
+	UseRemoteBranch bool      `json:"use_remote_branch"`
 }
 
 // NewTaskPlanningJob creates a new task planning job

@@ -2702,8 +2702,8 @@ func (_c *TaskUsecaseMock_SearchTasks_Call) RunAndReturn(run func(ctx context.Co
 }
 
 // StartImplementingDirect provides a mock function for the type TaskUsecaseMock
-func (_mock *TaskUsecaseMock) StartImplementingDirect(ctx context.Context, taskID uuid.UUID, branchName string, aiType string) (string, error) {
-	ret := _mock.Called(ctx, taskID, branchName, aiType)
+func (_mock *TaskUsecaseMock) StartImplementingDirect(ctx context.Context, taskID uuid.UUID, branchName string, aiType string, useRemoteBranch bool) (string, error) {
+	ret := _mock.Called(ctx, taskID, branchName, aiType, useRemoteBranch)
 
 	if len(ret) == 0 {
 		panic("no return value specified for StartImplementingDirect")
@@ -2711,16 +2711,16 @@ func (_mock *TaskUsecaseMock) StartImplementingDirect(ctx context.Context, taskI
 
 	var r0 string
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, string, string) (string, error)); ok {
-		return returnFunc(ctx, taskID, branchName, aiType)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, string, string, bool) (string, error)); ok {
+		return returnFunc(ctx, taskID, branchName, aiType, useRemoteBranch)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, string, string) string); ok {
-		r0 = returnFunc(ctx, taskID, branchName, aiType)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, string, string, bool) string); ok {
+		r0 = returnFunc(ctx, taskID, branchName, aiType, useRemoteBranch)
 	} else {
 		r0 = ret.Get(0).(string)
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID, string, string) error); ok {
-		r1 = returnFunc(ctx, taskID, branchName, aiType)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID, string, string, bool) error); ok {
+		r1 = returnFunc(ctx, taskID, branchName, aiType, useRemoteBranch)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -2737,13 +2737,14 @@ type TaskUsecaseMock_StartImplementingDirect_Call struct {
 //   - taskID
 //   - branchName
 //   - aiType
-func (_e *TaskUsecaseMock_Expecter) StartImplementingDirect(ctx interface{}, taskID interface{}, branchName interface{}, aiType interface{}) *TaskUsecaseMock_StartImplementingDirect_Call {
-	return &TaskUsecaseMock_StartImplementingDirect_Call{Call: _e.mock.On("StartImplementingDirect", ctx, taskID, branchName, aiType)}
+//   - useRemoteBranch
+func (_e *TaskUsecaseMock_Expecter) StartImplementingDirect(ctx interface{}, taskID interface{}, branchName interface{}, aiType interface{}, useRemoteBranch interface{}) *TaskUsecaseMock_StartImplementingDirect_Call {
+	return &TaskUsecaseMock_StartImplementingDirect_Call{Call: _e.mock.On("StartImplementingDirect", ctx, taskID, branchName, aiType, useRemoteBranch)}
 }
 
-func (_c *TaskUsecaseMock_StartImplementingDirect_Call) Run(run func(ctx context.Context, taskID uuid.UUID, branchName string, aiType string)) *TaskUsecaseMock_StartImplementingDirect_Call {
+func (_c *TaskUsecaseMock_StartImplementingDirect_Call) Run(run func(ctx context.Context, taskID uuid.UUID, branchName string, aiType string, useRemoteBranch bool)) *TaskUsecaseMock_StartImplementingDirect_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(uuid.UUID), args[2].(string), args[3].(string))
+		run(args[0].(context.Context), args[1].(uuid.UUID), args[2].(string), args[3].(string), args[4].(bool))
 	})
 	return _c
 }
@@ -2753,14 +2754,14 @@ func (_c *TaskUsecaseMock_StartImplementingDirect_Call) Return(s string, err err
 	return _c
 }
 
-func (_c *TaskUsecaseMock_StartImplementingDirect_Call) RunAndReturn(run func(ctx context.Context, taskID uuid.UUID, branchName string, aiType string) (string, error)) *TaskUsecaseMock_StartImplementingDirect_Call {
+func (_c *TaskUsecaseMock_StartImplementingDirect_Call) RunAndReturn(run func(ctx context.Context, taskID uuid.UUID, branchName string, aiType string, useRemoteBranch bool) (string, error)) *TaskUsecaseMock_StartImplementingDirect_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // StartPlanning provides a mock function for the type TaskUsecaseMock
-func (_mock *TaskUsecaseMock) StartPlanning(ctx context.Context, taskID uuid.UUID, branchName string, aiType string, autoImplement bool) (string, error) {
-	ret := _mock.Called(ctx, taskID, branchName, aiType, autoImplement)
+func (_mock *TaskUsecaseMock) StartPlanning(ctx context.Context, taskID uuid.UUID, branchName string, aiType string, autoImplement bool, useRemoteBranch bool) (string, error) {
+	ret := _mock.Called(ctx, taskID, branchName, aiType, autoImplement, useRemoteBranch)
 
 	if len(ret) == 0 {
 		panic("no return value specified for StartPlanning")
@@ -2768,16 +2769,16 @@ func (_mock *TaskUsecaseMock) StartPlanning(ctx context.Context, taskID uuid.UUI
 
 	var r0 string
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, string, string, bool) (string, error)); ok {
-		return returnFunc(ctx, taskID, branchName, aiType, autoImplement)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, string, string, bool, bool) (string, error)); ok {
+		return returnFunc(ctx, taskID, branchName, aiType, autoImplement, useRemoteBranch)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, string, string, bool) string); ok {
-		r0 = returnFunc(ctx, taskID, branchName, aiType, autoImplement)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, string, string, bool, bool) string); ok {
+		r0 = returnFunc(ctx, taskID, branchName, aiType, autoImplement, useRemoteBranch)
 	} else {
 		r0 = ret.Get(0).(string)
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID, string, string, bool) error); ok {
-		r1 = returnFunc(ctx, taskID, branchName, aiType, autoImplement)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID, string, string, bool, bool) error); ok {
+		r1 = returnFunc(ctx, taskID, branchName, aiType, autoImplement, useRemoteBranch)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -2795,13 +2796,14 @@ type TaskUsecaseMock_StartPlanning_Call struct {
 //   - branchName
 //   - aiType
 //   - autoImplement
-func (_e *TaskUsecaseMock_Expecter) StartPlanning(ctx interface{}, taskID interface{}, branchName interface{}, aiType interface{}, autoImplement interface{}) *TaskUsecaseMock_StartPlanning_Call {
-	return &TaskUsecaseMock_StartPlanning_Call{Call: _e.mock.On("StartPlanning", ctx, taskID, branchName, aiType, autoImplement)}
+//   - useRemoteBranch
+func (_e *TaskUsecaseMock_Expecter) StartPlanning(ctx interface{}, taskID interface{}, branchName interface{}, aiType interface{}, autoImplement interface{}, useRemoteBranch interface{}) *TaskUsecaseMock_StartPlanning_Call {
+	return &TaskUsecaseMock_StartPlanning_Call{Call: _e.mock.On("StartPlanning", ctx, taskID, branchName, aiType, autoImplement, useRemoteBranch)}
 }
 
-func (_c *TaskUsecaseMock_StartPlanning_Call) Run(run func(ctx context.Context, taskID uuid.UUID, branchName string, aiType string, autoImplement bool)) *TaskUsecaseMock_StartPlanning_Call {
+func (_c *TaskUsecaseMock_StartPlanning_Call) Run(run func(ctx context.Context, taskID uuid.UUID, branchName string, aiType string, autoImplement bool, useRemoteBranch bool)) *TaskUsecaseMock_StartPlanning_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(uuid.UUID), args[2].(string), args[3].(string), args[4].(bool))
+		run(args[0].(context.Context), args[1].(uuid.UUID), args[2].(string), args[3].(string), args[4].(bool), args[5].(bool))
 	})
 	return _c
 }
@@ -2811,7 +2813,7 @@ func (_c *TaskUsecaseMock_StartPlanning_Call) Return(s string, err error) *TaskU
 	return _c
 }
 
-func (_c *TaskUsecaseMock_StartPlanning_Call) RunAndReturn(run func(ctx context.Context, taskID uuid.UUID, branchName string, aiType string, autoImplement bool) (string, error)) *TaskUsecaseMock_StartPlanning_Call {
+func (_c *TaskUsecaseMock_StartPlanning_Call) RunAndReturn(run func(ctx context.Context, taskID uuid.UUID, branchName string, aiType string, autoImplement bool, useRemoteBranch bool) (string, error)) *TaskUsecaseMock_StartPlanning_Call {
 	_c.Call.Return(run)
 	return _c
 }

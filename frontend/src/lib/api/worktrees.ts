@@ -12,12 +12,14 @@ export const worktreesApi = {
     projectId: string
     taskTitle: string
     baseBranchName: string
+    useRemoteBranch?: boolean
   }) {
     const response = await api.post('/worktrees', {
       task_id: params.taskId,
       project_id: params.projectId,
       task_title: params.taskTitle,
       base_branch_name: params.baseBranchName,
+      use_remote_branch: params.useRemoteBranch ?? false,
     })
     return response.data
   },

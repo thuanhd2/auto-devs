@@ -12,11 +12,11 @@ interface TaskActionsProps {
   onEdit?: (task: Task) => void
   onDelete?: (taskId: string) => void
   onDuplicate?: (task: Task) => void
-  onStartPlanning?: (taskId: string, branchName: string, aiType: string, autoImplement: boolean) => void
+  onStartPlanning?: (taskId: string, branchName: string, aiType: string, autoImplement: boolean, useRemoteBranch: boolean) => void
   onApprovePlanAndStartImplement?: (taskId: string, aiType: string) => void
   onChangeStatus?: (taskId: string, newStatus: TaskStatus) => Promise<void>
-  onImplementDirect?: (taskId: string, branchName: string, aiType: string) => void
-  onCreateWorktree?: (taskId: string, branchName: string) => void
+  onImplementDirect?: (taskId: string, branchName: string, aiType: string, useRemoteBranch: boolean) => void
+  onCreateWorktree?: (taskId: string, branchName: string, useRemoteBranch: boolean) => void
 }
 
 export function TaskActions({
@@ -61,25 +61,25 @@ export function TaskActions({
     }
   }
 
-  const handleBranchSelected = (branchName: string, aiType: string, autoImplement: boolean) => {
-    onStartPlanning?.(task.id, branchName, aiType, autoImplement)
+  const handleBranchSelected = (branchName: string, aiType: string, autoImplement: boolean, useRemoteBranch: boolean) => {
+    onStartPlanning?.(task.id, branchName, aiType, autoImplement, useRemoteBranch)
   }
 
-  const handleDirectImplementBranchSelected = (branchName: string, aiType: string, _autoImplement: boolean) => {
-    onImplementDirect?.(task.id, branchName, aiType)
+  const handleDirectImplementBranchSelected = (branchName: string, aiType: string, _autoImplement: boolean, useRemoteBranch: boolean) => {
+    onImplementDirect?.(task.id, branchName, aiType, useRemoteBranch)
   }
 
-  const handleCreateWorktreeBranchSelected = (branchName: string, _aiType: string, _autoImplement: boolean) => {
-    onCreateWorktree?.(task.id, branchName)
+  const handleCreateWorktreeBranchSelected = (branchName: string, _aiType: string, _autoImplement: boolean, useRemoteBranch: boolean) => {
+    onCreateWorktree?.(task.id, branchName, useRemoteBranch)
   }
 
   const handlePlanningWithWorktreeConfirm = (aiType: string, autoImplement?: boolean) => {
     // Pass base branch (not worktree branch) so backend does not overwrite BaseBranchName
-    onStartPlanning?.(task.id, task.base_branch_name || '', aiType, autoImplement ?? false)
+    onStartPlanning?.(task.id, task.base_branch_name || '', aiType, autoImplement ?? false, false)
   }
 
   const handleImplementWithWorktreeConfirm = (aiType: string) => {
-    onImplementDirect?.(task.id, task.base_branch_name || '', aiType)
+    onImplementDirect?.(task.id, task.base_branch_name || '', aiType, false)
   }
 
   const handleApprovePlanAndStartImplement = () => {

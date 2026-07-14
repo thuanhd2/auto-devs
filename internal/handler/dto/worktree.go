@@ -13,8 +13,9 @@ type CreateWorktreeRequest struct {
 	TaskID         uuid.UUID `json:"task_id" binding:"required"`
 	ProjectID      uuid.UUID `json:"project_id" binding:"required"`
 	TaskTitle      string    `json:"task_title" binding:"required"`
-	BaseBranchName string    `json:"base_branch_name,omitempty"` // Optional base branch override
-	Repository     string    `json:"repository,omitempty"`       // Optional repository URL to clone
+	BaseBranchName  string    `json:"base_branch_name,omitempty"` // Optional base branch override
+	Repository      string    `json:"repository,omitempty"`       // Optional repository URL to clone
+	UseRemoteBranch bool      `json:"use_remote_branch"`
 }
 
 // CleanupWorktreeRequest represents a request to cleanup a worktree for a task

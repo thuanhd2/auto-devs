@@ -32,7 +32,7 @@ type ProjectUsecase interface {
 	UpdateRepositoryURL(ctx context.Context, projectID uuid.UUID, repositoryURL string) error
 	ReinitGitRepository(ctx context.Context, projectID uuid.UUID) error
 	GetGitStatus(ctx context.Context, projectID uuid.UUID) (*GitStatus, error)
-	ListBranches(ctx context.Context, projectID uuid.UUID) ([]GitBranch, error)
+	ListBranches(ctx context.Context, projectID uuid.UUID, includeRemote bool) ([]GitBranch, error)
 }
 
 type CreateProjectRequest struct {
@@ -98,6 +98,7 @@ type WorkingDirStatus struct {
 type GitBranch struct {
 	Name        string `json:"name"`
 	IsCurrent   bool   `json:"is_current"`
+	IsRemote    bool   `json:"is_remote"`
 	LastCommit  string `json:"last_commit,omitempty"`
 	LastUpdated string `json:"last_updated,omitempty"`
 }
@@ -571,7 +572,7 @@ func (u *projectUsecase) GetGitStatus(ctx context.Context, projectID uuid.UUID) 
 }
 
 // ListBranches lists all Git branches for a project
-func (u *projectUsecase) ListBranches(ctx context.Context, projectID uuid.UUID) ([]GitBranch, error) {
+func (u *projectUsecase) ListBranches(ctx context.Context, projectID uuid.UUID, includeRemote bool) ([]GitBranch, error) {
 	// Get project to ensure it exists and has Git configuration
 	project, err := u.projectRepo.GetByID(ctx, projectID)
 	if err != nil {
@@ -605,24 +606,37 @@ func (u *projectUsecase) ListBranches(ctx context.Context, projectID uuid.UUID) 
 	// 	},
 	// }
 
-	branches, err := u.gitService.ListBranches(ctx, project.WorktreeBasePath)
+	branches, err := u.gitService.ListBranches(ctx, project.WorktreeBasePath, includeRemote)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list branches: %w", err)
 	}
 
-	gitBranches := make([]GitBranch, len(branches))
-	for i, branch := range branches {
+	gitBranches := make([]GitBranch, 0, len(branches))
+	for _, branch := range branches {
 		isCurrent := false
-		if strings.HasPrefix(branch, "* ") {
+		isRemote := includeRemote
+
+		if includeRemote {
+			branch = strings.TrimSpace(branch)
+			if strings.Contains(branch, "->") {
+				continue
+			}
+			branch = strings.TrimPrefix(branch, "origin/")
+			if branch == "" || branch == "HEAD" {
+				continue
+			}
+		} else if strings.HasPrefix(branch, "* ") {
 			branch = strings.TrimPrefix(branch, "* ")
 			isCurrent = true
 		}
-		gitBranches[i] = GitBranch{
+
+		gitBranches = append(gitBranches, GitBranch{
 			Name:        branch,
 			IsCurrent:   isCurrent,
+			IsRemote:    isRemote,
 			LastCommit:  "",
 			LastUpdated: "",
-		}
+		})
 	}
 
 	// sort current branch to the top

@@ -93,6 +93,7 @@ func (iws *IntegratedWorktreeService) CreateTaskWorktree(ctx context.Context, re
 		BaseBranchName:     request.ProjectMainBranch,
 		WorktreeWorkingDir: worktreePath,
 		WorktreeBranchName: branchName,
+		UseRemoteBranch:    request.UseRemoteBranch,
 	}); err != nil {
 		// Clean up worktree on error
 		iws.worktreeManager.CleanupWorktree(ctx, worktreePath)
@@ -408,6 +409,7 @@ type CreateTaskWorktreeRequest struct {
 	ProjectWorkDir      string `json:"project_work_dir"`
 	ProjectMainBranch   string `json:"project_main_branch"`
 	InitWorkspaceScript string `json:"init_workspace_script"`
+	UseRemoteBranch     bool   `json:"use_remote_branch"`
 }
 
 // CleanupTaskWorktreeRequest represents a request to cleanup a task worktree

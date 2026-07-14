@@ -257,15 +257,27 @@ type CreateWorktreeRequest struct {
 	BaseBranchName     string
 	WorktreeWorkingDir string
 	WorktreeBranchName string
+	UseRemoteBranch    bool
 }
 
 func (m *GitManager) CreateWorktree(ctx context.Context, request *CreateWorktreeRequest) error {
+	baseBranchRef := request.BaseBranchName
+	if request.UseRemoteBranch {
+		err := m.executeWithRetry(ctx, func() error {
+			return m.commands.Fetch(ctx, request.BaseWorkingDir, "origin")
+		})
+		if err != nil {
+			return fmt.Errorf("failed to fetch origin: %w", err)
+		}
+		baseBranchRef = "origin/" + request.BaseBranchName
+	}
+
 	// run command git worktree add -b <worktree-branch-name> <worktree-path> <base-branch-name>
 	err := m.executeWithRetry(ctx, func() error {
 		return m.commands.CreateWorktree(
 			ctx,
 			request.BaseWorkingDir,
-			request.BaseBranchName,
+			baseBranchRef,
 			request.WorktreeBranchName,
 			request.WorktreeWorkingDir,
 		)

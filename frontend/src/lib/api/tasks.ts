@@ -122,7 +122,7 @@ export const tasksApi = {
 
   async startImplementingDirect(
     taskId: string,
-    request: { branch_name: string; ai_type: string }
+    request: { branch_name: string; ai_type: string; use_remote_branch?: boolean }
   ): Promise<StartPlanningResponse> {
     const response = await api.post(
       `${API_ENDPOINTS.TASKS}/${taskId}/start-implementing-direct`,

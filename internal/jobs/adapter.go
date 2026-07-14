@@ -30,11 +30,12 @@ func NewJobClientAdapter(client ClientInterface) usecase.JobClientInterface {
 func (a *JobClientAdapter) EnqueueTaskPlanning(payload *usecase.TaskPlanningPayload, delay time.Duration) (string, error) {
 	// Convert usecase payload to jobs package payload
 	jobPayload := &TaskPlanningPayload{
-		TaskID:        payload.TaskID,
-		BranchName:    payload.BranchName,
-		ProjectID:     payload.ProjectID,
-		AIType:        payload.AIType,
-		AutoImplement: payload.AutoImplement,
+		TaskID:          payload.TaskID,
+		BranchName:      payload.BranchName,
+		ProjectID:       payload.ProjectID,
+		AIType:          payload.AIType,
+		AutoImplement:   payload.AutoImplement,
+		UseRemoteBranch: payload.UseRemoteBranch,
 	}
 
 	// Enqueue the job
@@ -50,9 +51,10 @@ func (a *JobClientAdapter) EnqueueTaskPlanning(payload *usecase.TaskPlanningPayl
 func (a *JobClientAdapter) EnqueueTaskImplementation(payload *usecase.TaskImplementationPayload, delay time.Duration) (string, error) {
 	// Convert usecase payload to jobs package payload
 	jobPayload := &TaskImplementationPayload{
-		TaskID:    payload.TaskID,
-		ProjectID: payload.ProjectID,
-		AIType:    payload.AIType,
+		TaskID:          payload.TaskID,
+		ProjectID:       payload.ProjectID,
+		AIType:          payload.AIType,
+		UseRemoteBranch: payload.UseRemoteBranch,
 	}
 
 	// Enqueue the job
@@ -68,10 +70,11 @@ func (a *JobClientAdapter) EnqueueTaskImplementation(payload *usecase.TaskImplem
 func (a *JobClientAdapter) EnqueueWorktreeCreate(payload *usecase.WorktreeCreatePayload, delay time.Duration) (string, error) {
 	// Convert usecase payload to jobs package payload
 	jobPayload := &WorktreeCreatePayload{
-		WorktreeID:     payload.WorktreeID,
-		TaskID:         payload.TaskID,
-		ProjectID:      payload.ProjectID,
-		BaseBranchName: payload.BaseBranchName,
+		WorktreeID:      payload.WorktreeID,
+		TaskID:          payload.TaskID,
+		ProjectID:       payload.ProjectID,
+		BaseBranchName:  payload.BaseBranchName,
+		UseRemoteBranch: payload.UseRemoteBranch,
 	}
 
 	// Enqueue the job

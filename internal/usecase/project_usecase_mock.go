@@ -587,8 +587,8 @@ func (_c *ProjectUsecaseMock_GetWithTasks_Call) RunAndReturn(run func(ctx contex
 }
 
 // ListBranches provides a mock function for the type ProjectUsecaseMock
-func (_mock *ProjectUsecaseMock) ListBranches(ctx context.Context, projectID uuid.UUID) ([]GitBranch, error) {
-	ret := _mock.Called(ctx, projectID)
+func (_mock *ProjectUsecaseMock) ListBranches(ctx context.Context, projectID uuid.UUID, includeRemote bool) ([]GitBranch, error) {
+	ret := _mock.Called(ctx, projectID, includeRemote)
 
 	if len(ret) == 0 {
 		panic("no return value specified for ListBranches")
@@ -596,18 +596,18 @@ func (_mock *ProjectUsecaseMock) ListBranches(ctx context.Context, projectID uui
 
 	var r0 []GitBranch
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID) ([]GitBranch, error)); ok {
-		return returnFunc(ctx, projectID)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, bool) ([]GitBranch, error)); ok {
+		return returnFunc(ctx, projectID, includeRemote)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID) []GitBranch); ok {
-		r0 = returnFunc(ctx, projectID)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, bool) []GitBranch); ok {
+		r0 = returnFunc(ctx, projectID, includeRemote)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]GitBranch)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID) error); ok {
-		r1 = returnFunc(ctx, projectID)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID, bool) error); ok {
+		r1 = returnFunc(ctx, projectID, includeRemote)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -622,13 +622,14 @@ type ProjectUsecaseMock_ListBranches_Call struct {
 // ListBranches is a helper method to define mock.On call
 //   - ctx
 //   - projectID
-func (_e *ProjectUsecaseMock_Expecter) ListBranches(ctx interface{}, projectID interface{}) *ProjectUsecaseMock_ListBranches_Call {
-	return &ProjectUsecaseMock_ListBranches_Call{Call: _e.mock.On("ListBranches", ctx, projectID)}
+//   - includeRemote
+func (_e *ProjectUsecaseMock_Expecter) ListBranches(ctx interface{}, projectID interface{}, includeRemote interface{}) *ProjectUsecaseMock_ListBranches_Call {
+	return &ProjectUsecaseMock_ListBranches_Call{Call: _e.mock.On("ListBranches", ctx, projectID, includeRemote)}
 }
 
-func (_c *ProjectUsecaseMock_ListBranches_Call) Run(run func(ctx context.Context, projectID uuid.UUID)) *ProjectUsecaseMock_ListBranches_Call {
+func (_c *ProjectUsecaseMock_ListBranches_Call) Run(run func(ctx context.Context, projectID uuid.UUID, includeRemote bool)) *ProjectUsecaseMock_ListBranches_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(uuid.UUID))
+		run(args[0].(context.Context), args[1].(uuid.UUID), args[2].(bool))
 	})
 	return _c
 }
@@ -638,7 +639,7 @@ func (_c *ProjectUsecaseMock_ListBranches_Call) Return(gitBranchs []GitBranch, e
 	return _c
 }
 
-func (_c *ProjectUsecaseMock_ListBranches_Call) RunAndReturn(run func(ctx context.Context, projectID uuid.UUID) ([]GitBranch, error)) *ProjectUsecaseMock_ListBranches_Call {
+func (_c *ProjectUsecaseMock_ListBranches_Call) RunAndReturn(run func(ctx context.Context, projectID uuid.UUID, includeRemote bool) ([]GitBranch, error)) *ProjectUsecaseMock_ListBranches_Call {
 	_c.Call.Return(run)
 	return _c
 }
