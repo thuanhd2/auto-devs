@@ -310,29 +310,28 @@ func (m *GitManager) CommitAndPush(ctx context.Context, workingDir, commitMessag
 	}
 
 	if !hasPendingChanges {
-		m.logger.Info("No pending changes to commit")
-		return nil
+		m.logger.Info("No pending changes to commit, skipping commit step")
+	} else {
+		// Stage all changes
+		err = m.executeWithRetry(ctx, func() error {
+			return m.commands.AddAllChanges(ctx, workingDir)
+		})
+		if err != nil {
+			m.logger.Error("Failed to add changes", "error", err)
+			return fmt.Errorf("failed to stage changes: %w", err)
+		}
+
+		// Commit changes
+		err = m.executeWithRetry(ctx, func() error {
+			return m.commands.Commit(ctx, workingDir, commitMessage)
+		})
+		if err != nil {
+			m.logger.Error("Failed to commit changes", "error", err)
+			return fmt.Errorf("failed to commit changes: %w", err)
+		}
 	}
 
-	// Stage all changes
-	err = m.executeWithRetry(ctx, func() error {
-		return m.commands.AddAllChanges(ctx, workingDir)
-	})
-	if err != nil {
-		m.logger.Error("Failed to add changes", "error", err)
-		return fmt.Errorf("failed to stage changes: %w", err)
-	}
-
-	// Commit changes
-	err = m.executeWithRetry(ctx, func() error {
-		return m.commands.Commit(ctx, workingDir, commitMessage)
-	})
-	if err != nil {
-		m.logger.Error("Failed to commit changes", "error", err)
-		return fmt.Errorf("failed to commit changes: %w", err)
-	}
-
-	// Push changes with upstream tracking
+	// Push changes with upstream tracking (always runs)
 	err = m.executeWithRetry(ctx, func() error {
 		return m.commands.PushWithUpstream(ctx, workingDir, remote, branch)
 	})
