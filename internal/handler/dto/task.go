@@ -215,9 +215,10 @@ func TaskStatusAnalyticsResponseFromEntity(analytics *entity.TaskStatusAnalytics
 
 // Start Planning DTOs
 type StartPlanningRequest struct {
-	BranchName    string `json:"branch_name" binding:"required" example:"main"`
-	AIType        string `json:"ai_type" binding:"required" example:"claude-code"`
-	AutoImplement bool   `json:"auto_implement"`
+	BranchName      string `json:"branch_name" binding:"required" example:"main"`
+	AIType          string `json:"ai_type" binding:"required" example:"claude-code"`
+	AutoImplement   bool   `json:"auto_implement"`
+	UseRemoteBranch bool   `json:"use_remote_branch"`
 }
 
 type StartPlanningResponse struct {
@@ -234,6 +235,7 @@ type ApprovePlanRequest struct {
 type GitBranchResponse struct {
 	Name        string `json:"name" example:"main"`
 	IsCurrent   bool   `json:"is_current" example:"true"`
+	IsRemote    bool   `json:"is_remote" example:"false"`
 	LastCommit  string `json:"last_commit,omitempty" example:"abc123def"`
 	LastUpdated string `json:"last_updated,omitempty" example:"2024-01-15T10:30:00Z"`
 }
@@ -249,6 +251,7 @@ type PlanUpdateRequest struct {
 
 // Start Implementing Direct DTOs
 type StartImplementingDirectRequest struct {
-	BranchName string `json:"branch_name" binding:"required" example:"main"`
-	AIType     string `json:"ai_type" binding:"required" example:"claude-code"`
+	BranchName      string `json:"branch_name" binding:"required" example:"main"`
+	AIType          string `json:"ai_type" binding:"required" example:"claude-code"`
+	UseRemoteBranch bool   `json:"use_remote_branch"`
 }

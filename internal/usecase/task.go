@@ -24,26 +24,29 @@ type JobClientInterface interface {
 
 // TaskPlanningPayload represents the payload for task planning jobs
 type TaskPlanningPayload struct {
-	TaskID        uuid.UUID `json:"task_id"`
-	BranchName    string    `json:"branch_name"`
-	ProjectID     uuid.UUID `json:"project_id"`
-	AIType        string    `json:"ai_type"`
-	AutoImplement bool      `json:"auto_implement"`
+	TaskID          uuid.UUID `json:"task_id"`
+	BranchName      string    `json:"branch_name"`
+	ProjectID       uuid.UUID `json:"project_id"`
+	AIType          string    `json:"ai_type"`
+	AutoImplement   bool      `json:"auto_implement"`
+	UseRemoteBranch bool      `json:"use_remote_branch"`
 }
 
 // TaskImplementationPayload represents the payload for task implementation jobs
 type TaskImplementationPayload struct {
-	TaskID    uuid.UUID `json:"task_id"`
-	ProjectID uuid.UUID `json:"project_id"`
-	AIType    string    `json:"ai_type"`
+	TaskID          uuid.UUID `json:"task_id"`
+	ProjectID       uuid.UUID `json:"project_id"`
+	AIType          string    `json:"ai_type"`
+	UseRemoteBranch bool      `json:"use_remote_branch"`
 }
 
 // WorktreeCreatePayload represents the payload for worktree creation jobs
 type WorktreeCreatePayload struct {
-	WorktreeID     uuid.UUID `json:"worktree_id"`
-	TaskID         uuid.UUID `json:"task_id"`
-	ProjectID      uuid.UUID `json:"project_id"`
-	BaseBranchName string    `json:"base_branch_name,omitempty"`
+	WorktreeID      uuid.UUID `json:"worktree_id"`
+	TaskID          uuid.UUID `json:"task_id"`
+	ProjectID       uuid.UUID `json:"project_id"`
+	BaseBranchName  string    `json:"base_branch_name,omitempty"`
+	UseRemoteBranch bool      `json:"use_remote_branch"`
 }
 
 type TaskUsecase interface {
@@ -121,9 +124,9 @@ type TaskUsecase interface {
 	ValidateGitStatusTransition(ctx context.Context, taskID uuid.UUID, newGitStatus entity.TaskGitStatus) error
 
 	// Planning workflow
-	StartPlanning(ctx context.Context, taskID uuid.UUID, branchName string, aiType string, autoImplement bool) (string, error) // returns job ID
+	StartPlanning(ctx context.Context, taskID uuid.UUID, branchName string, aiType string, autoImplement bool, useRemoteBranch bool) (string, error) // returns job ID
 	ApprovePlan(ctx context.Context, taskID uuid.UUID, aiType string) (string, error)                      // returns job ID
-	StartImplementingDirect(ctx context.Context, taskID uuid.UUID, branchName string, aiType string) (string, error) // returns job ID
+	StartImplementingDirect(ctx context.Context, taskID uuid.UUID, branchName string, aiType string, useRemoteBranch bool) (string, error) // returns job ID
 	ListGitBranches(ctx context.Context, projectID uuid.UUID) ([]GitBranch, error)
 
 	// Pull requests
@@ -1102,7 +1105,7 @@ func (u *taskUsecase) ValidateGitStatusTransition(ctx context.Context, taskID uu
 }
 
 // StartPlanning starts the planning process for a task
-func (u *taskUsecase) StartPlanning(ctx context.Context, taskID uuid.UUID, branchName string, aiType string, autoImplement bool) (string, error) {
+func (u *taskUsecase) StartPlanning(ctx context.Context, taskID uuid.UUID, branchName string, aiType string, autoImplement bool, useRemoteBranch bool) (string, error) {
 	// Get task to validate it exists and is in TODO status
 	task, err := u.taskRepo.GetByID(ctx, taskID)
 	if err != nil {
@@ -1127,11 +1130,12 @@ func (u *taskUsecase) StartPlanning(ctx context.Context, taskID uuid.UUID, branc
 
 	// Enqueue the planning job using asynq client
 	payload := &TaskPlanningPayload{
-		TaskID:        taskID,
-		BranchName:    branchName,
-		ProjectID:     task.ProjectID,
-		AIType:        aiType,
-		AutoImplement: autoImplement,
+		TaskID:          taskID,
+		BranchName:      branchName,
+		ProjectID:       task.ProjectID,
+		AIType:          aiType,
+		AutoImplement:   autoImplement,
+		UseRemoteBranch: useRemoteBranch,
 	}
 
 	jobID, err := u.jobClient.EnqueueTaskPlanning(payload, 0)
@@ -1174,7 +1178,7 @@ func (u *taskUsecase) ApprovePlan(ctx context.Context, taskID uuid.UUID, aiType 
 }
 
 // StartImplementingDirect skips planning and goes directly from TODO to IMPLEMENTING
-func (u *taskUsecase) StartImplementingDirect(ctx context.Context, taskID uuid.UUID, branchName string, aiType string) (string, error) {
+func (u *taskUsecase) StartImplementingDirect(ctx context.Context, taskID uuid.UUID, branchName string, aiType string, useRemoteBranch bool) (string, error) {
 	task, err := u.taskRepo.GetByID(ctx, taskID)
 	if err != nil {
 		return "", fmt.Errorf("failed to get task: %w", err)
@@ -1197,9 +1201,10 @@ func (u *taskUsecase) StartImplementingDirect(ctx context.Context, taskID uuid.U
 	}
 
 	payload := &TaskImplementationPayload{
-		TaskID:    taskID,
-		ProjectID: task.ProjectID,
-		AIType:    aiType,
+		TaskID:          taskID,
+		ProjectID:       task.ProjectID,
+		AIType:          aiType,
+		UseRemoteBranch: useRemoteBranch,
 	}
 
 	jobID, err := u.jobClient.EnqueueTaskImplementation(payload, 0)

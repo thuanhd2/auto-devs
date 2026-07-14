@@ -22,7 +22,7 @@ type WorktreeUsecase interface {
 	EnqueueWorktreeCreation(ctx context.Context, req CreateWorktreeRequest) (*entity.Worktree, error)
 	// ProcessWorktreeCreation performs the actual git worktree creation for a
 	// previously enqueued record. It is meant to be called from the background worker.
-	ProcessWorktreeCreation(ctx context.Context, worktreeID uuid.UUID) error
+	ProcessWorktreeCreation(ctx context.Context, worktreeID uuid.UUID, useRemoteBranch bool) error
 	CleanupWorktreeForTask(ctx context.Context, req CleanupWorktreeRequest) error
 	GetWorktreeByTaskID(ctx context.Context, taskID uuid.UUID) (*entity.Worktree, error)
 	GetWorktreesByProjectID(ctx context.Context, projectID uuid.UUID) ([]*entity.Worktree, error)
@@ -54,8 +54,9 @@ type CreateWorktreeRequest struct {
 	TaskID         uuid.UUID `json:"task_id" binding:"required"`
 	ProjectID      uuid.UUID `json:"project_id" binding:"required"`
 	TaskTitle      string    `json:"task_title" binding:"required"`
-	BaseBranchName string    `json:"base_branch_name,omitempty"` // Optional base branch override
-	Repository     string    `json:"repository,omitempty"`       // Optional repository URL to clone
+	BaseBranchName  string    `json:"base_branch_name,omitempty"` // Optional base branch override
+	Repository      string    `json:"repository,omitempty"`       // Optional repository URL to clone
+	UseRemoteBranch bool      `json:"use_remote_branch"`
 }
 
 type CleanupWorktreeRequest struct {
@@ -181,6 +182,7 @@ func (w *worktreeUsecase) CreateWorktreeForTask(ctx context.Context, req CreateW
 		ProjectWorkDir:      project.WorktreeBasePath,
 		ProjectMainBranch:   baseBranchName,
 		InitWorkspaceScript: project.InitWorkspaceScript,
+		UseRemoteBranch:     req.UseRemoteBranch,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create worktree: %w", err)
@@ -292,10 +294,11 @@ func (w *worktreeUsecase) EnqueueWorktreeCreation(ctx context.Context, req Creat
 
 	// Step 7: Dispatch the heavy git work to a background job
 	if _, err := w.jobClient.EnqueueWorktreeCreate(&WorktreeCreatePayload{
-		WorktreeID:     worktree.ID,
-		TaskID:         worktree.TaskID,
-		ProjectID:      worktree.ProjectID,
-		BaseBranchName: baseBranchName,
+		WorktreeID:      worktree.ID,
+		TaskID:          worktree.TaskID,
+		ProjectID:       worktree.ProjectID,
+		BaseBranchName:  baseBranchName,
+		UseRemoteBranch: req.UseRemoteBranch,
 	}, 0); err != nil {
 		// Roll back: mark the record as error so it is not left dangling in "creating"
 		worktree.Status = entity.WorktreeStatusError
@@ -318,7 +321,7 @@ func (w *worktreeUsecase) EnqueueWorktreeCreation(ctx context.Context, req Creat
 // ProcessWorktreeCreation performs the actual (slow) git worktree creation for a
 // previously enqueued worktree record. It is designed to run inside a background
 // worker and updates the worktree status to "active" on success or "error" on failure.
-func (w *worktreeUsecase) ProcessWorktreeCreation(ctx context.Context, worktreeID uuid.UUID) error {
+func (w *worktreeUsecase) ProcessWorktreeCreation(ctx context.Context, worktreeID uuid.UUID, useRemoteBranch bool) error {
 	worktree, err := w.worktreeRepo.GetByID(ctx, worktreeID)
 	if err != nil {
 		return fmt.Errorf("worktree not found: %w", err)
@@ -355,6 +358,7 @@ func (w *worktreeUsecase) ProcessWorktreeCreation(ctx context.Context, worktreeI
 		ProjectWorkDir:      project.WorktreeBasePath,
 		ProjectMainBranch:   baseBranchName,
 		InitWorkspaceScript: project.InitWorkspaceScript,
+		UseRemoteBranch:     useRemoteBranch,
 	})
 	if err != nil {
 		// Mark the worktree as error so the UI can surface the failure. Returning the

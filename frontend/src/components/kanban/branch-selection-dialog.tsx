@@ -33,7 +33,7 @@ interface BranchSelectionDialogProps {
   onOpenChange: (open: boolean) => void
   projectId: string
   taskTitle: string
-  onBranchSelected: (branchName: string, aiType: string, autoImplement: boolean) => void
+  onBranchSelected: (branchName: string, aiType: string, autoImplement: boolean, useRemoteBranch: boolean) => void
   mode?: 'planning' | 'implementing' | 'worktree'
 }
 
@@ -51,6 +51,7 @@ export function BranchSelectionDialog({
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string>('')
   const [autoImplement, setAutoImplement] = useState(false)
+  const [useRemoteBranch, setUseRemoteBranch] = useState(false)
 
   const localStorageKey =
     mode === 'implementing'
@@ -70,15 +71,17 @@ export function BranchSelectionDialog({
     setError('')
 
     try {
-      const data = await projectsApi.getProjectBranches(projectId)
+      const data = await projectsApi.getProjectBranches(projectId, useRemoteBranch)
       setBranches(data.branches || [])
 
-      // Auto-select current branch if available
+      // Auto-select current branch if available (local branches only)
       const currentBranch = data.branches?.find(
         (branch: GitBranch) => branch.is_current
       )
       if (currentBranch) {
         setSelectedBranch(currentBranch.name)
+      } else {
+        setSelectedBranch('')
       }
     } catch (err) {
       setError('Failed to load branches. Please try again.')
@@ -86,7 +89,7 @@ export function BranchSelectionDialog({
     } finally {
       setLoading(false)
     }
-  }, [projectId])
+  }, [projectId, useRemoteBranch])
 
   useEffect(() => {
     if (open && projectId) {
@@ -99,11 +102,12 @@ export function BranchSelectionDialog({
       if (mode !== 'worktree') {
         localStorage.setItem(localStorageKey, selectedAIType)
       }
-      onBranchSelected(selectedBranch, selectedAIType, autoImplement)
+      onBranchSelected(selectedBranch, selectedAIType, autoImplement, useRemoteBranch)
       onOpenChange(false)
       setSelectedBranch('')
       setSelectedAIType(localStorage.getItem(localStorageKey) || 'claude-code')
       setAutoImplement(false)
+      setUseRemoteBranch(false)
     }
   }
 
@@ -111,6 +115,7 @@ export function BranchSelectionDialog({
     onOpenChange(false)
     setSelectedBranch('')
     setSelectedAIType(localStorage.getItem(localStorageKey) || 'claude-code')
+    setUseRemoteBranch(false)
     setError('')
   }
 
@@ -173,6 +178,20 @@ export function BranchSelectionDialog({
                     ))}
                   </SelectContent>
                 </Select>
+
+                <div className='flex items-center space-x-2 pt-2'>
+                  <Checkbox
+                    id='use-remote-branch'
+                    checked={useRemoteBranch}
+                    onCheckedChange={(checked) => setUseRemoteBranch(checked === true)}
+                  />
+                  <label
+                    htmlFor='use-remote-branch'
+                    className='text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70'
+                  >
+                    From remote origin
+                  </label>
+                </div>
 
                 {branches.length === 0 && !loading && (
                   <p className='text-muted-foreground text-sm'>

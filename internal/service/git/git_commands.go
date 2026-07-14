@@ -399,6 +399,21 @@ type CommitInfo struct {
 	Subject string
 }
 
+// Fetch fetches updates from a remote
+func (g *GitCommands) Fetch(ctx context.Context, workingDir, remote string) error {
+	args := []string{"fetch", remote}
+	result, err := g.executor.Execute(ctx, workingDir, args...)
+	if err != nil {
+		return WrapWithOperation("fetch", err)
+	}
+
+	if result.ExitCode != 0 {
+		return NewGitError("fetch", result.ExitCode, result.Command, result.Stdout, result.Stderr, nil)
+	}
+
+	return nil
+}
+
 // CreateWorktree creates a new worktree
 // run command git worktree add -b <worktree-branch-name> <worktree-path> <base-branch-name>
 

@@ -194,12 +194,18 @@ export function ProjectBoard({ projectId }: ProjectBoardProps) {
     taskId: string,
     branchName: string,
     aiType: string,
-    autoImplement: boolean
+    autoImplement: boolean,
+    useRemoteBranch: boolean
   ) => {
     try {
       await startPlanningMutation.mutateAsync({
         taskId,
-        request: { branch_name: branchName, ai_type: aiType, auto_implement: autoImplement },
+        request: {
+          branch_name: branchName,
+          ai_type: aiType,
+          auto_implement: autoImplement,
+          use_remote_branch: useRemoteBranch,
+        },
       })
     } catch (error) {
       // Error is handled by the mutation hook
@@ -223,19 +229,28 @@ export function ProjectBoard({ projectId }: ProjectBoardProps) {
   const handleImplementDirect = async (
     taskId: string,
     branchName: string,
-    aiType: string
+    aiType: string,
+    useRemoteBranch: boolean
   ) => {
     try {
       await startImplementingDirectMutation.mutateAsync({
         taskId,
-        request: { branch_name: branchName, ai_type: aiType },
+        request: {
+          branch_name: branchName,
+          ai_type: aiType,
+          use_remote_branch: useRemoteBranch,
+        },
       })
     } catch (error) {
       // Error is handled by the mutation hook
     }
   }
 
-  const handleCreateWorktree = async (taskId: string, branchName: string) => {
+  const handleCreateWorktree = async (
+    taskId: string,
+    branchName: string,
+    useRemoteBranch: boolean
+  ) => {
     const task = localTasks.find((t) => t.id === taskId)
     if (!task) return
     try {
@@ -244,6 +259,7 @@ export function ProjectBoard({ projectId }: ProjectBoardProps) {
         projectId,
         taskTitle: task.title,
         baseBranchName: branchName,
+        useRemoteBranch,
       })
     } catch (error) {
       // Error is handled by the mutation hook

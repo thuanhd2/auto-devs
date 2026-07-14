@@ -168,7 +168,7 @@ func (p *Processor) ProcessTaskPlanning(ctx context.Context, task *asynq.Task) e
 
 	// DO not create worktree if it already exists
 	if projectTask.WorktreePath == nil || *projectTask.WorktreePath == "" {
-		worktree, err := p.createWorktree(ctx, project, projectTask)
+		worktree, err := p.createWorktree(ctx, project, projectTask, payload.UseRemoteBranch)
 		if err != nil {
 			// Update task status back to TODO on failure
 			_ = p.updateTaskStatus(ctx, payload.TaskID, entity.TaskStatusTODO)
@@ -392,7 +392,7 @@ func (p *Processor) ProcessTaskImplementation(ctx context.Context, task *asynq.T
 
 	// Create worktree if it doesn't exist (handles direct implementation without planning)
 	if projectTask.WorktreePath == nil || *projectTask.WorktreePath == "" {
-		worktree, err := p.createWorktree(ctx, project, projectTask)
+		worktree, err := p.createWorktree(ctx, project, projectTask, payload.UseRemoteBranch)
 		if err != nil {
 			_ = p.updateTaskStatus(ctx, payload.TaskID, fallbackStatus)
 			_ = p.taskUsecase.AppendErrorLog(ctx, payload.TaskID, fmt.Sprintf("Failed to create worktree: %s", err.Error()))
@@ -675,7 +675,7 @@ func (p *Processor) updateTaskStatus(ctx context.Context, taskID uuid.UUID, stat
 }
 
 // createWorktree creates a git worktree for the task
-func (p *Processor) createWorktree(ctx context.Context, project *entity.Project, task *entity.Task) (*entity.Worktree, error) {
+func (p *Processor) createWorktree(ctx context.Context, project *entity.Project, task *entity.Task, useRemoteBranch bool) (*entity.Worktree, error) {
 	if project.WorktreeBasePath == "" {
 		return nil, fmt.Errorf("project has no worktree base path configured")
 	}
@@ -683,7 +683,8 @@ func (p *Processor) createWorktree(ctx context.Context, project *entity.Project,
 	p.logger.Info("Creating worktree",
 		"project_id", project.ID,
 		"task_id", task.ID,
-		"branch_name", task.BranchName)
+		"branch_name", task.BranchName,
+		"use_remote_branch", useRemoteBranch)
 
 	baseBranchName := ""
 	if task.BaseBranchName != nil {
@@ -692,10 +693,11 @@ func (p *Processor) createWorktree(ctx context.Context, project *entity.Project,
 
 	// Create worktree from the task's base branch (set during StartPlanning / Create Worktree)
 	worktree, err := p.worktreeUsecase.CreateWorktreeForTask(ctx, usecase.CreateWorktreeRequest{
-		TaskID:         task.ID,
-		ProjectID:      project.ID,
-		TaskTitle:      task.Title,
-		BaseBranchName: baseBranchName,
+		TaskID:          task.ID,
+		ProjectID:       project.ID,
+		TaskTitle:       task.Title,
+		BaseBranchName:  baseBranchName,
+		UseRemoteBranch: useRemoteBranch,
 	})
 	if err != nil {
 		p.logger.Error("Failed to create worktree",
@@ -876,7 +878,7 @@ func (p *Processor) ProcessWorktreeCreate(ctx context.Context, task *asynq.Task)
 		return fmt.Errorf("failed to parse worktree create payload: %w", err)
 	}
 
-	if err := p.worktreeUsecase.ProcessWorktreeCreation(ctx, payload.WorktreeID); err != nil {
+	if err := p.worktreeUsecase.ProcessWorktreeCreation(ctx, payload.WorktreeID, payload.UseRemoteBranch); err != nil {
 		p.logger.Error("Failed to process worktree creation",
 			"worktree_id", payload.WorktreeID, "error", err)
 		p.notifyWorktreeStatus(payload.TaskID, payload.ProjectID, string(entity.WorktreeStatusError))

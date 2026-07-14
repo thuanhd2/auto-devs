@@ -727,16 +727,16 @@ func (_c *WorktreeUsecaseMock_InitializeWorktree_Call) RunAndReturn(run func(ctx
 }
 
 // ProcessWorktreeCreation provides a mock function for the type WorktreeUsecaseMock
-func (_mock *WorktreeUsecaseMock) ProcessWorktreeCreation(ctx context.Context, worktreeID uuid.UUID) error {
-	ret := _mock.Called(ctx, worktreeID)
+func (_mock *WorktreeUsecaseMock) ProcessWorktreeCreation(ctx context.Context, worktreeID uuid.UUID, useRemoteBranch bool) error {
+	ret := _mock.Called(ctx, worktreeID, useRemoteBranch)
 
 	if len(ret) == 0 {
 		panic("no return value specified for ProcessWorktreeCreation")
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID) error); ok {
-		r0 = returnFunc(ctx, worktreeID)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, bool) error); ok {
+		r0 = returnFunc(ctx, worktreeID, useRemoteBranch)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -751,13 +751,14 @@ type WorktreeUsecaseMock_ProcessWorktreeCreation_Call struct {
 // ProcessWorktreeCreation is a helper method to define mock.On call
 //   - ctx
 //   - worktreeID
-func (_e *WorktreeUsecaseMock_Expecter) ProcessWorktreeCreation(ctx interface{}, worktreeID interface{}) *WorktreeUsecaseMock_ProcessWorktreeCreation_Call {
-	return &WorktreeUsecaseMock_ProcessWorktreeCreation_Call{Call: _e.mock.On("ProcessWorktreeCreation", ctx, worktreeID)}
+//   - useRemoteBranch
+func (_e *WorktreeUsecaseMock_Expecter) ProcessWorktreeCreation(ctx interface{}, worktreeID interface{}, useRemoteBranch interface{}) *WorktreeUsecaseMock_ProcessWorktreeCreation_Call {
+	return &WorktreeUsecaseMock_ProcessWorktreeCreation_Call{Call: _e.mock.On("ProcessWorktreeCreation", ctx, worktreeID, useRemoteBranch)}
 }
 
-func (_c *WorktreeUsecaseMock_ProcessWorktreeCreation_Call) Run(run func(ctx context.Context, worktreeID uuid.UUID)) *WorktreeUsecaseMock_ProcessWorktreeCreation_Call {
+func (_c *WorktreeUsecaseMock_ProcessWorktreeCreation_Call) Run(run func(ctx context.Context, worktreeID uuid.UUID, useRemoteBranch bool)) *WorktreeUsecaseMock_ProcessWorktreeCreation_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(uuid.UUID))
+		run(args[0].(context.Context), args[1].(uuid.UUID), args[2].(bool))
 	})
 	return _c
 }
@@ -767,7 +768,7 @@ func (_c *WorktreeUsecaseMock_ProcessWorktreeCreation_Call) Return(err error) *W
 	return _c
 }
 
-func (_c *WorktreeUsecaseMock_ProcessWorktreeCreation_Call) RunAndReturn(run func(ctx context.Context, worktreeID uuid.UUID) error) *WorktreeUsecaseMock_ProcessWorktreeCreation_Call {
+func (_c *WorktreeUsecaseMock_ProcessWorktreeCreation_Call) RunAndReturn(run func(ctx context.Context, worktreeID uuid.UUID, useRemoteBranch bool) error) *WorktreeUsecaseMock_ProcessWorktreeCreation_Call {
 	_c.Call.Return(run)
 	return _c
 }
