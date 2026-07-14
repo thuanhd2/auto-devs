@@ -254,7 +254,11 @@ export function useStartImplementingDirect() {
       request,
     }: {
       taskId: string
-      request: { branch_name: string; ai_type: string }
+      request: {
+        branch_name: string
+        ai_type: string
+        use_remote_branch?: boolean
+      }
     }) => tasksApi.startImplementingDirect(taskId, request),
     onMutate: async ({ taskId }) => {
       await queryClient.cancelQueries({ queryKey: [TASKS_QUERY_KEY] })

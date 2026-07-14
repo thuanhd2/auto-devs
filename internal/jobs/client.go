@@ -35,7 +35,7 @@ func (c *Client) Close() error {
 
 // EnqueueTaskPlanning enqueues a task planning job
 func (c *Client) EnqueueTaskPlanning(payload *TaskPlanningPayload, delay time.Duration) (*asynq.TaskInfo, error) {
-	task, err := NewTaskPlanningJob(payload.TaskID, payload.BranchName, payload.ProjectID, payload.AIType, payload.AutoImplement)
+	task, err := NewTaskPlanningJob(payload.TaskID, payload.BranchName, payload.ProjectID, payload.AIType, payload.AutoImplement, payload.UseRemoteBranch)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create task planning job: %w", err)
 	}
@@ -70,7 +70,7 @@ func (c *Client) EnqueueTaskPlanningString(payload *TaskPlanningPayload, delay t
 
 // EnqueueTaskImplementation enqueues a task implementation job
 func (c *Client) EnqueueTaskImplementation(payload *TaskImplementationPayload, delay time.Duration) (*asynq.TaskInfo, error) {
-	task, err := NewTaskImplementationJob(payload.TaskID, payload.ProjectID, payload.AIType)
+	task, err := NewTaskImplementationJob(payload.TaskID, payload.ProjectID, payload.AIType, payload.UseRemoteBranch)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create task implementation job: %w", err)
 	}
@@ -105,7 +105,7 @@ func (c *Client) EnqueueTaskImplementationString(payload *TaskImplementationPayl
 
 // EnqueueWorktreeCreate enqueues a worktree creation job
 func (c *Client) EnqueueWorktreeCreate(payload *WorktreeCreatePayload, delay time.Duration) (*asynq.TaskInfo, error) {
-	task, err := NewWorktreeCreateJob(payload.WorktreeID, payload.TaskID, payload.ProjectID, payload.BaseBranchName)
+	task, err := NewWorktreeCreateJob(payload.WorktreeID, payload.TaskID, payload.ProjectID, payload.BaseBranchName, payload.UseRemoteBranch)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create worktree create job: %w", err)
 	}

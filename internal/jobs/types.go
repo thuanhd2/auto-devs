@@ -55,13 +55,14 @@ type WorktreeCreatePayload struct {
 }
 
 // NewTaskPlanningJob creates a new task planning job
-func NewTaskPlanningJob(taskID uuid.UUID, branchName string, projectID uuid.UUID, aiType string, autoImplement bool) (*asynq.Task, error) {
+func NewTaskPlanningJob(taskID uuid.UUID, branchName string, projectID uuid.UUID, aiType string, autoImplement, useRemoteBranch bool) (*asynq.Task, error) {
 	payload := TaskPlanningPayload{
-		TaskID:        taskID,
-		BranchName:    branchName,
-		ProjectID:     projectID,
-		AIType:        aiType,
-		AutoImplement: autoImplement,
+		TaskID:          taskID,
+		BranchName:      branchName,
+		ProjectID:       projectID,
+		AIType:          aiType,
+		AutoImplement:   autoImplement,
+		UseRemoteBranch: useRemoteBranch,
 	}
 
 	data, err := json.Marshal(payload)
@@ -82,11 +83,12 @@ func ParseTaskPlanningPayload(task *asynq.Task) (*TaskPlanningPayload, error) {
 }
 
 // NewTaskImplementationJob creates a new task implementation job
-func NewTaskImplementationJob(taskID uuid.UUID, projectID uuid.UUID, aiType string) (*asynq.Task, error) {
+func NewTaskImplementationJob(taskID uuid.UUID, projectID uuid.UUID, aiType string, useRemoteBranch bool) (*asynq.Task, error) {
 	payload := TaskImplementationPayload{
-		TaskID:    taskID,
-		ProjectID: projectID,
-		AIType:    aiType,
+		TaskID:          taskID,
+		ProjectID:       projectID,
+		AIType:          aiType,
+		UseRemoteBranch: useRemoteBranch,
 	}
 
 	data, err := json.Marshal(payload)
@@ -149,12 +151,13 @@ func ParseWorktreeCleanupPayload(task *asynq.Task) (*WorktreeCleanupPayload, err
 }
 
 // NewWorktreeCreateJob creates a new worktree creation job
-func NewWorktreeCreateJob(worktreeID, taskID, projectID uuid.UUID, baseBranchName string) (*asynq.Task, error) {
+func NewWorktreeCreateJob(worktreeID, taskID, projectID uuid.UUID, baseBranchName string, useRemoteBranch bool) (*asynq.Task, error) {
 	payload := WorktreeCreatePayload{
-		WorktreeID:     worktreeID,
-		TaskID:         taskID,
-		ProjectID:      projectID,
-		BaseBranchName: baseBranchName,
+		WorktreeID:      worktreeID,
+		TaskID:          taskID,
+		ProjectID:       projectID,
+		BaseBranchName:  baseBranchName,
+		UseRemoteBranch: useRemoteBranch,
 	}
 
 	data, err := json.Marshal(payload)

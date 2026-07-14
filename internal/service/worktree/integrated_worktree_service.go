@@ -65,7 +65,12 @@ func (iws *IntegratedWorktreeService) CreateTaskWorktree(ctx context.Context, re
 	iws.logger.Info("Creating task worktree",
 		"project_id", request.ProjectID,
 		"task_id", request.TaskID,
-		"task_title", request.TaskTitle)
+		"task_title", request.TaskTitle,
+		"use_remote_branch", request.UseRemoteBranch,
+		"project_work_dir", request.ProjectWorkDir,
+		"project_main_branch", request.ProjectMainBranch,
+		"init_workspace_script", request.InitWorkspaceScript,
+	)
 
 	// Generate worktree path
 	worktreePath, err := iws.worktreeManager.GenerateWorktreePath(request.ProjectID, request.TaskID)
