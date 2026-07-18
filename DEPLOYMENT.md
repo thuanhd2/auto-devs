@@ -1,11 +1,11 @@
-# Deployment Guide - Auto-Devs with MCP Server
+# Deployment Guide - Auto-Devs API
 
 ## Overview
 
-This guide covers deploying Auto-Devs API and MCP Server using PM2.
-
-- **auto-devs-api** - Go backend server (port 8098)
-- **auto-devs-mcp** - Node.js MCP server (stdio transport)
+Auto-Devs consists of:
+- **Backend API** - Go server (port 8098)
+- **Frontend** - React/TypeScript (Vite)
+- **MCP Server** - Node.js (spawned by agents via stdio)
 
 ## Local Development
 
@@ -20,98 +20,91 @@ This will:
 2. Build Go server & worker
 3. Build MCP server (npm build)
 
-### Run with PM2
+### Run
 
 ```bash
-# Install dependencies (if not done)
-npm install --prefix mcp-server
+# Terminal 1: Start backend API
+make run
 
-# Start both services
-pm2 start ecosystem.config.js
+# Terminal 2: Start frontend dev server (optional)
+cd frontend && npm run dev
 
-# View logs
-pm2 logs
-
-# View status
-pm2 status
+# Terminal 3: Run Hermes agent
+# Agent will spawn MCP server automatically
 ```
 
-## PM2 Commands
+## MCP Server
 
-```bash
-# Start all apps
-pm2 start ecosystem.config.js
+**Important:** MCP server is spawned by agents (Hermes, etc.) via stdio - no separate deployment needed.
 
-# Start specific app
-pm2 start ecosystem.config.js --only auto-devs-api
-pm2 start ecosystem.config.js --only auto-devs-mcp
-
-# Stop
-pm2 stop auto-devs-api
-pm2 stop auto-devs-mcp
-
-# Restart
-pm2 restart auto-devs-api
-pm2 restart auto-devs-mcp
-
-# Reload (graceful restart)
-pm2 reload ecosystem.config.js
-
-# Remove
-pm2 delete auto-devs-api
-
-# View logs
-pm2 logs auto-devs-api
-pm2 logs auto-devs-mcp
-pm2 logs
-
-# Monitor
-pm2 monit
+```yaml
+# In agent config (hermes-config.yaml)
+mcp_servers:
+  - name: auto-devs
+    command: node
+    args: [/path/to/mcp-server/dist/index.js]
+    env:
+      AUTO_DEVS_API_URL: "http://localhost:8098"
+      MCP_DEBUG: "false"
 ```
+
+When agent runs, it will:
+1. Spawn `node mcp-server/dist/index.js` as subprocess
+2. Communicate via stdin/stdout (pipes)
+3. Automatically stop when agent stops
+
+**Note:** MCP server does NOT run as HTTP service, does NOT occupy a port.
+
+See [mcp-server/README.md](./mcp-server/README.md) for MCP details.
 
 ## Environment Configuration
 
-### MCP Server (.env)
+### Backend API
 
-Create `mcp-server/.env`:
+Configure via `cmd/npx/.env`:
+- Database connection
+- Server port (default: 8098)
+- API keys
+
+See `.env.example` for template.
+
+### Frontend
+
+Configure via environment variables or `frontend/.env`:
+- API base URL
+- WebSocket URL
+
+## Production Deployment
+
+### Prerequisites
 
 ```bash
-# Auto-Devs API Configuration
-AUTO_DEVS_API_URL=http://localhost:8098
-AUTO_DEVS_API_KEY=
+# Build everything
+./build-package.sh
 
-# MCP Server Configuration
-MCP_DEBUG=false
-ENABLE_CACHING=true
+# Verify MCP server built
+ls -la mcp-server/dist/index.js
 ```
 
 ### API Server
 
-Configure via `cmd/npx/.env` (see `.env.example`)
-
-## Production Deployment
-
-For production, update `ecosystem.config.js`:
-
-```javascript
-// Change these values
-deploy: {
-  production: {
-    user: 'your-user',
-    host: 'your-server.com',
-    repo: 'your-repo-url',
-    path: '/path/to/auto-devs',
-  }
-}
-```
-
-Then deploy:
-
 ```bash
-pm2 deploy ecosystem.config.js production setup
-pm2 deploy ecosystem.config.js production update
-pm2 start ecosystem.config.js --env production
+# Run backend API (option 1: direct)
+./cmd/npx/dist/server
+
+# Run backend API (option 2: PM2)
+pm2 start ./cmd/npx/dist/server --name auto-devs-api
+pm2 save
 ```
+
+### Frontend
+
+Option 1: Serve static files (dist/) from API server
+Option 2: Deploy to CDN/static host separately
+
+### MCP Server
+
+No separate deployment needed - agents spawn it automatically.
 
 ## Monitoring
 
@@ -121,95 +114,85 @@ pm2 start ecosystem.config.js --env production
 # API health
 curl http://localhost:8098/swagger/index.html
 
-# MCP server (should be listening on stdin)
-ps aux | grep "node.*mcp"
+# Check API is responding
+curl http://localhost:8098/api/v1/projects
 ```
 
 ### Logs
 
-All logs stored in `logs/` directory:
-- `api-error.log` - API errors
-- `mcp-error.log` - MCP server errors
-- `api-combined.log` - Combined API logs
-- `mcp-combined.log` - Combined MCP logs
+Backend logs:
+```bash
+# Direct run
+# Logs printed to stdout/stderr
 
-### Memory Management
-
-- API: 1GB max
-- MCP: 512MB max
-
-Adjust in `ecosystem.config.js` if needed.
+# PM2 run
+pm2 logs auto-devs-api
+```
 
 ## Troubleshooting
 
-### MCP Server not connecting to API
+### API not starting
 
 ```bash
-# Check MCP logs
-pm2 logs auto-devs-mcp
-
-# Verify API is running
-pm2 status auto-devs-api
-
-# Test API connectivity
-curl http://localhost:8098/api/v1/projects
-```
-
-### PM2 not starting services
-
-```bash
-# Check PM2 status
-pm2 status
-
-# Check for errors
-pm2 logs
-
-# Delete and restart
-pm2 delete all
-pm2 start ecosystem.config.js
-```
-
-### Port conflicts
-
-If port 8098 is in use:
-
-```bash
-# Find what's using the port
+# Check if port 8098 is in use
 lsof -i :8098
 
-# Kill the process
+# Kill conflicting process
 kill -9 <PID>
 
-# Or change port in ecosystem.config.js
+# Try again
+make run
 ```
 
-## Development vs Production
+### MCP server not building
 
-**Development:**
 ```bash
-# Use make run for flexibility
-make run  # In one terminal
-cd mcp-server && npm run dev  # In another terminal
+# Rebuild MCP server
+cd mcp-server
+npm install
+npm run build
+cd ..
+
+# Verify dist folder exists
+ls mcp-server/dist/index.js
 ```
 
-**Production:**
+### Agent can't find MCP server
+
+Check in agent config:
+1. Path to MCP server is correct
+2. `AUTO_DEVS_API_URL` points to running API
+3. MCP has been built (`npm run build`)
+
 ```bash
-# Use PM2 for reliability
-./build-package.sh
-pm2 start ecosystem.config.js --env production
+# Test MCP manually
+node mcp-server/dist/index.js
+# (should start without errors, waiting for input)
 ```
 
-## Scaling
+## Performance
 
-For multiple API instances, update `ecosystem.config.js`:
+### Database
 
-```javascript
-{
-  name: 'auto-devs-api',
-  instances: 4,  // Changed from 1
-  exec_mode: 'cluster',  // Added
-  // ... rest of config
-}
+Use connection pooling via GORM configuration in backend.
+
+### API Server
+
+Default runs on single process. For higher load:
+```bash
+# Run multiple instances behind load balancer
+pm2 start ./cmd/npx/dist/server --name auto-devs-api -i 4
 ```
 
-Note: MCP server should remain single instance (stdio transport).
+### Memory Usage
+
+- API Server: ~200-500MB
+- MCP Server: ~100-200MB (per agent instance)
+- Frontend: Static files only
+
+## Scaling Considerations
+
+- **API Layer**: Use load balancer (nginx, etc.) for multiple instances
+- **Database**: Ensure adequate connection pool
+- **MCP Server**: No special scaling needed (spawned per agent)
+- **Frontend**: Deploy static files to CDN

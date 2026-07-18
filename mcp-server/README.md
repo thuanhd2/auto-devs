@@ -45,14 +45,6 @@ npm run build
 npm start
 ```
 
-### With PM2 (Production)
-
-From project root:
-```bash
-./build-package.sh
-pm2 start ecosystem.config.js
-pm2 logs auto-devs-mcp
-```
 
 ## Tools Available
 
@@ -92,118 +84,79 @@ ENABLE_CACHING=true                   # Enable response caching
 
 ## How to Use MCP Server
 
-### Claude Code Integration
+MCP server is **spawned by agents** via stdio - agents start it automatically, no separate deployment.
 
-**For Claude Code (AI Developer):**
+### Hermes/Serena Agents
 
-1. Install MCP server locally or deploy it
-2. Configure in Claude Code settings:
-   ```json
-   {
-     "mcpServers": {
-       "auto-devs": {
-         "command": "node",
-         "args": ["/path/to/mcp-server/dist/index.js"]
-       }
-     }
-   }
-   ```
-3. Claude Code will automatically load all 11 tools
-4. Use tools in your AI tasks:
-   ```
-   Use project:list to see all Auto-Devs projects
-   Then use task:create to start a new task
-   ```
+Configure in your agent config file:
 
-### Hermes Agents Integration
+```yaml
+mcp_servers:
+  - name: auto-devs
+    command: node
+    args:
+      - /path/to/auto-devs/mcp-server/dist/index.js
+    env:
+      AUTO_DEVS_API_URL: "http://localhost:8098"
+      MCP_DEBUG: "false"
+```
 
-**For Hermes/Serena Agent Framework:**
+Agent will:
+1. Spawn MCP server process
+2. Load all 11 tools
+3. Use tools in agent logic
+4. Stop MCP when agent stops
 
-1. Setup MCP server in your agent configuration:
-   ```yaml
-   mcp_servers:
-     - name: auto-devs
-       command: node
-       args:
-         - /path/to/mcp-server/dist/index.js
-       env:
-         AUTO_DEVS_API_URL: "http://localhost:8098"
-         MCP_DEBUG: "false"
-   ```
+### Claude Code
 
-2. Define agent tools from MCP:
-   ```python
-   from mcp import MCPClient
-   
-   client = MCPClient("auto-devs")
-   tools = client.list_tools()  # Returns all 11 tools
-   
-   # Use in agent
-   result = client.call_tool("project:list", {"page": 1, "pageSize": 5})
-   ```
+Configure in Claude Code settings:
 
-3. Example agent usage:
-   ```python
-   agent = HermesAgent(
-       name="task-manager",
-       tools=mcp_tools,
-       system_prompt="You manage Auto-Devs tasks..."
-   )
-   
-   # Agent will use MCP tools to complete tasks
-   response = agent.run("Create a task in project X")
-   ```
+```json
+{
+  "mcpServers": {
+    "auto-devs": {
+      "command": "node",
+      "args": ["/path/to/auto-devs/mcp-server/dist/index.js"]
+    }
+  }
+}
+```
 
-### Direct Command Line Usage
+Claude Code will load all tools and use them in conversations.
 
-**For testing and debugging:**
+### Testing Manually
+
+For debugging and development:
 
 ```bash
-# Start MCP server
+# Build MCP server
+npm run build
+
+# Start MCP directly
 npm start
 
-# In another terminal, send MCP requests:
-# (MCP uses JSON-RPC over stdin/stdout)
-
+# In another terminal, send requests via stdin:
 echo '{
   "jsonrpc": "2.0",
   "id": 1,
-  "method": "tools/list",
-  "params": {}
+  "method": "tools/list"
 }' | node dist/index.js
 
-echo '{
-  "jsonrpc": "2.0",
-  "id": 2,
-  "method": "tools/call",
-  "params": {
-    "name": "project:list",
-    "arguments": {"page": 1, "pageSize": 5}
-  }
-}' | node dist/index.js
+# Should output JSON with list of 11 tools
 ```
 
-### Docker Deployment
-
-**Run MCP server in Docker:**
+### Docker
 
 ```dockerfile
 FROM node:18-alpine
-
 WORKDIR /app
 COPY mcp-server .
-
 RUN npm install && npm run build
-
 ENV AUTO_DEVS_API_URL=http://auto-devs-api:8098
-ENV MCP_DEBUG=false
-
 CMD ["node", "dist/index.js"]
 ```
 
-```bash
-docker run -e AUTO_DEVS_API_URL=http://host.docker.internal:8098 auto-devs-mcp
-```
+Note: Docker image can be used by agents that support mounting custom MCP servers.
 
 ## Error Handling
 
