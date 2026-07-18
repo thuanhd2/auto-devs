@@ -1,0 +1,31 @@
+export enum ErrorCode {
+  VALIDATION_ERROR = 'VALIDATION_ERROR',
+  NOT_FOUND = 'NOT_FOUND',
+  UNAUTHORIZED = 'UNAUTHORIZED',
+  FORBIDDEN = 'FORBIDDEN',
+  CONFLICT = 'CONFLICT',
+  RATE_LIMITED = 'RATE_LIMITED',
+  INTERNAL_ERROR = 'INTERNAL_ERROR',
+  SERVICE_UNAVAILABLE = 'SERVICE_UNAVAILABLE',
+  TIMEOUT = 'TIMEOUT',
+  INVALID_INPUT = 'INVALID_INPUT',
+}
+
+export const errorHttpStatus: Record<ErrorCode, number> = {
+  [ErrorCode.VALIDATION_ERROR]: 400,
+  [ErrorCode.NOT_FOUND]: 404,
+  [ErrorCode.UNAUTHORIZED]: 401,
+  [ErrorCode.FORBIDDEN]: 403,
+  [ErrorCode.CONFLICT]: 409,
+  [ErrorCode.RATE_LIMITED]: 429,
+  [ErrorCode.INTERNAL_ERROR]: 500,
+  [ErrorCode.SERVICE_UNAVAILABLE]: 503,
+  [ErrorCode.TIMEOUT]: 504,
+  [ErrorCode.INVALID_INPUT]: 400,
+};
+
+export const retryableErrors = new Set([
+  ErrorCode.RATE_LIMITED,
+  ErrorCode.SERVICE_UNAVAILABLE,
+  ErrorCode.TIMEOUT,
+]);

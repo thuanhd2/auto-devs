@@ -24,6 +24,13 @@ echo "🏗️ Building worker..."
 
 go build -o $TARGET_DIR/worker cmd/worker/main.go
 
+echo "🏗️ Building MCP server..."
+
+cd mcp-server
+npm install
+npm run build
+cd ..
+
 echo "✅ Build complete!"
 
 echo "Copy .env.example to .env if not exists"
