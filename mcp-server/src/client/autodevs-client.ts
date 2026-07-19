@@ -87,7 +87,7 @@ export class AutoDevsClient {
     return withRetry(async () => {
       try {
         const response = await this.client.post('/api/v1/tasks', {
-          projectId,
+          project_id: projectId,
           ...data,
         });
         return response.data;
@@ -172,7 +172,7 @@ export class AutoDevsClient {
     return withRetry(async () => {
       try {
         const response = await this.client.post('/api/v1/executions', {
-          taskId,
+          task_id: taskId,
           ...data,
         });
         return response.data;
