@@ -16,6 +16,12 @@ import {
   executeTaskGet,
   taskDeleteTool,
   executeTaskDelete,
+  taskStartPlanningTool,
+  executeTaskStartPlanning,
+  taskApprovePlanTool,
+  executeTaskApprovePlan,
+  taskStartImplementingDirectTool,
+  executeTaskStartImplementingDirect,
 } from './task-tools.js';
 import {
   executionListTool,
@@ -63,6 +69,18 @@ export const TOOLS: ToolHandler[] = [
   {
     tool: taskDeleteTool,
     execute: executeTaskDelete,
+  },
+  {
+    tool: taskStartPlanningTool,
+    execute: executeTaskStartPlanning,
+  },
+  {
+    tool: taskApprovePlanTool,
+    execute: executeTaskApprovePlan,
+  },
+  {
+    tool: taskStartImplementingDirectTool,
+    execute: executeTaskStartImplementingDirect,
   },
   {
     tool: executionListTool,

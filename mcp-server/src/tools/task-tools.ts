@@ -154,3 +154,84 @@ export async function executeTaskDelete(input: Record<string, unknown>): Promise
   await client.deleteTask(id);
   return JSON.stringify({ success: true, message: `Task ${id} deleted` });
 }
+
+export const taskStartPlanningTool: Tool = {
+  name: 'task:start-planning',
+  description: 'Start the planning phase for a task (queues a planning job)',
+  inputSchema: {
+    type: 'object',
+    properties: {
+      taskId: { type: 'string', description: 'Task ID' },
+      branchName: { type: 'string', description: 'Git branch name for the worktree' },
+      aiType: { type: 'string', description: 'AI agent type (e.g., claude-code, gemini, cursor)' },
+      useRemoteBranch: {
+        type: 'boolean',
+        description: 'Check out an existing remote branch (default: false)',
+      },
+      autoImplement: {
+        type: 'boolean',
+        description: 'Auto-start implementation after planning completes (default: false)',
+      },
+    },
+    required: ['taskId', 'branchName', 'aiType'],
+  },
+};
+
+export async function executeTaskStartPlanning(input: Record<string, unknown>): Promise<string> {
+  const result = await client.startPlanning(input.taskId as string, {
+    branchName: input.branchName as string,
+    aiType: input.aiType as string,
+    useRemoteBranch: input.useRemoteBranch as boolean | undefined,
+    autoImplement: input.autoImplement as boolean | undefined,
+  });
+  return JSON.stringify(result, null, 2);
+}
+
+export const taskApprovePlanTool: Tool = {
+  name: 'task:approve-plan',
+  description: 'Approve a completed plan and start the implementation phase',
+  inputSchema: {
+    type: 'object',
+    properties: {
+      taskId: { type: 'string', description: 'Task ID' },
+      aiType: { type: 'string', description: 'AI agent type for implementation' },
+    },
+    required: ['taskId', 'aiType'],
+  },
+};
+
+export async function executeTaskApprovePlan(input: Record<string, unknown>): Promise<string> {
+  const result = await client.approvePlan(input.taskId as string, {
+    aiType: input.aiType as string,
+  });
+  return JSON.stringify(result, null, 2);
+}
+
+export const taskStartImplementingDirectTool: Tool = {
+  name: 'task:start-implementing-direct',
+  description: 'Skip planning and start implementation directly for a task',
+  inputSchema: {
+    type: 'object',
+    properties: {
+      taskId: { type: 'string', description: 'Task ID' },
+      branchName: { type: 'string', description: 'Git branch name for the worktree' },
+      aiType: { type: 'string', description: 'AI agent type (e.g., claude-code, gemini, cursor)' },
+      useRemoteBranch: {
+        type: 'boolean',
+        description: 'Check out an existing remote branch (default: false)',
+      },
+    },
+    required: ['taskId', 'branchName', 'aiType'],
+  },
+};
+
+export async function executeTaskStartImplementingDirect(
+  input: Record<string, unknown>
+): Promise<string> {
+  const result = await client.startImplementingDirect(input.taskId as string, {
+    branchName: input.branchName as string,
+    aiType: input.aiType as string,
+    useRemoteBranch: input.useRemoteBranch as boolean | undefined,
+  });
+  return JSON.stringify(result, null, 2);
+}
