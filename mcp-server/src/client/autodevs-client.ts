@@ -182,6 +182,59 @@ export class AutoDevsClient {
     });
   }
 
+  async startPlanning(
+    taskId: string,
+    data: { branchName: string; aiType: string; autoImplement?: boolean; useRemoteBranch?: boolean }
+  ): Promise<{ message: string; job_id: string }> {
+    return withRetry(async () => {
+      try {
+        const response = await this.client.post(`/api/v1/tasks/${taskId}/start-planning`, {
+          branch_name: data.branchName,
+          ai_type: data.aiType,
+          auto_implement: data.autoImplement ?? false,
+          use_remote_branch: data.useRemoteBranch ?? false,
+        });
+        return response.data;
+      } catch (error) {
+        throw this.handleError(error, `Failed to start planning for task ${taskId}`);
+      }
+    });
+  }
+
+  async approvePlan(
+    taskId: string,
+    data: { aiType: string }
+  ): Promise<{ message: string; job_id: string }> {
+    return withRetry(async () => {
+      try {
+        const response = await this.client.post(`/api/v1/tasks/${taskId}/approve-plan`, {
+          ai_type: data.aiType,
+        });
+        return response.data;
+      } catch (error) {
+        throw this.handleError(error, `Failed to approve plan for task ${taskId}`);
+      }
+    });
+  }
+
+  async startImplementingDirect(
+    taskId: string,
+    data: { branchName: string; aiType: string; useRemoteBranch?: boolean }
+  ): Promise<{ message: string; job_id: string }> {
+    return withRetry(async () => {
+      try {
+        const response = await this.client.post(`/api/v1/tasks/${taskId}/start-implementing-direct`, {
+          branch_name: data.branchName,
+          ai_type: data.aiType,
+          use_remote_branch: data.useRemoteBranch ?? false,
+        });
+        return response.data;
+      } catch (error) {
+        throw this.handleError(error, `Failed to start implementing task ${taskId}`);
+      }
+    });
+  }
+
   private handleError(error: unknown, defaultMessage: string): AppError {
     if (axios.isAxiosError(error)) {
       const status = error.response?.status || 0;
