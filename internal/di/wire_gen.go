@@ -8,12 +8,14 @@ package di
 
 import (
 	"github.com/auto-devs/auto-devs/config"
+	"github.com/auto-devs/auto-devs/internal/entity"
 	"github.com/auto-devs/auto-devs/internal/jobs"
 	"github.com/auto-devs/auto-devs/internal/repository"
 	"github.com/auto-devs/auto-devs/internal/repository/postgres"
 	"github.com/auto-devs/auto-devs/internal/service/ai"
 	"github.com/auto-devs/auto-devs/internal/service/git"
 	"github.com/auto-devs/auto-devs/internal/service/github"
+	"github.com/auto-devs/auto-devs/internal/service/webhook"
 	"github.com/auto-devs/auto-devs/internal/service/worktree"
 	"github.com/auto-devs/auto-devs/internal/usecase"
 	"github.com/auto-devs/auto-devs/internal/websocket"
@@ -46,13 +48,15 @@ func InitializeApp() (*App, error) {
 	}
 	projectGitServiceInterface := ProvideProjectGitService(gitManager)
 	projectUsecase := ProvideProjectUsecase(projectRepository, auditUsecase, projectGitServiceInterface)
-	notificationUsecase := usecase.NewNotificationUsecase()
+	client := ProvideWebhookClient(configConfig)
+	webhookNotificationHandler := ProvideWebhookNotificationHandler(client)
+	notificationUsecase := ProvideNotificationUsecase(webhookNotificationHandler)
 	integratedWorktreeService, err := ProvideIntegratedWorktreeService(configConfig, gitManager)
 	if err != nil {
 		return nil, err
 	}
-	client := ProvideJobClient(configConfig)
-	jobClientInterface := ProvideJobClientAdapter(client)
+	jobsClient := ProvideJobClient(configConfig)
+	jobClientInterface := ProvideJobClientAdapter(jobsClient)
 	worktreeUsecase := ProvideWorktreeUsecase(worktreeRepository, taskRepository, projectRepository, integratedWorktreeService, gitManager, jobClientInterface)
 	gitHubServiceInterface := ProvideGitHubService(configConfig)
 	prCreator := ProvidePRCreator(gitHubServiceInterface, configConfig)
@@ -71,7 +75,7 @@ func InitializeApp() (*App, error) {
 		return nil, err
 	}
 	processor := ProvideJobProcessor(taskUsecase, projectUsecase, worktreeUsecase, planningService, executionService, planRepository, executionRepository, executionLogRepository, service, gitManager, prCreator, pullRequestRepository, gitHubServiceInterface)
-	app := NewApp(configConfig, gormDB, projectRepository, taskRepository, planRepository, worktreeRepository, auditRepository, executionRepository, executionLogRepository, pullRequestRepository, auditUsecase, projectUsecase, taskUsecase, worktreeUsecase, notificationUsecase, executionUsecase, service, cliManager, processManager, executionService, planningService, gitManager, worktreeManager, prCreator, client, jobClientInterface, processor)
+	app := NewApp(configConfig, gormDB, projectRepository, taskRepository, planRepository, worktreeRepository, auditRepository, executionRepository, executionLogRepository, pullRequestRepository, auditUsecase, projectUsecase, taskUsecase, worktreeUsecase, notificationUsecase, executionUsecase, service, cliManager, processManager, executionService, planningService, gitManager, worktreeManager, prCreator, jobsClient, jobClientInterface, processor)
 	return app, nil
 }
 
@@ -94,7 +98,12 @@ var ProviderSet = wire.NewSet(config.Load, ProvideGormDB, postgres.NewProjectRep
 
 	ProvideJobClient,
 	ProvideJobClientAdapter,
-	ProvideJobProcessor, usecase.NewNotificationUsecase, ProvideAuditUsecase,
+	ProvideJobProcessor,
+	ProvideWebhookClient,
+	ProvideWebhookNotificationHandler,
+
+	ProvideNotificationUsecase,
+	ProvideAuditUsecase,
 	ProvideProjectUsecase,
 	ProvideWorktreeUsecase,
 	ProvideTaskUsecase,
@@ -365,4 +374,18 @@ func ProvidePRCreator(githubService github.GitHubServiceInterface, cfg *config.C
 // ProvidePullRequestRepository provides a PullRequestRepository instance
 func ProvidePullRequestRepository(gormDB *database.GormDB) repository.PullRequestRepository {
 	return postgres.NewPullRequestRepository(gormDB)
+}
+
+func ProvideWebhookClient(cfg *config.Config) *webhook.Client {
+	return webhook.NewClient(&cfg.Webhook)
+}
+
+func ProvideWebhookNotificationHandler(client *webhook.Client) *usecase.WebhookNotificationHandler {
+	return usecase.NewWebhookNotificationHandler(client)
+}
+
+func ProvideNotificationUsecase(webhookHandler *usecase.WebhookNotificationHandler) usecase.NotificationUsecase {
+	notificationUsecase := usecase.NewNotificationUsecase()
+	_ = notificationUsecase.RegisterHandler(entity.NotificationTypeTaskStatusChanged, webhookHandler)
+	return notificationUsecase
 }

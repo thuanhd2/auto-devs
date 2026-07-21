@@ -44,7 +44,11 @@ type PRRepository interface {
 type TaskRepository interface {
 	GetByID(ctx context.Context, id uuid.UUID) (*entity.Task, error)
 	Update(ctx context.Context, task *entity.Task) error
-	UpdateStatus(ctx context.Context, id uuid.UUID, status entity.TaskStatus) error
+}
+
+// TaskStatusUpdater updates task status through the usecase layer.
+type TaskStatusUpdater interface {
+	UpdateStatus(ctx context.Context, id uuid.UUID, status entity.TaskStatus) (*entity.Task, error)
 }
 
 // WorktreeService interface for worktree operations
@@ -67,6 +71,7 @@ type PRMonitor struct {
 	githubService   GitHubServiceInterface
 	prRepo          PRRepository
 	taskRepo        TaskRepository
+	taskUsecase     TaskStatusUpdater
 	worktreeService WorktreeService
 	websocketSvc    WebSocketServiceInterface
 	config          *PRMonitorConfig
@@ -93,6 +98,7 @@ func NewPRMonitor(
 	githubService GitHubServiceInterface,
 	prRepo PRRepository,
 	taskRepo TaskRepository,
+	taskUsecase TaskStatusUpdater,
 	worktreeService WorktreeService,
 	websocketSvc WebSocketServiceInterface,
 	config *PRMonitorConfig,
@@ -106,6 +112,7 @@ func NewPRMonitor(
 		githubService:   githubService,
 		prRepo:          prRepo,
 		taskRepo:        taskRepo,
+		taskUsecase:     taskUsecase,
 		worktreeService: worktreeService,
 		websocketSvc:    websocketSvc,
 		config:          config,
@@ -360,7 +367,7 @@ func (pm *PRMonitor) HandlePRStatusChange(pr *entity.PullRequest, newStatus stri
 
 	// Update task status if it changed
 	if newTaskStatus != oldTaskStatus {
-		if err := pm.taskRepo.UpdateStatus(ctx, task.ID, newTaskStatus); err != nil {
+		if _, err := pm.taskUsecase.UpdateStatus(ctx, task.ID, newTaskStatus); err != nil {
 			return fmt.Errorf("failed to update task status: %w", err)
 		}
 
@@ -416,7 +423,7 @@ func (pm *PRMonitor) HandlePRMerge(pr *entity.PullRequest) error {
 
 	// Update task status to DONE if not already
 	if task.Status != entity.TaskStatusDONE {
-		if err := pm.taskRepo.UpdateStatus(ctx, task.ID, entity.TaskStatusDONE); err != nil {
+		if _, err := pm.taskUsecase.UpdateStatus(ctx, task.ID, entity.TaskStatusDONE); err != nil {
 			return fmt.Errorf("failed to update task status to DONE: %w", err)
 		}
 

@@ -379,11 +379,15 @@ func (u *taskUsecase) Update(ctx context.Context, id uuid.UUID, req UpdateTaskRe
 	if req.Description != "" {
 		task.Description = req.Description
 	}
+	var oldStatus entity.TaskStatus
+	statusChanged := false
 	if req.Status != nil {
 		// Validate status transition before updating
 		if err := entity.ValidateStatusTransition(task.Status, *req.Status); err != nil {
 			return nil, fmt.Errorf("invalid status transition: %w", err)
 		}
+		oldStatus = task.Status
+		statusChanged = oldStatus != *req.Status
 		task.Status = *req.Status
 	}
 	if req.Priority != nil {
@@ -425,15 +429,36 @@ func (u *taskUsecase) Update(ctx context.Context, id uuid.UUID, req UpdateTaskRe
 		return nil, err
 	}
 
+	if statusChanged && req.Status != nil {
+		u.fireStatusChangeNotification(ctx, task, oldStatus, *req.Status, nil, nil)
+	}
+
 	return task, nil
 }
 
 func (u *taskUsecase) UpdateStatus(ctx context.Context, id uuid.UUID, status entity.TaskStatus) (*entity.Task, error) {
+	task, err := u.taskRepo.GetByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	oldStatus := task.Status
+	if oldStatus == status {
+		return task, nil
+	}
+
 	if err := u.taskRepo.UpdateStatus(ctx, id, status); err != nil {
 		return nil, err
 	}
 
-	return u.taskRepo.GetByID(ctx, id)
+	updatedTask, err := u.taskRepo.GetByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	u.fireStatusChangeNotification(ctx, updatedTask, oldStatus, status, nil, nil)
+
+	return updatedTask, nil
 }
 
 func (u *taskUsecase) Delete(ctx context.Context, id uuid.UUID) error {
@@ -457,6 +482,12 @@ func (u *taskUsecase) GetByStatus(ctx context.Context, status entity.TaskStatus)
 
 // UpdateStatusWithHistory updates task status with validation and history tracking
 func (u *taskUsecase) UpdateStatusWithHistory(ctx context.Context, req UpdateStatusRequest) (*entity.Task, error) {
+	task, err := u.taskRepo.GetByID(ctx, req.TaskID)
+	if err != nil {
+		return nil, err
+	}
+	oldStatus := task.Status
+
 	// Validate the status transition first
 	if err := u.ValidateStatusTransition(ctx, req.TaskID, req.Status); err != nil {
 		return nil, err
@@ -481,26 +512,40 @@ func (u *taskUsecase) UpdateStatusWithHistory(ctx context.Context, req UpdateSta
 		}
 	}
 
-	// Send status change notification
-	if u.notificationUsecase != nil {
-		project, err := u.projectRepo.GetByID(ctx, updatedTask.ProjectID)
-		if err == nil {
-			notificationData := entity.TaskStatusChangeNotificationData{
-				TaskID:      req.TaskID,
-				TaskTitle:   updatedTask.Title,
-				FromStatus:  &updatedTask.Status,
-				ToStatus:    req.Status,
-				ChangedBy:   req.ChangedBy,
-				Reason:      req.Reason,
-				ProjectID:   updatedTask.ProjectID,
-				ProjectName: project.Name,
-			}
-			// Don't fail status update if notification fails
-			_ = u.notificationUsecase.SendTaskStatusChangeNotification(ctx, notificationData)
-		}
-	}
+	u.fireStatusChangeNotification(ctx, updatedTask, oldStatus, req.Status, req.ChangedBy, req.Reason)
 
 	return updatedTask, nil
+}
+
+func (u *taskUsecase) fireStatusChangeNotification(
+	ctx context.Context,
+	task *entity.Task,
+	fromStatus entity.TaskStatus,
+	toStatus entity.TaskStatus,
+	changedBy *string,
+	reason *string,
+) {
+	if fromStatus == toStatus || u.notificationUsecase == nil {
+		return
+	}
+
+	project, err := u.projectRepo.GetByID(ctx, task.ProjectID)
+	if err != nil {
+		return
+	}
+
+	fromStatusCopy := fromStatus
+	notificationData := entity.TaskStatusChangeNotificationData{
+		TaskID:      task.ID,
+		TaskTitle:   task.Title,
+		FromStatus:  &fromStatusCopy,
+		ToStatus:    toStatus,
+		ChangedBy:   changedBy,
+		Reason:      reason,
+		ProjectID:   task.ProjectID,
+		ProjectName: project.Name,
+	}
+	_ = u.notificationUsecase.SendTaskStatusChangeNotification(ctx, notificationData)
 }
 
 // GetByStatuses retrieves tasks with multiple statuses
@@ -526,8 +571,33 @@ func (u *taskUsecase) BulkUpdateStatus(ctx context.Context, req BulkUpdateStatus
 		return fmt.Errorf("invalid target status: %s", req.Status)
 	}
 
+	oldStatuses := make(map[uuid.UUID]entity.TaskStatus, len(req.TaskIDs))
+	for _, taskID := range req.TaskIDs {
+		task, err := u.taskRepo.GetByID(ctx, taskID)
+		if err != nil {
+			return fmt.Errorf("task not found: %s: %w", taskID, err)
+		}
+		oldStatuses[taskID] = task.Status
+	}
+
 	// This will validate transitions for each task individually in the repository
-	return u.taskRepo.BulkUpdateStatus(ctx, req.TaskIDs, req.Status, req.ChangedBy)
+	if err := u.taskRepo.BulkUpdateStatus(ctx, req.TaskIDs, req.Status, req.ChangedBy); err != nil {
+		return err
+	}
+
+	for _, taskID := range req.TaskIDs {
+		oldStatus := oldStatuses[taskID]
+		if oldStatus == req.Status {
+			continue
+		}
+		task, err := u.taskRepo.GetByID(ctx, taskID)
+		if err != nil {
+			continue
+		}
+		u.fireStatusChangeNotification(ctx, task, oldStatus, req.Status, req.ChangedBy, nil)
+	}
+
+	return nil
 }
 
 // GetStatusHistory retrieves status change history for a task

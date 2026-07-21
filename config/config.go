@@ -18,6 +18,7 @@ type Config struct {
 	CentrifugeRedisBroker CentrifugeRedisBrokerConfig
 	GitHub                GitHubConfig
 	App                   AppConfig
+	Webhook               WebhookConfig
 }
 
 type ServerConfig struct {
@@ -67,6 +68,11 @@ type AppConfig struct {
 	BaseURL string
 }
 
+type WebhookConfig struct {
+	URL     string
+	Timeout int
+}
+
 func Load() *Config {
 	// Load .env file if it exists
 	if err := godotenv.Load(); err != nil {
@@ -113,6 +119,10 @@ func Load() *Config {
 		},
 		App: AppConfig{
 			BaseURL: getEnv("APP_BASE_URL", "http://localhost:8098"),
+		},
+		Webhook: WebhookConfig{
+			URL:     getEnv("WEBHOOK_URL", ""),
+			Timeout: getEnvAsInt("WEBHOOK_TIMEOUT", 10),
 		},
 	}
 }

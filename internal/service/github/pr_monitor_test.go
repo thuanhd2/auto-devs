@@ -67,9 +67,16 @@ func (m *MockTaskRepository) Update(ctx context.Context, task *entity.Task) erro
 	return args.Error(0)
 }
 
-func (m *MockTaskRepository) UpdateStatus(ctx context.Context, id uuid.UUID, status entity.TaskStatus) error {
+type MockTaskStatusUpdater struct {
+	mock.Mock
+}
+
+func (m *MockTaskStatusUpdater) UpdateStatus(ctx context.Context, id uuid.UUID, status entity.TaskStatus) (*entity.Task, error) {
 	args := m.Called(ctx, id, status)
-	return args.Error(0)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*entity.Task), args.Error(1)
 }
 
 type MockWorktreeService struct {
@@ -168,12 +175,14 @@ func createPRMonitor(t *testing.T) (
 	*MockGitHubServiceForPR,
 	*MockPRRepository,
 	*MockTaskRepository,
+	*MockTaskStatusUpdater,
 	*MockWorktreeService,
 	*MockWebSocketService,
 ) {
 	githubSvc := &MockGitHubServiceForPR{}
 	prRepo := &MockPRRepository{}
 	taskRepo := &MockTaskRepository{}
+	taskUsecase := &MockTaskStatusUpdater{}
 	worktreeSvc := &MockWorktreeService{}
 	websocketSvc := &MockWebSocketService{}
 
@@ -184,19 +193,20 @@ func createPRMonitor(t *testing.T) (
 		githubSvc,
 		prRepo,
 		taskRepo,
+		taskUsecase,
 		worktreeSvc,
 		websocketSvc,
 		config,
 		logger,
 	)
 
-	return monitor, githubSvc, prRepo, taskRepo, worktreeSvc, websocketSvc
+	return monitor, githubSvc, prRepo, taskRepo, taskUsecase, worktreeSvc, websocketSvc
 }
 
 // Tests
 
 func TestNewPRMonitor(t *testing.T) {
-	monitor, _, _, _, _, _ := createPRMonitor(t)
+	monitor, _, _, _, _, _, _ := createPRMonitor(t)
 
 	assert.NotNil(t, monitor)
 	assert.NotNil(t, monitor.config)
@@ -206,7 +216,7 @@ func TestNewPRMonitor(t *testing.T) {
 }
 
 func TestMonitorPR(t *testing.T) {
-	monitor, _, _, taskRepo, _, _ := createPRMonitor(t)
+	monitor, _, _, taskRepo, _, _, _ := createPRMonitor(t)
 
 	pr := createTestPR()
 	task := createTestTask()
@@ -269,7 +279,7 @@ func TestHandlePRStatusChange(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			monitor, _, _, taskRepo, _, websocketSvc := createPRMonitor(t)
+			monitor, _, _, taskRepo, taskUsecase, _, websocketSvc := createPRMonitor(t)
 
 			pr := createTestPR()
 			pr.Status = tt.newPRStatus
@@ -281,7 +291,9 @@ func TestHandlePRStatusChange(t *testing.T) {
 			taskRepo.On("GetByID", mock.Anything, pr.TaskID).Return(task, nil)
 
 			if tt.shouldUpdateTask {
-				taskRepo.On("UpdateStatus", mock.Anything, task.ID, tt.expectedTaskStatus).Return(nil)
+				updatedTask := *task
+				updatedTask.Status = tt.expectedTaskStatus
+				taskUsecase.On("UpdateStatus", mock.Anything, task.ID, tt.expectedTaskStatus).Return(&updatedTask, nil)
 				websocketSvc.On("NotifyStatusChanged", task.ID, task.ProjectID, "task", string(tt.oldTaskStatus), string(tt.expectedTaskStatus)).Return(nil)
 			}
 
@@ -292,13 +304,14 @@ func TestHandlePRStatusChange(t *testing.T) {
 			require.NoError(t, err)
 
 			taskRepo.AssertExpectations(t)
+			taskUsecase.AssertExpectations(t)
 			websocketSvc.AssertExpectations(t)
 		})
 	}
 }
 
 func TestHandlePRMerge(t *testing.T) {
-	monitor, _, _, taskRepo, worktreeSvc, websocketSvc := createPRMonitor(t)
+	monitor, _, _, taskRepo, taskUsecase, worktreeSvc, websocketSvc := createPRMonitor(t)
 
 	pr := createTestPR()
 	pr.Status = entity.PullRequestStatusMerged
@@ -315,7 +328,9 @@ func TestHandlePRMerge(t *testing.T) {
 	}
 
 	taskRepo.On("GetByID", mock.Anything, pr.TaskID).Return(task, nil)
-	taskRepo.On("UpdateStatus", mock.Anything, task.ID, entity.TaskStatusDONE).Return(nil)
+	updatedTask := *task
+	updatedTask.Status = entity.TaskStatusDONE
+	taskUsecase.On("UpdateStatus", mock.Anything, task.ID, entity.TaskStatusDONE).Return(&updatedTask, nil)
 
 	worktreeSvc.On("GetWorktreeByTaskID", mock.Anything, pr.TaskID).Return(worktree, nil)
 	worktreeSvc.On("CleanupTaskWorktree", mock.Anything, pr.TaskID, task.ProjectID).Return(nil)
@@ -327,12 +342,13 @@ func TestHandlePRMerge(t *testing.T) {
 	require.NoError(t, err)
 
 	taskRepo.AssertExpectations(t)
+	taskUsecase.AssertExpectations(t)
 	worktreeSvc.AssertExpectations(t)
 	websocketSvc.AssertExpectations(t)
 }
 
 func TestMonitorAllActivePRs(t *testing.T) {
-	monitor, _, prRepo, taskRepo, _, _ := createPRMonitor(t)
+	monitor, _, prRepo, taskRepo, _, _, _ := createPRMonitor(t)
 
 	pr1 := createTestPR()
 	pr2 := createTestPR()
@@ -366,7 +382,7 @@ func TestMonitorAllActivePRs(t *testing.T) {
 func TestRefreshPR(t *testing.T) {
 	// TODO: skip for now, back later
 	t.Skip("skip for now, back later!")
-	monitor, githubSvc, prRepo, taskRepo, _, websocketSvc := createPRMonitor(t)
+	monitor, githubSvc, prRepo, taskRepo, taskUsecase, _, websocketSvc := createPRMonitor(t)
 
 	pr := createTestPR()
 	task := createTestTask()
@@ -389,7 +405,9 @@ func TestRefreshPR(t *testing.T) {
 	})).Return(nil)
 
 	// Mock the status change handling
-	taskRepo.On("UpdateStatus", mock.Anything, task.ID, entity.TaskStatusDONE).Return(nil)
+	updatedTask := *task
+	updatedTask.Status = entity.TaskStatusDONE
+	taskUsecase.On("UpdateStatus", mock.Anything, task.ID, entity.TaskStatusDONE).Return(&updatedTask, nil)
 	websocketSvc.On("NotifyStatusChanged", task.ID, task.ProjectID, "task", string(entity.TaskStatusIMPLEMENTING), string(entity.TaskStatusDONE)).Return(nil)
 	websocketSvc.On("SendProjectMessage", task.ProjectID, websocket.MessageTypePRUpdate, mock.Anything).Return(nil)
 
@@ -399,11 +417,12 @@ func TestRefreshPR(t *testing.T) {
 	githubSvc.AssertExpectations(t)
 	prRepo.AssertExpectations(t)
 	taskRepo.AssertExpectations(t)
+	taskUsecase.AssertExpectations(t)
 	websocketSvc.AssertExpectations(t)
 }
 
 func TestGetMonitoringStats(t *testing.T) {
-	monitor, _, _, taskRepo, _, _ := createPRMonitor(t)
+	monitor, _, _, taskRepo, _, _, _ := createPRMonitor(t)
 
 	// Initially no monitors
 	stats := monitor.GetMonitoringStats()

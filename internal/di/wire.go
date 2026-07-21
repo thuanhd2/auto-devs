@@ -7,12 +7,14 @@ import (
 	"time"
 
 	"github.com/auto-devs/auto-devs/config"
+	"github.com/auto-devs/auto-devs/internal/entity"
 	"github.com/auto-devs/auto-devs/internal/jobs"
 	"github.com/auto-devs/auto-devs/internal/repository"
 	"github.com/auto-devs/auto-devs/internal/repository/postgres"
 	"github.com/auto-devs/auto-devs/internal/service/ai"
 	"github.com/auto-devs/auto-devs/internal/service/git"
 	"github.com/auto-devs/auto-devs/internal/service/github"
+	"github.com/auto-devs/auto-devs/internal/service/webhook"
 	worktreesvc "github.com/auto-devs/auto-devs/internal/service/worktree"
 	"github.com/auto-devs/auto-devs/internal/usecase"
 	"github.com/auto-devs/auto-devs/internal/websocket"
@@ -51,8 +53,10 @@ var ProviderSet = wire.NewSet(
 	ProvideJobClient,
 	ProvideJobClientAdapter,
 	ProvideJobProcessor,
+	ProvideWebhookClient,
+	ProvideWebhookNotificationHandler,
 	// Usecase providers
-	usecase.NewNotificationUsecase,
+	ProvideNotificationUsecase,
 	ProvideAuditUsecase,
 	ProvideProjectUsecase,
 	ProvideWorktreeUsecase,
@@ -333,4 +337,18 @@ func ProvidePRCreator(githubService github.GitHubServiceInterface, cfg *config.C
 // ProvidePullRequestRepository provides a PullRequestRepository instance
 func ProvidePullRequestRepository(gormDB *database.GormDB) repository.PullRequestRepository {
 	return postgres.NewPullRequestRepository(gormDB)
+}
+
+func ProvideWebhookClient(cfg *config.Config) *webhook.Client {
+	return webhook.NewClient(&cfg.Webhook)
+}
+
+func ProvideWebhookNotificationHandler(client *webhook.Client) *usecase.WebhookNotificationHandler {
+	return usecase.NewWebhookNotificationHandler(client)
+}
+
+func ProvideNotificationUsecase(webhookHandler *usecase.WebhookNotificationHandler) usecase.NotificationUsecase {
+	notificationUsecase := usecase.NewNotificationUsecase()
+	_ = notificationUsecase.RegisterHandler(entity.NotificationTypeTaskStatusChanged, webhookHandler)
+	return notificationUsecase
 }
