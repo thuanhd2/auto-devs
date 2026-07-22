@@ -45,7 +45,7 @@ type Process struct {
 	MemoryUsage uint64        `json:"memory_usage" gorm:"default:0"`
 	CreatedAt   time.Time     `json:"created_at" gorm:"autoCreateTime"`
 	UpdatedAt   time.Time     `json:"updated_at" gorm:"autoUpdateTime"`
-	DeletedAt   gorm.DeletedAt `json:"deleted_at,omitempty" gorm:"index"`
+	DeletedAt   gorm.DeletedAt `json:"deleted_at,omitempty" gorm:"index" swaggertype:"string"`
 
 	// Relationships
 	Execution *Execution `json:"execution,omitempty" gorm:"foreignKey:ExecutionID;references:ID"`

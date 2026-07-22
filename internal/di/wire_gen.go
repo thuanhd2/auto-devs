@@ -14,6 +14,7 @@ import (
 	"github.com/auto-devs/auto-devs/internal/service/ai"
 	"github.com/auto-devs/auto-devs/internal/service/git"
 	"github.com/auto-devs/auto-devs/internal/service/github"
+	"github.com/auto-devs/auto-devs/internal/service/kanban"
 	"github.com/auto-devs/auto-devs/internal/service/worktree"
 	"github.com/auto-devs/auto-devs/internal/usecase"
 	"github.com/auto-devs/auto-devs/internal/websocket"
@@ -70,7 +71,8 @@ func InitializeApp() (*App, error) {
 	if err != nil {
 		return nil, err
 	}
-	processor := ProvideJobProcessor(taskUsecase, projectUsecase, worktreeUsecase, planningService, executionService, planRepository, executionRepository, executionLogRepository, service, gitManager, prCreator, pullRequestRepository, gitHubServiceInterface)
+	kanbanClient := ProvideKanbanClient(configConfig)
+	processor := ProvideJobProcessor(taskUsecase, projectUsecase, worktreeUsecase, planningService, executionService, planRepository, executionRepository, executionLogRepository, service, gitManager, prCreator, pullRequestRepository, gitHubServiceInterface, kanbanClient)
 	app := NewApp(configConfig, gormDB, projectRepository, taskRepository, planRepository, worktreeRepository, auditRepository, executionRepository, executionLogRepository, pullRequestRepository, auditUsecase, projectUsecase, taskUsecase, worktreeUsecase, notificationUsecase, executionUsecase, service, cliManager, processManager, executionService, planningService, gitManager, worktreeManager, prCreator, client, jobClientInterface, processor)
 	return app, nil
 }
@@ -82,6 +84,7 @@ var ProviderSet = wire.NewSet(config.Load, ProvideGormDB, postgres.NewProjectRep
 	ProvideProjectGitService,
 	ProvideGitHubService,
 	ProvidePRCreator,
+	ProvideKanbanClient,
 	ProvideIntegratedWorktreeService,
 	ProvideWorktreeManager,
 
@@ -329,8 +332,14 @@ func ProvideJobProcessor(
 	prCreator *github.PRCreator,
 	prRepo repository.PullRequestRepository,
 	githubService github.GitHubServiceInterface,
+	kanbanClient kanban.Client,
 ) *jobs.Processor {
-	return jobs.NewProcessor(taskUsecase, projectUsecase, worktreeUsecase, planningService, executionService, planRepo, executionRepo, executionLogRepo, wsService, gitManager, prCreator, prRepo, githubService)
+	return jobs.NewProcessor(taskUsecase, projectUsecase, worktreeUsecase, planningService, executionService, planRepo, executionRepo, executionLogRepo, wsService, gitManager, prCreator, prRepo, githubService, kanbanClient)
+}
+
+// ProvideKanbanClient provides a Hermes Kanban client instance
+func ProvideKanbanClient(cfg *config.Config) kanban.Client {
+	return kanban.NewClient(&cfg.HermesKanban)
 }
 
 // ProvideWebSocketService provides a WebSocket service instance

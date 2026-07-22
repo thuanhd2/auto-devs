@@ -11,6 +11,7 @@ type ClientInterface interface {
 	EnqueueTaskPlanningString(payload *TaskPlanningPayload, delay time.Duration) (string, error)
 	EnqueueTaskImplementationString(payload *TaskImplementationPayload, delay time.Duration) (string, error)
 	EnqueueWorktreeCreateString(payload *WorktreeCreatePayload, delay time.Duration) (string, error)
+	EnqueueKanbanNotifyString(payload *KanbanNotifyPayload) (string, error)
 	Close() error
 }
 
@@ -64,6 +65,18 @@ func (a *JobClientAdapter) EnqueueTaskImplementation(payload *usecase.TaskImplem
 	}
 
 	return jobID, nil
+}
+
+// EnqueueKanbanNotify enqueues a kanban notify job
+func (a *JobClientAdapter) EnqueueKanbanNotify(payload *usecase.KanbanNotifyPayload) (string, error) {
+	jobPayload := &KanbanNotifyPayload{
+		TaskID:       payload.TaskID,
+		KanbanTaskID: payload.KanbanTaskID,
+		OldStatus:    payload.OldStatus,
+		NewStatus:    payload.NewStatus,
+	}
+
+	return a.client.EnqueueKanbanNotifyString(jobPayload)
 }
 
 // EnqueueWorktreeCreate enqueues a worktree creation job

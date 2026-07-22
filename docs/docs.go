@@ -15,6 +15,367 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/api/v1/executions": {
+            "post": {
+                "description": "Create a new execution for a task",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "executions"
+                ],
+                "summary": "Create a new execution",
+                "parameters": [
+                    {
+                        "description": "Execution creation data",
+                        "name": "execution",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.ExecutionCreateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ExecutionResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/executions/stats": {
+            "get": {
+                "description": "Get execution statistics for a task or globally",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "executions"
+                ],
+                "summary": "Get execution statistics",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Filter by task ID",
+                        "name": "task_id",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/repository.ExecutionStats"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/executions/{id}": {
+            "get": {
+                "description": "Get a single execution with detailed information",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "executions"
+                ],
+                "summary": "Get execution by ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Execution ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "Include execution logs",
+                        "name": "include_logs",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 100,
+                        "description": "Maximum number of logs to include",
+                        "name": "log_limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "When include_logs=true",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ExecutionWithLogsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "Update execution status, progress, or error information",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "executions"
+                ],
+                "summary": "Update an execution",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Execution ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Execution update data",
+                        "name": "execution",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.ExecutionUpdateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ExecutionResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Delete an execution and all its associated logs",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "executions"
+                ],
+                "summary": "Delete an execution",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Execution ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/executions/{id}/logs": {
+            "get": {
+                "description": "Get logs for a specific execution with pagination and filtering",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "executions"
+                ],
+                "summary": "Get execution logs",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Execution ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "debug",
+                            "info",
+                            "warn",
+                            "error"
+                        ],
+                        "type": "string",
+                        "description": "Filter by log level",
+                        "name": "level",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by log source",
+                        "name": "source",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Search in log messages",
+                        "name": "search",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 50,
+                        "description": "Page size",
+                        "name": "page_size",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "default": "\"timestamp\"",
+                        "description": "Order by field",
+                        "name": "order_by",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "asc",
+                            "desc"
+                        ],
+                        "type": "string",
+                        "default": "\"desc\"",
+                        "description": "Order direction",
+                        "name": "order_dir",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ExecutionLogListResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/projects": {
             "get": {
                 "description": "Get a list of all projects",
@@ -287,6 +648,106 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/projects/{id}/branches": {
+            "get": {
+                "description": "Get all Git branches available in the project repository",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "projects"
+                ],
+                "summary": "List Git branches for a project",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Project ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ListBranchesResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/projects/{id}/git/reinit": {
+            "post": {
+                "description": "Reinitialize and reassign Git repository and GitHub repository URL for a project",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "projects"
+                ],
+                "summary": "Reinitialize Git repository for a project",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Project ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/projects/{id}/restore": {
             "post": {
                 "description": "Restore an archived project (undelete)",
@@ -312,113 +773,6 @@ const docTemplate = `{
                 "responses": {
                     "204": {
                         "description": "No Content"
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/dto.ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/dto.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/dto.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/projects/{id}/settings": {
-            "get": {
-                "description": "Get configuration settings for a project",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "projects"
-                ],
-                "summary": "Get project settings",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Project ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/dto.ProjectSettingsResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/dto.ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/dto.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/dto.ErrorResponse"
-                        }
-                    }
-                }
-            },
-            "put": {
-                "description": "Update configuration settings for a project",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "projects"
-                ],
-                "summary": "Update project settings",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Project ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Project settings data",
-                        "name": "settings",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/dto.ProjectSettingsUpdateRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/dto.ProjectSettingsResponse"
-                        }
                     },
                     "400": {
                         "description": "Bad Request",
@@ -491,102 +845,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/projects/{id}/status-analytics": {
-            "get": {
-                "description": "Get comprehensive status analytics for a project",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "tasks",
-                    "analytics"
-                ],
-                "summary": "Get project status analytics",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Project ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/dto.TaskStatusAnalyticsResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/dto.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/dto.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
         "/api/v1/projects/{id}/tasks": {
-            "get": {
-                "description": "Get a single project by its ID including all associated tasks",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "projects"
-                ],
-                "summary": "Get a project with its tasks",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Project ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/dto.ProjectWithTasksResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/dto.ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/dto.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/dto.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/projects/{project_id}/tasks": {
             "get": {
                 "description": "Get all tasks for a specific project",
                 "consumes": [
@@ -603,7 +862,51 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "description": "Project ID",
-                        "name": "project_id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.TaskListResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/projects/{id}/tasks/done": {
+            "get": {
+                "description": "Get tasks with DONE status for a specific project",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "tasks"
+                ],
+                "summary": "List DONE tasks by project",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Project ID",
+                        "name": "id",
                         "in": "path",
                         "required": true
                     }
@@ -721,149 +1024,6 @@ const docTemplate = `{
                         "description": "Created",
                         "schema": {
                             "$ref": "#/definitions/dto.TaskResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/dto.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/dto.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/tasks/bulk-status": {
-            "patch": {
-                "description": "Update status for multiple tasks at once",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "tasks"
-                ],
-                "summary": "Bulk update task statuses",
-                "parameters": [
-                    {
-                        "description": "Bulk status update data",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/dto.BulkStatusUpdateRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/dto.SuccessResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/dto.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/dto.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/tasks/filter": {
-            "get": {
-                "description": "Get tasks with comprehensive filtering and sorting options",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "tasks"
-                ],
-                "summary": "Get tasks with advanced filtering",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Filter by project ID",
-                        "name": "project_id",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Filter by single status",
-                        "name": "status",
-                        "in": "query"
-                    },
-                    {
-                        "type": "array",
-                        "description": "Filter by multiple statuses",
-                        "name": "statuses",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Filter by creation date (after)",
-                        "name": "created_after",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Filter by creation date (before)",
-                        "name": "created_before",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Search in title and description",
-                        "name": "search",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Limit number of results",
-                        "name": "limit",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Offset for pagination",
-                        "name": "offset",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Field to order by",
-                        "name": "order_by",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Order direction (asc/desc)",
-                        "name": "order_dir",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/dto.TaskListResponse"
                         }
                     },
                     "400": {
@@ -1033,9 +1193,9 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/tasks/{id}/project": {
-            "get": {
-                "description": "Get a single task by its ID including the associated project",
+        "/api/v1/tasks/{id}/approve-plan": {
+            "post": {
+                "description": "Approve the plan for a task and enqueue implementation job",
                 "consumes": [
                     "application/json"
                 ],
@@ -1045,7 +1205,7 @@ const docTemplate = `{
                 "tags": [
                     "tasks"
                 ],
-                "summary": "Get a task with its project",
+                "summary": "Approve plan and start implementation",
                 "parameters": [
                     {
                         "type": "string",
@@ -1053,13 +1213,22 @@ const docTemplate = `{
                         "name": "id",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "description": "Approve plan request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.ApprovePlanRequest"
+                        }
                     }
                 ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/dto.TaskWithProjectResponse"
+                            "$ref": "#/definitions/dto.StartPlanningResponse"
                         }
                     },
                     "400": {
@@ -1083,9 +1252,59 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/tasks/{id}/status": {
-            "patch": {
-                "description": "Update the status of a task",
+        "/api/v1/tasks/{id}/diff": {
+            "get": {
+                "description": "Get the git diff between the base branch HEAD and task branch HEAD",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "text/plain"
+                ],
+                "tags": [
+                    "tasks"
+                ],
+                "summary": "Get git diff for a task",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Task ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Git diff output",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/tasks/{id}/executions": {
+            "get": {
+                "description": "Get all executions for a specific task with optional filtering",
                 "consumes": [
                     "application/json"
                 ],
@@ -1093,9 +1312,9 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "tasks"
+                    "executions"
                 ],
-                "summary": "Update a task status",
+                "summary": "Get all executions for a task",
                 "parameters": [
                     {
                         "type": "string",
@@ -1105,12 +1324,839 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "description": "Task status update data",
+                        "enum": [
+                            "pending",
+                            "running",
+                            "paused",
+                            "completed",
+                            "failed",
+                            "cancelled"
+                        ],
+                        "type": "string",
+                        "description": "Filter by status",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "Page size",
+                        "name": "page_size",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "default": "\"started_at\"",
+                        "description": "Order by field",
+                        "name": "order_by",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "asc",
+                            "desc"
+                        ],
+                        "type": "string",
+                        "default": "\"desc\"",
+                        "description": "Order direction",
+                        "name": "order_dir",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ExecutionListResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/tasks/{id}/open-with-cursor": {
+            "post": {
+                "description": "Open the task's worktree path with Cursor editor",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "tasks"
+                ],
+                "summary": "Open task workspace with Cursor",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Task ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/tasks/{id}/plans": {
+            "get": {
+                "description": "Get all plans for a specific task, sorted by created_at descending",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "tasks"
+                ],
+                "summary": "Get plans for a task",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Task ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.TaskPlansResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/tasks/{id}/plans/{planId}": {
+            "put": {
+                "description": "Update a plan by its ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "plans"
+                ],
+                "summary": "Update a plan",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Task ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Plan ID",
+                        "name": "planId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Plan update data",
+                        "name": "plan",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.PlanUpdateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.PlanResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/tasks/{id}/start-planning": {
+            "post": {
+                "description": "Start the planning phase for a task by selecting a branch and initiating background processing",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "tasks"
+                ],
+                "summary": "Start planning for a task",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Task ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Start planning request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.StartPlanningRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.StartPlanningResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/tasks/{id}/pull-request": {
+            "post": {
+                "description": "Create a new pull request for the task",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "tasks"
+                ],
+                "summary": "Create pull request for task",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Task ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/entity.PullRequest"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/worktrees": {
+            "post": {
+                "description": "Enqueue creation of a new Git worktree for a specific task. The\nworktree is created asynchronously in a background job to avoid\nrequest timeouts; the response returns a record with \"creating\"\nstatus that transitions to \"active\" once the job finishes.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "worktrees"
+                ],
+                "summary": "Create worktree for task",
+                "parameters": [
+                    {
+                        "description": "Create worktree request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.CreateWorktreeRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Accepted",
+                        "schema": {
+                            "$ref": "#/definitions/dto.WorktreeResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/worktrees/cleanup": {
+            "post": {
+                "description": "Clean up a Git worktree for a specific task",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "worktrees"
+                ],
+                "summary": "Cleanup worktree for task",
+                "parameters": [
+                    {
+                        "description": "Cleanup worktree request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.CleanupWorktreeRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/worktrees/project/{projectId}": {
+            "get": {
+                "description": "Get all worktrees for a specific project",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "worktrees"
+                ],
+                "summary": "Get worktrees by project ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Project ID",
+                        "name": "projectId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.WorktreesResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/worktrees/project/{projectId}/active-count": {
+            "get": {
+                "description": "Get the count of active worktrees for a project",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "worktrees"
+                ],
+                "summary": "Get active worktrees count",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Project ID",
+                        "name": "projectId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.WorktreeCountResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/worktrees/project/{projectId}/statistics": {
+            "get": {
+                "description": "Get worktree statistics for a project",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "worktrees"
+                ],
+                "summary": "Get worktree statistics",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Project ID",
+                        "name": "projectId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.WorktreeStatisticsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/worktrees/task/{taskId}": {
+            "get": {
+                "description": "Get worktree information for a specific task",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "worktrees"
+                ],
+                "summary": "Get worktree by task ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Task ID",
+                        "name": "taskId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.WorktreeResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/worktrees/{worktreeId}/branch": {
+            "get": {
+                "description": "Get branch information for a worktree",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "worktrees"
+                ],
+                "summary": "Get branch info",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Worktree ID",
+                        "name": "worktreeId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.BranchInfoResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/worktrees/{worktreeId}/health": {
+            "get": {
+                "description": "Get health information for a worktree",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "worktrees"
+                ],
+                "summary": "Get worktree health",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Worktree ID",
+                        "name": "worktreeId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.WorktreeHealthResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/worktrees/{worktreeId}/initialize": {
+            "post": {
+                "description": "Initialize a worktree with basic configuration",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "worktrees"
+                ],
+                "summary": "Initialize worktree",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Worktree ID",
+                        "name": "worktreeId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/worktrees/{worktreeId}/recover": {
+            "post": {
+                "description": "Attempt to recover a worktree that is in error status",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "worktrees"
+                ],
+                "summary": "Recover failed worktree",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Worktree ID",
+                        "name": "worktreeId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/worktrees/{worktreeId}/status": {
+            "put": {
+                "description": "Update the status of a worktree",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "worktrees"
+                ],
+                "summary": "Update worktree status",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Worktree ID",
+                        "name": "worktreeId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Update status request",
                         "name": "status",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.TaskStatusUpdateRequest"
+                            "$ref": "#/definitions/dto.UpdateWorktreeStatusRequest"
                         }
                     }
                 ],
@@ -1118,7 +2164,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/dto.TaskResponse"
+                            "$ref": "#/definitions/dto.SuccessResponse"
                         }
                     },
                     "400": {
@@ -1142,24 +2188,21 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/tasks/{id}/status-history": {
+        "/worktrees/{worktreeId}/validate": {
             "get": {
-                "description": "Get the status change history for a specific task",
-                "consumes": [
-                    "application/json"
-                ],
+                "description": "Validate the health and integrity of a worktree",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "tasks"
+                    "worktrees"
                 ],
-                "summary": "Get task status history",
+                "summary": "Validate worktree",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Task ID",
-                        "name": "id",
+                        "description": "Worktree ID",
+                        "name": "worktreeId",
                         "in": "path",
                         "required": true
                     }
@@ -1168,126 +2211,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/dto.TaskStatusHistoryResponse"
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/dto.ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/dto.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/dto.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/tasks/{id}/status-with-history": {
-            "patch": {
-                "description": "Update the status of a task with validation and history tracking",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "tasks"
-                ],
-                "summary": "Update task status with history tracking",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Task ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Task status update with history data",
-                        "name": "status",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/dto.TaskStatusUpdateWithHistoryRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/dto.TaskResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/dto.ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/dto.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/dto.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/tasks/{id}/validate-transition": {
-            "get": {
-                "description": "Check if a status transition is valid for a task",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "tasks"
-                ],
-                "summary": "Validate task status transition",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Task ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Target status to validate",
-                        "name": "target_status",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/dto.TaskStatusValidationResponse"
+                            "$ref": "#/definitions/dto.WorktreeValidationResponse"
                         }
                     },
                     "400": {
@@ -1313,42 +2237,93 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "dto.BulkStatusUpdateRequest": {
+        "dto.ActiveTaskCounts": {
+            "type": "object",
+            "properties": {
+                "code_reviewing": {
+                    "type": "integer"
+                },
+                "implementing": {
+                    "type": "integer"
+                },
+                "plan_reviewing": {
+                    "type": "integer"
+                },
+                "planning": {
+                    "type": "integer"
+                }
+            }
+        },
+        "dto.ApprovePlanRequest": {
             "type": "object",
             "required": [
-                "status",
-                "task_ids"
+                "ai_type"
             ],
             "properties": {
-                "changed_by": {
+                "ai_type": {
                     "type": "string",
-                    "example": "user123"
+                    "example": "claude-code"
+                }
+            }
+        },
+        "dto.BranchInfoResponse": {
+            "type": "object",
+            "properties": {
+                "branch_info": {
+                    "$ref": "#/definitions/usecase.BranchInfo"
+                }
+            }
+        },
+        "dto.CleanupWorktreeRequest": {
+            "type": "object",
+            "required": [
+                "project_id",
+                "task_id"
+            ],
+            "properties": {
+                "branch_name": {
+                    "description": "Optional branch name to delete",
+                    "type": "string"
                 },
-                "status": {
-                    "enum": [
-                        "TODO",
-                        "PLANNING",
-                        "PLAN_REVIEWING",
-                        "IMPLEMENTING",
-                        "CODE_REVIEWING",
-                        "DONE",
-                        "CANCELLED"
-                    ],
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/entity.TaskStatus"
-                        }
-                    ],
-                    "example": "TODO"
+                "force": {
+                    "description": "Force cleanup even if worktree is active",
+                    "type": "boolean"
                 },
-                "task_ids": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    },
-                    "example": [
-                        "[\"123e4567-e89b-12d3-a456-426614174000\"]"
-                    ]
+                "project_id": {
+                    "type": "string"
+                },
+                "task_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.CreateWorktreeRequest": {
+            "type": "object",
+            "required": [
+                "project_id",
+                "task_id",
+                "task_title"
+            ],
+            "properties": {
+                "base_branch_name": {
+                    "description": "Optional base branch override",
+                    "type": "string"
+                },
+                "project_id": {
+                    "type": "string"
+                },
+                "repository": {
+                    "description": "Optional repository URL to clone",
+                    "type": "string"
+                },
+                "task_id": {
+                    "type": "string"
+                },
+                "task_title": {
+                    "type": "string"
+                },
+                "use_remote_branch": {
+                    "type": "boolean"
                 }
             }
         },
@@ -1375,11 +2350,364 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.ExecutionCreateRequest": {
+            "type": "object",
+            "required": [
+                "task_id"
+            ],
+            "properties": {
+                "task_id": {
+                    "type": "string",
+                    "example": "123e4567-e89b-12d3-a456-426614174000"
+                }
+            }
+        },
+        "dto.ExecutionListResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.ExecutionResponse"
+                    }
+                },
+                "meta": {
+                    "$ref": "#/definitions/dto.PaginationMeta"
+                }
+            }
+        },
+        "dto.ExecutionLogListResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.ExecutionLogResponse"
+                    }
+                },
+                "meta": {
+                    "$ref": "#/definitions/dto.PaginationMeta"
+                }
+            }
+        },
+        "dto.ExecutionLogResponse": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string",
+                    "example": "2024-01-01T00:00:00Z"
+                },
+                "duration_ms": {
+                    "type": "integer",
+                    "example": 1234
+                },
+                "execution_id": {
+                    "type": "string",
+                    "example": "123e4567-e89b-12d3-a456-426614174000"
+                },
+                "id": {
+                    "type": "string",
+                    "example": "123e4567-e89b-12d3-a456-426614174000"
+                },
+                "is_error": {
+                    "type": "boolean"
+                },
+                "level": {
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/entity.LogLevel"
+                        }
+                    ],
+                    "example": "info"
+                },
+                "line": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "log_type": {
+                    "description": "Structured fields",
+                    "type": "string",
+                    "example": "assistant"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "Process started successfully"
+                },
+                "metadata": {},
+                "num_turns": {
+                    "type": "integer",
+                    "example": 5
+                },
+                "parsed_content": {},
+                "process_id": {
+                    "type": "string",
+                    "example": "123e4567-e89b-12d3-a456-426614174000"
+                },
+                "source": {
+                    "type": "string",
+                    "example": "stdout"
+                },
+                "timestamp": {
+                    "type": "string",
+                    "example": "2024-01-01T00:00:00Z"
+                },
+                "tool_name": {
+                    "type": "string",
+                    "example": "read_file"
+                },
+                "tool_use_id": {
+                    "type": "string",
+                    "example": "toolu_01ABC..."
+                }
+            }
+        },
+        "dto.ExecutionResponse": {
+            "type": "object",
+            "properties": {
+                "completed_at": {
+                    "type": "string",
+                    "example": "2024-01-01T01:00:00Z"
+                },
+                "created_at": {
+                    "type": "string",
+                    "example": "2024-01-01T00:00:00Z"
+                },
+                "duration": {
+                    "type": "integer",
+                    "example": 3600000000000
+                },
+                "error": {
+                    "type": "string",
+                    "example": "Process failed"
+                },
+                "id": {
+                    "type": "string",
+                    "example": "123e4567-e89b-12d3-a456-426614174000"
+                },
+                "progress": {
+                    "type": "number",
+                    "example": 0.75
+                },
+                "result": {
+                    "$ref": "#/definitions/entity.ExecutionResult"
+                },
+                "started_at": {
+                    "type": "string",
+                    "example": "2024-01-01T00:00:00Z"
+                },
+                "status": {
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/entity.ExecutionStatus"
+                        }
+                    ],
+                    "example": "running"
+                },
+                "task_id": {
+                    "type": "string",
+                    "example": "123e4567-e89b-12d3-a456-426614174000"
+                },
+                "updated_at": {
+                    "type": "string",
+                    "example": "2024-01-01T00:00:00Z"
+                }
+            }
+        },
+        "dto.ExecutionUpdateRequest": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string",
+                    "example": "Process failed"
+                },
+                "progress": {
+                    "type": "number",
+                    "maximum": 1,
+                    "minimum": 0,
+                    "example": 0.5
+                },
+                "status": {
+                    "enum": [
+                        "pending",
+                        "running",
+                        "paused",
+                        "completed",
+                        "failed",
+                        "cancelled"
+                    ],
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/entity.ExecutionStatus"
+                        }
+                    ],
+                    "example": "running"
+                }
+            }
+        },
+        "dto.ExecutionWithLogsResponse": {
+            "type": "object",
+            "properties": {
+                "completed_at": {
+                    "type": "string",
+                    "example": "2024-01-01T01:00:00Z"
+                },
+                "created_at": {
+                    "type": "string",
+                    "example": "2024-01-01T00:00:00Z"
+                },
+                "duration": {
+                    "type": "integer",
+                    "example": 3600000000000
+                },
+                "error": {
+                    "type": "string",
+                    "example": "Process failed"
+                },
+                "id": {
+                    "type": "string",
+                    "example": "123e4567-e89b-12d3-a456-426614174000"
+                },
+                "logs": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.ExecutionLogResponse"
+                    }
+                },
+                "progress": {
+                    "type": "number",
+                    "example": 0.75
+                },
+                "result": {
+                    "$ref": "#/definitions/entity.ExecutionResult"
+                },
+                "started_at": {
+                    "type": "string",
+                    "example": "2024-01-01T00:00:00Z"
+                },
+                "status": {
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/entity.ExecutionStatus"
+                        }
+                    ],
+                    "example": "running"
+                },
+                "task_id": {
+                    "type": "string",
+                    "example": "123e4567-e89b-12d3-a456-426614174000"
+                },
+                "updated_at": {
+                    "type": "string",
+                    "example": "2024-01-01T00:00:00Z"
+                }
+            }
+        },
+        "dto.GitBranchResponse": {
+            "type": "object",
+            "properties": {
+                "is_current": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "is_remote": {
+                    "type": "boolean",
+                    "example": false
+                },
+                "last_commit": {
+                    "type": "string",
+                    "example": "abc123def"
+                },
+                "last_updated": {
+                    "type": "string",
+                    "example": "2024-01-15T10:30:00Z"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "main"
+                }
+            }
+        },
+        "dto.ListBranchesResponse": {
+            "type": "object",
+            "properties": {
+                "branches": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.GitBranchResponse"
+                    }
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
+        "dto.PaginationMeta": {
+            "type": "object",
+            "properties": {
+                "page": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "page_size": {
+                    "type": "integer",
+                    "example": 10
+                },
+                "total": {
+                    "type": "integer",
+                    "example": 100
+                },
+                "total_pages": {
+                    "type": "integer",
+                    "example": 10
+                }
+            }
+        },
+        "dto.PlanResponse": {
+            "type": "object",
+            "properties": {
+                "content": {
+                    "type": "string",
+                    "example": "# Plan\n\nThis is a plan for a task"
+                },
+                "created_at": {
+                    "type": "string",
+                    "example": "2024-01-15T10:30:00Z"
+                },
+                "id": {
+                    "type": "string",
+                    "example": "123e4567-e89b-12d3-a456-426614174000"
+                },
+                "status": {
+                    "type": "string",
+                    "example": "DRAFT"
+                },
+                "task_id": {
+                    "type": "string",
+                    "example": "123e4567-e89b-12d3-a456-426614174000"
+                },
+                "updated_at": {
+                    "type": "string",
+                    "example": "2024-01-15T10:30:00Z"
+                }
+            }
+        },
+        "dto.PlanUpdateRequest": {
+            "type": "object",
+            "required": [
+                "content"
+            ],
+            "properties": {
+                "content": {
+                    "type": "string",
+                    "example": "Implement user authentication"
+                }
+            }
+        },
         "dto.ProjectCreateRequest": {
             "type": "object",
             "required": [
                 "name",
-                "repo_url"
+                "worktree_base_path"
             ],
             "properties": {
                 "description": {
@@ -1387,16 +2715,20 @@ const docTemplate = `{
                     "maxLength": 1000,
                     "example": "Project description"
                 },
+                "init_workspace_script": {
+                    "type": "string",
+                    "example": "npm install \u0026\u0026 npm run build"
+                },
                 "name": {
                     "type": "string",
                     "maxLength": 255,
                     "minLength": 1,
                     "example": "My Project"
                 },
-                "repo_url": {
+                "worktree_base_path": {
                     "type": "string",
                     "maxLength": 500,
-                    "example": "https://github.com/user/repo"
+                    "example": "/tmp/projects/repo"
                 }
             }
         },
@@ -1423,6 +2755,9 @@ const docTemplate = `{
         "dto.ProjectResponse": {
             "type": "object",
             "properties": {
+                "active_task_counts": {
+                    "$ref": "#/definitions/dto.ActiveTaskCounts"
+                },
                 "created_at": {
                     "type": "string",
                     "example": "2024-01-15T10:30:00Z"
@@ -1435,81 +2770,25 @@ const docTemplate = `{
                     "type": "string",
                     "example": "123e4567-e89b-12d3-a456-426614174000"
                 },
+                "init_workspace_script": {
+                    "type": "string",
+                    "example": "npm install \u0026\u0026 npm run build"
+                },
                 "name": {
                     "type": "string",
                     "example": "My Project"
                 },
-                "repo_url": {
+                "repository_url": {
                     "type": "string",
-                    "example": "https://github.com/user/repo"
+                    "example": "https://github.com/user/repo.git"
                 },
                 "updated_at": {
                     "type": "string",
                     "example": "2024-01-15T10:30:00Z"
-                }
-            }
-        },
-        "dto.ProjectSettingsResponse": {
-            "type": "object",
-            "properties": {
-                "auto_archive_days": {
-                    "type": "integer"
                 },
-                "created_at": {
-                    "type": "string"
-                },
-                "email_notifications": {
-                    "type": "boolean"
-                },
-                "git_auto_sync": {
-                    "type": "boolean"
-                },
-                "git_branch": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "notifications_enabled": {
-                    "type": "boolean"
-                },
-                "project_id": {
-                    "type": "string"
-                },
-                "slack_webhook_url": {
-                    "type": "string"
-                },
-                "task_prefix": {
-                    "type": "string"
-                },
-                "updated_at": {
-                    "type": "string"
-                }
-            }
-        },
-        "dto.ProjectSettingsUpdateRequest": {
-            "type": "object",
-            "properties": {
-                "auto_archive_days": {
-                    "type": "integer"
-                },
-                "email_notifications": {
-                    "type": "boolean"
-                },
-                "git_auto_sync": {
-                    "type": "boolean"
-                },
-                "git_branch": {
-                    "type": "string"
-                },
-                "notifications_enabled": {
-                    "type": "boolean"
-                },
-                "slack_webhook_url": {
-                    "type": "string"
-                },
-                "task_prefix": {
-                    "type": "string"
+                "worktree_base_path": {
+                    "type": "string",
+                    "example": "/tmp/projects/repo"
                 }
             }
         },
@@ -1544,51 +2823,61 @@ const docTemplate = `{
                     "maxLength": 1000,
                     "example": "Updated description"
                 },
+                "init_workspace_script": {
+                    "type": "string",
+                    "example": "npm install \u0026\u0026 npm run build"
+                },
                 "name": {
                     "type": "string",
                     "maxLength": 255,
                     "minLength": 1,
                     "example": "Updated Project Name"
                 },
-                "repo_url": {
+                "repository_url": {
                     "type": "string",
                     "maxLength": 500,
-                    "example": "https://github.com/user/updated-repo"
+                    "example": "https://github.com/user/repo.git"
+                },
+                "worktree_base_path": {
+                    "type": "string",
+                    "maxLength": 500,
+                    "example": "/tmp/projects/repo"
                 }
             }
         },
-        "dto.ProjectWithTasksResponse": {
+        "dto.StartPlanningRequest": {
+            "type": "object",
+            "required": [
+                "ai_type",
+                "branch_name"
+            ],
+            "properties": {
+                "ai_type": {
+                    "type": "string",
+                    "example": "claude-code"
+                },
+                "auto_implement": {
+                    "type": "boolean"
+                },
+                "branch_name": {
+                    "type": "string",
+                    "example": "main"
+                },
+                "use_remote_branch": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "dto.StartPlanningResponse": {
             "type": "object",
             "properties": {
-                "created_at": {
+                "job_id": {
                     "type": "string",
-                    "example": "2024-01-15T10:30:00Z"
+                    "example": "task-123-planning-456"
                 },
-                "description": {
+                "message": {
                     "type": "string",
-                    "example": "Project description"
-                },
-                "id": {
-                    "type": "string",
-                    "example": "123e4567-e89b-12d3-a456-426614174000"
-                },
-                "name": {
-                    "type": "string",
-                    "example": "My Project"
-                },
-                "repo_url": {
-                    "type": "string",
-                    "example": "https://github.com/user/repo"
-                },
-                "tasks": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/dto.TaskResponse"
-                    }
-                },
-                "updated_at": {
-                    "type": "string",
-                    "example": "2024-01-15T10:30:00Z"
+                    "example": "Planning started successfully"
                 }
             }
         },
@@ -1611,8 +2900,13 @@ const docTemplate = `{
             "properties": {
                 "description": {
                     "type": "string",
-                    "maxLength": 1000,
+                    "maxLength": 5000,
                     "example": "Add JWT-based authentication system"
+                },
+                "kanban_task_id": {
+                    "type": "string",
+                    "maxLength": 64,
+                    "example": "a1b2c3d4"
                 },
                 "project_id": {
                     "type": "string",
@@ -1640,6 +2934,17 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.TaskPlansResponse": {
+            "type": "object",
+            "properties": {
+                "plans": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.PlanResponse"
+                    }
+                }
+            }
+        },
         "dto.TaskResponse": {
             "type": "object",
             "properties": {
@@ -1655,9 +2960,27 @@ const docTemplate = `{
                     "type": "string",
                     "example": "Add JWT-based authentication system"
                 },
+                "error_logs": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "git_status": {
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/entity.TaskGitStatus"
+                        }
+                    ],
+                    "example": "none"
+                },
                 "id": {
                     "type": "string",
                     "example": "123e4567-e89b-12d3-a456-426614174000"
+                },
+                "kanban_task_id": {
+                    "type": "string",
+                    "example": "a1b2c3d4"
                 },
                 "project_id": {
                     "type": "string",
@@ -1682,194 +3005,10 @@ const docTemplate = `{
                 "updated_at": {
                     "type": "string",
                     "example": "2024-01-15T10:30:00Z"
-                }
-            }
-        },
-        "dto.TaskStatusAnalyticsResponse": {
-            "type": "object",
-            "properties": {
-                "average_time_in_status": {
-                    "type": "object",
-                    "additionalProperties": {
-                        "type": "number"
-                    }
                 },
-                "completed_tasks": {
-                    "type": "integer",
-                    "example": 20
-                },
-                "completion_rate": {
-                    "type": "number",
-                    "example": 40
-                },
-                "generated_at": {
+                "worktree_path": {
                     "type": "string",
-                    "example": "2024-01-15T10:30:00Z"
-                },
-                "project_id": {
-                    "type": "string",
-                    "example": "123e4567-e89b-12d3-a456-426614174000"
-                },
-                "status_distribution": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/dto.TaskStatusStatsResponse"
-                    }
-                },
-                "total_tasks": {
-                    "type": "integer",
-                    "example": 50
-                },
-                "transition_count": {
-                    "type": "object",
-                    "additionalProperties": {
-                        "type": "integer"
-                    }
-                }
-            }
-        },
-        "dto.TaskStatusHistoryResponse": {
-            "type": "object",
-            "properties": {
-                "changed_by": {
-                    "type": "string",
-                    "example": "user123"
-                },
-                "created_at": {
-                    "type": "string",
-                    "example": "2024-01-15T10:30:00Z"
-                },
-                "from_status": {
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/entity.TaskStatus"
-                        }
-                    ],
-                    "example": "TODO"
-                },
-                "id": {
-                    "type": "string",
-                    "example": "123e4567-e89b-12d3-a456-426614174000"
-                },
-                "reason": {
-                    "type": "string",
-                    "example": "Requirements changed"
-                },
-                "task_id": {
-                    "type": "string",
-                    "example": "123e4567-e89b-12d3-a456-426614174000"
-                },
-                "to_status": {
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/entity.TaskStatus"
-                        }
-                    ],
-                    "example": "PLANNING"
-                }
-            }
-        },
-        "dto.TaskStatusStatsResponse": {
-            "type": "object",
-            "properties": {
-                "count": {
-                    "type": "integer",
-                    "example": 10
-                },
-                "status": {
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/entity.TaskStatus"
-                        }
-                    ],
-                    "example": "TODO"
-                }
-            }
-        },
-        "dto.TaskStatusUpdateRequest": {
-            "type": "object",
-            "required": [
-                "status"
-            ],
-            "properties": {
-                "status": {
-                    "enum": [
-                        "TODO",
-                        "PLANNING",
-                        "PLAN_REVIEWING",
-                        "IMPLEMENTING",
-                        "CODE_REVIEWING",
-                        "DONE",
-                        "CANCELLED"
-                    ],
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/entity.TaskStatus"
-                        }
-                    ],
-                    "example": "TODO"
-                }
-            }
-        },
-        "dto.TaskStatusUpdateWithHistoryRequest": {
-            "type": "object",
-            "required": [
-                "status"
-            ],
-            "properties": {
-                "changed_by": {
-                    "type": "string",
-                    "example": "user123"
-                },
-                "reason": {
-                    "type": "string",
-                    "example": "Requirements changed"
-                },
-                "status": {
-                    "enum": [
-                        "TODO",
-                        "PLANNING",
-                        "PLAN_REVIEWING",
-                        "IMPLEMENTING",
-                        "CODE_REVIEWING",
-                        "DONE",
-                        "CANCELLED"
-                    ],
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/entity.TaskStatus"
-                        }
-                    ],
-                    "example": "TODO"
-                }
-            }
-        },
-        "dto.TaskStatusValidationResponse": {
-            "type": "object",
-            "properties": {
-                "current_status": {
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/entity.TaskStatus"
-                        }
-                    ],
-                    "example": "TODO"
-                },
-                "message": {
-                    "type": "string",
-                    "example": "Transition is valid"
-                },
-                "target_status": {
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/entity.TaskStatus"
-                        }
-                    ],
-                    "example": "PLANNING"
-                },
-                "valid": {
-                    "type": "boolean",
-                    "example": true
+                    "example": "/tmp/worktrees/task-123"
                 }
             }
         },
@@ -1883,7 +3022,7 @@ const docTemplate = `{
                 },
                 "description": {
                     "type": "string",
-                    "maxLength": 1000,
+                    "maxLength": 5000,
                     "example": "Updated description"
                 },
                 "pull_request": {
@@ -1891,45 +3030,16 @@ const docTemplate = `{
                     "maxLength": 255,
                     "example": "https://github.com/user/repo/pull/123"
                 },
-                "title": {
-                    "type": "string",
-                    "maxLength": 255,
-                    "minLength": 1,
-                    "example": "Updated task title"
-                }
-            }
-        },
-        "dto.TaskWithProjectResponse": {
-            "type": "object",
-            "properties": {
-                "branch_name": {
-                    "type": "string",
-                    "example": "feature/user-auth"
-                },
-                "created_at": {
-                    "type": "string",
-                    "example": "2024-01-15T10:30:00Z"
-                },
-                "description": {
-                    "type": "string",
-                    "example": "Add JWT-based authentication system"
-                },
-                "id": {
-                    "type": "string",
-                    "example": "123e4567-e89b-12d3-a456-426614174000"
-                },
-                "project": {
-                    "$ref": "#/definitions/dto.ProjectResponse"
-                },
-                "project_id": {
-                    "type": "string",
-                    "example": "123e4567-e89b-12d3-a456-426614174000"
-                },
-                "pull_request": {
-                    "type": "string",
-                    "example": "https://github.com/user/repo/pull/123"
-                },
                 "status": {
+                    "enum": [
+                        "TODO",
+                        "PLANNING",
+                        "PLAN_REVIEWING",
+                        "IMPLEMENTING",
+                        "CODE_REVIEWING",
+                        "DONE",
+                        "CANCELLED"
+                    ],
                     "allOf": [
                         {
                             "$ref": "#/definitions/entity.TaskStatus"
@@ -1939,13 +3049,841 @@ const docTemplate = `{
                 },
                 "title": {
                     "type": "string",
-                    "example": "Implement user authentication"
-                },
-                "updated_at": {
-                    "type": "string",
-                    "example": "2024-01-15T10:30:00Z"
+                    "maxLength": 255,
+                    "minLength": 1,
+                    "example": "Updated task title"
                 }
             }
+        },
+        "dto.UpdateWorktreeStatusRequest": {
+            "type": "object",
+            "required": [
+                "status"
+            ],
+            "properties": {
+                "status": {
+                    "$ref": "#/definitions/entity.WorktreeStatus"
+                }
+            }
+        },
+        "dto.WorktreeCountResponse": {
+            "type": "object",
+            "properties": {
+                "count": {
+                    "type": "integer"
+                }
+            }
+        },
+        "dto.WorktreeHealthResponse": {
+            "type": "object",
+            "properties": {
+                "health": {
+                    "$ref": "#/definitions/usecase.WorktreeHealthInfo"
+                }
+            }
+        },
+        "dto.WorktreeResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                },
+                "worktree": {
+                    "$ref": "#/definitions/entity.Worktree"
+                }
+            }
+        },
+        "dto.WorktreeStatisticsResponse": {
+            "type": "object",
+            "properties": {
+                "statistics": {
+                    "$ref": "#/definitions/entity.WorktreeStatistics"
+                }
+            }
+        },
+        "dto.WorktreeValidationResponse": {
+            "type": "object",
+            "properties": {
+                "validation_result": {
+                    "$ref": "#/definitions/usecase.WorktreeValidationResult"
+                }
+            }
+        },
+        "dto.WorktreesResponse": {
+            "type": "object",
+            "properties": {
+                "count": {
+                    "type": "integer"
+                },
+                "worktrees": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/entity.Worktree"
+                    }
+                }
+            }
+        },
+        "entity.Execution": {
+            "type": "object",
+            "properties": {
+                "completed_at": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "deleted_at": {
+                    "type": "string"
+                },
+                "error_message": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "logs": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/entity.ExecutionLog"
+                    }
+                },
+                "processes": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/entity.Process"
+                    }
+                },
+                "progress": {
+                    "type": "number"
+                },
+                "result": {
+                    "description": "JSON serialized ExecutionResult",
+                    "type": "string"
+                },
+                "started_at": {
+                    "type": "string"
+                },
+                "status": {
+                    "$ref": "#/definitions/entity.ExecutionStatus"
+                },
+                "task": {
+                    "description": "Relationships",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/entity.Task"
+                        }
+                    ]
+                },
+                "task_id": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "entity.ExecutionLog": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "duration_ms": {
+                    "type": "integer"
+                },
+                "execution": {
+                    "description": "Relationships",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/entity.Execution"
+                        }
+                    ]
+                },
+                "execution_id": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "is_error": {
+                    "type": "boolean"
+                },
+                "line": {
+                    "type": "integer"
+                },
+                "log_level": {
+                    "description": "ProcessID   *uuid.UUID ` + "`" + `json:\"process_id,omitempty\" gorm:\"type:uuid;index\"` + "`" + `",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/entity.LogLevel"
+                        }
+                    ]
+                },
+                "log_type": {
+                    "description": "Structured fields parsed by backend",
+                    "type": "string"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "metadata": {
+                    "description": "Additional metadata as JSON",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/entity.JSONB"
+                        }
+                    ]
+                },
+                "num_turns": {
+                    "type": "integer"
+                },
+                "parsed_content": {
+                    "$ref": "#/definitions/entity.JSONB"
+                },
+                "source": {
+                    "description": "stdout, stderr, system, etc.",
+                    "type": "string"
+                },
+                "timestamp": {
+                    "type": "string"
+                },
+                "tool_name": {
+                    "type": "string"
+                },
+                "tool_use_id": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "entity.ExecutionResult": {
+            "type": "object",
+            "properties": {
+                "duration": {
+                    "type": "integer"
+                },
+                "files": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "metrics": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "output": {
+                    "type": "string"
+                }
+            }
+        },
+        "entity.ExecutionStatus": {
+            "type": "string",
+            "enum": [
+                "PENDING",
+                "RUNNING",
+                "PAUSED",
+                "COMPLETED",
+                "FAILED",
+                "CANCELLED"
+            ],
+            "x-enum-varnames": [
+                "ExecutionStatusPending",
+                "ExecutionStatusRunning",
+                "ExecutionStatusPaused",
+                "ExecutionStatusCompleted",
+                "ExecutionStatusFailed",
+                "ExecutionStatusCancelled"
+            ]
+        },
+        "entity.JSONB": {
+            "type": "object",
+            "additionalProperties": true
+        },
+        "entity.LogLevel": {
+            "type": "string",
+            "enum": [
+                "DEBUG",
+                "INFO",
+                "WARN",
+                "ERROR"
+            ],
+            "x-enum-varnames": [
+                "LogLevelDebug",
+                "LogLevelInfo",
+                "LogLevelWarn",
+                "LogLevelError"
+            ]
+        },
+        "entity.Plan": {
+            "type": "object",
+            "required": [
+                "content",
+                "status",
+                "task_id"
+            ],
+            "properties": {
+                "content": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "deleted_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "status": {
+                    "enum": [
+                        "DRAFT",
+                        "REVIEWING",
+                        "APPROVED",
+                        "REJECTED"
+                    ],
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/entity.PlanStatus"
+                        }
+                    ]
+                },
+                "task": {
+                    "description": "Relationships",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/entity.Task"
+                        }
+                    ]
+                },
+                "task_id": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "entity.PlanStatus": {
+            "type": "string",
+            "enum": [
+                "DRAFT",
+                "REVIEWING",
+                "APPROVED",
+                "REJECTED"
+            ],
+            "x-enum-varnames": [
+                "PlanStatusDRAFT",
+                "PlanStatusREVIEWING",
+                "PlanStatusAPPROVED",
+                "PlanStatusREJECTED"
+            ]
+        },
+        "entity.Process": {
+            "type": "object",
+            "properties": {
+                "command": {
+                    "type": "string"
+                },
+                "cpu_usage": {
+                    "type": "number"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "deleted_at": {
+                    "type": "string"
+                },
+                "end_time": {
+                    "type": "string"
+                },
+                "error": {
+                    "type": "string"
+                },
+                "execution": {
+                    "description": "Relationships",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/entity.Execution"
+                        }
+                    ]
+                },
+                "execution_id": {
+                    "type": "string"
+                },
+                "exit_code": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "memory_usage": {
+                    "type": "integer"
+                },
+                "pid": {
+                    "type": "integer"
+                },
+                "start_time": {
+                    "type": "string"
+                },
+                "status": {
+                    "$ref": "#/definitions/entity.ProcessStatus"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "work_dir": {
+                    "type": "string"
+                }
+            }
+        },
+        "entity.ProcessStatus": {
+            "type": "string",
+            "enum": [
+                "starting",
+                "running",
+                "stopped",
+                "killed",
+                "error"
+            ],
+            "x-enum-varnames": [
+                "ProcessStatusStarting",
+                "ProcessStatusRunning",
+                "ProcessStatusStopped",
+                "ProcessStatusKilled",
+                "ProcessStatusError"
+            ]
+        },
+        "entity.Project": {
+            "type": "object",
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "deleted_at": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string",
+                    "maxLength": 1000
+                },
+                "id": {
+                    "type": "string"
+                },
+                "init_workspace_script": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string",
+                    "maxLength": 255,
+                    "minLength": 1
+                },
+                "repository_url": {
+                    "type": "string"
+                },
+                "tasks": {
+                    "description": "Relationships",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/entity.Task"
+                    }
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "worktree_base_path": {
+                    "type": "string"
+                }
+            }
+        },
+        "entity.PullRequest": {
+            "type": "object",
+            "required": [
+                "base_branch",
+                "github_pr_number",
+                "head_branch",
+                "repository",
+                "status",
+                "task_id",
+                "title"
+            ],
+            "properties": {
+                "additions": {
+                    "type": "integer"
+                },
+                "assignees": {
+                    "description": "Will be stored as JSON",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "base_branch": {
+                    "type": "string"
+                },
+                "body": {
+                    "type": "string"
+                },
+                "changed_files": {
+                    "type": "integer"
+                },
+                "closed_at": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "created_by": {
+                    "type": "string"
+                },
+                "deleted_at": {
+                    "type": "string"
+                },
+                "deletions": {
+                    "type": "integer"
+                },
+                "github_pr_number": {
+                    "type": "integer",
+                    "minimum": 1
+                },
+                "github_url": {
+                    "type": "string"
+                },
+                "head_branch": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "is_draft": {
+                    "type": "boolean"
+                },
+                "labels": {
+                    "description": "Will be stored as JSON",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "merge_commit_sha": {
+                    "type": "string"
+                },
+                "mergeable": {
+                    "type": "boolean"
+                },
+                "mergeable_state": {
+                    "type": "string"
+                },
+                "merged_at": {
+                    "type": "string"
+                },
+                "merged_by": {
+                    "type": "string"
+                },
+                "repository": {
+                    "type": "string"
+                },
+                "reviewers": {
+                    "description": "Will be stored as JSON",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "status": {
+                    "enum": [
+                        "OPEN",
+                        "MERGED",
+                        "CLOSED"
+                    ],
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/entity.PullRequestStatus"
+                        }
+                    ]
+                },
+                "task": {
+                    "description": "Relationships",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/entity.Task"
+                        }
+                    ]
+                },
+                "task_id": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string",
+                    "maxLength": 255,
+                    "minLength": 1
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "entity.PullRequestStatus": {
+            "type": "string",
+            "enum": [
+                "OPEN",
+                "MERGED",
+                "CLOSED"
+            ],
+            "x-enum-varnames": [
+                "PullRequestStatusOpen",
+                "PullRequestStatusMerged",
+                "PullRequestStatusClosed"
+            ]
+        },
+        "entity.Task": {
+            "type": "object",
+            "required": [
+                "project_id",
+                "status",
+                "title"
+            ],
+            "properties": {
+                "actual_hours": {
+                    "type": "number",
+                    "maximum": 999.99,
+                    "minimum": 0
+                },
+                "assigned_to": {
+                    "description": "User ID for future assignment",
+                    "type": "string"
+                },
+                "audit_logs": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/entity.TaskAuditLog"
+                    }
+                },
+                "base_branch_name": {
+                    "type": "string"
+                },
+                "branch_name": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "deleted_at": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string",
+                    "maxLength": 1000
+                },
+                "due_date": {
+                    "type": "string"
+                },
+                "error_logs": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "estimated_hours": {
+                    "type": "number",
+                    "maximum": 999.99,
+                    "minimum": 0
+                },
+                "git_status": {
+                    "$ref": "#/definitions/entity.TaskGitStatus"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "is_archived": {
+                    "type": "boolean"
+                },
+                "is_template": {
+                    "type": "boolean"
+                },
+                "kanban_task_id": {
+                    "description": "Hermes kanban card ID for callback",
+                    "type": "string"
+                },
+                "parent_task": {
+                    "$ref": "#/definitions/entity.Task"
+                },
+                "parent_task_id": {
+                    "type": "string"
+                },
+                "plan": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/entity.Plan"
+                    }
+                },
+                "priority": {
+                    "enum": [
+                        "LOW",
+                        "MEDIUM",
+                        "HIGH",
+                        "URGENT"
+                    ],
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/entity.TaskPriority"
+                        }
+                    ]
+                },
+                "project": {
+                    "description": "Relationships",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/entity.Project"
+                        }
+                    ]
+                },
+                "project_id": {
+                    "type": "string"
+                },
+                "pull_request": {
+                    "type": "string"
+                },
+                "status": {
+                    "enum": [
+                        "TODO",
+                        "PLANNING",
+                        "PLAN_REVIEWING",
+                        "IMPLEMENTING",
+                        "CODE_REVIEWING",
+                        "DONE",
+                        "CANCELLED"
+                    ],
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/entity.TaskStatus"
+                        }
+                    ]
+                },
+                "subtasks": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/entity.Task"
+                    }
+                },
+                "tags": {
+                    "description": "Will be stored as JSON in database",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "template_id": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string",
+                    "maxLength": 255,
+                    "minLength": 1
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "worktree_path": {
+                    "type": "string"
+                }
+            }
+        },
+        "entity.TaskAuditLog": {
+            "type": "object",
+            "required": [
+                "action",
+                "task_id"
+            ],
+            "properties": {
+                "action": {
+                    "description": "\"created\", \"updated\", \"deleted\", \"status_changed\", etc.",
+                    "type": "string"
+                },
+                "changed_by": {
+                    "description": "User ID who made the change",
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "deleted_at": {
+                    "type": "string"
+                },
+                "field_name": {
+                    "description": "Which field was changed",
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "ip_address": {
+                    "description": "IP address of the change",
+                    "type": "string"
+                },
+                "new_value": {
+                    "description": "New value",
+                    "type": "string"
+                },
+                "old_value": {
+                    "description": "Previous value",
+                    "type": "string"
+                },
+                "task": {
+                    "description": "Relationships",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/entity.Task"
+                        }
+                    ]
+                },
+                "task_id": {
+                    "type": "string"
+                },
+                "user_agent": {
+                    "description": "User agent string",
+                    "type": "string"
+                }
+            }
+        },
+        "entity.TaskGitStatus": {
+            "type": "string",
+            "enum": [
+                "none",
+                "creating",
+                "active",
+                "completed",
+                "cleaning",
+                "error"
+            ],
+            "x-enum-varnames": [
+                "TaskGitStatusNone",
+                "TaskGitStatusCreating",
+                "TaskGitStatusActive",
+                "TaskGitStatusCompleted",
+                "TaskGitStatusCleaning",
+                "TaskGitStatusError"
+            ]
+        },
+        "entity.TaskPriority": {
+            "type": "string",
+            "enum": [
+                "LOW",
+                "MEDIUM",
+                "HIGH",
+                "URGENT"
+            ],
+            "x-enum-varnames": [
+                "TaskPriorityLow",
+                "TaskPriorityMedium",
+                "TaskPriorityHigh",
+                "TaskPriorityUrgent"
+            ]
         },
         "entity.TaskStatus": {
             "type": "string",
@@ -1967,6 +3905,248 @@ const docTemplate = `{
                 "TaskStatusDONE",
                 "TaskStatusCANCELLED"
             ]
+        },
+        "entity.Worktree": {
+            "type": "object",
+            "required": [
+                "branch_name",
+                "project_id",
+                "status",
+                "task_id",
+                "worktree_path"
+            ],
+            "properties": {
+                "branch_name": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "deleted_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "project": {
+                    "$ref": "#/definitions/entity.Project"
+                },
+                "project_id": {
+                    "type": "string"
+                },
+                "status": {
+                    "$ref": "#/definitions/entity.WorktreeStatus"
+                },
+                "task": {
+                    "description": "Relationships",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/entity.Task"
+                        }
+                    ]
+                },
+                "task_id": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "worktree_path": {
+                    "type": "string"
+                }
+            }
+        },
+        "entity.WorktreeStatistics": {
+            "type": "object",
+            "properties": {
+                "active_worktrees": {
+                    "type": "integer"
+                },
+                "average_creation_time": {
+                    "description": "in seconds",
+                    "type": "number"
+                },
+                "completed_worktrees": {
+                    "type": "integer"
+                },
+                "error_worktrees": {
+                    "type": "integer"
+                },
+                "generated_at": {
+                    "type": "string"
+                },
+                "project_id": {
+                    "type": "string"
+                },
+                "total_worktrees": {
+                    "type": "integer"
+                },
+                "worktrees_by_status": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "integer"
+                    }
+                }
+            }
+        },
+        "entity.WorktreeStatus": {
+            "type": "string",
+            "enum": [
+                "creating",
+                "active",
+                "completed",
+                "cleaning",
+                "error"
+            ],
+            "x-enum-varnames": [
+                "WorktreeStatusCreating",
+                "WorktreeStatusActive",
+                "WorktreeStatusCompleted",
+                "WorktreeStatusCleaning",
+                "WorktreeStatusError"
+            ]
+        },
+        "repository.ExecutionStats": {
+            "type": "object",
+            "properties": {
+                "average_duration": {
+                    "type": "integer"
+                },
+                "average_progress": {
+                    "type": "number"
+                },
+                "completed_executions": {
+                    "type": "integer"
+                },
+                "failed_executions": {
+                    "type": "integer"
+                },
+                "recent_activity": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/entity.Execution"
+                    }
+                },
+                "status_distribution": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "integer"
+                    }
+                },
+                "total_executions": {
+                    "type": "integer"
+                }
+            }
+        },
+        "usecase.BranchInfo": {
+            "type": "object",
+            "properties": {
+                "commit_count": {
+                    "type": "integer"
+                },
+                "has_uncommitted": {
+                    "type": "boolean"
+                },
+                "has_untracked": {
+                    "type": "boolean"
+                },
+                "is_clean": {
+                    "type": "boolean"
+                },
+                "is_current": {
+                    "type": "boolean"
+                },
+                "last_commit": {
+                    "type": "string"
+                },
+                "last_commit_date": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "usecase.WorktreeHealthInfo": {
+            "type": "object",
+            "properties": {
+                "branch_status": {
+                    "type": "string"
+                },
+                "disk_usage": {
+                    "description": "in bytes",
+                    "type": "integer"
+                },
+                "file_count": {
+                    "type": "integer"
+                },
+                "git_status": {
+                    "type": "string"
+                },
+                "health_score": {
+                    "description": "0-100",
+                    "type": "integer"
+                },
+                "is_healthy": {
+                    "type": "boolean"
+                },
+                "is_valid": {
+                    "type": "boolean"
+                },
+                "issues": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "last_activity": {
+                    "type": "string"
+                },
+                "last_health_check": {
+                    "type": "string"
+                },
+                "status": {
+                    "$ref": "#/definitions/entity.WorktreeStatus"
+                },
+                "worktree_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "usecase.WorktreeValidationResult": {
+            "type": "object",
+            "properties": {
+                "branch_exists": {
+                    "type": "boolean"
+                },
+                "directory_exists": {
+                    "type": "boolean"
+                },
+                "errors": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "git_repository_ok": {
+                    "type": "boolean"
+                },
+                "is_valid": {
+                    "type": "boolean"
+                },
+                "permissions_ok": {
+                    "type": "boolean"
+                },
+                "validation_time": {
+                    "type": "string"
+                },
+                "warnings": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
         }
     }
 }`
@@ -1981,6 +4161,8 @@ var SwaggerInfo = &swag.Spec{
 	Description:      "",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
+	LeftDelim:        "{{",
+	RightDelim:       "}}",
 }
 
 func init() {

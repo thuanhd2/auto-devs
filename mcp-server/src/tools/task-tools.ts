@@ -69,6 +69,10 @@ export const taskCreateTool: Tool = {
         type: 'string',
         description: 'Priority level (low, medium, high)',
       },
+      kanban_task_id: {
+        type: 'string',
+        description: 'Hermes kanban card ID for callback',
+      },
     },
     required: ['projectId', 'title'],
   },
@@ -76,11 +80,15 @@ export const taskCreateTool: Tool = {
 
 export async function executeTaskCreate(input: Record<string, unknown>): Promise<string> {
   const projectId = input.projectId as string;
-  const taskData = {
+  // Backend expects snake_case field names (see SKILL.md "MCP Bug Fixed")
+  const taskData: Record<string, unknown> = {
     title: input.title as string,
     description: input.description as string,
     priority: input.priority as string,
   };
+  if (input.kanban_task_id) {
+    taskData.kanban_task_id = input.kanban_task_id as string;
+  }
 
   const result = await client.createTask(projectId, taskData);
   return JSON.stringify(result, null, 2);

@@ -28,7 +28,7 @@ type ExecutionResponse struct {
 	Error       string                  `json:"error,omitempty" example:"Process failed"`
 	Progress    float64                 `json:"progress" example:"0.75"`
 	Result      *entity.ExecutionResult `json:"result,omitempty"`
-	Duration    *time.Duration          `json:"duration,omitempty" example:"3600000000000"`
+	Duration    *time.Duration          `json:"duration,omitempty" swaggertype:"integer" example:"3600000000000"`
 	CreatedAt   time.Time               `json:"created_at" example:"2024-01-01T00:00:00Z"`
 	UpdatedAt   time.Time               `json:"updated_at" example:"2024-01-01T00:00:00Z"`
 }

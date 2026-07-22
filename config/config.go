@@ -18,6 +18,7 @@ type Config struct {
 	CentrifugeRedisBroker CentrifugeRedisBrokerConfig
 	GitHub                GitHubConfig
 	App                   AppConfig
+	HermesKanban          HermesKanbanConfig
 }
 
 type ServerConfig struct {
@@ -67,6 +68,17 @@ type AppConfig struct {
 	BaseURL string
 }
 
+// HermesKanbanConfig configures the Hermes Kanban callback bridge.
+// When Enabled is false the whole feature is a no-op.
+type HermesKanbanConfig struct {
+	Enabled bool
+	BaseURL string
+	Token   string
+	// Board is the kanban board slug. Without it the dashboard resolves the
+	// "current board", which silently changes when the user switches boards.
+	Board string
+}
+
 func Load() *Config {
 	// Load .env file if it exists
 	if err := godotenv.Load(); err != nil {
@@ -113,6 +125,12 @@ func Load() *Config {
 		},
 		App: AppConfig{
 			BaseURL: getEnv("APP_BASE_URL", "http://localhost:8098"),
+		},
+		HermesKanban: HermesKanbanConfig{
+			Enabled: getEnvAsBool("HERMES_KANBAN_ENABLED", false),
+			BaseURL: getEnv("HERMES_KANBAN_URL", ""),
+			Token:   getEnv("HERMES_KANBAN_TOKEN", ""),
+			Board:   getEnv("HERMES_KANBAN_BOARD", ""),
 		},
 	}
 }

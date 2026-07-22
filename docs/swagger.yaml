@@ -1,30 +1,64 @@
 definitions:
-  dto.BulkStatusUpdateRequest:
+  dto.ActiveTaskCounts:
     properties:
-      changed_by:
-        example: user123
+      code_reviewing:
+        type: integer
+      implementing:
+        type: integer
+      plan_reviewing:
+        type: integer
+      planning:
+        type: integer
+    type: object
+  dto.ApprovePlanRequest:
+    properties:
+      ai_type:
+        example: claude-code
         type: string
-      status:
-        allOf:
-        - $ref: '#/definitions/entity.TaskStatus'
-        enum:
-        - TODO
-        - PLANNING
-        - PLAN_REVIEWING
-        - IMPLEMENTING
-        - CODE_REVIEWING
-        - DONE
-        - CANCELLED
-        example: TODO
-      task_ids:
-        example:
-        - '["123e4567-e89b-12d3-a456-426614174000"]'
-        items:
-          type: string
-        type: array
     required:
-    - status
-    - task_ids
+    - ai_type
+    type: object
+  dto.BranchInfoResponse:
+    properties:
+      branch_info:
+        $ref: '#/definitions/usecase.BranchInfo'
+    type: object
+  dto.CleanupWorktreeRequest:
+    properties:
+      branch_name:
+        description: Optional branch name to delete
+        type: string
+      force:
+        description: Force cleanup even if worktree is active
+        type: boolean
+      project_id:
+        type: string
+      task_id:
+        type: string
+    required:
+    - project_id
+    - task_id
+    type: object
+  dto.CreateWorktreeRequest:
+    properties:
+      base_branch_name:
+        description: Optional base branch override
+        type: string
+      project_id:
+        type: string
+      repository:
+        description: Optional repository URL to clone
+        type: string
+      task_id:
+        type: string
+      task_title:
+        type: string
+      use_remote_branch:
+        type: boolean
+    required:
+    - project_id
+    - task_id
+    - task_title
     type: object
   dto.ErrorResponse:
     properties:
@@ -42,24 +76,276 @@ definitions:
         example: The provided data is invalid
         type: string
     type: object
+  dto.ExecutionCreateRequest:
+    properties:
+      task_id:
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+    required:
+    - task_id
+    type: object
+  dto.ExecutionListResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/dto.ExecutionResponse'
+        type: array
+      meta:
+        $ref: '#/definitions/dto.PaginationMeta'
+    type: object
+  dto.ExecutionLogListResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/dto.ExecutionLogResponse'
+        type: array
+      meta:
+        $ref: '#/definitions/dto.PaginationMeta'
+    type: object
+  dto.ExecutionLogResponse:
+    properties:
+      created_at:
+        example: "2024-01-01T00:00:00Z"
+        type: string
+      duration_ms:
+        example: 1234
+        type: integer
+      execution_id:
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+      id:
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+      is_error:
+        type: boolean
+      level:
+        allOf:
+        - $ref: '#/definitions/entity.LogLevel'
+        example: info
+      line:
+        example: 1
+        type: integer
+      log_type:
+        description: Structured fields
+        example: assistant
+        type: string
+      message:
+        example: Process started successfully
+        type: string
+      metadata: {}
+      num_turns:
+        example: 5
+        type: integer
+      parsed_content: {}
+      process_id:
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+      source:
+        example: stdout
+        type: string
+      timestamp:
+        example: "2024-01-01T00:00:00Z"
+        type: string
+      tool_name:
+        example: read_file
+        type: string
+      tool_use_id:
+        example: toolu_01ABC...
+        type: string
+    type: object
+  dto.ExecutionResponse:
+    properties:
+      completed_at:
+        example: "2024-01-01T01:00:00Z"
+        type: string
+      created_at:
+        example: "2024-01-01T00:00:00Z"
+        type: string
+      duration:
+        example: 3600000000000
+        type: integer
+      error:
+        example: Process failed
+        type: string
+      id:
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+      progress:
+        example: 0.75
+        type: number
+      result:
+        $ref: '#/definitions/entity.ExecutionResult'
+      started_at:
+        example: "2024-01-01T00:00:00Z"
+        type: string
+      status:
+        allOf:
+        - $ref: '#/definitions/entity.ExecutionStatus'
+        example: running
+      task_id:
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+      updated_at:
+        example: "2024-01-01T00:00:00Z"
+        type: string
+    type: object
+  dto.ExecutionUpdateRequest:
+    properties:
+      error:
+        example: Process failed
+        type: string
+      progress:
+        example: 0.5
+        maximum: 1
+        minimum: 0
+        type: number
+      status:
+        allOf:
+        - $ref: '#/definitions/entity.ExecutionStatus'
+        enum:
+        - pending
+        - running
+        - paused
+        - completed
+        - failed
+        - cancelled
+        example: running
+    type: object
+  dto.ExecutionWithLogsResponse:
+    properties:
+      completed_at:
+        example: "2024-01-01T01:00:00Z"
+        type: string
+      created_at:
+        example: "2024-01-01T00:00:00Z"
+        type: string
+      duration:
+        example: 3600000000000
+        type: integer
+      error:
+        example: Process failed
+        type: string
+      id:
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+      logs:
+        items:
+          $ref: '#/definitions/dto.ExecutionLogResponse'
+        type: array
+      progress:
+        example: 0.75
+        type: number
+      result:
+        $ref: '#/definitions/entity.ExecutionResult'
+      started_at:
+        example: "2024-01-01T00:00:00Z"
+        type: string
+      status:
+        allOf:
+        - $ref: '#/definitions/entity.ExecutionStatus'
+        example: running
+      task_id:
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+      updated_at:
+        example: "2024-01-01T00:00:00Z"
+        type: string
+    type: object
+  dto.GitBranchResponse:
+    properties:
+      is_current:
+        example: true
+        type: boolean
+      is_remote:
+        example: false
+        type: boolean
+      last_commit:
+        example: abc123def
+        type: string
+      last_updated:
+        example: "2024-01-15T10:30:00Z"
+        type: string
+      name:
+        example: main
+        type: string
+    type: object
+  dto.ListBranchesResponse:
+    properties:
+      branches:
+        items:
+          $ref: '#/definitions/dto.GitBranchResponse'
+        type: array
+      total:
+        type: integer
+    type: object
+  dto.PaginationMeta:
+    properties:
+      page:
+        example: 1
+        type: integer
+      page_size:
+        example: 10
+        type: integer
+      total:
+        example: 100
+        type: integer
+      total_pages:
+        example: 10
+        type: integer
+    type: object
+  dto.PlanResponse:
+    properties:
+      content:
+        example: |-
+          # Plan
+
+          This is a plan for a task
+        type: string
+      created_at:
+        example: "2024-01-15T10:30:00Z"
+        type: string
+      id:
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+      status:
+        example: DRAFT
+        type: string
+      task_id:
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+      updated_at:
+        example: "2024-01-15T10:30:00Z"
+        type: string
+    type: object
+  dto.PlanUpdateRequest:
+    properties:
+      content:
+        example: Implement user authentication
+        type: string
+    required:
+    - content
+    type: object
   dto.ProjectCreateRequest:
     properties:
       description:
         example: Project description
         maxLength: 1000
         type: string
+      init_workspace_script:
+        example: npm install && npm run build
+        type: string
       name:
         example: My Project
         maxLength: 255
         minLength: 1
         type: string
-      repo_url:
-        example: https://github.com/user/repo
+      worktree_base_path:
+        example: /tmp/projects/repo
         maxLength: 500
         type: string
     required:
     - name
-    - repo_url
+    - worktree_base_path
     type: object
   dto.ProjectListResponse:
     properties:
@@ -76,6 +362,8 @@ definitions:
     type: object
   dto.ProjectResponse:
     properties:
+      active_task_counts:
+        $ref: '#/definitions/dto.ActiveTaskCounts'
       created_at:
         example: "2024-01-15T10:30:00Z"
         type: string
@@ -85,56 +373,20 @@ definitions:
       id:
         example: 123e4567-e89b-12d3-a456-426614174000
         type: string
+      init_workspace_script:
+        example: npm install && npm run build
+        type: string
       name:
         example: My Project
         type: string
-      repo_url:
-        example: https://github.com/user/repo
+      repository_url:
+        example: https://github.com/user/repo.git
         type: string
       updated_at:
         example: "2024-01-15T10:30:00Z"
         type: string
-    type: object
-  dto.ProjectSettingsResponse:
-    properties:
-      auto_archive_days:
-        type: integer
-      created_at:
-        type: string
-      email_notifications:
-        type: boolean
-      git_auto_sync:
-        type: boolean
-      git_branch:
-        type: string
-      id:
-        type: string
-      notifications_enabled:
-        type: boolean
-      project_id:
-        type: string
-      slack_webhook_url:
-        type: string
-      task_prefix:
-        type: string
-      updated_at:
-        type: string
-    type: object
-  dto.ProjectSettingsUpdateRequest:
-    properties:
-      auto_archive_days:
-        type: integer
-      email_notifications:
-        type: boolean
-      git_auto_sync:
-        type: boolean
-      git_branch:
-        type: string
-      notifications_enabled:
-        type: boolean
-      slack_webhook_url:
-        type: string
-      task_prefix:
+      worktree_base_path:
+        example: /tmp/projects/repo
         type: string
     type: object
   dto.ProjectStatisticsResponse:
@@ -158,39 +410,46 @@ definitions:
         example: Updated description
         maxLength: 1000
         type: string
+      init_workspace_script:
+        example: npm install && npm run build
+        type: string
       name:
         example: Updated Project Name
         maxLength: 255
         minLength: 1
         type: string
-      repo_url:
-        example: https://github.com/user/updated-repo
+      repository_url:
+        example: https://github.com/user/repo.git
+        maxLength: 500
+        type: string
+      worktree_base_path:
+        example: /tmp/projects/repo
         maxLength: 500
         type: string
     type: object
-  dto.ProjectWithTasksResponse:
+  dto.StartPlanningRequest:
     properties:
-      created_at:
-        example: "2024-01-15T10:30:00Z"
+      ai_type:
+        example: claude-code
         type: string
-      description:
-        example: Project description
+      auto_implement:
+        type: boolean
+      branch_name:
+        example: main
         type: string
-      id:
-        example: 123e4567-e89b-12d3-a456-426614174000
+      use_remote_branch:
+        type: boolean
+    required:
+    - ai_type
+    - branch_name
+    type: object
+  dto.StartPlanningResponse:
+    properties:
+      job_id:
+        example: task-123-planning-456
         type: string
-      name:
-        example: My Project
-        type: string
-      repo_url:
-        example: https://github.com/user/repo
-        type: string
-      tasks:
-        items:
-          $ref: '#/definitions/dto.TaskResponse'
-        type: array
-      updated_at:
-        example: "2024-01-15T10:30:00Z"
+      message:
+        example: Planning started successfully
         type: string
     type: object
   dto.SuccessResponse:
@@ -204,7 +463,11 @@ definitions:
     properties:
       description:
         example: Add JWT-based authentication system
-        maxLength: 1000
+        maxLength: 5000
+        type: string
+      kanban_task_id:
+        example: a1b2c3d4
+        maxLength: 64
         type: string
       project_id:
         example: 123e4567-e89b-12d3-a456-426614174000
@@ -227,6 +490,13 @@ definitions:
       total:
         type: integer
     type: object
+  dto.TaskPlansResponse:
+    properties:
+      plans:
+        items:
+          $ref: '#/definitions/dto.PlanResponse'
+        type: array
+    type: object
   dto.TaskResponse:
     properties:
       branch_name:
@@ -238,8 +508,19 @@ definitions:
       description:
         example: Add JWT-based authentication system
         type: string
+      error_logs:
+        items:
+          type: string
+        type: array
+      git_status:
+        allOf:
+        - $ref: '#/definitions/entity.TaskGitStatus'
+        example: none
       id:
         example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+      kanban_task_id:
+        example: a1b2c3d4
         type: string
       project_id:
         example: 123e4567-e89b-12d3-a456-426614174000
@@ -257,129 +538,9 @@ definitions:
       updated_at:
         example: "2024-01-15T10:30:00Z"
         type: string
-    type: object
-  dto.TaskStatusAnalyticsResponse:
-    properties:
-      average_time_in_status:
-        additionalProperties:
-          type: number
-        type: object
-      completed_tasks:
-        example: 20
-        type: integer
-      completion_rate:
-        example: 40
-        type: number
-      generated_at:
-        example: "2024-01-15T10:30:00Z"
+      worktree_path:
+        example: /tmp/worktrees/task-123
         type: string
-      project_id:
-        example: 123e4567-e89b-12d3-a456-426614174000
-        type: string
-      status_distribution:
-        items:
-          $ref: '#/definitions/dto.TaskStatusStatsResponse'
-        type: array
-      total_tasks:
-        example: 50
-        type: integer
-      transition_count:
-        additionalProperties:
-          type: integer
-        type: object
-    type: object
-  dto.TaskStatusHistoryResponse:
-    properties:
-      changed_by:
-        example: user123
-        type: string
-      created_at:
-        example: "2024-01-15T10:30:00Z"
-        type: string
-      from_status:
-        allOf:
-        - $ref: '#/definitions/entity.TaskStatus'
-        example: TODO
-      id:
-        example: 123e4567-e89b-12d3-a456-426614174000
-        type: string
-      reason:
-        example: Requirements changed
-        type: string
-      task_id:
-        example: 123e4567-e89b-12d3-a456-426614174000
-        type: string
-      to_status:
-        allOf:
-        - $ref: '#/definitions/entity.TaskStatus'
-        example: PLANNING
-    type: object
-  dto.TaskStatusStatsResponse:
-    properties:
-      count:
-        example: 10
-        type: integer
-      status:
-        allOf:
-        - $ref: '#/definitions/entity.TaskStatus'
-        example: TODO
-    type: object
-  dto.TaskStatusUpdateRequest:
-    properties:
-      status:
-        allOf:
-        - $ref: '#/definitions/entity.TaskStatus'
-        enum:
-        - TODO
-        - PLANNING
-        - PLAN_REVIEWING
-        - IMPLEMENTING
-        - CODE_REVIEWING
-        - DONE
-        - CANCELLED
-        example: TODO
-    required:
-    - status
-    type: object
-  dto.TaskStatusUpdateWithHistoryRequest:
-    properties:
-      changed_by:
-        example: user123
-        type: string
-      reason:
-        example: Requirements changed
-        type: string
-      status:
-        allOf:
-        - $ref: '#/definitions/entity.TaskStatus'
-        enum:
-        - TODO
-        - PLANNING
-        - PLAN_REVIEWING
-        - IMPLEMENTING
-        - CODE_REVIEWING
-        - DONE
-        - CANCELLED
-        example: TODO
-    required:
-    - status
-    type: object
-  dto.TaskStatusValidationResponse:
-    properties:
-      current_status:
-        allOf:
-        - $ref: '#/definitions/entity.TaskStatus'
-        example: TODO
-      message:
-        example: Transition is valid
-        type: string
-      target_status:
-        allOf:
-        - $ref: '#/definitions/entity.TaskStatus'
-        example: PLANNING
-      valid:
-        example: true
-        type: boolean
     type: object
   dto.TaskUpdateRequest:
     properties:
@@ -389,51 +550,595 @@ definitions:
         type: string
       description:
         example: Updated description
-        maxLength: 1000
+        maxLength: 5000
         type: string
       pull_request:
         example: https://github.com/user/repo/pull/123
         maxLength: 255
         type: string
+      status:
+        allOf:
+        - $ref: '#/definitions/entity.TaskStatus'
+        enum:
+        - TODO
+        - PLANNING
+        - PLAN_REVIEWING
+        - IMPLEMENTING
+        - CODE_REVIEWING
+        - DONE
+        - CANCELLED
+        example: TODO
       title:
         example: Updated task title
         maxLength: 255
         minLength: 1
         type: string
     type: object
-  dto.TaskWithProjectResponse:
+  dto.UpdateWorktreeStatusRequest:
     properties:
-      branch_name:
-        example: feature/user-auth
+      status:
+        $ref: '#/definitions/entity.WorktreeStatus'
+    required:
+    - status
+    type: object
+  dto.WorktreeCountResponse:
+    properties:
+      count:
+        type: integer
+    type: object
+  dto.WorktreeHealthResponse:
+    properties:
+      health:
+        $ref: '#/definitions/usecase.WorktreeHealthInfo'
+    type: object
+  dto.WorktreeResponse:
+    properties:
+      message:
+        type: string
+      worktree:
+        $ref: '#/definitions/entity.Worktree'
+    type: object
+  dto.WorktreeStatisticsResponse:
+    properties:
+      statistics:
+        $ref: '#/definitions/entity.WorktreeStatistics'
+    type: object
+  dto.WorktreeValidationResponse:
+    properties:
+      validation_result:
+        $ref: '#/definitions/usecase.WorktreeValidationResult'
+    type: object
+  dto.WorktreesResponse:
+    properties:
+      count:
+        type: integer
+      worktrees:
+        items:
+          $ref: '#/definitions/entity.Worktree'
+        type: array
+    type: object
+  entity.Execution:
+    properties:
+      completed_at:
         type: string
       created_at:
-        example: "2024-01-15T10:30:00Z"
         type: string
-      description:
-        example: Add JWT-based authentication system
+      deleted_at:
+        type: string
+      error_message:
         type: string
       id:
-        example: 123e4567-e89b-12d3-a456-426614174000
         type: string
+      logs:
+        items:
+          $ref: '#/definitions/entity.ExecutionLog'
+        type: array
+      processes:
+        items:
+          $ref: '#/definitions/entity.Process'
+        type: array
+      progress:
+        type: number
+      result:
+        description: JSON serialized ExecutionResult
+        type: string
+      started_at:
+        type: string
+      status:
+        $ref: '#/definitions/entity.ExecutionStatus'
+      task:
+        allOf:
+        - $ref: '#/definitions/entity.Task'
+        description: Relationships
+      task_id:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  entity.ExecutionLog:
+    properties:
+      created_at:
+        type: string
+      duration_ms:
+        type: integer
+      execution:
+        allOf:
+        - $ref: '#/definitions/entity.Execution'
+        description: Relationships
+      execution_id:
+        type: string
+      id:
+        type: string
+      is_error:
+        type: boolean
+      line:
+        type: integer
+      log_level:
+        allOf:
+        - $ref: '#/definitions/entity.LogLevel'
+        description: ProcessID   *uuid.UUID `json:"process_id,omitempty" gorm:"type:uuid;index"`
+      log_type:
+        description: Structured fields parsed by backend
+        type: string
+      message:
+        type: string
+      metadata:
+        allOf:
+        - $ref: '#/definitions/entity.JSONB'
+        description: Additional metadata as JSON
+      num_turns:
+        type: integer
+      parsed_content:
+        $ref: '#/definitions/entity.JSONB'
+      source:
+        description: stdout, stderr, system, etc.
+        type: string
+      timestamp:
+        type: string
+      tool_name:
+        type: string
+      tool_use_id:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  entity.ExecutionResult:
+    properties:
+      duration:
+        type: integer
+      files:
+        items:
+          type: string
+        type: array
+      metrics:
+        additionalProperties: true
+        type: object
+      output:
+        type: string
+    type: object
+  entity.ExecutionStatus:
+    enum:
+    - PENDING
+    - RUNNING
+    - PAUSED
+    - COMPLETED
+    - FAILED
+    - CANCELLED
+    type: string
+    x-enum-varnames:
+    - ExecutionStatusPending
+    - ExecutionStatusRunning
+    - ExecutionStatusPaused
+    - ExecutionStatusCompleted
+    - ExecutionStatusFailed
+    - ExecutionStatusCancelled
+  entity.JSONB:
+    additionalProperties: true
+    type: object
+  entity.LogLevel:
+    enum:
+    - DEBUG
+    - INFO
+    - WARN
+    - ERROR
+    type: string
+    x-enum-varnames:
+    - LogLevelDebug
+    - LogLevelInfo
+    - LogLevelWarn
+    - LogLevelError
+  entity.Plan:
+    properties:
+      content:
+        type: string
+      created_at:
+        type: string
+      deleted_at:
+        type: string
+      id:
+        type: string
+      status:
+        allOf:
+        - $ref: '#/definitions/entity.PlanStatus'
+        enum:
+        - DRAFT
+        - REVIEWING
+        - APPROVED
+        - REJECTED
+      task:
+        allOf:
+        - $ref: '#/definitions/entity.Task'
+        description: Relationships
+      task_id:
+        type: string
+      updated_at:
+        type: string
+    required:
+    - content
+    - status
+    - task_id
+    type: object
+  entity.PlanStatus:
+    enum:
+    - DRAFT
+    - REVIEWING
+    - APPROVED
+    - REJECTED
+    type: string
+    x-enum-varnames:
+    - PlanStatusDRAFT
+    - PlanStatusREVIEWING
+    - PlanStatusAPPROVED
+    - PlanStatusREJECTED
+  entity.Process:
+    properties:
+      command:
+        type: string
+      cpu_usage:
+        type: number
+      created_at:
+        type: string
+      deleted_at:
+        type: string
+      end_time:
+        type: string
+      error:
+        type: string
+      execution:
+        allOf:
+        - $ref: '#/definitions/entity.Execution'
+        description: Relationships
+      execution_id:
+        type: string
+      exit_code:
+        type: integer
+      id:
+        type: string
+      memory_usage:
+        type: integer
+      pid:
+        type: integer
+      start_time:
+        type: string
+      status:
+        $ref: '#/definitions/entity.ProcessStatus'
+      updated_at:
+        type: string
+      work_dir:
+        type: string
+    type: object
+  entity.ProcessStatus:
+    enum:
+    - starting
+    - running
+    - stopped
+    - killed
+    - error
+    type: string
+    x-enum-varnames:
+    - ProcessStatusStarting
+    - ProcessStatusRunning
+    - ProcessStatusStopped
+    - ProcessStatusKilled
+    - ProcessStatusError
+  entity.Project:
+    properties:
+      created_at:
+        type: string
+      deleted_at:
+        type: string
+      description:
+        maxLength: 1000
+        type: string
+      id:
+        type: string
+      init_workspace_script:
+        type: string
+      name:
+        maxLength: 255
+        minLength: 1
+        type: string
+      repository_url:
+        type: string
+      tasks:
+        description: Relationships
+        items:
+          $ref: '#/definitions/entity.Task'
+        type: array
+      updated_at:
+        type: string
+      worktree_base_path:
+        type: string
+    required:
+    - name
+    type: object
+  entity.PullRequest:
+    properties:
+      additions:
+        type: integer
+      assignees:
+        description: Will be stored as JSON
+        items:
+          type: string
+        type: array
+      base_branch:
+        type: string
+      body:
+        type: string
+      changed_files:
+        type: integer
+      closed_at:
+        type: string
+      created_at:
+        type: string
+      created_by:
+        type: string
+      deleted_at:
+        type: string
+      deletions:
+        type: integer
+      github_pr_number:
+        minimum: 1
+        type: integer
+      github_url:
+        type: string
+      head_branch:
+        type: string
+      id:
+        type: string
+      is_draft:
+        type: boolean
+      labels:
+        description: Will be stored as JSON
+        items:
+          type: string
+        type: array
+      merge_commit_sha:
+        type: string
+      mergeable:
+        type: boolean
+      mergeable_state:
+        type: string
+      merged_at:
+        type: string
+      merged_by:
+        type: string
+      repository:
+        type: string
+      reviewers:
+        description: Will be stored as JSON
+        items:
+          type: string
+        type: array
+      status:
+        allOf:
+        - $ref: '#/definitions/entity.PullRequestStatus'
+        enum:
+        - OPEN
+        - MERGED
+        - CLOSED
+      task:
+        allOf:
+        - $ref: '#/definitions/entity.Task'
+        description: Relationships
+      task_id:
+        type: string
+      title:
+        maxLength: 255
+        minLength: 1
+        type: string
+      updated_at:
+        type: string
+    required:
+    - base_branch
+    - github_pr_number
+    - head_branch
+    - repository
+    - status
+    - task_id
+    - title
+    type: object
+  entity.PullRequestStatus:
+    enum:
+    - OPEN
+    - MERGED
+    - CLOSED
+    type: string
+    x-enum-varnames:
+    - PullRequestStatusOpen
+    - PullRequestStatusMerged
+    - PullRequestStatusClosed
+  entity.Task:
+    properties:
+      actual_hours:
+        maximum: 999.99
+        minimum: 0
+        type: number
+      assigned_to:
+        description: User ID for future assignment
+        type: string
+      audit_logs:
+        items:
+          $ref: '#/definitions/entity.TaskAuditLog'
+        type: array
+      base_branch_name:
+        type: string
+      branch_name:
+        type: string
+      created_at:
+        type: string
+      deleted_at:
+        type: string
+      description:
+        maxLength: 1000
+        type: string
+      due_date:
+        type: string
+      error_logs:
+        items:
+          type: string
+        type: array
+      estimated_hours:
+        maximum: 999.99
+        minimum: 0
+        type: number
+      git_status:
+        $ref: '#/definitions/entity.TaskGitStatus'
+      id:
+        type: string
+      is_archived:
+        type: boolean
+      is_template:
+        type: boolean
+      kanban_task_id:
+        description: Hermes kanban card ID for callback
+        type: string
+      parent_task:
+        $ref: '#/definitions/entity.Task'
+      parent_task_id:
+        type: string
+      plan:
+        items:
+          $ref: '#/definitions/entity.Plan'
+        type: array
+      priority:
+        allOf:
+        - $ref: '#/definitions/entity.TaskPriority'
+        enum:
+        - LOW
+        - MEDIUM
+        - HIGH
+        - URGENT
       project:
-        $ref: '#/definitions/dto.ProjectResponse'
+        allOf:
+        - $ref: '#/definitions/entity.Project'
+        description: Relationships
       project_id:
-        example: 123e4567-e89b-12d3-a456-426614174000
         type: string
       pull_request:
-        example: https://github.com/user/repo/pull/123
         type: string
       status:
         allOf:
         - $ref: '#/definitions/entity.TaskStatus'
-        example: TODO
+        enum:
+        - TODO
+        - PLANNING
+        - PLAN_REVIEWING
+        - IMPLEMENTING
+        - CODE_REVIEWING
+        - DONE
+        - CANCELLED
+      subtasks:
+        items:
+          $ref: '#/definitions/entity.Task'
+        type: array
+      tags:
+        description: Will be stored as JSON in database
+        items:
+          type: string
+        type: array
+      template_id:
+        type: string
       title:
-        example: Implement user authentication
+        maxLength: 255
+        minLength: 1
         type: string
       updated_at:
-        example: "2024-01-15T10:30:00Z"
         type: string
+      worktree_path:
+        type: string
+    required:
+    - project_id
+    - status
+    - title
     type: object
+  entity.TaskAuditLog:
+    properties:
+      action:
+        description: '"created", "updated", "deleted", "status_changed", etc.'
+        type: string
+      changed_by:
+        description: User ID who made the change
+        type: string
+      created_at:
+        type: string
+      deleted_at:
+        type: string
+      field_name:
+        description: Which field was changed
+        type: string
+      id:
+        type: string
+      ip_address:
+        description: IP address of the change
+        type: string
+      new_value:
+        description: New value
+        type: string
+      old_value:
+        description: Previous value
+        type: string
+      task:
+        allOf:
+        - $ref: '#/definitions/entity.Task'
+        description: Relationships
+      task_id:
+        type: string
+      user_agent:
+        description: User agent string
+        type: string
+    required:
+    - action
+    - task_id
+    type: object
+  entity.TaskGitStatus:
+    enum:
+    - none
+    - creating
+    - active
+    - completed
+    - cleaning
+    - error
+    type: string
+    x-enum-varnames:
+    - TaskGitStatusNone
+    - TaskGitStatusCreating
+    - TaskGitStatusActive
+    - TaskGitStatusCompleted
+    - TaskGitStatusCleaning
+    - TaskGitStatusError
+  entity.TaskPriority:
+    enum:
+    - LOW
+    - MEDIUM
+    - HIGH
+    - URGENT
+    type: string
+    x-enum-varnames:
+    - TaskPriorityLow
+    - TaskPriorityMedium
+    - TaskPriorityHigh
+    - TaskPriorityUrgent
   entity.TaskStatus:
     enum:
     - TODO
@@ -452,9 +1157,414 @@ definitions:
     - TaskStatusCODEREVIEWING
     - TaskStatusDONE
     - TaskStatusCANCELLED
+  entity.Worktree:
+    properties:
+      branch_name:
+        type: string
+      created_at:
+        type: string
+      deleted_at:
+        type: string
+      id:
+        type: string
+      project:
+        $ref: '#/definitions/entity.Project'
+      project_id:
+        type: string
+      status:
+        $ref: '#/definitions/entity.WorktreeStatus'
+      task:
+        allOf:
+        - $ref: '#/definitions/entity.Task'
+        description: Relationships
+      task_id:
+        type: string
+      updated_at:
+        type: string
+      worktree_path:
+        type: string
+    required:
+    - branch_name
+    - project_id
+    - status
+    - task_id
+    - worktree_path
+    type: object
+  entity.WorktreeStatistics:
+    properties:
+      active_worktrees:
+        type: integer
+      average_creation_time:
+        description: in seconds
+        type: number
+      completed_worktrees:
+        type: integer
+      error_worktrees:
+        type: integer
+      generated_at:
+        type: string
+      project_id:
+        type: string
+      total_worktrees:
+        type: integer
+      worktrees_by_status:
+        additionalProperties:
+          type: integer
+        type: object
+    type: object
+  entity.WorktreeStatus:
+    enum:
+    - creating
+    - active
+    - completed
+    - cleaning
+    - error
+    type: string
+    x-enum-varnames:
+    - WorktreeStatusCreating
+    - WorktreeStatusActive
+    - WorktreeStatusCompleted
+    - WorktreeStatusCleaning
+    - WorktreeStatusError
+  repository.ExecutionStats:
+    properties:
+      average_duration:
+        type: integer
+      average_progress:
+        type: number
+      completed_executions:
+        type: integer
+      failed_executions:
+        type: integer
+      recent_activity:
+        items:
+          $ref: '#/definitions/entity.Execution'
+        type: array
+      status_distribution:
+        additionalProperties:
+          type: integer
+        type: object
+      total_executions:
+        type: integer
+    type: object
+  usecase.BranchInfo:
+    properties:
+      commit_count:
+        type: integer
+      has_uncommitted:
+        type: boolean
+      has_untracked:
+        type: boolean
+      is_clean:
+        type: boolean
+      is_current:
+        type: boolean
+      last_commit:
+        type: string
+      last_commit_date:
+        type: string
+      name:
+        type: string
+    type: object
+  usecase.WorktreeHealthInfo:
+    properties:
+      branch_status:
+        type: string
+      disk_usage:
+        description: in bytes
+        type: integer
+      file_count:
+        type: integer
+      git_status:
+        type: string
+      health_score:
+        description: 0-100
+        type: integer
+      is_healthy:
+        type: boolean
+      is_valid:
+        type: boolean
+      issues:
+        items:
+          type: string
+        type: array
+      last_activity:
+        type: string
+      last_health_check:
+        type: string
+      status:
+        $ref: '#/definitions/entity.WorktreeStatus'
+      worktree_id:
+        type: string
+    type: object
+  usecase.WorktreeValidationResult:
+    properties:
+      branch_exists:
+        type: boolean
+      directory_exists:
+        type: boolean
+      errors:
+        items:
+          type: string
+        type: array
+      git_repository_ok:
+        type: boolean
+      is_valid:
+        type: boolean
+      permissions_ok:
+        type: boolean
+      validation_time:
+        type: string
+      warnings:
+        items:
+          type: string
+        type: array
+    type: object
 info:
   contact: {}
 paths:
+  /api/v1/executions:
+    post:
+      consumes:
+      - application/json
+      description: Create a new execution for a task
+      parameters:
+      - description: Execution creation data
+        in: body
+        name: execution
+        required: true
+        schema:
+          $ref: '#/definitions/dto.ExecutionCreateRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.ExecutionResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Create a new execution
+      tags:
+      - executions
+  /api/v1/executions/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete an execution and all its associated logs
+      parameters:
+      - description: Execution ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Delete an execution
+      tags:
+      - executions
+    get:
+      consumes:
+      - application/json
+      description: Get a single execution with detailed information
+      parameters:
+      - description: Execution ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - default: false
+        description: Include execution logs
+        in: query
+        name: include_logs
+        type: boolean
+      - default: 100
+        description: Maximum number of logs to include
+        in: query
+        name: log_limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: When include_logs=true
+          schema:
+            $ref: '#/definitions/dto.ExecutionWithLogsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Get execution by ID
+      tags:
+      - executions
+    put:
+      consumes:
+      - application/json
+      description: Update execution status, progress, or error information
+      parameters:
+      - description: Execution ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Execution update data
+        in: body
+        name: execution
+        required: true
+        schema:
+          $ref: '#/definitions/dto.ExecutionUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.ExecutionResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Update an execution
+      tags:
+      - executions
+  /api/v1/executions/{id}/logs:
+    get:
+      consumes:
+      - application/json
+      description: Get logs for a specific execution with pagination and filtering
+      parameters:
+      - description: Execution ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Filter by log level
+        enum:
+        - debug
+        - info
+        - warn
+        - error
+        in: query
+        name: level
+        type: string
+      - description: Filter by log source
+        in: query
+        name: source
+        type: string
+      - description: Search in log messages
+        in: query
+        name: search
+        type: string
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 50
+        description: Page size
+        in: query
+        name: page_size
+        type: integer
+      - default: '"timestamp"'
+        description: Order by field
+        in: query
+        name: order_by
+        type: string
+      - default: '"desc"'
+        description: Order direction
+        enum:
+        - asc
+        - desc
+        in: query
+        name: order_dir
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.ExecutionLogListResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Get execution logs
+      tags:
+      - executions
+  /api/v1/executions/stats:
+    get:
+      consumes:
+      - application/json
+      description: Get execution statistics for a task or globally
+      parameters:
+      - description: Filter by task ID
+        in: query
+        name: task_id
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/repository.ExecutionStats'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Get execution statistics
+      tags:
+      - executions
   /api/v1/projects:
     get:
       consumes:
@@ -635,6 +1745,73 @@ paths:
       summary: Archive a project
       tags:
       - projects
+  /api/v1/projects/{id}/branches:
+    get:
+      consumes:
+      - application/json
+      description: Get all Git branches available in the project repository
+      parameters:
+      - description: Project ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.ListBranchesResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: List Git branches for a project
+      tags:
+      - projects
+  /api/v1/projects/{id}/git/reinit:
+    post:
+      consumes:
+      - application/json
+      description: Reinitialize and reassign Git repository and GitHub repository
+        URL for a project
+      parameters:
+      - description: Project ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Reinitialize Git repository for a project
+      tags:
+      - projects
   /api/v1/projects/{id}/restore:
     post:
       consumes:
@@ -664,77 +1841,6 @@ paths:
           schema:
             $ref: '#/definitions/dto.ErrorResponse'
       summary: Restore an archived project
-      tags:
-      - projects
-  /api/v1/projects/{id}/settings:
-    get:
-      consumes:
-      - application/json
-      description: Get configuration settings for a project
-      parameters:
-      - description: Project ID
-        in: path
-        name: id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/dto.ProjectSettingsResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/dto.ErrorResponse'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/dto.ErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/dto.ErrorResponse'
-      summary: Get project settings
-      tags:
-      - projects
-    put:
-      consumes:
-      - application/json
-      description: Update configuration settings for a project
-      parameters:
-      - description: Project ID
-        in: path
-        name: id
-        required: true
-        type: string
-      - description: Project settings data
-        in: body
-        name: settings
-        required: true
-        schema:
-          $ref: '#/definitions/dto.ProjectSettingsUpdateRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/dto.ProjectSettingsResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/dto.ErrorResponse'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/dto.ErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/dto.ErrorResponse'
-      summary: Update project settings
       tags:
       - projects
   /api/v1/projects/{id}/statistics:
@@ -770,70 +1876,7 @@ paths:
       summary: Get project statistics
       tags:
       - projects
-  /api/v1/projects/{id}/status-analytics:
-    get:
-      consumes:
-      - application/json
-      description: Get comprehensive status analytics for a project
-      parameters:
-      - description: Project ID
-        in: path
-        name: id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/dto.TaskStatusAnalyticsResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/dto.ErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/dto.ErrorResponse'
-      summary: Get project status analytics
-      tags:
-      - tasks
-      - analytics
   /api/v1/projects/{id}/tasks:
-    get:
-      consumes:
-      - application/json
-      description: Get a single project by its ID including all associated tasks
-      parameters:
-      - description: Project ID
-        in: path
-        name: id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/dto.ProjectWithTasksResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/dto.ErrorResponse'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/dto.ErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/dto.ErrorResponse'
-      summary: Get a project with its tasks
-      tags:
-      - projects
-  /api/v1/projects/{project_id}/tasks:
     get:
       consumes:
       - application/json
@@ -841,7 +1884,7 @@ paths:
       parameters:
       - description: Project ID
         in: path
-        name: project_id
+        name: id
         required: true
         type: string
       produces:
@@ -860,6 +1903,35 @@ paths:
           schema:
             $ref: '#/definitions/dto.ErrorResponse'
       summary: List tasks by project
+      tags:
+      - tasks
+  /api/v1/projects/{id}/tasks/done:
+    get:
+      consumes:
+      - application/json
+      description: Get tasks with DONE status for a specific project
+      parameters:
+      - description: Project ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.TaskListResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: List DONE tasks by project
       tags:
       - tasks
   /api/v1/tasks:
@@ -1037,202 +2109,156 @@ paths:
       summary: Update a task
       tags:
       - tasks
-  /api/v1/tasks/{id}/project:
-    get:
+  /api/v1/tasks/{id}/approve-plan:
+    post:
       consumes:
       - application/json
-      description: Get a single task by its ID including the associated project
+      description: Approve the plan for a task and enqueue implementation job
       parameters:
       - description: Task ID
         in: path
         name: id
         required: true
         type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/dto.TaskWithProjectResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/dto.ErrorResponse'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/dto.ErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/dto.ErrorResponse'
-      summary: Get a task with its project
-      tags:
-      - tasks
-  /api/v1/tasks/{id}/status:
-    patch:
-      consumes:
-      - application/json
-      description: Update the status of a task
-      parameters:
-      - description: Task ID
-        in: path
-        name: id
-        required: true
-        type: string
-      - description: Task status update data
-        in: body
-        name: status
-        required: true
-        schema:
-          $ref: '#/definitions/dto.TaskStatusUpdateRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/dto.TaskResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/dto.ErrorResponse'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/dto.ErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/dto.ErrorResponse'
-      summary: Update a task status
-      tags:
-      - tasks
-  /api/v1/tasks/{id}/status-history:
-    get:
-      consumes:
-      - application/json
-      description: Get the status change history for a specific task
-      parameters:
-      - description: Task ID
-        in: path
-        name: id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/dto.TaskStatusHistoryResponse'
-            type: array
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/dto.ErrorResponse'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/dto.ErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/dto.ErrorResponse'
-      summary: Get task status history
-      tags:
-      - tasks
-  /api/v1/tasks/{id}/status-with-history:
-    patch:
-      consumes:
-      - application/json
-      description: Update the status of a task with validation and history tracking
-      parameters:
-      - description: Task ID
-        in: path
-        name: id
-        required: true
-        type: string
-      - description: Task status update with history data
-        in: body
-        name: status
-        required: true
-        schema:
-          $ref: '#/definitions/dto.TaskStatusUpdateWithHistoryRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/dto.TaskResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/dto.ErrorResponse'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/dto.ErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/dto.ErrorResponse'
-      summary: Update task status with history tracking
-      tags:
-      - tasks
-  /api/v1/tasks/{id}/validate-transition:
-    get:
-      consumes:
-      - application/json
-      description: Check if a status transition is valid for a task
-      parameters:
-      - description: Task ID
-        in: path
-        name: id
-        required: true
-        type: string
-      - description: Target status to validate
-        in: query
-        name: target_status
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/dto.TaskStatusValidationResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/dto.ErrorResponse'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/dto.ErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/dto.ErrorResponse'
-      summary: Validate task status transition
-      tags:
-      - tasks
-  /api/v1/tasks/bulk-status:
-    patch:
-      consumes:
-      - application/json
-      description: Update status for multiple tasks at once
-      parameters:
-      - description: Bulk status update data
+      - description: Approve plan request
         in: body
         name: request
         required: true
         schema:
-          $ref: '#/definitions/dto.BulkStatusUpdateRequest'
+          $ref: '#/definitions/dto.ApprovePlanRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.StartPlanningResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Approve plan and start implementation
+      tags:
+      - tasks
+  /api/v1/tasks/{id}/diff:
+    get:
+      consumes:
+      - application/json
+      description: Get the git diff between the base branch HEAD and task branch HEAD
+      parameters:
+      - description: Task ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: Git diff output
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Get git diff for a task
+      tags:
+      - tasks
+  /api/v1/tasks/{id}/executions:
+    get:
+      consumes:
+      - application/json
+      description: Get all executions for a specific task with optional filtering
+      parameters:
+      - description: Task ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Filter by status
+        enum:
+        - pending
+        - running
+        - paused
+        - completed
+        - failed
+        - cancelled
+        in: query
+        name: status
+        type: string
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Page size
+        in: query
+        name: page_size
+        type: integer
+      - default: '"started_at"'
+        description: Order by field
+        in: query
+        name: order_by
+        type: string
+      - default: '"desc"'
+        description: Order direction
+        enum:
+        - asc
+        - desc
+        in: query
+        name: order_dir
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.ExecutionListResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Get all executions for a task
+      tags:
+      - executions
+  /api/v1/tasks/{id}/open-with-cursor:
+    post:
+      consumes:
+      - application/json
+      description: Open the task's worktree path with Cursor editor
+      parameters:
+      - description: Task ID
+        in: path
+        name: id
+        required: true
+        type: string
       produces:
       - application/json
       responses:
@@ -1244,58 +2270,27 @@ paths:
           description: Bad Request
           schema:
             $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
             $ref: '#/definitions/dto.ErrorResponse'
-      summary: Bulk update task statuses
+      summary: Open task workspace with Cursor
       tags:
       - tasks
-  /api/v1/tasks/filter:
+  /api/v1/tasks/{id}/plans:
     get:
       consumes:
       - application/json
-      description: Get tasks with comprehensive filtering and sorting options
+      description: Get all plans for a specific task, sorted by created_at descending
       parameters:
-      - description: Filter by project ID
-        in: query
-        name: project_id
-        type: string
-      - description: Filter by single status
-        in: query
-        name: status
-        type: string
-      - description: Filter by multiple statuses
-        in: query
-        name: statuses
-        type: array
-      - description: Filter by creation date (after)
-        in: query
-        name: created_after
-        type: string
-      - description: Filter by creation date (before)
-        in: query
-        name: created_before
-        type: string
-      - description: Search in title and description
-        in: query
-        name: search
-        type: string
-      - description: Limit number of results
-        in: query
-        name: limit
-        type: integer
-      - description: Offset for pagination
-        in: query
-        name: offset
-        type: integer
-      - description: Field to order by
-        in: query
-        name: order_by
-        type: string
-      - description: Order direction (asc/desc)
-        in: query
-        name: order_dir
+      - description: Task ID
+        in: path
+        name: id
+        required: true
         type: string
       produces:
       - application/json
@@ -1303,7 +2298,421 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/dto.TaskListResponse'
+            $ref: '#/definitions/dto.TaskPlansResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Get plans for a task
+      tags:
+      - tasks
+  /api/v1/tasks/{id}/plans/{planId}:
+    put:
+      consumes:
+      - application/json
+      description: Update a plan by its ID
+      parameters:
+      - description: Task ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Plan ID
+        in: path
+        name: planId
+        required: true
+        type: string
+      - description: Plan update data
+        in: body
+        name: plan
+        required: true
+        schema:
+          $ref: '#/definitions/dto.PlanUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.PlanResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Update a plan
+      tags:
+      - plans
+  /api/v1/tasks/{id}/start-planning:
+    post:
+      consumes:
+      - application/json
+      description: Start the planning phase for a task by selecting a branch and initiating
+        background processing
+      parameters:
+      - description: Task ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Start planning request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.StartPlanningRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.StartPlanningResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Start planning for a task
+      tags:
+      - tasks
+  /tasks/{id}/pull-request:
+    post:
+      consumes:
+      - application/json
+      description: Create a new pull request for the task
+      parameters:
+      - description: Task ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/entity.PullRequest'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Create pull request for task
+      tags:
+      - tasks
+  /worktrees:
+    post:
+      consumes:
+      - application/json
+      description: |-
+        Enqueue creation of a new Git worktree for a specific task. The
+        worktree is created asynchronously in a background job to avoid
+        request timeouts; the response returns a record with "creating"
+        status that transitions to "active" once the job finishes.
+      parameters:
+      - description: Create worktree request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateWorktreeRequest'
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+          schema:
+            $ref: '#/definitions/dto.WorktreeResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Create worktree for task
+      tags:
+      - worktrees
+  /worktrees/{worktreeId}/branch:
+    get:
+      description: Get branch information for a worktree
+      parameters:
+      - description: Worktree ID
+        in: path
+        name: worktreeId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.BranchInfoResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Get branch info
+      tags:
+      - worktrees
+  /worktrees/{worktreeId}/health:
+    get:
+      description: Get health information for a worktree
+      parameters:
+      - description: Worktree ID
+        in: path
+        name: worktreeId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.WorktreeHealthResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Get worktree health
+      tags:
+      - worktrees
+  /worktrees/{worktreeId}/initialize:
+    post:
+      description: Initialize a worktree with basic configuration
+      parameters:
+      - description: Worktree ID
+        in: path
+        name: worktreeId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Initialize worktree
+      tags:
+      - worktrees
+  /worktrees/{worktreeId}/recover:
+    post:
+      description: Attempt to recover a worktree that is in error status
+      parameters:
+      - description: Worktree ID
+        in: path
+        name: worktreeId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Recover failed worktree
+      tags:
+      - worktrees
+  /worktrees/{worktreeId}/status:
+    put:
+      consumes:
+      - application/json
+      description: Update the status of a worktree
+      parameters:
+      - description: Worktree ID
+        in: path
+        name: worktreeId
+        required: true
+        type: string
+      - description: Update status request
+        in: body
+        name: status
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateWorktreeStatusRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Update worktree status
+      tags:
+      - worktrees
+  /worktrees/{worktreeId}/validate:
+    get:
+      description: Validate the health and integrity of a worktree
+      parameters:
+      - description: Worktree ID
+        in: path
+        name: worktreeId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.WorktreeValidationResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Validate worktree
+      tags:
+      - worktrees
+  /worktrees/cleanup:
+    post:
+      consumes:
+      - application/json
+      description: Clean up a Git worktree for a specific task
+      parameters:
+      - description: Cleanup worktree request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CleanupWorktreeRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Cleanup worktree for task
+      tags:
+      - worktrees
+  /worktrees/project/{projectId}:
+    get:
+      description: Get all worktrees for a specific project
+      parameters:
+      - description: Project ID
+        in: path
+        name: projectId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.WorktreesResponse'
         "400":
           description: Bad Request
           schema:
@@ -1312,7 +2721,88 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/dto.ErrorResponse'
-      summary: Get tasks with advanced filtering
+      summary: Get worktrees by project ID
       tags:
-      - tasks
+      - worktrees
+  /worktrees/project/{projectId}/active-count:
+    get:
+      description: Get the count of active worktrees for a project
+      parameters:
+      - description: Project ID
+        in: path
+        name: projectId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.WorktreeCountResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Get active worktrees count
+      tags:
+      - worktrees
+  /worktrees/project/{projectId}/statistics:
+    get:
+      description: Get worktree statistics for a project
+      parameters:
+      - description: Project ID
+        in: path
+        name: projectId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.WorktreeStatisticsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Get worktree statistics
+      tags:
+      - worktrees
+  /worktrees/task/{taskId}:
+    get:
+      description: Get worktree information for a specific task
+      parameters:
+      - description: Task ID
+        in: path
+        name: taskId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.WorktreeResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Get worktree by task ID
+      tags:
+      - worktrees
 swagger: "2.0"

@@ -13,6 +13,7 @@ import (
 	"github.com/auto-devs/auto-devs/internal/service/ai"
 	"github.com/auto-devs/auto-devs/internal/service/git"
 	"github.com/auto-devs/auto-devs/internal/service/github"
+	"github.com/auto-devs/auto-devs/internal/service/kanban"
 	worktreesvc "github.com/auto-devs/auto-devs/internal/service/worktree"
 	"github.com/auto-devs/auto-devs/internal/usecase"
 	"github.com/auto-devs/auto-devs/internal/websocket"
@@ -38,6 +39,7 @@ var ProviderSet = wire.NewSet(
 	ProvideProjectGitService,
 	ProvideGitHubService,
 	ProvidePRCreator,
+	ProvideKanbanClient,
 	ProvideIntegratedWorktreeService,
 	ProvideWorktreeManager,
 	// WebSocket service provider
@@ -297,8 +299,14 @@ func ProvideJobProcessor(
 	prCreator *github.PRCreator,
 	prRepo repository.PullRequestRepository,
 	githubService github.GitHubServiceInterface,
+	kanbanClient kanban.Client,
 ) *jobs.Processor {
-	return jobs.NewProcessor(taskUsecase, projectUsecase, worktreeUsecase, planningService, executionService, planRepo, executionRepo, executionLogRepo, wsService, gitManager, prCreator, prRepo, githubService)
+	return jobs.NewProcessor(taskUsecase, projectUsecase, worktreeUsecase, planningService, executionService, planRepo, executionRepo, executionLogRepo, wsService, gitManager, prCreator, prRepo, githubService, kanbanClient)
+}
+
+// ProvideKanbanClient provides a Hermes Kanban client instance
+func ProvideKanbanClient(cfg *config.Config) kanban.Client {
+	return kanban.NewClient(&cfg.HermesKanban)
 }
 
 // ProvideWebSocketService provides a WebSocket service instance

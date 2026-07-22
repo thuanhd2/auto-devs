@@ -16,7 +16,7 @@ type Project struct {
 	InitWorkspaceScript  string         `json:"init_workspace_script" gorm:"column:init_workspace_script;type:text"`
 	CreatedAt            time.Time      `json:"created_at" gorm:"autoCreateTime"`
 	UpdatedAt        time.Time      `json:"updated_at" gorm:"autoUpdateTime"`
-	DeletedAt        gorm.DeletedAt `json:"deleted_at,omitempty" gorm:"index"`
+	DeletedAt        gorm.DeletedAt `json:"deleted_at,omitempty" gorm:"index" swaggertype:"string"`
 
 	// Relationships
 	Tasks []Task `json:"tasks,omitempty" gorm:"foreignKey:ProjectID;constraint:OnDelete:CASCADE"`

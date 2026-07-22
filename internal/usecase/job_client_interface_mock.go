@@ -37,6 +37,60 @@ func (_m *JobClientInterfaceMock) EXPECT() *JobClientInterfaceMock_Expecter {
 	return &JobClientInterfaceMock_Expecter{mock: &_m.Mock}
 }
 
+// EnqueueKanbanNotify provides a mock function for the type JobClientInterfaceMock
+func (_mock *JobClientInterfaceMock) EnqueueKanbanNotify(payload *KanbanNotifyPayload) (string, error) {
+	ret := _mock.Called(payload)
+
+	if len(ret) == 0 {
+		panic("no return value specified for EnqueueKanbanNotify")
+	}
+
+	var r0 string
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(*KanbanNotifyPayload) (string, error)); ok {
+		return returnFunc(payload)
+	}
+	if returnFunc, ok := ret.Get(0).(func(*KanbanNotifyPayload) string); ok {
+		r0 = returnFunc(payload)
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+	if returnFunc, ok := ret.Get(1).(func(*KanbanNotifyPayload) error); ok {
+		r1 = returnFunc(payload)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// JobClientInterfaceMock_EnqueueKanbanNotify_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'EnqueueKanbanNotify'
+type JobClientInterfaceMock_EnqueueKanbanNotify_Call struct {
+	*mock.Call
+}
+
+// EnqueueKanbanNotify is a helper method to define mock.On call
+//   - payload
+func (_e *JobClientInterfaceMock_Expecter) EnqueueKanbanNotify(payload interface{}) *JobClientInterfaceMock_EnqueueKanbanNotify_Call {
+	return &JobClientInterfaceMock_EnqueueKanbanNotify_Call{Call: _e.mock.On("EnqueueKanbanNotify", payload)}
+}
+
+func (_c *JobClientInterfaceMock_EnqueueKanbanNotify_Call) Run(run func(payload *KanbanNotifyPayload)) *JobClientInterfaceMock_EnqueueKanbanNotify_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(*KanbanNotifyPayload))
+	})
+	return _c
+}
+
+func (_c *JobClientInterfaceMock_EnqueueKanbanNotify_Call) Return(s string, err error) *JobClientInterfaceMock_EnqueueKanbanNotify_Call {
+	_c.Call.Return(s, err)
+	return _c
+}
+
+func (_c *JobClientInterfaceMock_EnqueueKanbanNotify_Call) RunAndReturn(run func(payload *KanbanNotifyPayload) (string, error)) *JobClientInterfaceMock_EnqueueKanbanNotify_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // EnqueueTaskImplementation provides a mock function for the type JobClientInterfaceMock
 func (_mock *JobClientInterfaceMock) EnqueueTaskImplementation(payload *TaskImplementationPayload, delay time.Duration) (string, error) {
 	ret := _mock.Called(payload, delay)

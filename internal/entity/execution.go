@@ -42,7 +42,7 @@ type Execution struct {
 	Result       *string         `json:"result,omitempty" gorm:"type:jsonb"` // JSON serialized ExecutionResult
 	CreatedAt    time.Time       `json:"created_at" gorm:"autoCreateTime"`
 	UpdatedAt    time.Time       `json:"updated_at" gorm:"autoUpdateTime"`
-	DeletedAt    gorm.DeletedAt  `json:"deleted_at,omitempty" gorm:"index"`
+	DeletedAt    gorm.DeletedAt  `json:"deleted_at,omitempty" gorm:"index" swaggertype:"string" swaggertype:"string"`
 
 	// Relationships
 	Task      *Task          `json:"task,omitempty" gorm:"foreignKey:TaskID;references:ID"`
@@ -55,7 +55,7 @@ type ExecutionResult struct {
 	Output   string                 `json:"output"`
 	Files    []string               `json:"files"`
 	Metrics  map[string]interface{} `json:"metrics"`
-	Duration time.Duration          `json:"duration"`
+	Duration time.Duration          `json:"duration" swaggertype:"integer"`
 }
 
 // TableName returns the table name for GORM

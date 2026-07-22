@@ -71,7 +71,7 @@ type Worktree struct {
 	Status       WorktreeStatus `json:"status" gorm:"size:50;not null;default:'creating'" validate:"required"`
 	CreatedAt    time.Time      `json:"created_at" gorm:"autoCreateTime"`
 	UpdatedAt    time.Time      `json:"updated_at" gorm:"autoUpdateTime"`
-	DeletedAt    gorm.DeletedAt `json:"deleted_at,omitempty" gorm:"index"`
+	DeletedAt    gorm.DeletedAt `json:"deleted_at,omitempty" gorm:"index" swaggertype:"string"`
 
 	// Relationships
 	Task    Task    `json:"task,omitempty" gorm:"foreignKey:TaskID"`

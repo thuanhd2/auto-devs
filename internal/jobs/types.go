@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/auto-devs/auto-devs/internal/entity"
 	"github.com/google/uuid"
 	"github.com/hibiken/asynq"
 )
@@ -15,6 +16,7 @@ const (
 	TypePRStatusSync       = "pr:status_sync"
 	TypeWorktreeCleanup    = "worktree:cleanup"
 	TypeWorktreeCreate     = "worktree:create"
+	TypeKanbanNotify       = "kanban:notify"
 )
 
 // TaskPlanningPayload represents the payload for task planning jobs
@@ -43,6 +45,14 @@ type PRStatusSyncPayload struct {
 // WorktreeCleanupPayload represents the payload for worktree cleanup jobs
 type WorktreeCleanupPayload struct {
 	// Empty payload since this job processes all eligible tasks
+}
+
+// KanbanNotifyPayload represents the payload for Hermes kanban callback jobs
+type KanbanNotifyPayload struct {
+	TaskID       uuid.UUID         `json:"task_id"`
+	KanbanTaskID string            `json:"kanban_task_id"`
+	OldStatus    entity.TaskStatus `json:"old_status"`
+	NewStatus    entity.TaskStatus `json:"new_status"`
 }
 
 // WorktreeCreatePayload represents the payload for worktree creation jobs
@@ -146,6 +156,25 @@ func ParseWorktreeCleanupPayload(task *asynq.Task) (*WorktreeCleanupPayload, err
 	var payload WorktreeCleanupPayload
 	if err := json.Unmarshal(task.Payload(), &payload); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal worktree cleanup payload: %w", err)
+	}
+	return &payload, nil
+}
+
+// NewKanbanNotifyTask creates a new kanban notify job
+func NewKanbanNotifyTask(p KanbanNotifyPayload) (*asynq.Task, error) {
+	data, err := json.Marshal(p)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal kanban notify payload: %w", err)
+	}
+
+	return asynq.NewTask(TypeKanbanNotify, data), nil
+}
+
+// ParseKanbanNotifyPayload parses the kanban notify payload from asynq task
+func ParseKanbanNotifyPayload(task *asynq.Task) (*KanbanNotifyPayload, error) {
+	var payload KanbanNotifyPayload
+	if err := json.Unmarshal(task.Payload(), &payload); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal kanban notify payload: %w", err)
 	}
 	return &payload, nil
 }

@@ -35,9 +35,10 @@ func (h *TaskHandlerWithWebSocket) CreateTask(c *gin.Context) {
 	}
 
 	usecaseReq := usecase.CreateTaskRequest{
-		ProjectID:   req.ProjectID,
-		Title:       req.Title,
-		Description: req.Description,
+		ProjectID:    req.ProjectID,
+		Title:        req.Title,
+		Description:  req.Description,
+		KanbanTaskID: req.KanbanTaskID,
 	}
 
 	task, err := h.taskUsecase.Create(c.Request.Context(), usecaseReq)

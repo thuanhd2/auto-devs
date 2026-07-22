@@ -283,10 +283,11 @@ type Task struct {
 	IsTemplate     bool           `json:"is_template" gorm:"default:false"`
 	TemplateID     *uuid.UUID     `json:"template_id,omitempty" gorm:"type:uuid"`
 	AssignedTo     *string        `json:"assigned_to,omitempty" gorm:"size:255"` // User ID for future assignment
+	KanbanTaskID   *string        `json:"kanban_task_id,omitempty" gorm:"size:64"` // Hermes kanban card ID for callback
 	DueDate        *time.Time     `json:"due_date,omitempty"`
 	CreatedAt      time.Time      `json:"created_at" gorm:"autoCreateTime"`
 	UpdatedAt      time.Time      `json:"updated_at" gorm:"autoUpdateTime"`
-	DeletedAt      gorm.DeletedAt `json:"deleted_at,omitempty" gorm:"index"`
+	DeletedAt      gorm.DeletedAt `json:"deleted_at,omitempty" gorm:"index" swaggertype:"string"`
 	BaseBranchName  *string  `json:"base_branch_name,omitempty" gorm:"size:255"`
 	ErrorLogEntries []string `json:"error_logs,omitempty" gorm:"-"`
 	ErrorLogsJSON   string   `json:"-" gorm:"column:error_logs;type:text"`
@@ -311,7 +312,7 @@ type TaskAuditLog struct {
 	IPAddress *string        `json:"ip_address,omitempty" gorm:"size:45"`                 // IP address of the change
 	UserAgent *string        `json:"user_agent,omitempty" gorm:"size:500"`                // User agent string
 	CreatedAt time.Time      `json:"created_at" gorm:"autoCreateTime"`
-	DeletedAt gorm.DeletedAt `json:"deleted_at,omitempty" gorm:"index"`
+	DeletedAt gorm.DeletedAt `json:"deleted_at,omitempty" gorm:"index" swaggertype:"string"`
 
 	// Relationships
 	Task Task `json:"task,omitempty" gorm:"foreignKey:TaskID"`
@@ -332,7 +333,7 @@ type TaskTemplate struct {
 	CreatedBy      *string        `json:"created_by,omitempty" gorm:"size:255"`
 	CreatedAt      time.Time      `json:"created_at" gorm:"autoCreateTime"`
 	UpdatedAt      time.Time      `json:"updated_at" gorm:"autoUpdateTime"`
-	DeletedAt      gorm.DeletedAt `json:"deleted_at,omitempty" gorm:"index"`
+	DeletedAt      gorm.DeletedAt `json:"deleted_at,omitempty" gorm:"index" swaggertype:"string"`
 
 	// Relationships
 	Project Project `json:"project,omitempty" gorm:"foreignKey:ProjectID"`
@@ -347,7 +348,7 @@ type TaskStatusHistory struct {
 	ChangedBy  *string        `json:"changed_by,omitempty" gorm:"size:255"` // user ID or system identifier
 	Reason     *string        `json:"reason,omitempty" gorm:"size:500"`     // optional reason for status change
 	CreatedAt  time.Time      `json:"created_at" gorm:"autoCreateTime"`
-	DeletedAt  gorm.DeletedAt `json:"deleted_at,omitempty" gorm:"index"`
+	DeletedAt  gorm.DeletedAt `json:"deleted_at,omitempty" gorm:"index" swaggertype:"string"`
 
 	// Relationships
 	Task Task `json:"task,omitempty" gorm:"foreignKey:TaskID"`
@@ -525,7 +526,7 @@ type TaskComment struct {
 	CreatedBy string         `json:"created_by" gorm:"size:255;not null"`
 	CreatedAt time.Time      `json:"created_at" gorm:"autoCreateTime"`
 	UpdatedAt time.Time      `json:"updated_at" gorm:"autoUpdateTime"`
-	DeletedAt gorm.DeletedAt `json:"deleted_at,omitempty" gorm:"index"`
+	DeletedAt gorm.DeletedAt `json:"deleted_at,omitempty" gorm:"index" swaggertype:"string"`
 
 	// Relationships
 	Task *Task `json:"task,omitempty" gorm:"foreignKey:TaskID"`
@@ -541,7 +542,7 @@ type TaskAttachment struct {
 	MimeType   string         `json:"mime_type" gorm:"size:100"`
 	UploadedBy string         `json:"uploaded_by" gorm:"size:255;not null"`
 	CreatedAt  time.Time      `json:"created_at" gorm:"autoCreateTime"`
-	DeletedAt  gorm.DeletedAt `json:"deleted_at,omitempty" gorm:"index"`
+	DeletedAt  gorm.DeletedAt `json:"deleted_at,omitempty" gorm:"index" swaggertype:"string"`
 
 	// Relationships
 	Task *Task `json:"task,omitempty" gorm:"foreignKey:TaskID"`

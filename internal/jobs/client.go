@@ -138,6 +138,38 @@ func (c *Client) EnqueueWorktreeCreateString(payload *WorktreeCreatePayload, del
 	return taskInfo.ID, nil
 }
 
+// EnqueueKanbanNotify enqueues a kanban notify job
+func (c *Client) EnqueueKanbanNotify(payload *KanbanNotifyPayload) (*asynq.TaskInfo, error) {
+	task, err := NewKanbanNotifyTask(*payload)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create kanban notify job: %w", err)
+	}
+
+	// Retries handled by asynq with exponential backoff — covers short
+	// Hermes dashboard downtime.
+	opts := []asynq.Option{
+		asynq.MaxRetry(10),
+		asynq.Timeout(1 * time.Minute),
+		asynq.Queue("default"),
+	}
+
+	taskInfo, err := c.client.Enqueue(task, opts...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to enqueue kanban notify job: %w", err)
+	}
+
+	return taskInfo, nil
+}
+
+// EnqueueKanbanNotifyString enqueues a kanban notify job and returns job ID as string
+func (c *Client) EnqueueKanbanNotifyString(payload *KanbanNotifyPayload) (string, error) {
+	taskInfo, err := c.EnqueueKanbanNotify(payload)
+	if err != nil {
+		return "", err
+	}
+	return taskInfo.ID, nil
+}
+
 // GetTaskInfo retrieves information about a task
 func (c *Client) GetTaskInfo(queue, taskID string) (*asynq.TaskInfo, error) {
 	// Note: asynq.Client doesn't have GetTaskInfo method

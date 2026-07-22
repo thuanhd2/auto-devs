@@ -66,7 +66,7 @@ type Plan struct {
 	Content   string         `json:"content" gorm:"type:text;not null" validate:"required"`
 	CreatedAt time.Time      `json:"created_at" gorm:"autoCreateTime"`
 	UpdatedAt time.Time      `json:"updated_at" gorm:"autoUpdateTime"`
-	DeletedAt gorm.DeletedAt `json:"deleted_at,omitempty" gorm:"index"`
+	DeletedAt gorm.DeletedAt `json:"deleted_at,omitempty" gorm:"index" swaggertype:"string"`
 
 	// Relationships
 	Task Task `json:"task,omitempty" gorm:"foreignKey:TaskID"`
@@ -80,7 +80,7 @@ type PlanVersion struct {
 	Content   string         `json:"content" gorm:"type:text;not null" validate:"required"`
 	CreatedBy string         `json:"created_by" gorm:"size:255;not null" validate:"required"`
 	CreatedAt time.Time      `json:"created_at" gorm:"autoCreateTime"`
-	DeletedAt gorm.DeletedAt `json:"deleted_at,omitempty" gorm:"index"`
+	DeletedAt gorm.DeletedAt `json:"deleted_at,omitempty" gorm:"index" swaggertype:"string"`
 
 	// Relationships
 	Plan Plan `json:"plan,omitempty" gorm:"foreignKey:PlanID"`

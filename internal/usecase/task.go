@@ -3,6 +3,7 @@ package usecase
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"os"
 	"os/exec"
 	"strings"
@@ -20,6 +21,7 @@ type JobClientInterface interface {
 	EnqueueTaskPlanning(payload *TaskPlanningPayload, delay time.Duration) (string, error)
 	EnqueueTaskImplementation(payload *TaskImplementationPayload, delay time.Duration) (string, error)
 	EnqueueWorktreeCreate(payload *WorktreeCreatePayload, delay time.Duration) (string, error)
+	EnqueueKanbanNotify(payload *KanbanNotifyPayload) (string, error)
 }
 
 // TaskPlanningPayload represents the payload for task planning jobs
@@ -38,6 +40,14 @@ type TaskImplementationPayload struct {
 	ProjectID       uuid.UUID `json:"project_id"`
 	AIType          string    `json:"ai_type"`
 	UseRemoteBranch bool      `json:"use_remote_branch"`
+}
+
+// KanbanNotifyPayload represents the payload for Hermes kanban callback jobs
+type KanbanNotifyPayload struct {
+	TaskID       uuid.UUID         `json:"task_id"`
+	KanbanTaskID string            `json:"kanban_task_id"`
+	OldStatus    entity.TaskStatus `json:"old_status"`
+	NewStatus    entity.TaskStatus `json:"new_status"`
 }
 
 // WorktreeCreatePayload represents the payload for worktree creation jobs
@@ -161,6 +171,7 @@ type CreateTaskRequest struct {
 	DueDate        *time.Time          `json:"due_date"`
 	BranchName     *string             `json:"branch_name"`
 	PullRequest    *string             `json:"pull_request"`
+	KanbanTaskID   *string             `json:"kanban_task_id"`
 }
 
 type UpdateTaskRequest struct {
@@ -332,6 +343,7 @@ func (u *taskUsecase) Create(ctx context.Context, req CreateTaskRequest) (*entit
 		DueDate:        req.DueDate,
 		BranchName:     req.BranchName,
 		PullRequest:    req.PullRequest,
+		KanbanTaskID:   req.KanbanTaskID,
 		CreatedAt:      time.Now(),
 		UpdatedAt:      time.Now(),
 	}
@@ -365,6 +377,7 @@ func (u *taskUsecase) Update(ctx context.Context, id uuid.UUID, req UpdateTaskRe
 	if err != nil {
 		return nil, err
 	}
+	oldStatus := task.Status
 
 	// Check for duplicate title if title is being changed
 	if req.Title != "" && req.Title != task.Title {
@@ -425,15 +438,72 @@ func (u *taskUsecase) Update(ctx context.Context, id uuid.UUID, req UpdateTaskRe
 		return nil, err
 	}
 
+	u.maybeEnqueueKanbanNotify(task, oldStatus, task.Status)
+
 	return task, nil
 }
 
 func (u *taskUsecase) UpdateStatus(ctx context.Context, id uuid.UUID, status entity.TaskStatus) (*entity.Task, error) {
+	task, err := u.taskRepo.GetByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	oldStatus := task.Status
+
 	if err := u.taskRepo.UpdateStatus(ctx, id, status); err != nil {
 		return nil, err
 	}
 
-	return u.taskRepo.GetByID(ctx, id)
+	updatedTask, err := u.taskRepo.GetByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	u.maybeEnqueueKanbanNotify(updatedTask, oldStatus, status)
+
+	return updatedTask, nil
+}
+
+// kanbanNotifyStatuses are the statuses that trigger a Hermes kanban callback.
+var kanbanNotifyStatuses = map[entity.TaskStatus]bool{
+	entity.TaskStatusPLANREVIEWING: true,
+	entity.TaskStatusCODEREVIEWING: true,
+	entity.TaskStatusDONE:          true,
+	entity.TaskStatusCANCELLED:     true,
+}
+
+// maybeEnqueueKanbanNotify enqueues a kanban:notify job when a task linked to
+// a Hermes kanban card transitions into a status the bridge cares about.
+// Enqueue failures are logged but never fail the status transition — the
+// callback is best-effort.
+func (u *taskUsecase) maybeEnqueueKanbanNotify(task *entity.Task, oldStatus, newStatus entity.TaskStatus) {
+	if u.jobClient == nil || task == nil {
+		return
+	}
+	if oldStatus == newStatus {
+		return
+	}
+	if !kanbanNotifyStatuses[newStatus] {
+		return
+	}
+	if task.KanbanTaskID == nil || *task.KanbanTaskID == "" {
+		return
+	}
+
+	payload := &KanbanNotifyPayload{
+		TaskID:       task.ID,
+		KanbanTaskID: *task.KanbanTaskID,
+		OldStatus:    oldStatus,
+		NewStatus:    newStatus,
+	}
+	if _, err := u.jobClient.EnqueueKanbanNotify(payload); err != nil {
+		slog.Warn("Failed to enqueue kanban notify job",
+			"task_id", task.ID,
+			"kanban_task_id", *task.KanbanTaskID,
+			"new_status", newStatus,
+			"error", err,
+		)
+	}
 }
 
 func (u *taskUsecase) Delete(ctx context.Context, id uuid.UUID) error {
@@ -457,8 +527,15 @@ func (u *taskUsecase) GetByStatus(ctx context.Context, status entity.TaskStatus)
 
 // UpdateStatusWithHistory updates task status with validation and history tracking
 func (u *taskUsecase) UpdateStatusWithHistory(ctx context.Context, req UpdateStatusRequest) (*entity.Task, error) {
+	// Get current task to capture the old status for the kanban callback
+	currentTask, err := u.taskRepo.GetByID(ctx, req.TaskID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get task: %w", err)
+	}
+	oldStatus := currentTask.Status
+
 	// Validate the status transition first
-	if err := u.ValidateStatusTransition(ctx, req.TaskID, req.Status); err != nil {
+	if err := entity.ValidateStatusTransition(oldStatus, req.Status); err != nil {
 		return nil, err
 	}
 
@@ -472,6 +549,8 @@ func (u *taskUsecase) UpdateStatusWithHistory(ctx context.Context, req UpdateSta
 	if err != nil {
 		return nil, err
 	}
+
+	u.maybeEnqueueKanbanNotify(updatedTask, oldStatus, req.Status)
 
 	// Handle worktree operations based on status change
 	if u.worktreeUsecase != nil {
@@ -526,8 +605,27 @@ func (u *taskUsecase) BulkUpdateStatus(ctx context.Context, req BulkUpdateStatus
 		return fmt.Errorf("invalid target status: %s", req.Status)
 	}
 
+	// Capture old statuses before the update so kanban callbacks can be
+	// enqueued for tasks that actually transition.
+	previousTasks := make([]*entity.Task, 0, len(req.TaskIDs))
+	for _, taskID := range req.TaskIDs {
+		task, err := u.taskRepo.GetByID(ctx, taskID)
+		if err != nil {
+			continue
+		}
+		previousTasks = append(previousTasks, task)
+	}
+
 	// This will validate transitions for each task individually in the repository
-	return u.taskRepo.BulkUpdateStatus(ctx, req.TaskIDs, req.Status, req.ChangedBy)
+	if err := u.taskRepo.BulkUpdateStatus(ctx, req.TaskIDs, req.Status, req.ChangedBy); err != nil {
+		return err
+	}
+
+	for _, task := range previousTasks {
+		u.maybeEnqueueKanbanNotify(task, task.Status, req.Status)
+	}
+
+	return nil
 }
 
 // GetStatusHistory retrieves status change history for a task

@@ -9,9 +9,10 @@ import (
 
 // Task request DTOs
 type TaskCreateRequest struct {
-	ProjectID   uuid.UUID `json:"project_id" binding:"required" example:"123e4567-e89b-12d3-a456-426614174000"`
-	Title       string    `json:"title" binding:"required,min=1,max=255" example:"Implement user authentication"`
-	Description string    `json:"description" binding:"max=5000" example:"Add JWT-based authentication system"`
+	ProjectID    uuid.UUID `json:"project_id" binding:"required" example:"123e4567-e89b-12d3-a456-426614174000"`
+	Title        string    `json:"title" binding:"required,min=1,max=255" example:"Implement user authentication"`
+	Description  string    `json:"description" binding:"max=5000" example:"Add JWT-based authentication system"`
+	KanbanTaskID *string   `json:"kanban_task_id,omitempty" binding:"omitempty,max=64" example:"a1b2c3d4"`
 }
 
 type TaskUpdateRequest struct {
@@ -62,6 +63,7 @@ type TaskResponse struct {
 	BranchName   *string              `json:"branch_name,omitempty" example:"feature/user-auth"`
 	PullRequest  *string              `json:"pull_request,omitempty" example:"https://github.com/user/repo/pull/123"`
 	WorktreePath *string              `json:"worktree_path,omitempty" example:"/tmp/worktrees/task-123"`
+	KanbanTaskID *string              `json:"kanban_task_id,omitempty" example:"a1b2c3d4"`
 	ErrorLogs    []string             `json:"error_logs,omitempty"`
 	CreatedAt    time.Time            `json:"created_at" example:"2024-01-15T10:30:00Z"`
 	UpdatedAt    time.Time            `json:"updated_at" example:"2024-01-15T10:30:00Z"`
@@ -142,6 +144,7 @@ func (t *TaskResponse) FromEntity(task *entity.Task) {
 	t.BranchName = task.BranchName
 	t.PullRequest = task.PullRequest
 	t.WorktreePath = task.WorktreePath
+	t.KanbanTaskID = task.KanbanTaskID
 	t.ErrorLogs = task.ErrorLogEntries
 	t.CreatedAt = task.CreatedAt
 	t.UpdatedAt = task.UpdatedAt

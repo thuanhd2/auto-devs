@@ -30,6 +30,11 @@ func (m *MockClient) EnqueueWorktreeCreateString(payload *WorktreeCreatePayload,
 	return args.String(0), args.Error(1)
 }
 
+func (m *MockClient) EnqueueKanbanNotifyString(payload *KanbanNotifyPayload) (string, error) {
+	args := m.Called(payload)
+	return args.String(0), args.Error(1)
+}
+
 func (m *MockClient) Close() error {
 	args := m.Called()
 	return args.Error(0)

@@ -14,6 +14,7 @@ export interface Task {
   description: string;
   status: string;
   priority: string;
+  kanban_task_id?: string;
   createdAt: string;
   updatedAt: string;
 }

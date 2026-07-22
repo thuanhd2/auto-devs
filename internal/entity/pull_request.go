@@ -86,7 +86,7 @@ type PullRequest struct {
 	ChangedFiles   *int              `json:"changed_files,omitempty"`
 	CreatedAt      time.Time         `json:"created_at" gorm:"autoCreateTime"`
 	UpdatedAt      time.Time         `json:"updated_at" gorm:"autoUpdateTime"`
-	DeletedAt      gorm.DeletedAt    `json:"deleted_at,omitempty" gorm:"index"`
+	DeletedAt      gorm.DeletedAt    `json:"deleted_at,omitempty" gorm:"index" swaggertype:"string"`
 
 	// Relationships
 	Task *Task `json:"task,omitempty" gorm:"foreignKey:TaskID"`
@@ -104,7 +104,7 @@ type PullRequestComment struct {
 	IsResolved    bool           `json:"is_resolved" gorm:"default:false"`
 	CreatedAt     time.Time      `json:"created_at" gorm:"autoCreateTime"`
 	UpdatedAt     time.Time      `json:"updated_at" gorm:"autoUpdateTime"`
-	DeletedAt     gorm.DeletedAt `json:"deleted_at,omitempty" gorm:"index"`
+	DeletedAt     gorm.DeletedAt `json:"deleted_at,omitempty" gorm:"index" swaggertype:"string"`
 
 	// Relationships
 	PullRequest *PullRequest `json:"pull_request,omitempty" gorm:"foreignKey:PullRequestID"`
@@ -121,7 +121,7 @@ type PullRequestReview struct {
 	SubmittedAt   *time.Time     `json:"submitted_at,omitempty"`
 	CreatedAt     time.Time      `json:"created_at" gorm:"autoCreateTime"`
 	UpdatedAt     time.Time      `json:"updated_at" gorm:"autoUpdateTime"`
-	DeletedAt     gorm.DeletedAt `json:"deleted_at,omitempty" gorm:"index"`
+	DeletedAt     gorm.DeletedAt `json:"deleted_at,omitempty" gorm:"index" swaggertype:"string"`
 
 	// Relationships
 	PullRequest *PullRequest `json:"pull_request,omitempty" gorm:"foreignKey:PullRequestID"`
@@ -139,7 +139,7 @@ type PullRequestCheck struct {
 	CompletedAt   *time.Time     `json:"completed_at,omitempty"`
 	CreatedAt     time.Time      `json:"created_at" gorm:"autoCreateTime"`
 	UpdatedAt     time.Time      `json:"updated_at" gorm:"autoUpdateTime"`
-	DeletedAt     gorm.DeletedAt `json:"deleted_at,omitempty" gorm:"index"`
+	DeletedAt     gorm.DeletedAt `json:"deleted_at,omitempty" gorm:"index" swaggertype:"string"`
 
 	// Relationships
 	PullRequest *PullRequest `json:"pull_request,omitempty" gorm:"foreignKey:PullRequestID"`

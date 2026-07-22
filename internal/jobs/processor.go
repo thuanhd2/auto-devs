@@ -14,6 +14,7 @@ import (
 	"github.com/auto-devs/auto-devs/internal/service/ai"
 	"github.com/auto-devs/auto-devs/internal/service/git"
 	"github.com/auto-devs/auto-devs/internal/service/github"
+	"github.com/auto-devs/auto-devs/internal/service/kanban"
 	"github.com/auto-devs/auto-devs/internal/usecase"
 	"github.com/auto-devs/auto-devs/internal/websocket"
 	"github.com/google/uuid"
@@ -36,6 +37,7 @@ type Processor struct {
 	prCreator        *github.PRCreator
 	prRepo           repository.PullRequestRepository
 	githubService    github.GitHubServiceInterface
+	kanbanClient     kanban.Client
 	logger           *slog.Logger
 }
 
@@ -54,6 +56,7 @@ func NewProcessor(
 	prCreator *github.PRCreator,
 	prRepo repository.PullRequestRepository,
 	githubService github.GitHubServiceInterface,
+	kanbanClient kanban.Client,
 ) *Processor {
 	return &Processor{
 		taskUsecase:      taskUsecase,
@@ -69,6 +72,7 @@ func NewProcessor(
 		prCreator:        prCreator,
 		prRepo:           prRepo,
 		githubService:    githubService,
+		kanbanClient:     kanbanClient,
 		logger:           slog.Default().With("component", "job-processor"),
 	}
 }
@@ -89,6 +93,7 @@ func NewProcessorWithRedisBroker(
 	prCreator *github.PRCreator,
 	prRepo repository.PullRequestRepository,
 	githubService github.GitHubServiceInterface,
+	kanbanClient kanban.Client,
 ) *Processor {
 	return &Processor{
 		taskUsecase:      taskUsecase,
@@ -105,6 +110,7 @@ func NewProcessorWithRedisBroker(
 		prCreator:        prCreator,
 		prRepo:           prRepo,
 		githubService:    githubService,
+		kanbanClient:     kanbanClient,
 		logger:           slog.Default().With("component", "job-processor"),
 	}
 }

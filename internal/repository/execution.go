@@ -53,7 +53,7 @@ type ExecutionStats struct {
 	CompletedExecutions int64                            `json:"completed_executions"`
 	FailedExecutions    int64                            `json:"failed_executions"`
 	AverageProgress     float64                          `json:"average_progress"`
-	AverageDuration     time.Duration                    `json:"average_duration"`
+	AverageDuration     time.Duration                    `json:"average_duration" swaggertype:"integer"`
 	StatusDistribution  map[entity.ExecutionStatus]int64 `json:"status_distribution"`
 	RecentActivity      []*entity.Execution              `json:"recent_activity"`
 }
