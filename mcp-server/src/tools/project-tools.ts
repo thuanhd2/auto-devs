@@ -1,8 +1,18 @@
 import { Tool } from '@modelcontextprotocol/sdk/types.js';
-import AutoDevsClient from '../client/autodevs-client.js';
 import { z } from 'zod';
+import AutoDevsClient from '../client/autodevs-client.js';
+import { validateInput } from '../utils/validate-input.js';
 
 const client = new AutoDevsClient();
+
+const projectListSchema = z.object({
+  page: z.coerce.number().int().positive().optional().default(1),
+  pageSize: z.coerce.number().int().positive().max(100).optional().default(10),
+});
+
+const projectGetSchema = z.object({
+  id: z.string().min(1, 'Project ID is required'),
+});
 
 export const projectListTool: Tool = {
   name: 'project:list',
@@ -23,8 +33,7 @@ export const projectListTool: Tool = {
 };
 
 export async function executeProjectList(input: Record<string, unknown>): Promise<string> {
-  const page = (input.page as number) || 1;
-  const pageSize = (input.pageSize as number) || 10;
+  const { page, pageSize } = validateInput(projectListSchema, input);
 
   const result = await client.listProjects(page, pageSize);
   return JSON.stringify(result, null, 2);
@@ -46,7 +55,7 @@ export const projectGetTool: Tool = {
 };
 
 export async function executeProjectGet(input: Record<string, unknown>): Promise<string> {
-  const id = input.id as string;
+  const { id } = validateInput(projectGetSchema, input);
   const result = await client.getProject(id);
   return JSON.stringify(result, null, 2);
 }
