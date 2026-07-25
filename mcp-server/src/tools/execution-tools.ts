@@ -1,7 +1,26 @@
 import { Tool } from '@modelcontextprotocol/sdk/types.js';
+import { z } from 'zod';
 import AutoDevsClient from '../client/autodevs-client.js';
+import { validateInput } from '../utils/validate-input.js';
 
 const client = new AutoDevsClient();
+
+const executionListSchema = z.object({
+  taskId: z.string().min(1, 'Task ID is required'),
+  page: z.coerce.number().int().positive().optional().default(1),
+  pageSize: z.coerce.number().int().positive().max(100).optional().default(10),
+  status: z.string().optional(),
+});
+
+const executionIdSchema = z.object({
+  id: z.string().min(1, 'Execution ID is required'),
+});
+
+const executionCreateSchema = z.object({
+  taskId: z.string().min(1, 'Task ID is required'),
+  scheduled: z.boolean().optional(),
+  scheduledAt: z.string().optional(),
+});
 
 export const executionListTool: Tool = {
   name: 'execution:list',
@@ -31,10 +50,7 @@ export const executionListTool: Tool = {
 };
 
 export async function executeExecutionList(input: Record<string, unknown>): Promise<string> {
-  const taskId = input.taskId as string;
-  const page = (input.page as number) || 1;
-  const pageSize = (input.pageSize as number) || 10;
-  const status = input.status as string | undefined;
+  const { taskId, page, pageSize, status } = validateInput(executionListSchema, input);
 
   const result = await client.listExecutions(taskId, { page, pageSize, status });
   return JSON.stringify(result, null, 2);
@@ -56,7 +72,7 @@ export const executionGetTool: Tool = {
 };
 
 export async function executeExecutionGet(input: Record<string, unknown>): Promise<string> {
-  const id = input.id as string;
+  const { id } = validateInput(executionIdSchema, input);
   const result = await client.getExecution(id);
   return JSON.stringify(result, null, 2);
 }
@@ -85,15 +101,16 @@ export const executionCreateTool: Tool = {
 };
 
 export async function executeExecutionCreate(input: Record<string, unknown>): Promise<string> {
-  const taskId = input.taskId as string;
-  const data: any = {};
-  if (input.scheduled) {
+  const parsed = validateInput(executionCreateSchema, input);
+  const data: Record<string, unknown> = {};
+
+  if (parsed.scheduled) {
     data.scheduled = true;
-    if (input.scheduledAt) {
-      data.scheduledAt = input.scheduledAt;
+    if (parsed.scheduledAt) {
+      data.scheduledAt = parsed.scheduledAt;
     }
   }
 
-  const result = await client.createExecution(taskId, data);
+  const result = await client.createExecution(parsed.taskId, data);
   return JSON.stringify(result, null, 2);
 }

@@ -11,6 +11,7 @@ import { TOOLS, getToolByName } from './tools/index.js';
 import { config } from './config.js';
 import { AppError } from './errors/app-error.js';
 import { logger } from './utils/logger.js';
+import { checkBackendHealth } from './utils/health-check.js';
 
 const server = new Server(
   {
@@ -102,6 +103,14 @@ async function main() {
   console.error('[MCP] Starting Auto-Devs MCP Server');
   console.error(`[MCP] API URL: ${config.apiUrl}`);
   console.error(`[MCP] Debug mode: ${config.debug}`);
+
+  try {
+    await checkBackendHealth();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error(`[MCP] Backend health check failed: ${message}`);
+    process.exit(1);
+  }
 
   const transport = new StdioServerTransport();
   await server.connect(transport);

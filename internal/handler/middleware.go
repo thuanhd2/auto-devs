@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
+	"sync"
 	"time"
 
 	"github.com/auto-devs/auto-devs/internal/handler/dto"
@@ -134,29 +136,98 @@ func getValidationErrorMessage(fe validator.FieldError) string {
 	}
 }
 
-// RateLimitMiddleware implements basic rate limiting
+// RateLimitMiddleware implements per-client rate limiting (100 requests/min per client)
 func RateLimitMiddleware() gin.HandlerFunc {
-	// Create a rate limiter that allows 100 requests per minute
-	limiter := rate.NewLimiter(rate.Every(time.Minute/100), 100)
+	const (
+		requestsPerMinute = 100
+		cleanupInterval   = 5 * time.Minute
+		idleTimeout       = 10 * time.Minute
+	)
+
+	var (
+		clientLimiters sync.Map
+		cleanupOnce    sync.Once
+	)
+
+	startCleanup := func() {
+		cleanupOnce.Do(func() {
+			go func() {
+				ticker := time.NewTicker(cleanupInterval)
+				defer ticker.Stop()
+
+				for range ticker.C {
+					now := time.Now()
+					clientLimiters.Range(func(key, value any) bool {
+						entry := value.(*clientLimiterEntry)
+						if now.Sub(entry.lastSeen) > idleTimeout {
+							clientLimiters.Delete(key)
+						}
+						return true
+					})
+				}
+			}()
+		})
+	}
+
+	getClientLimiter := func(clientKey string) *rate.Limiter {
+		startCleanup()
+
+		if value, ok := clientLimiters.Load(clientKey); ok {
+			entry := value.(*clientLimiterEntry)
+			entry.lastSeen = time.Now()
+			return entry.limiter
+		}
+
+		limiter := rate.NewLimiter(rate.Every(time.Minute/requestsPerMinute), requestsPerMinute)
+		entry := &clientLimiterEntry{
+			limiter:  limiter,
+			lastSeen: time.Now(),
+		}
+		actual, _ := clientLimiters.LoadOrStore(clientKey, entry)
+		return actual.(*clientLimiterEntry).limiter
+	}
+
+	getClientKey := func(c *gin.Context) string {
+		authHeader := c.GetHeader("Authorization")
+		if authHeader != "" {
+			return "auth:" + authHeader
+		}
+		return "ip:" + c.ClientIP()
+	}
+
+	isRateLimitExempt := func(path string) bool {
+		return path == "/ws" ||
+			path == "/health" ||
+			strings.HasPrefix(path, "/health/") ||
+			path == "/api/v1/health"
+	}
 
 	return func(c *gin.Context) {
-		// Skip rate limiting for WebSocket endpoints
-		if c.Request.URL.Path == "/ws" {
+		if isRateLimitExempt(c.Request.URL.Path) {
 			c.Next()
 			return
 		}
 
+		clientKey := getClientKey(c)
+		limiter := getClientLimiter(clientKey)
+
 		if !limiter.Allow() {
 			c.JSON(http.StatusTooManyRequests, dto.ErrorResponse{
 				Error:   "Rate limit exceeded",
-				Message: "Too many requests, please try again later",
+				Message: "Too many requests from this client, please try again later",
 				Code:    http.StatusTooManyRequests,
 			})
 			c.Abort()
 			return
 		}
+
 		c.Next()
 	}
+}
+
+type clientLimiterEntry struct {
+	limiter  *rate.Limiter
+	lastSeen time.Time
 }
 
 // SecurityHeadersMiddleware adds security headers

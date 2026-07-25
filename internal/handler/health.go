@@ -21,9 +21,14 @@ type DatabaseHealth struct {
 }
 
 func SetupHealthRoutes(router *gin.Engine, db *database.GormDB) {
+	handler := healthCheck(db)
+
+	// Root health endpoint for MCP server and load balancers
+	router.GET("/health", handler)
+
 	v1 := router.Group("/api/v1")
 	{
-		v1.GET("/health", healthCheck(db))
+		v1.GET("/health", handler)
 	}
 }
 
