@@ -326,6 +326,9 @@ func (p *Processor) getAiExecutor(aiType string) (ai.AiCodingCli, error) {
 	case "deep-seek":
 		aiExecutor := aiexecutors.NewDeepSeekExecutor()
 		return aiExecutor, nil
+	case "reasonix":
+		aiExecutor := aiexecutors.NewReasonixExecutor()
+		return aiExecutor, nil
 	default:
 		return nil, fmt.Errorf("invalid execution type: %s", aiType)
 	}

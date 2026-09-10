@@ -132,9 +132,14 @@ export function getAIs(forPlanning: boolean) {
     value: 'deep-seek',
     description: 'Deep Seek',
   }
+  const reasonix = {
+    name: 'Reasonix',
+    value: 'reasonix',
+    description: 'Reasonix CLI',
+  }
   // Cursor Agent does not support planning, so it is not included in the planning AIs
   if (forPlanning) {
-    return [claudeCode, deepSeek, fakeCode]
+    return [claudeCode, deepSeek, reasonix, fakeCode]
   }
-  return [claudeCode, deepSeek, fakeCode, cursorAgent]
+  return [claudeCode, deepSeek, reasonix, fakeCode, cursorAgent]
 }

@@ -171,7 +171,7 @@ export const taskStartPlanningTool: Tool = {
     properties: {
       taskId: { type: 'string', description: 'Task ID' },
       branchName: { type: 'string', description: 'Git branch name for the worktree' },
-      aiType: { type: 'string', description: 'AI agent type (e.g., claude-code, gemini, cursor)' },
+      aiType: { type: 'string', description: 'AI agent type (e.g., claude-code, reasonix, gemini, cursor)' },
       useRemoteBranch: {
         type: 'boolean',
         description: 'Check out an existing remote branch (default: false)',
@@ -223,7 +223,7 @@ export const taskStartImplementingDirectTool: Tool = {
     properties: {
       taskId: { type: 'string', description: 'Task ID' },
       branchName: { type: 'string', description: 'Git branch name for the worktree' },
-      aiType: { type: 'string', description: 'AI agent type (e.g., claude-code, gemini, cursor)' },
+      aiType: { type: 'string', description: 'AI agent type (e.g., claude-code, reasonix, gemini, cursor)' },
       useRemoteBranch: {
         type: 'boolean',
         description: 'Check out an existing remote branch (default: false)',
